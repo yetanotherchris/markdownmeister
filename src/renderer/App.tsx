@@ -125,6 +125,9 @@ export default function App() {
     }
   }, [])
   const sidebarPanelRef = usePanelRef()
+  // `defaultSize` is initialization-only. Reapplying a newly persisted width
+  // during a resize makes react-resizable-panels discard its restore size.
+  const sidebarInitialSizeRef = useRef(getSettings().sidebarWidth)
   // Spec 010, US2 (FR-007): set once the initial restore has run, so resize
   // events while the panel settles are not persisted as the user's choice.
   const explorerRestoreDoneRef = useRef(false)
@@ -307,7 +310,6 @@ export default function App() {
     treeApiRef
   ])
 
-  const sidebarWidth = getSettings().sidebarWidth
   const hasWorkspace = workspace.name !== null
 
   return (
@@ -348,7 +350,7 @@ export default function App() {
           {hasWorkspace && (
             <>
               <Panel
-                defaultSize={String(sidebarWidth)}
+                defaultSize={String(sidebarInitialSizeRef.current)}
                 minSize="15"
                 maxSize="50"
                 className="sidebar-panel"
