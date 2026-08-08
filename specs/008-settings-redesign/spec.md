@@ -102,7 +102,7 @@ A writer can visually identify the "view source" action in the editor toolbar by
 - The settings dialog is opened when no document is open: all areas and settings remain accessible and functional.
 - A setting is changed and the dialog is closed abruptly (e.g., application closed): the last saved value is preserved; partially applied changes do not corrupt the settings file.
 - The view source button is the only toolbar button: it still displays the correct icon and colour.
-- The editor theme is changed while a short document is open: the background colour below the content updates to match the new theme immediately.
+- The editor theme is saved while a short document is open: the background colour below the content updates to match the new theme immediately.
 
 ## Requirements *(mandatory)*
 
@@ -132,7 +132,7 @@ A writer can visually identify the "view source" action in the editor toolbar by
 - **Settings area**: A named grouping of related settings displayed in the main panel when its sidebar entry is selected.
 - **Toggle control**: A boolean input rendered as a sliding pill on a track, providing a clear on/off visual state.
 - **File-opening behaviour**: A user preference that determines whether opening a file from the explorer replaces the active tab or creates a new tab.
-- **Developer tools toggle**: A boolean setting that controls the availability of developer tools keyboard shortcuts and the hamburger menu item.
+- **Developer tools toggle**: A boolean setting that controls the availability of developer tools keyboard shortcuts. The hamburger menu item remains absent because the control has moved to settings.
 - **Editor canvas background**: The background colour of the editor theme that must extend to fill the full visible editor area regardless of document length.
 
 ## Success Criteria *(mandatory)*
@@ -154,4 +154,10 @@ A writer can visually identify the "view source" action in the editor toolbar by
 - **File-opening default**: The file-opening behaviour defaults to the current behaviour (replace clean tab) to avoid surprising existing users.
 - **Icon colour**: "Dark blue" is interpreted as a visually distinct dark blue that is legible against both light and dark editor backgrounds. The exact hex value is a planning concern.
 - **Scope of bug fix**: The background colour fix applies to the editor area only. Other panels (explorer, tabs, status bar) are not affected.
-- **Hamburger menu**: The "Toggle Developer Tools" item is removed from the hamburger menu as part of moving it to settings. The keyboard shortcuts remain available when the toggle is enabled.
+- **Hamburger menu**: The "Toggle Developer Tools" item is removed from the hamburger menu as part of moving it to settings. The keyboard shortcuts remain available when the toggle is enabled. The separator adjacent to the removed item is removed too, so no double separator remains between "Close Tab" and "Settings…".
+
+## Clarifications
+
+- **2026-08-08 - File-opening scope**: The preference applies only to explorer-originated single-click, activation, and context-menu `Open` actions. File-menu and recent-item opens retain their existing behavior. In same-tab mode, an active dirty document is never replaced; it opens the requested file in a new tab.
+- **2026-08-08 - Developer tools availability**: The hamburger item remains removed regardless of the setting. Enabling developer tools permits the existing keyboard shortcuts; disabling them closes any currently open developer tools and prevents those shortcuts from opening them. The setting applies immediately.
+- **2026-08-08 - Apply model**: General-area settings apply and persist immediately. Application theme keeps its existing immediate behavior, while editor-theme selection remains staged until the dialog's Save action.
