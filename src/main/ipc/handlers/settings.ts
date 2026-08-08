@@ -1,7 +1,9 @@
 import { ipcMain } from 'electron'
+import type { BrowserWindow } from 'electron'
 import { loadSettings, updateSettings } from '../../settings'
 import { applyThemeOverride } from '../../theme'
 import { applySpellcheckSetting } from '../../spellcheck'
+import { validateSettingsPatch, DEFAULTS } from '../../settingsFile'
 import type { Result, Settings } from '../../../shared/ipc-contract'
 import { ctx, ok, err, sanitizeError, isAuthorizedRenderer } from './context'
 
@@ -15,16 +17,17 @@ export function registerSettingsHandlers(window: Electron.BrowserWindow, _ctx: t
     try {
       return ok(loadSettings())
     } catch {
-      return ok({ sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif', editorTheme: 'rustic', editorColors: null, spellcheckEnabled: true, spellcheckLanguage: null })
+      return ok({ ...DEFAULTS })
     }
   })
 
   ipcMain.handle('settings:update', (event, patch: unknown): Result<Settings> => {
     if (!isAuthorizedRenderer(event, window)) return err('IO', 'Unauthorized renderer')
     try {
-      if (!patch || typeof patch !== 'object') {
-        return err('IO', 'Settings must be an object')
-      }
+      // Spec 008 (R1): reject a PRESENT invalid new field before it reaches the
+      // tolerant merge — malformed IPC input is never silently coerced into the
+      // settings store. The typed IO error leaves memory and disk unchanged.
+      validateSettingsPatch(patch)
       // Merge in MAIN against the authoritative in-memory settings (not a stale
       // disk read), so two updates inside the 500 ms debounce window do not
       // clobber each other (review #27). Only the known fields are read.
@@ -37,9 +40,21 @@ export function registerSettingsHandlers(window: Electron.BrowserWindow, _ctx: t
       // session spellchecker flips now, so markers vanish/return without
       // waiting for the debounced disk write. The language is applied too.
       applySpellcheckSetting(updated.spellcheckEnabled, updated.spellcheckLanguage)
+      // Spec 008 (clarification 2026-08-08): disabling developer tools closes
+      // any currently open DevTools window immediately.
+      applyDeveloperToolsDisable(window, updated.developerToolsEnabled)
       return ok(updated)
     } catch (e: unknown) {
       return err('IO', sanitizeError(e, null))
     }
   })
+}
+
+/** Spec 008: turning developer tools OFF closes an already-open DevTools
+ *  window immediately. Enabled is a no-op here — the keyboard gate in
+ *  `shortcuts.ts` controls opening. */
+function applyDeveloperToolsDisable(window: BrowserWindow, enabled: boolean): void {
+  if (!enabled && window.webContents.isDevToolsOpened()) {
+    window.webContents.closeDevTools()
+  }
 }

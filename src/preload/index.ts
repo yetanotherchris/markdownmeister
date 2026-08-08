@@ -127,7 +127,6 @@ const api: DesktopApi = {
   getRecentItems: () => invokeResult<RecentItem[]>('recent:list'),
   clearRecentItems: () => invokeResult<null>('recent:clear'),
   requestQuit: () => invokeResult<null>('app:requestQuit'),
-  toggleDevTools: () => invokeResult<null>('devtools:toggle'),
   getSpellcheckWords: () => invokeResult<string[]>('spellcheck:getWords'),
   addSpellcheckWord: (word: string) => invokeResult<string[]>('spellcheck:addWord', { word })
 }

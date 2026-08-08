@@ -133,6 +133,13 @@ export interface EditorColors {
   code: string
 }
 
+/** Spec 008: how an explorer-originated file open places the document (FR-008,
+ *  clarification 2026-08-08). 'same-tab' replaces a live-clean active tab;
+ *  'new-tab' always opens a new tab. A closed union — validated in main, never
+ *  arbitrary text. Only explorer-originated opens consume it; File-menu and
+ *  recent-item opens keep their own generic behavior. */
+export type FileOpenBehavior = 'same-tab' | 'new-tab'
+
 export interface Settings {
   sidebarWidth: number
   themeOverride: 'light' | 'dark' | null
@@ -162,6 +169,17 @@ export interface Settings {
    *  the platform/system default. A closed union — validated in main. Applied
    *  via `session.setSpellCheckerLanguages`. */
   spellcheckLanguage: SpellcheckLanguage | null
+  /** Spec 008 FR-008: whether an explorer-originated file open replaces the
+   *  active live-clean tab ('same-tab') or always opens a new tab ('new-tab').
+   *  Defaults to 'same-tab'. A closed union — validated in main. The explorer
+   *  single-click/activation/context-Open paths read it; a dirty active tab is
+   *  never replaced (Principle III). */
+  fileOpenBehavior: FileOpenBehavior
+  /** Spec 008 FR-009/FR-011: whether the developer-tools keyboard shortcuts
+   *  (F12, Ctrl/Cmd+Shift+I) are enabled. Defaults to false. The main-process
+   *  before-input-event gate reads this; the hamburger item is removed
+   *  regardless of the value (clarification 2026-08-08). */
+  developerToolsEnabled: boolean
 }
 
 export interface DesktopApi {
@@ -220,8 +238,6 @@ export interface DesktopApi {
   /** Spec 010: request a quit through the normal window-close flow, so the
    *  renderer's unsaved-changes prompt still guards the exit (Principle III). */
   requestQuit(): Promise<Result<null>>
-  /** Spec 010: toggle the devtools window from the hamburger's View menu. */
-  toggleDevTools(): Promise<Result<null>>
   /** Spec 020 (JS spellchecker): the user's custom dictionary words. */
   getSpellcheckWords(): Promise<Result<string[]>>
   /** Spec 020 (JS spellchecker): teach the JS checker a word so it is never

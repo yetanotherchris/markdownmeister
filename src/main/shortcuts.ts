@@ -57,18 +57,34 @@ export function matchShortcut(input: ShortcutInput): ShortcutResult | null {
 }
 
 /**
+ * Spec 008 (research R3): the developer-tools setting gates the main-side
+ * shortcut. A disabled setting must prevent the toggle without touching the
+ * keypress. Pure and unit-testable — the setting value is injected by the
+ * caller so this module never imports the electron-dependent settings store.
+ */
+export function devtoolsTogglePermitted(input: ShortcutInput, developerToolsEnabled: boolean): boolean {
+  return developerToolsEnabled && matchShortcut(input) === 'devtools'
+}
+
+/**
  * Install the `before-input-event` handler on a window. Matched combinations
  * `preventDefault()` and send the existing `menu:command` channel — the same
  * command bus the old native menu used and the renderer hamburger shares — so
  * shortcuts keep working after the menu bar is removed (spec 010 edge case).
+ *
+ * Spec 008: the recognized devtools combos (F12, Ctrl/Cmd+Shift+I) are always
+ * prevented, but the toggle happens only while `isDevtoolsEnabled()` — injected
+ * from the authoritative settings store (index.ts) — returns true.
  */
-export function registerShortcuts(window: BrowserWindow): void {
+export function registerShortcuts(window: BrowserWindow, isDevtoolsEnabled: () => boolean): void {
   window.webContents.on('before-input-event', (event, input) => {
     const command = matchShortcut(input)
     if (command === null) return
     event.preventDefault()
     if (command === 'devtools') {
-      window.webContents.toggleDevTools()
+      if (devtoolsTogglePermitted(input, isDevtoolsEnabled())) {
+        window.webContents.toggleDevTools()
+      }
       return
     }
     window.webContents.send('menu:command', command)

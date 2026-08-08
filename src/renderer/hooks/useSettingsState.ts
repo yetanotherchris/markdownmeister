@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { updateSettings, getSettings } from '../state/settings'
-import type { EditorThemeName, SpellcheckLanguage, EditorColors } from '../../shared/ipc-contract'
+import type { EditorThemeName, SpellcheckLanguage, EditorColors, FileOpenBehavior } from '../../shared/ipc-contract'
 import {
   useEffectiveTheme,
   themeChoiceFromOverride,
@@ -32,6 +32,10 @@ export function useSettingsState(): {
   handleSpellcheckChange: (enabled: boolean) => void
   spellcheckLanguage: SpellcheckLanguage | null
   handleSpellcheckLanguageChange: (language: SpellcheckLanguage | null) => void
+  fileOpenBehavior: FileOpenBehavior
+  handleFileOpenBehaviorChange: (behavior: FileOpenBehavior) => void
+  developerToolsEnabled: boolean
+  handleDeveloperToolsEnabledChange: (enabled: boolean) => void
   themeChoice: ThemeChoice
   handleThemeChange: (choice: ThemeChoice) => void
   themeMode: 'light' | 'dark'
@@ -42,6 +46,8 @@ export function useSettingsState(): {
   const [editorColors, setEditorColors] = useState<EditorColors | null>(getSettings().editorColors)
   const [spellcheckEnabled, setSpellcheckEnabled] = useState<boolean>(getSettings().spellcheckEnabled)
   const [spellcheckLanguage, setSpellcheckLanguage] = useState<SpellcheckLanguage | null>(getSettings().spellcheckLanguage)
+  const [fileOpenBehavior, setFileOpenBehavior] = useState<FileOpenBehavior>(getSettings().fileOpenBehavior)
+  const [developerToolsEnabled, setDeveloperToolsEnabled] = useState<boolean>(getSettings().developerToolsEnabled)
   const [themeChoice, setThemeChoice] = useState<ThemeChoice>(() =>
     themeChoiceFromOverride(getSettings().themeOverride)
   )
@@ -91,12 +97,31 @@ export function useSettingsState(): {
     window.api.updateSettings({ spellcheckLanguage: language }).catch(() => { /* ignore */ })
   }, [])
 
+  // Spec 008 FR-008: apply the explorer file-opening preference immediately and
+  // persist it. The explorer open decision reads the cached value at open time.
+  const handleFileOpenBehaviorChange = useCallback((behavior: FileOpenBehavior) => {
+    setFileOpenBehavior(behavior)
+    updateSettings({ fileOpenBehavior: behavior })
+    window.api.updateSettings({ fileOpenBehavior: behavior }).catch(() => { /* ignore */ })
+  }, [])
+
+  // Spec 008 FR-009/FR-011: apply the developer-tools toggle immediately and
+  // persist it. Main enforces it (shortcut gate + immediate close on disable);
+  // the local state keeps the dialog's switch in sync.
+  const handleDeveloperToolsEnabledChange = useCallback((enabled: boolean) => {
+    setDeveloperToolsEnabled(enabled)
+    updateSettings({ developerToolsEnabled: enabled })
+    window.api.updateSettings({ developerToolsEnabled: enabled }).catch(() => { /* ignore */ })
+  }, [])
+
   return {
     settingsOpen, setSettingsOpen,
     editorTheme, handleEditorThemeChange,
     editorFont, editorColors,
     spellcheckEnabled, handleSpellcheckChange,
     spellcheckLanguage, handleSpellcheckLanguageChange,
+    fileOpenBehavior, handleFileOpenBehaviorChange,
+    developerToolsEnabled, handleDeveloperToolsEnabledChange,
     themeChoice, handleThemeChange, themeMode
   }
 }
