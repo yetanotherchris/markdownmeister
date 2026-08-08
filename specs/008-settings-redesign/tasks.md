@@ -22,7 +22,7 @@
 - [X] T005 Add duplicate renderer defaults and immediate-persist state handlers for the setting in `src/renderer/state/settings.ts` and `src/renderer/hooks/useSettingsState.ts`.
 - [X] T006 Add handler-level validation and typed invalid-patch results in `src/main/ipc/handlers/settings.ts`; remove the obsolete handler and bridge API from `src/main/ipc/handlers/app.ts`, `src/preload/index.ts`, and `src/shared/ipc-contract.ts`.
 - [X] T007 Remove the obsolete developer-tools hamburger action and dispatch in `src/renderer/chrome/menuModel.ts` and `src/renderer/chrome/HamburgerMenu.tsx`.
-- [ ] T006a Remove the `developerToolsEnabled` field from the settings model, validation, defaults, migration, renderer state, `useSettingsState`, `SettingsDialog`, `App.tsx`, and the main shortcut gate; make `src/main/shortcuts.ts` toggle unconditionally (spec clarification 2026-08-08).
+- [X] T006a Remove the `developerToolsEnabled` field from the settings model, validation, defaults, migration, renderer state, `useSettingsState`, `SettingsDialog`, `App.tsx`, and the main shortcut gate; make `src/main/shortcuts.ts` toggle unconditionally (spec clarification 2026-08-08).
 
 **Checkpoint**: `fileOpenBehavior` is validated and persisted, DevTools cannot be enabled through a stale renderer action, and the F12/Ctrl/Cmd+Shift+I shortcuts always toggle developer tools.
 
@@ -46,10 +46,10 @@
 
 **Independent Test**: Select each preference and open files through explorer click and context-menu Open, confirming replacement, new-tab, and existing-tab activation behavior.
 
-- [ ] T013 [US2] Write failing preference scenarios for explorer click and activation replacement, new tabs, existing-tab dedupe, dirty-tab safety, and explorer context-menu Open in `tests/e2e/open-in-current-tab.spec.ts` and `tests/e2e/source.spec.ts`.
-- [ ] T014 [US2] Add an explorer-specific document-session decision using the persisted preference in `src/renderer/hooks/useDocumentSession.ts`.
-- [ ] T015 [US2] Route explorer click and activation through the new decision in `src/renderer/hooks/useWorkspaceTree.ts`, route explorer context Open through it in `src/renderer/hooks/useSourceViewToggle.ts`, and wire explicit middle-click behavior in `src/renderer/App.tsx`.
-- [ ] T016 [US2] Confirm File-menu and recent-item paths in `src/renderer/hooks/useMenuCommands.ts` continue using their current generic open behavior.
+- [X] T013 [US2] Write failing preference scenarios for explorer click and activation replacement, new tabs, existing-tab dedupe, dirty-tab safety, and explorer context-menu Open in `tests/e2e/open-in-current-tab.spec.ts` and `tests/e2e/source.spec.ts`.
+- [X] T014 [US2] Add an explorer-specific document-session decision using the persisted preference in `src/renderer/hooks/useDocumentSession.ts`.
+- [X] T015 [US2] Route explorer click and activation through the new decision in `src/renderer/hooks/useWorkspaceTree.ts`, route explorer context Open through it in `src/renderer/hooks/useSourceViewToggle.ts`, and wire explicit middle-click behavior in `src/renderer/App.tsx`.
+- [X] T016 [US2] Confirm File-menu and recent-item paths in `src/renderer/hooks/useMenuCommands.ts` continue using their current generic open behavior.
 
 **Checkpoint**: The preference affects every specified explorer action, never replaces dirty content, and does not widen to File-menu or recent-item opens.
 
@@ -59,8 +59,8 @@
 
 **Independent Test**: From the real Electron main process, press F12 and Ctrl/Cmd+Shift+I and verify DevTools toggles. Confirm the settings dialog has no developer-tools control and the hamburger has no Toggle Developer Tools item.
 
-- [ ] T017 [US3] Write failing always-on, toggle-off-then-on, and menu-removal scenarios in `tests/e2e/developer-tools.spec.ts` using `electronApp.evaluate` to inspect the real BrowserWindow DevTools state and `sendInputEvent` to drive the shortcuts.
-- [ ] T018 [US3] Confirm no developer-tools control remains in the settings General area and update `tests/e2e/settings.spec.ts` assertions accordingly.
+- [X] T017 [US3] Write failing always-on, toggle-off-then-on, and menu-removal scenarios in `tests/e2e/developer-tools.spec.ts` using `electronApp.evaluate` to inspect the real BrowserWindow DevTools state and `sendInputEvent` to drive the shortcuts.
+- [X] T018 [US3] Confirm no developer-tools control remains in the settings General area and update `tests/e2e/settings.spec.ts` assertions accordingly.
 
 **Checkpoint**: Both shortcuts toggle DevTools unconditionally, no settings control exists, and no hamburger item remains.
 

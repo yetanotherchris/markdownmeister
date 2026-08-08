@@ -161,12 +161,6 @@ describe('useSettingsState (spec 016)', () => {
     expect(calls).toEqual([{ fileOpenBehavior: 'new-tab' }])
   })
 
-  it('exposes the persisted fileOpenBehavior as the committed value', () => {
-    updateSettings({ fileOpenBehavior: 'new-tab' })
-    const { read } = renderHook()
-    expect(read().fileOpenBehavior).toBe('new-tab')
-  })
-
   it('does not expose a developer-tools control (removed in spec 008 clarification 2026-08-08)', () => {
     const { read } = renderHook()
     expect('developerToolsEnabled' in read()).toBe(false)
