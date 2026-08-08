@@ -3,7 +3,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { useSettingsState } from '../../src/renderer/hooks/useSettingsState'
 import { getSettings, updateSettings } from '../../src/renderer/state/settings'
-import type { EditorThemeName, SpellcheckLanguage } from '../../src/shared/ipc-contract'
+import type { EditorThemeName, SpellcheckLanguage, FileOpenBehavior } from '../../src/shared/ipc-contract'
 import type { ThemeChoice } from '../../src/renderer/hooks/useEffectiveTheme'
 
 /**
@@ -14,13 +14,13 @@ import type { ThemeChoice } from '../../src/renderer/hooks/useEffectiveTheme'
  * suite covers the real IPC).
  */
 
-// Minimal stub of the two DesktopApi calls the hook makes. The preload surface
+// Minimal stub of the DesktopApi call the hook makes. The preload surface
 // types `window.api` globally (src/renderer/types.d.ts); tests replace it.
 function stubApi(): void {
-  const calls: Array<{ editorTheme?: EditorThemeName; spellcheckEnabled?: boolean; spellcheckLanguage?: SpellcheckLanguage | null }> = []
-  ;(globalThis as unknown as { __apiCalls: Array<{ editorTheme?: EditorThemeName; spellcheckEnabled?: boolean; spellcheckLanguage?: SpellcheckLanguage | null }> }).__apiCalls = calls
+  const calls: Array<{ editorTheme?: EditorThemeName; spellcheckEnabled?: boolean; spellcheckLanguage?: SpellcheckLanguage | null; fileOpenBehavior?: FileOpenBehavior; developerToolsEnabled?: boolean }> = []
+  ;(globalThis as unknown as { __apiCalls: Array<{ editorTheme?: EditorThemeName; spellcheckEnabled?: boolean; spellcheckLanguage?: SpellcheckLanguage | null; fileOpenBehavior?: FileOpenBehavior; developerToolsEnabled?: boolean }> }).__apiCalls = calls
   window.api = {
-    updateSettings: (patch: { editorTheme?: EditorThemeName; spellcheckEnabled?: boolean; spellcheckLanguage?: SpellcheckLanguage | null }) => {
+    updateSettings: (patch: { editorTheme?: EditorThemeName; spellcheckEnabled?: boolean; spellcheckLanguage?: SpellcheckLanguage | null; fileOpenBehavior?: FileOpenBehavior; developerToolsEnabled?: boolean }) => {
       calls.push(patch)
       return Promise.resolve({ ok: true, value: getSettings() as never })
     }
@@ -142,6 +142,40 @@ describe('useSettingsState (spec 016)', () => {
     updateSettings({ editorTheme: 'rustic' as EditorThemeName })
     const { read } = renderHook()
     expect(read().editorTheme).toBe('rustic')
+  })
+
+  it('exposes the persisted fileOpenBehavior as the committed value', () => {
+    updateSettings({ fileOpenBehavior: 'new-tab' })
+    const { read } = renderHook()
+    expect(read().fileOpenBehavior).toBe('new-tab')
+  })
+
+  it('handleFileOpenBehaviorChange updates local state, the cache, and the IPC', () => {
+    const { read } = renderHook()
+    act(() => {
+      read().handleFileOpenBehaviorChange('new-tab')
+    })
+    expect(read().fileOpenBehavior).toBe('new-tab')
+    expect(getSettings().fileOpenBehavior).toBe('new-tab')
+    const calls = (globalThis as unknown as { __apiCalls: { fileOpenBehavior?: FileOpenBehavior }[] }).__apiCalls
+    expect(calls).toEqual([{ fileOpenBehavior: 'new-tab' }])
+  })
+
+  it('exposes the persisted developerToolsEnabled as the committed value', () => {
+    updateSettings({ developerToolsEnabled: true })
+    const { read } = renderHook()
+    expect(read().developerToolsEnabled).toBe(true)
+  })
+
+  it('handleDeveloperToolsEnabledChange updates local state, the cache, and the IPC', () => {
+    const { read } = renderHook()
+    act(() => {
+      read().handleDeveloperToolsEnabledChange(true)
+    })
+    expect(read().developerToolsEnabled).toBe(true)
+    expect(getSettings().developerToolsEnabled).toBe(true)
+    const calls = (globalThis as unknown as { __apiCalls: { developerToolsEnabled?: boolean }[] }).__apiCalls
+    expect(calls).toEqual([{ developerToolsEnabled: true }])
   })
 })
 

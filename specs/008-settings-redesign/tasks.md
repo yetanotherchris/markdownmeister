@@ -32,10 +32,10 @@
 **Independent Test**: Open Settings, switch between General and Theme, and verify that only the selected area's controls appear and General is the default after reopening.
 
 - [ ] T008 [US1] Write failing settings-area, focus-trap, responsive-layout, and restart-selection scenarios in `tests/e2e/settings.spec.ts`.
-- [ ] T009 [US1] Redesign `src/renderer/chrome/SettingsDialog.tsx` with General/Theme navigation, area-specific panels, accessible native switches, and expanded focus trapping.
-- [ ] T010 [US1] Implement the wider responsive sidebar, selected navigation state, panel layout, and switch styles in `src/renderer/chrome/settings.css`.
-- [ ] T011 [US1] Wire new settings values and dialog callbacks in `src/renderer/App.tsx` and `src/renderer/hooks/useSettingsState.ts`.
-- [ ] T012 [US1] Extend immediate-persistence handler coverage in `tests/renderer/useSettingsState.test.tsx`.
+- [X] T009 [US1] Redesign `src/renderer/chrome/SettingsDialog.tsx` with General/Theme navigation, area-specific panels, accessible native switches, and expanded focus trapping.
+- [X] T010 [US1] Implement the wider responsive sidebar, selected navigation state, panel layout, and switch styles in `src/renderer/chrome/settings.css`.
+- [X] T011 [US1] Wire new settings values and dialog callbacks in `src/renderer/App.tsx` and `src/renderer/hooks/useSettingsState.ts`.
+- [X] T012 [US1] Extend immediate-persistence handler coverage in `tests/renderer/useSettingsState.test.tsx`.
 
 **Checkpoint**: General and Theme are independently accessible, controls persist according to their established apply model, and the dialog is keyboard accessible.
 

@@ -69,6 +69,10 @@ export default function App() {
     handleSpellcheckChange,
     spellcheckLanguage,
     handleSpellcheckLanguageChange,
+    fileOpenBehavior,
+    handleFileOpenBehaviorChange,
+    developerToolsEnabled,
+    handleDeveloperToolsEnabledChange,
     themeChoice,
     handleThemeChange,
     themeMode
@@ -425,6 +429,10 @@ export default function App() {
           onSpellcheckChange={handleSpellcheckChange}
           spellcheckLanguage={spellcheckLanguage}
           onSpellcheckLanguageChange={handleSpellcheckLanguageChange}
+          fileOpenBehavior={fileOpenBehavior}
+          onFileOpenBehaviorChange={handleFileOpenBehaviorChange}
+          developerToolsEnabled={developerToolsEnabled}
+          onDeveloperToolsEnabledChange={handleDeveloperToolsEnabledChange}
           onClose={() => setSettingsOpen(false)}
         />
       )}
