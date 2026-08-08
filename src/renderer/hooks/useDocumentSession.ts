@@ -377,11 +377,16 @@ export function useDocumentSession(opts: {
   // keeps the replace-live-clean behavior (data-model decision table). An
   // already-open file always activates its existing tab.
   const openWithDecision = useCallback(
-    (file: OpenedFile & { view?: 'formatted' | 'source' }, explicitNew: boolean, preferNewTab: boolean) => {
+    (
+      file: OpenedFile & { view?: 'formatted' | 'source' },
+      explicitNew: boolean,
+      preferNewTab: boolean
+    ) => {
       const current = sessionRef.current
       const active = current.documents.find((d) => d.id === current.activeId) ?? null
       const alreadyOpen = file.path !== null && current.documents.some((d) => d.path === file.path)
-      const replaceActive = !preferNewTab && !explicitNew && !alreadyOpen && active !== null && !isDirtyLive(active)
+      const replaceActive =
+        !preferNewTab && !explicitNew && !alreadyOpen && active !== null && !isDirtyLive(active)
       dispatch({
         type: 'OPEN_EXISTING',
         payload: { value: file, mode: replaceActive ? 'replace' : 'new' }
