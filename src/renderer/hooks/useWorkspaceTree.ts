@@ -39,7 +39,7 @@ export function useWorkspaceTree(opts: {
   sessionRef: React.MutableRefObject<EditingSession>
   workspaceRef: React.MutableRefObject<WorkspaceState>
   dialog: DialogQueue
-  session: Pick<DocumentSessionApi, 'doClose' | 'isDirtyLive' | 'openFileFromTree'>
+  session: Pick<DocumentSessionApi, 'doClose' | 'isDirtyLive' | 'openFileFromExplorer'>
   treeApiRef: React.MutableRefObject<TreeApi<TreeNode> | null>
   pendingCreateRef: React.MutableRefObject<Set<string>>
   createCounterRef: React.MutableRefObject<number>
@@ -57,7 +57,7 @@ export function useWorkspaceTree(opts: {
     setPendingEditId
   } = opts
   const { dialogInFlightRef, releaseDialogSurface, showOperationError } = dialog
-  const { doClose, isDirtyLive, openFileFromTree } = session
+  const { doClose, isDirtyLive, openFileFromExplorer } = session
 
   const handleTreeSelect = useCallback(async (id: string | null) => {
     dispatchWorkspace({ type: 'SELECT', payload: { id } })
@@ -67,10 +67,11 @@ export function useWorkspaceTree(opts: {
     const result = await window.api.readFile(id)
     if (result.ok) {
       // Spec 024: open through the session gate so a clean active tab is
-      // replaced instead of spawning a new tab (FR-001).
-      openFileFromTree(result.value)
+      // replaced instead of spawning a new tab (FR-001). Spec 008 FR-018: the
+      // explorer path consults the file-opening preference.
+      openFileFromExplorer(result.value)
     }
-  }, [dispatchWorkspace, openFileFromTree, workspaceRef])
+  }, [dispatchWorkspace, openFileFromExplorer, workspaceRef])
 
   const handleTreeActivate = useCallback(async (id: string) => {
     const node = findNodeById(workspaceRef.current.nodes, id)
@@ -78,9 +79,9 @@ export function useWorkspaceTree(opts: {
 
     const result = await window.api.readFile(id)
     if (result.ok) {
-      openFileFromTree(result.value)
+      openFileFromExplorer(result.value)
     }
-  }, [openFileFromTree, workspaceRef])
+  }, [openFileFromExplorer, workspaceRef])
 
   const handleTreeToggle = useCallback(async (id: string, isLoaded: boolean) => {
     if (isLoaded) {
