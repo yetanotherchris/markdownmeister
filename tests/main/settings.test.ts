@@ -50,10 +50,10 @@ describe('loadSettingsFile', () => {
 
   it('reads all persisted fields from a valid settings section', () => {
     const file = tempSettingsFile(JSON.stringify({
-      settings: { sidebarWidth: 42, themeOverride: 'dark', explorerVisible: false, editorFont: 'serif', editorTheme: 'scholarly', spellcheckEnabled: false, spellcheckLanguage: 'en-GB', fileOpenBehavior: 'new-tab', developerToolsEnabled: true }
+      settings: { sidebarWidth: 42, themeOverride: 'dark', explorerVisible: false, editorFont: 'serif', editorTheme: 'scholarly', spellcheckEnabled: false, spellcheckLanguage: 'en-GB', fileOpenBehavior: 'new-tab' }
     }))
     expect(loadSettingsFile(file))
-      .toEqual({ sidebarWidth: 42, themeOverride: 'dark', explorerVisible: false, editorFont: 'serif', editorTheme: 'scholarly', editorColors: null, spellcheckEnabled: false, spellcheckLanguage: 'en-GB', fileOpenBehavior: 'new-tab', developerToolsEnabled: true })
+      .toEqual({ sidebarWidth: 42, themeOverride: 'dark', explorerVisible: false, editorFont: 'serif', editorTheme: 'scholarly', editorColors: null, spellcheckEnabled: false, spellcheckLanguage: 'en-GB', fileOpenBehavior: 'new-tab' })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
@@ -125,7 +125,7 @@ describe('loadSettingsFile', () => {
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
-  describe('fileOpenBehavior and developerToolsEnabled (spec 008)', () => {
+  describe('fileOpenBehavior (spec 008)', () => {
     it('defaults fileOpenBehavior to same-tab when the field is missing (old configs)', () => {
       const file = tempSettingsFile(JSON.stringify({
         settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif' }
@@ -150,27 +150,13 @@ describe('loadSettingsFile', () => {
       fs.rmSync(path.dirname(file), { recursive: true, force: true })
     })
 
-    it('defaults developerToolsEnabled to false when the field is missing (old configs)', () => {
+    it('ignores a legacy developerToolsEnabled key (removed in spec 008 clarification 2026-08-08)', () => {
       const file = tempSettingsFile(JSON.stringify({
-        settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif' }
+        settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif', fileOpenBehavior: 'new-tab', developerToolsEnabled: true }
       }))
-      expect(loadSettingsFile(file).developerToolsEnabled).toBe(false)
-      fs.rmSync(path.dirname(file), { recursive: true, force: true })
-    })
-
-    it('reads developerToolsEnabled true from a valid settings section', () => {
-      const file = tempSettingsFile(JSON.stringify({
-        settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif', developerToolsEnabled: true }
-      }))
-      expect(loadSettingsFile(file).developerToolsEnabled).toBe(true)
-      fs.rmSync(path.dirname(file), { recursive: true, force: true })
-    })
-
-    it('rejects a non-boolean developerToolsEnabled', () => {
-      const file = tempSettingsFile(JSON.stringify({
-        settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif', developerToolsEnabled: 'yes' }
-      }))
-      expect(loadSettingsFile(file).developerToolsEnabled).toBe(false)
+      const result = loadSettingsFile(file)
+      expect(result.fileOpenBehavior).toBe('new-tab')
+      expect('developerToolsEnabled' in result).toBe(false)
       fs.rmSync(path.dirname(file), { recursive: true, force: true })
     })
   })
@@ -275,8 +261,7 @@ describe('loadSettingsFile', () => {
       editorColors: null,
       spellcheckEnabled: true,
       spellcheckLanguage: null,
-      fileOpenBehavior: 'same-tab',
-      developerToolsEnabled: false
+      fileOpenBehavior: 'same-tab'
     })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
@@ -285,7 +270,7 @@ describe('loadSettingsFile', () => {
 describe('writeSettingsFile (shared config, spec 012 FR-002)', () => {
   it('writes a settings section that round-trips', () => {
     const file = tempSettingsFile()
-    writeSettingsFile(file, { sidebarWidth: 25, themeOverride: null, explorerVisible: false, editorFont: 'serif', editorTheme: 'rustic', editorColors: null, spellcheckEnabled: true, spellcheckLanguage: null, fileOpenBehavior: 'new-tab', developerToolsEnabled: true })
+    writeSettingsFile(file, { sidebarWidth: 25, themeOverride: null, explorerVisible: false, editorFont: 'serif', editorTheme: 'rustic', editorColors: null, spellcheckEnabled: true, spellcheckLanguage: null, fileOpenBehavior: 'new-tab' })
     expect(loadSettingsFile(file)).toEqual({
       sidebarWidth: 25,
       themeOverride: null,
@@ -295,8 +280,7 @@ describe('writeSettingsFile (shared config, spec 012 FR-002)', () => {
       editorColors: null,
       spellcheckEnabled: true,
       spellcheckLanguage: null,
-      fileOpenBehavior: 'new-tab',
-      developerToolsEnabled: true
+      fileOpenBehavior: 'new-tab'
     })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
@@ -342,7 +326,7 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
 
     const migrated = migrateLegacySettingsFile(configPath, legacyPath)
     expect(migrated).toEqual({
-      sidebarWidth: 44, themeOverride: 'dark', explorerVisible: false, editorFont: 'sans-serif', editorTheme: 'rustic', editorColors: null, spellcheckEnabled: true, spellcheckLanguage: null, fileOpenBehavior: 'same-tab', developerToolsEnabled: false
+      sidebarWidth: 44, themeOverride: 'dark', explorerVisible: false, editorFont: 'sans-serif', editorTheme: 'rustic', editorColors: null, spellcheckEnabled: true, spellcheckLanguage: null, fileOpenBehavior: 'same-tab'
     })
     // The values are now in config.json (read back through the shared file).
     expect(loadSettingsFile(configPath)).toEqual(migrated)
@@ -422,7 +406,7 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
     fs.rmSync(path.dirname(configPath), { recursive: true, force: true })
   })
 
-  it('migrates legacy fileOpenBehavior and developerToolsEnabled values (spec 008)', () => {
+  it('migrates legacy fileOpenBehavior and ignores the removed developerToolsEnabled key (spec 008)', () => {
     const configPath = tempSettingsFile()
     const legacyPath = path.join(path.dirname(configPath), 'settings.json')
     fs.writeFileSync(legacyPath, JSON.stringify({
@@ -430,7 +414,7 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
     }), 'utf-8')
     const migrated = migrateLegacySettingsFile(configPath, legacyPath)
     expect(migrated?.fileOpenBehavior).toBe('new-tab')
-    expect(migrated?.developerToolsEnabled).toBe(true)
+    expect('developerToolsEnabled' in (migrated ?? {})).toBe(false)
     expect(loadSettingsFile(configPath).fileOpenBehavior).toBe('new-tab')
     fs.rmSync(path.dirname(configPath), { recursive: true, force: true })
   })
@@ -502,15 +486,5 @@ describe('mergeSettingsPatch (review #27: authoritative in-memory merge)', () =>
     expect(mergeSettingsPatch(base, { fileOpenBehavior: 'split' as 'new-tab' }).fileOpenBehavior).toBe('same-tab')
     const nt = mergeSettingsPatch({ ...base, fileOpenBehavior: 'new-tab' }, { fileOpenBehavior: 'split' as 'new-tab' })
     expect(nt.fileOpenBehavior).toBe('new-tab')
-  })
-
-  it('applies a boolean developerToolsEnabled patch', () => {
-    expect(mergeSettingsPatch(base, { developerToolsEnabled: true }).developerToolsEnabled).toBe(true)
-  })
-
-  it('rejects a non-boolean developerToolsEnabled patch, keeping the current one', () => {
-    expect(mergeSettingsPatch(base, { developerToolsEnabled: 'yes' as unknown as boolean }).developerToolsEnabled).toBe(false)
-    const on = mergeSettingsPatch({ ...base, developerToolsEnabled: true }, { developerToolsEnabled: 'yes' as unknown as boolean })
-    expect(on.developerToolsEnabled).toBe(true)
   })
 })

@@ -6,7 +6,7 @@
 
 ## Summary
 
-Redesign the existing settings modal into a wider two-area dialog: General provides spellcheck, explorer file-opening behavior, and developer-tools access; Theme provides the existing application and editor-theme controls. The feature extends the established settings store with two validated values, preserves the live-dirty tab safety rule, gates developer-tools shortcuts in the main process, makes the formatted editor canvas fill its viewport, and replaces the source icon with the requested Heroicons glyph and a fixed legible dark blue.
+Redesign the existing settings modal into a wider two-area dialog: General provides spellcheck, explorer file-opening behavior, and the always-available developer-tools shortcut is retained without a settings entry; Theme provides the existing application and editor-theme controls. The feature extends the established settings store with one validated value, preserves the live-dirty tab safety rule, keeps developer-tools shortcuts available unconditionally in the main process, makes the formatted editor canvas fill its viewport, and replaces the source icon with the requested Heroicons glyph and a fixed legible dark blue.
 
 ## Technical Context
 
@@ -14,7 +14,7 @@ Redesign the existing settings modal into a wider two-area dialog: General provi
 
 **Primary Dependencies**: Electron 43, React 19, @milkdown/crepe, and the already-installed @heroicons/react package. No new runtime dependency is required.
 
-**Storage**: Existing atomic shared per-user `config.json` at `appData/markdownmeister/config.json`, using the `settings` object and the `MM_CONFIG_DIR` test seam. Add validated `fileOpenBehavior` and `developerToolsEnabled` fields.
+**Storage**: Existing atomic shared per-user `config.json` at `appData/markdownmeister/config.json`, using the `settings` object and the `MM_CONFIG_DIR` test seam. Add a validated `fileOpenBehavior` field. The previously-added `developerToolsEnabled` field is removed.
 
 **Testing**: Vitest 4 for main-process and renderer state; Playwright against the built Electron app for every user-visible story. Required gates are `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run test:e2e`.
 
@@ -26,7 +26,7 @@ Redesign the existing settings modal into a wider two-area dialog: General provi
 
 **Constraints**: The renderer remains sandboxed and uses only the existing named settings IPC operations. Settings values are closed unions or booleans validated in main. Same-tab mode retains the live dirty-document guard. The source view's app-theme canvas is unchanged. The dark-blue source icon must remain distinguishable on both chrome themes.
 
-**Scale/Scope**: One settings modal, two persisted settings fields, existing explorer open paths, one main-process shortcut gate, and targeted editor CSS/icon changes. No new settings persistence mechanism, file-system API, or document session model is introduced.
+**Scale/Scope**: One settings modal, one persisted settings field, existing explorer open paths, unconditional main-process developer-tools shortcuts, and targeted editor CSS/icon changes. No new settings persistence mechanism, file-system API, or document session model is introduced.
 
 ## Constitution Check
 
@@ -42,13 +42,13 @@ Redesign the existing settings modal into a wider two-area dialog: General provi
 
 ## Phase 0 Research Decisions
 
-**Settings persistence**: Add `fileOpenBehavior: 'same-tab' | 'new-tab'`, defaulting to `'same-tab'`, and `developerToolsEnabled: boolean`, defaulting to `false`, to `Settings`, `DEFAULTS`, field-by-field loading, patch merging, renderer defaults, the IPC fallback, and legacy-known-key migration. Both values reuse atomic config writes and existing named settings operations. `settings:update` rejects a present new field with an invalid value as a typed `IO` result before merging; it does not silently coerce malformed IPC input.
+**Settings persistence**: Add `fileOpenBehavior: 'same-tab' | 'new-tab'`, defaulting to `'same-tab'`, to `Settings`, `DEFAULTS`, field-by-field loading, patch merging, renderer defaults, the IPC fallback, and legacy-known-key migration. The `developerToolsEnabled` field is removed from the model and all settings surfaces. `settings:update` rejects a present new field with an invalid value as a typed `IO` result before merging; it does not silently coerce malformed IPC input.
 
 **Dialog interaction**: The modal owns a local active area that initializes to General on each mount. General settings persist immediately; the existing staged editor-theme Save behavior remains unchanged. Native checkbox inputs styled as accessible switches provide the Tailwind-like pill control, with all inputs, selects, navigation buttons, and footer buttons included in the focus trap.
 
 **Explorer-only file preference**: Split the session operation into an explorer-specific entry point and retain the current generic open behavior for File-menu and recent-item actions. Explorer single-click, activation, context-menu Open, and middle-click call the explorer entry point. Existing-tab activation still wins; middle-click stays explicit-new; same-tab mode only replaces a live-clean tab.
 
-**Developer-tools access**: Remove the hamburger action and its renderer-to-main toggle IPC operation. The main `before-input-event` handler recognizes the existing shortcuts, prevents their default behavior, and toggles only when cached settings permit it. Disabling the setting immediately closes currently open developer tools.
+**Developer-tools access**: Remove the hamburger action and its renderer-to-main toggle IPC operation (already done). The main `before-input-event` handler recognizes the existing shortcuts, prevents their default behavior, and always toggles developer tools. There is no settings entry and no `developerToolsEnabled` field.
 
 **Editor canvas**: Make the formatted `.milkdown` surface at least the full height of its definite-height `.editor-host`. This extends each editor theme's existing `--crepe-color-background` below short content without changing the empty state or source view.
 
@@ -73,11 +73,11 @@ specs/008-settings-redesign/
 ### Source Code (repository root)
 
 ```text
-src/shared/ipc-contract.ts                  # MODIFY: two Settings fields
-src/main/settingsFile.ts                    # MODIFY: defaults, validation, merge, migration keys
-src/main/ipc/handlers/settings.ts           # MODIFY: fallback and immediate developer-tools disable
+src/shared/ipc-contract.ts                  # MODIFY: one Settings field (remove developerToolsEnabled)
+src/main/settingsFile.ts                    # MODIFY: defaults, validation, merge, migration keys (remove developerToolsEnabled)
+src/main/ipc/handlers/settings.ts           # MODIFY: fallback only; no developer-tools disable
 src/main/ipc/handlers/app.ts                # MODIFY: remove obsolete devtools IPC handler
-src/main/shortcuts.ts                       # MODIFY: gate developer-tools shortcuts in main
+src/main/shortcuts.ts                       # MODIFY: unconditional developer-tools toggle in main
 src/preload/index.ts                        # MODIFY: remove obsolete toggleDevTools bridge
 src/renderer/state/settings.ts              # MODIFY: synchronous defaults
 src/renderer/hooks/useSettingsState.ts      # MODIFY: preference state and persist handlers
@@ -91,12 +91,13 @@ src/renderer/chrome/HamburgerMenu.tsx       # MODIFY: remove obsolete action dis
 src/renderer/App.tsx                        # MODIFY: wire explorer-open preference and settings props
 src/renderer/editor/editor.css              # MODIFY: full-height canvas and fixed source icon styling
 src/renderer/editor/CrepeHost.tsx           # MODIFY: Heroicons code-bracket-square payload
-tests/main/settings.test.ts                 # MODIFY: new persisted fields and validation
+tests/main/settings.test.ts                 # MODIFY: new persisted field and validation (remove developerToolsEnabled)
 tests/main/ipc.test.ts                      # MODIFY: malformed settings-update patch rejection
-tests/main/shortcuts.test.ts                # MODIFY: developer-tools setting gate
+tests/main/shortcuts.test.ts                # MODIFY: unconditional developer-tools toggle
 tests/renderer/useSettingsState.test.tsx    # MODIFY: new immediate-persist handlers
 tests/renderer/menuModel.test.ts            # MODIFY: removed hamburger action
-tests/e2e/settings.spec.ts                  # MODIFY: settings areas, controls, and persistence
+tests/e2e/settings.spec.ts                  # MODIFY: settings areas and controls; no developer-tools toggle
+tests/e2e/developer-tools.spec.ts           # MODIFY: unconditional F12/Ctrl+Shift+I behavior
 tests/e2e/open-in-current-tab.spec.ts       # MODIFY: explorer preference behavior and dedupe
 tests/e2e/source.spec.ts                    # MODIFY: explorer context Open preference path
 tests/e2e/editor-canvas-background.spec.ts  # NEW: short-document canvas coverage
@@ -108,13 +109,12 @@ tests/e2e/view-source-icon.spec.ts          # MODIFY: requested glyph and fixed 
 ## Phase Status
 
 - Phase 1: Setup - baseline and project-ignore verification
-- Phase 2: Foundational - persisted settings schema and main developer-tools gate
+- Phase 2: Foundational - persisted settings schema (fileOpenBehavior) and unconditional developer-tools shortcuts
 - Phase 3: US1 - General/Theme sidebar dialog and moved controls
 - Phase 4: US2 - explorer file-opening preference
-- Phase 5: US3 - developer-tools setting behavior
-- Phase 6: US4 - full-height editor canvas
-- Phase 7: US5 - code-bracket-square source icon
-- Phase 8: Polish - complete gates, archive, review, and PR
+- Phase 5: US4 - full-height editor canvas
+- Phase 6: US5 - code-bracket-square source icon
+- Phase 7: Polish - complete gates, archive, review, and PR
 
 ## Complexity Tracking
 

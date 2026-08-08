@@ -54,10 +54,6 @@ interface SettingsDialogProps {
    *  create a new tab. Applied immediately. */
   fileOpenBehavior: FileOpenBehavior
   onFileOpenBehaviorChange: (behavior: FileOpenBehavior) => void
-  /** Spec 008 FR-009/FR-011: whether the developer-tools keyboard shortcuts are
-   *  enabled. Applied immediately (main enforces it). */
-  developerToolsEnabled: boolean
-  onDeveloperToolsEnabledChange: (enabled: boolean) => void
   onClose: () => void
 }
 
@@ -67,17 +63,16 @@ interface SettingsDialogProps {
  * trapped on open, closed by Escape, the Close button, or the backdrop with
  * focus returning to the hamburger trigger.
  *
- * Spec 008 (FR-001..009): a wider layout with a persistent sidebar navigating
- * between `General` (spellcheck, file-opening preference, developer tools) and
- * `Theme` (app theme — immediate; editor theme — staged). Boolean controls are
- * native checkboxes styled as pill switches. Every enabled input, select, and
+ * Spec 008 (FR-001..008): a wider layout with a persistent sidebar navigating
+ * between `General` (spellcheck, file-opening preference) and `Theme` (app
+ * theme — immediate; editor theme — staged). Boolean controls are native
+ * checkboxes styled as pill switches. Every enabled input, select, and
  * navigation/footer button is inside the focus trap.
  */
 export default function SettingsDialog({
   editorTheme, onEditorThemeSave, theme, onThemeChange,
   spellcheckEnabled, onSpellcheckChange, spellcheckLanguage, onSpellcheckLanguageChange,
   fileOpenBehavior, onFileOpenBehaviorChange,
-  developerToolsEnabled, onDeveloperToolsEnabledChange,
   onClose
 }: SettingsDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -232,20 +227,6 @@ export default function SettingsDialog({
                   <p className="settings-switch-helper">
                     {fileOpenBehavior === 'new-tab' ? 'New tab' : 'Same tab'}
                   </p>
-                </fieldset>
-                <fieldset className="settings-fieldset">
-                  <legend className="settings-legend">Developer Tools</legend>
-                  <label className="settings-switch">
-                    <input
-                      type="checkbox"
-                      className="settings-switch-input"
-                      name="developer-tools"
-                      checked={developerToolsEnabled}
-                      onChange={(e) => onDeveloperToolsEnabledChange(e.target.checked)}
-                    />
-                    <span className="settings-switch-track" aria-hidden="true" />
-                    <span className="settings-switch-text">Enable developer tools</span>
-                  </label>
                 </fieldset>
               </>
             ) : (

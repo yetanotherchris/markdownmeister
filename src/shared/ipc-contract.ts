@@ -175,11 +175,6 @@ export interface Settings {
    *  single-click/activation/context-Open paths read it; a dirty active tab is
    *  never replaced (Principle III). */
   fileOpenBehavior: FileOpenBehavior
-  /** Spec 008 FR-009/FR-011: whether the developer-tools keyboard shortcuts
-   *  (F12, Ctrl/Cmd+Shift+I) are enabled. Defaults to false. The main-process
-   *  before-input-event gate reads this; the hamburger item is removed
-   *  regardless of the value (clarification 2026-08-08). */
-  developerToolsEnabled: boolean
 }
 
 export interface DesktopApi {

@@ -15,7 +15,6 @@
 | Spellcheck switch | `Check spelling while typing` | Existing boolean | Existing immediate spellcheck behavior |
 | Spellcheck language | `Language` | Existing language or system default | Existing immediate language behavior |
 | File preference | `Open explorer files in a new tab` | `fileOpenBehavior === 'new-tab'` | Immediately controls explorer open decisions |
-| Developer tools switch | `Enable developer tools` | `developerToolsEnabled` | Immediately gates main-process keyboard shortcuts |
 
 Every boolean control is a semantic native checkbox styled as a pill switch. The file preference communicates both states with adjacent helper text: Same tab when off and New tab when on.
 
@@ -28,12 +27,12 @@ The existing application Theme radio group and Editor Theme radio group move int
 - Explorer single-click, item activation, and context-menu Open must use `fileOpenBehavior`; a currently open target activates its existing tab rather than duplicating it.
 - File-menu and recent-item opens must not consume `fileOpenBehavior`.
 - The hamburger never displays Toggle Developer Tools and the obsolete renderer `toggleDevTools` bridge is removed.
-- F12 and Ctrl/Cmd+Shift+I are prevented in main. They toggle only while `developerToolsEnabled` is true. Changing the setting to false closes an already-open DevTools panel.
+- F12 and Ctrl/Cmd+Shift+I are prevented in main and always toggle developer tools. There is no settings entry and no `developerToolsEnabled` field.
 
 ## Settings IPC Validation
 
 - `settings:update` continues to accept a partial settings object through the named preload operation.
-- A present `fileOpenBehavior` must be exactly `same-tab` or `new-tab`; a present `developerToolsEnabled` must be a boolean.
+- A present `fileOpenBehavior` must be exactly `same-tab` or `new-tab`.
 - Invalid values return the existing typed `IO` error result and leave the in-memory and persisted settings unchanged.
 
 ## Editor Presentation

@@ -150,10 +150,9 @@ describe('DesktopApi native-dialog operations (spec 008)', () => {
 // store. `validateSettingsPatch` is the pure, electron-free guard the handler
 // calls; these behavioral tests pin the closed-union/boolean rules (R1).
 describe('settings:update patch validation (spec 008)', () => {
-  it('accepts valid values for both new fields', () => {
+  it('accepts valid values for the new field', () => {
     expect(() => validateSettingsPatch({ fileOpenBehavior: 'new-tab' })).not.toThrow()
-    expect(() => validateSettingsPatch({ developerToolsEnabled: true })).not.toThrow()
-    expect(() => validateSettingsPatch({ fileOpenBehavior: 'same-tab', developerToolsEnabled: false })).not.toThrow()
+    expect(() => validateSettingsPatch({ fileOpenBehavior: 'same-tab' })).not.toThrow()
   })
 
   it('rejects a fileOpenBehavior outside the closed union', () => {
@@ -161,11 +160,8 @@ describe('settings:update patch validation (spec 008)', () => {
       .toThrow(/fileOpenBehavior/)
   })
 
-  it('rejects a non-boolean developerToolsEnabled', () => {
-    expect(() => validateSettingsPatch({ developerToolsEnabled: 'yes' }))
-      .toThrow(/developerToolsEnabled/)
-    expect(() => validateSettingsPatch({ developerToolsEnabled: 1 }))
-      .toThrow(/developerToolsEnabled/)
+  it('does not reject the removed developerToolsEnabled key (no longer validated)', () => {
+    expect(() => validateSettingsPatch({ developerToolsEnabled: 'yes' })).not.toThrow()
   })
 
   it('rejects a non-object patch', () => {

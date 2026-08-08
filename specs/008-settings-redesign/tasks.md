@@ -6,7 +6,7 @@
 
 **Tests**: Required. The project constitution and `AGENTS.md` require unit coverage for new main-process behavior and Playwright coverage for every user-visible phase.
 
-**Implementation strategy**: Establish the branch baseline and complete the persisted settings foundation first. Build the navigable modal around that foundation, then wire explorer-only tab preference, main-process developer-tools gating, CSS canvas coverage, and the icon update. Each user story has a focused e2e validation before the final full suite.
+**Implementation strategy**: Establish the branch baseline and complete the persisted settings foundation first. Build the navigable modal around that foundation, then wire explorer-only tab preference, unconditional main-process developer-tools shortcuts, CSS canvas coverage, and the icon update. Each user story has a focused e2e validation before the final full suite. The developer-tools toggle setting was removed from scope (spec clarification 2026-08-08): the shortcuts are always available and the persisted `developerToolsEnabled` field is removed.
 
 ## Phase 1: Setup
 
@@ -14,16 +14,17 @@
 
 **Checkpoint**: The branch baseline and design artifacts are complete.
 
-## Phase 2: Foundational Settings And Main Gate
+## Phase 2: Foundational Settings And Developer Tools
 
-- [X] T002 [P] Write failing persisted-setting validation, default, merge, migration, and round-trip cases for `fileOpenBehavior` and `developerToolsEnabled` in `tests/main/settings.test.ts`.
-- [X] T003 [P] Write failing malformed `settings:update` patch rejection cases in `tests/main/ipc.test.ts`, developer-tools shortcut gating coverage in `tests/main/shortcuts.test.ts`, and removed-menu assertions in `tests/renderer/menuModel.test.ts`.
-- [X] T004 Add the two settings fields, closed validation, defaults, patch merge branches, and legacy-known-key migration in `src/shared/ipc-contract.ts` and `src/main/settingsFile.ts`.
-- [X] T005 Add duplicate renderer defaults and immediate-persist state handlers for the two settings in `src/renderer/state/settings.ts` and `src/renderer/hooks/useSettingsState.ts`.
-- [X] T006 Add handler-level validation and typed invalid-patch results in `src/main/ipc/handlers/settings.ts`; gate developer-tools shortcuts and immediate close behavior in `src/main/shortcuts.ts`; remove the obsolete handler and bridge API from `src/main/ipc/handlers/app.ts`, `src/preload/index.ts`, and `src/shared/ipc-contract.ts`.
+- [X] T002 [P] Write failing persisted-setting validation, default, merge, migration, and round-trip cases for `fileOpenBehavior` in `tests/main/settings.test.ts`.
+- [X] T003 [P] Write failing malformed `settings:update` patch rejection cases in `tests/main/ipc.test.ts`, developer-tools shortcut behavior coverage in `tests/main/shortcuts.test.ts`, and removed-menu assertions in `tests/renderer/menuModel.test.ts`.
+- [X] T004 Add the settings field, closed validation, defaults, patch merge branches, and legacy-known-key migration in `src/shared/ipc-contract.ts` and `src/main/settingsFile.ts`.
+- [X] T005 Add duplicate renderer defaults and immediate-persist state handlers for the setting in `src/renderer/state/settings.ts` and `src/renderer/hooks/useSettingsState.ts`.
+- [X] T006 Add handler-level validation and typed invalid-patch results in `src/main/ipc/handlers/settings.ts`; remove the obsolete handler and bridge API from `src/main/ipc/handlers/app.ts`, `src/preload/index.ts`, and `src/shared/ipc-contract.ts`.
 - [X] T007 Remove the obsolete developer-tools hamburger action and dispatch in `src/renderer/chrome/menuModel.ts` and `src/renderer/chrome/HamburgerMenu.tsx`.
+- [ ] T006a Remove the `developerToolsEnabled` field from the settings model, validation, defaults, migration, renderer state, `useSettingsState`, `SettingsDialog`, `App.tsx`, and the main shortcut gate; make `src/main/shortcuts.ts` toggle unconditionally (spec clarification 2026-08-08).
 
-**Checkpoint**: New values are validated and persisted, and DevTools cannot be enabled through a stale renderer action or an unchecked keyboard shortcut.
+**Checkpoint**: `fileOpenBehavior` is validated and persisted, DevTools cannot be enabled through a stale renderer action, and the F12/Ctrl/Cmd+Shift+I shortcuts always toggle developer tools.
 
 ## Phase 3: User Story 1 - Navigate Settings By Area (P1)
 
@@ -52,16 +53,16 @@
 
 **Checkpoint**: The preference affects every specified explorer action, never replaces dirty content, and does not widen to File-menu or recent-item opens.
 
-## Phase 5: User Story 3 - Control Developer Tools (P2)
+## Phase 5: Developer Tools Available Unconditionally
 
-**Goal**: Developer tools are configured in General, no hamburger action remains, and only an enabled setting permits existing shortcuts.
+**Goal**: F12 and Ctrl/Cmd+Shift+I always toggle developer tools; there is no settings entry and the hamburger item stays absent.
 
-**Independent Test**: Toggle the setting, verify the menu remains absent, test F12 and Ctrl/Cmd+Shift+I from the real Electron main process, and reopen Settings to confirm persistence.
+**Independent Test**: From the real Electron main process, press F12 and Ctrl/Cmd+Shift+I and verify DevTools toggles. Confirm the settings dialog has no developer-tools control and the hamburger has no Toggle Developer Tools item.
 
-- [ ] T017 [US3] Write failing enabled, disabled, immediate-close, menu-removal, and restart-persistence scenarios in `tests/e2e/settings.spec.ts` using `electronApp.evaluate` to inspect the real BrowserWindow DevTools state.
-- [ ] T018 [US3] Complete any main-process or renderer wiring defects exposed by the developer-tools e2e scenarios in `src/main/shortcuts.ts`, `src/main/ipc/handlers/settings.ts`, and `src/renderer/chrome/SettingsDialog.tsx`.
+- [ ] T017 [US3] Write failing always-on, toggle-off-then-on, and menu-removal scenarios in `tests/e2e/developer-tools.spec.ts` using `electronApp.evaluate` to inspect the real BrowserWindow DevTools state and `sendInputEvent` to drive the shortcuts.
+- [ ] T018 [US3] Confirm no developer-tools control remains in the settings General area and update `tests/e2e/settings.spec.ts` assertions accordingly.
 
-**Checkpoint**: The setting is the sole developer-tools control surface and main process enforcement works for both shortcuts.
+**Checkpoint**: Both shortcuts toggle DevTools unconditionally, no settings control exists, and no hamburger item remains.
 
 ## Phase 6: User Story 4 - Fill The Editor Canvas (P1)
 
@@ -98,8 +99,8 @@
 
 - T001 precedes all implementation tasks.
 - T002 and T003 can run in parallel; T004 through T007 complete the foundation before user stories.
-- US1 begins after T004 and T005. US2 begins after T004 and T005. US3 depends on T006, T007, and US1's control. US4 and US5 are independent after T001 but run after the settings stories to avoid e2e file conflicts.
-- Tasks that share `SettingsDialog.tsx`, `App.tsx`, `editor.css`, or `tests/e2e/settings.spec.ts` run sequentially.
+- US1 begins after T004 and T005. US2 begins after T004 and T005. The developer-tools removal (T006a) and its e2e scenarios (T017/T018) depend on T006 and T007. US4 and US5 are independent after T001 but run after the settings stories to avoid e2e file conflicts.
+- Tasks that share `SettingsDialog.tsx`, `App.tsx`, `editor.css`, `settings.spec.ts`, or `shortcuts.ts` run sequentially.
 - T024 through T028 run only after all story checkpoints pass.
 
 ## Parallel Opportunities
@@ -112,6 +113,6 @@
 
 1. Establish the baseline and settings foundation.
 2. Deliver the settings layout and General control surface.
-3. Deliver and verify explorer preference, then developer-tools gating.
+3. Deliver and verify the explorer preference, then make developer tools unconditionally available.
 4. Deliver the independent editor-canvas and icon fixes.
 5. Run every gate, archive the spec, review, and open the phase PR.

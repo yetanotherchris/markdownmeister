@@ -9,8 +9,7 @@ const defaults: Settings = {
   editorColors: null,
   spellcheckEnabled: true,
   spellcheckLanguage: null,
-  fileOpenBehavior: 'same-tab',
-  developerToolsEnabled: false
+  fileOpenBehavior: 'same-tab'
 }
 
 let cached: Settings = { ...defaults }

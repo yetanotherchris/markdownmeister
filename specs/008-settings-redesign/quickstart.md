@@ -36,10 +36,8 @@ $env:MM_CONFIG_DIR = Join-Path $env:TEMP "mm-settings-redesign-manual"
 ## Developer Tools
 
 1. Confirm Toggle Developer Tools is absent from the hamburger menu.
-2. With `Enable developer tools` disabled, press F12 and Ctrl/Cmd+Shift+I; confirm developer tools do not open.
-3. Enable the setting, use either shortcut, and confirm developer tools toggle.
-4. Disable the setting while developer tools are open; confirm they close and shortcuts no longer open them.
-5. Restart the application and confirm both settings retain their values.
+2. Press F12 and Ctrl/Cmd+Shift+I; confirm developer tools toggle on and off.
+3. Confirm the Settings dialog has no developer-tools control.
 
 ## Editor Presentation
 

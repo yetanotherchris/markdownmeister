@@ -6,8 +6,8 @@ import { err, ok, ctx, isAuthorizedRenderer, validateShape } from './context'
  * App lifecycle channels (US1/FR-005): the quit/close guard. `setupWindowCloseHandler`
  * owns the `allowClose` flag — it is the only path that may arm it, so a dirty
  * document is never discarded silently. (Spec 008: the devtools:toggle channel
- * was removed — developer tools are controlled by the main-process shortcut
- * gate against `developerToolsEnabled`, never by a renderer IPC call.)
+ * was removed — developer tools are toggled unconditionally by the main-process
+ * shortcut handler, never by a renderer IPC call.)
  */
 export function registerAppHandlers(window: BrowserWindow, _ctx: typeof ctx): void {
   setupWindowCloseHandler(window)

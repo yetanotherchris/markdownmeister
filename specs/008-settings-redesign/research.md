@@ -2,13 +2,13 @@
 
 ## R1: Reuse the settings boundary
 
-**Decision**: Extend the existing `Settings` model and its `getSettings` / `updateSettings` operations with `fileOpenBehavior: 'same-tab' | 'new-tab'` and `developerToolsEnabled: boolean`.
+**Decision**: Extend the existing `Settings` model and its `getSettings` / `updateSettings` operations with `fileOpenBehavior: 'same-tab' | 'new-tab'`. The developer-tools toggle field previously added to this feature is removed: developer tools are always available and are not part of the settings model.
 
-**Rationale**: `src/main/settingsFile.ts` already performs tolerant field-by-field loading, closed-value validation, atomic shared-config writes, and legacy migration. `src/main/settings.ts` retains an authoritative in-memory snapshot so updates cannot race within the debounce window. Reusing the named operations preserves the fixed preload surface.
+**Rationale**: `src/main/settingsFile.ts` already performs tolerant field-by-field loading, closed-value validation, atomic shared-config writes, and legacy migration. `src/main/settings.ts` retains an authoritative in-memory snapshot so updates cannot race within the debounce window. Reusing the named operations preserves the fixed preload surface. Keeping the developer-tools setting out of the model means no persistence, validation, or migration surface for a value the app never reads.
 
-**Alternatives considered**: A new IPC operation for each control increases the attack surface without adding validation or persistence value. Renderer-only state fails the restart-persistence requirement.
+**Alternatives considered**: A new IPC operation for each control increases the attack surface without adding validation or persistence value. Renderer-only state fails the restart-persistence requirement. Retaining a persisted `developerToolsEnabled` that nothing gates against would be dead state.
 
-**IPC validation**: A caller that supplies a present `fileOpenBehavior` outside the closed union or a non-boolean `developerToolsEnabled` receives the existing typed `IO` result before the patch reaches merge logic. This covers the new untrusted IPC fields without changing the established handling of unrelated legacy fields.
+**IPC validation**: A caller that supplies a present `fileOpenBehavior` outside the closed union receives the existing typed `IO` result before the patch reaches merge logic. This covers the new untrusted IPC field without changing the established handling of unrelated legacy fields.
 
 ## R2: Keep the tab-replacement safety boundary
 
@@ -18,13 +18,13 @@
 
 **Alternatives considered**: Changing the shared helper silently changes File-menu and recent-item behavior outside the specification. Replacing a dirty tab would violate Principle III.
 
-## R3: Gate developer tools in main
+## R3: Toggle developer tools unconditionally in main
 
-**Decision**: Remove the hamburger action and its renderer IPC bridge. In `src/main/shortcuts.ts`, prevent the recognized shortcut and toggle developer tools only when `loadSettings().developerToolsEnabled` is true; disable immediately closes open developer tools from the settings handler.
+**Decision**: Remove the hamburger action and its renderer IPC bridge (already done). In `src/main/shortcuts.ts`, prevent the recognized shortcut and always toggle developer tools. There is no settings gate and no `developerToolsEnabled` field.
 
-**Rationale**: Hiding an action in the renderer is not an authorization boundary. The main process owns Electron's `webContents` and is the only reliable enforcement point. Removing an action which the clarified specification never displays also shrinks the preload API.
+**Rationale**: Hiding an action in the renderer is not an authorization boundary; the main process owns Electron's `webContents` and is the only place the toggle can be implemented. The developer-tools setting proved unnecessary — the F12/Ctrl/Cmd+Shift+I shortcuts are a fixed, harmless surface and a persisted toggle for them was judged useless, so the setting was removed (spec clarification 2026-08-08). Removing the setting also shrinks the settings model and the preload API.
 
-**Alternatives considered**: Conditionally showing the old hamburger action conflicts with the specification's move out of the menu. Renderer-only gating leaves F12 and Ctrl/Cmd+Shift+I unrestricted.
+**Alternatives considered**: Gating on a persisted boolean (as first planned) added a settings entry for no user-visible benefit. Conditionally showing the old hamburger action conflicts with the specification's move out of the menu.
 
 ## R4: Use native controls with custom switch styling
 

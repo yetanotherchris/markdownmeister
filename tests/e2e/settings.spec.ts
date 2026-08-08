@@ -102,7 +102,8 @@ test('US1 the hamburger opens a Settings dialog with a General sidebar selected 
   await expect(nav.getByRole('button', { name: 'General' })).toHaveAttribute('aria-pressed', 'true')
   await expect(box.getByRole('group', { name: 'Spellcheck' })).toBeVisible()
   await expect(box.getByRole('group', { name: 'Opening Files' })).toBeVisible()
-  await expect(box.getByRole('group', { name: 'Developer Tools' })).toBeVisible()
+  // Spec 008 (clarification 2026-08-08): no Developer Tools group remains.
+  await expect(box.getByRole('group', { name: 'Developer Tools' })).toHaveCount(0)
   await expect(box.getByRole('group', { name: 'Editor Theme' })).toHaveCount(0)
 
   // FR-004: the Theme entry is not selected while General is.
@@ -121,7 +122,6 @@ test('US1 switching to Theme shows only the theme areas and highlights the entry
   await expect(box.getByRole('group', { name: 'Editor Theme' })).toBeVisible()
   await expect(box.getByRole('group', { name: 'Spellcheck' })).toHaveCount(0)
   await expect(box.getByRole('group', { name: 'Opening Files' })).toHaveCount(0)
-  await expect(box.getByRole('group', { name: 'Developer Tools' })).toHaveCount(0)
 
   // FR-004: the selected state moved to the Theme entry.
   await expect(nav.getByRole('button', { name: 'Theme' })).toHaveAttribute('aria-pressed', 'true')
@@ -138,7 +138,7 @@ test('US1 switching to Theme shows only the theme areas and highlights the entry
   await expect(themeGroup.getByRole('radio', { name: 'Scholarly', exact: true })).toBeVisible()
 })
 
-test('US1 the General area has pill switches for spellcheck, file preference, and developer tools', async () => {
+test('US1 the General area has pill switches for spellcheck and the file preference', async () => {
   await openFile()
   const dialog = await openSettingsDialog(window)
   const box = dialog.getByTestId('settings-dialog')
@@ -147,10 +147,11 @@ test('US1 the General area has pill switches for spellcheck, file preference, an
   // checkbox; the visual pill is a styling concern).
   const spellcheck = box.getByRole('checkbox', { name: 'Check spelling while typing' })
   const filePreference = box.getByRole('checkbox', { name: 'Open explorer files in a new tab' })
-  const developerTools = box.getByRole('checkbox', { name: 'Enable developer tools' })
   await expect(spellcheck).toBeChecked()
   await expect(filePreference).not.toBeChecked()
-  await expect(developerTools).not.toBeChecked()
+
+  // Spec 008 (clarification 2026-08-08): no developer-tools control remains.
+  await expect(box.getByRole('checkbox', { name: 'Enable developer tools' })).toHaveCount(0)
 
   // The file preference states both outcomes next to the switch.
   await expect(box.getByText('Same tab', { exact: true })).toBeVisible()
@@ -165,17 +166,14 @@ test('US1 General settings persist immediately and survive a restart', async () 
   const box = dialog.getByTestId('settings-dialog')
 
   await clickSwitch(box, 'Open explorer files in a new tab')
-  await clickSwitch(box, 'Enable developer tools')
   // Immediate persistence — no Save required for General (spec 008 apply model).
   await expect.poll(() => persistedSetting<string>('fileOpenBehavior')).toBe('new-tab')
-  await expect.poll(() => persistedSetting<boolean>('developerToolsEnabled')).toBe(true)
 
   await closeAppSafely(app)
   ;({ app, window } = await launchApp(configDir, testFolder))
   await openFile()
   const reopened = await openSettingsDialog(window)
   await expect(reopened.getByTestId('settings-dialog').getByRole('checkbox', { name: 'Open explorer files in a new tab' })).toBeChecked()
-  await expect(reopened.getByTestId('settings-dialog').getByRole('checkbox', { name: 'Enable developer tools' })).toBeChecked()
 })
 
 test('US1 S2/S3 selecting a theme and pressing Save applies it and persists it', async () => {

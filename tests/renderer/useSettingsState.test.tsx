@@ -17,10 +17,10 @@ import type { ThemeChoice } from '../../src/renderer/hooks/useEffectiveTheme'
 // Minimal stub of the DesktopApi call the hook makes. The preload surface
 // types `window.api` globally (src/renderer/types.d.ts); tests replace it.
 function stubApi(): void {
-  const calls: Array<{ editorTheme?: EditorThemeName; spellcheckEnabled?: boolean; spellcheckLanguage?: SpellcheckLanguage | null; fileOpenBehavior?: FileOpenBehavior; developerToolsEnabled?: boolean }> = []
-  ;(globalThis as unknown as { __apiCalls: Array<{ editorTheme?: EditorThemeName; spellcheckEnabled?: boolean; spellcheckLanguage?: SpellcheckLanguage | null; fileOpenBehavior?: FileOpenBehavior; developerToolsEnabled?: boolean }> }).__apiCalls = calls
+  const calls: Array<{ editorTheme?: EditorThemeName; spellcheckEnabled?: boolean; spellcheckLanguage?: SpellcheckLanguage | null; fileOpenBehavior?: FileOpenBehavior }> = []
+  ;(globalThis as unknown as { __apiCalls: Array<{ editorTheme?: EditorThemeName; spellcheckEnabled?: boolean; spellcheckLanguage?: SpellcheckLanguage | null; fileOpenBehavior?: FileOpenBehavior }> }).__apiCalls = calls
   window.api = {
-    updateSettings: (patch: { editorTheme?: EditorThemeName; spellcheckEnabled?: boolean; spellcheckLanguage?: SpellcheckLanguage | null; fileOpenBehavior?: FileOpenBehavior; developerToolsEnabled?: boolean }) => {
+    updateSettings: (patch: { editorTheme?: EditorThemeName; spellcheckEnabled?: boolean; spellcheckLanguage?: SpellcheckLanguage | null; fileOpenBehavior?: FileOpenBehavior }) => {
       calls.push(patch)
       return Promise.resolve({ ok: true, value: getSettings() as never })
     }
@@ -161,21 +161,16 @@ describe('useSettingsState (spec 016)', () => {
     expect(calls).toEqual([{ fileOpenBehavior: 'new-tab' }])
   })
 
-  it('exposes the persisted developerToolsEnabled as the committed value', () => {
-    updateSettings({ developerToolsEnabled: true })
+  it('exposes the persisted fileOpenBehavior as the committed value', () => {
+    updateSettings({ fileOpenBehavior: 'new-tab' })
     const { read } = renderHook()
-    expect(read().developerToolsEnabled).toBe(true)
+    expect(read().fileOpenBehavior).toBe('new-tab')
   })
 
-  it('handleDeveloperToolsEnabledChange updates local state, the cache, and the IPC', () => {
+  it('does not expose a developer-tools control (removed in spec 008 clarification 2026-08-08)', () => {
     const { read } = renderHook()
-    act(() => {
-      read().handleDeveloperToolsEnabledChange(true)
-    })
-    expect(read().developerToolsEnabled).toBe(true)
-    expect(getSettings().developerToolsEnabled).toBe(true)
-    const calls = (globalThis as unknown as { __apiCalls: { developerToolsEnabled?: boolean }[] }).__apiCalls
-    expect(calls).toEqual([{ developerToolsEnabled: true }])
+    expect('developerToolsEnabled' in read()).toBe(false)
+    expect('handleDeveloperToolsEnabledChange' in read()).toBe(false)
   })
 })
 

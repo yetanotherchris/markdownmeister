@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { matchShortcut, devtoolsTogglePermitted, ShortcutInput } from '../../src/main/shortcuts'
+import { matchShortcut, ShortcutInput } from '../../src/main/shortcuts'
 
 function keyDown(partial: Partial<ShortcutInput>): ShortcutInput {
   return { type: 'keyDown', key: '', control: false, meta: false, alt: false, shift: false, ...partial }
@@ -49,27 +49,13 @@ describe('matchShortcut (spec 010 contracts/renderer.md)', () => {
     // With Shift held Electron reports the key in uppercase; toLowerCase normalises it.
     expect(matchShortcut(keyDown({ key: 'O', control: true, shift: true }))).toBe('open-folder')
   })
-})
 
-describe('devtoolsTogglePermitted (spec 008: the setting gates the main-side shortcut)', () => {
-  it('permits the recognized devtools combos only when the setting is enabled', () => {
-    const f12 = keyDown({ key: 'F12' })
-    const ctrl = keyDown({ key: 'i', control: true, shift: true })
-    const cmd = keyDown({ key: 'i', meta: true, shift: true })
-    expect(devtoolsTogglePermitted(f12, true)).toBe(true)
-    expect(devtoolsTogglePermitted(ctrl, true)).toBe(true)
-    expect(devtoolsTogglePermitted(cmd, true)).toBe(true)
-    expect(devtoolsTogglePermitted(f12, false)).toBe(false)
-    expect(devtoolsTogglePermitted(ctrl, false)).toBe(false)
-    expect(devtoolsTogglePermitted(cmd, false)).toBe(false)
-  })
-
-  it('never permits a non-devtools combination even when enabled', () => {
-    expect(devtoolsTogglePermitted(keyDown({ key: 's', control: true }), true)).toBe(false)
-    expect(devtoolsTogglePermitted(keyDown({ key: 'o', control: true, shift: true }), true)).toBe(false)
-  })
-
-  it('never permits a keyUp devtools key even when enabled', () => {
-    expect(devtoolsTogglePermitted(keyDown({ type: 'keyUp', key: 'F12' }), true)).toBe(false)
+  // Spec 008 (clarification 2026-08-08): the developer-tools shortcuts are
+  // always available — there is no setting gate, so `matchShortcut` returning
+  // 'devtools' is all the main-process handler needs to toggle.
+  it('always maps the devtools combos to the devtools toggle', () => {
+    expect(matchShortcut(keyDown({ key: 'F12' }))).toBe('devtools')
+    expect(matchShortcut(keyDown({ key: 'i', control: true, shift: true }))).toBe('devtools')
+    expect(matchShortcut(keyDown({ key: 'i', meta: true, shift: true }))).toBe('devtools')
   })
 })

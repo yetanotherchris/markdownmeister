@@ -75,7 +75,7 @@ function createWindow(): void {
   } else {
     Menu.setApplicationMenu(null)
   }
-  registerShortcuts(mainWindow, () => loadSettings().developerToolsEnabled)
+  registerShortcuts(mainWindow)
   // Spec 020 FR-002/FR-004: the native right-click correction menu for the
   // editor area (spelling suggestions + add-to-dictionary).
   registerSpellcheckContextMenu(mainWindow)

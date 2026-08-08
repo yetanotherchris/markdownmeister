@@ -46,23 +46,6 @@ A writer can choose whether opening a file from the explorer replaces the curren
 
 ---
 
-### User Story 3 - Toggle developer tools from settings (Priority: P2)
-
-A writer can enable or disable developer tools from the settings dialog, moving the toggle out of the hamburger menu and into a dedicated location.
-
-**Why this priority**: Developer tools are a debugging aid that most writers will rarely need. Placing the toggle in settings keeps the primary menu uncluttered while still making the feature available.
-
-**Independent Test**: Open the settings dialog, locate the developer tools toggle, change its state, and verify that the application's developer tools behaviour matches the toggle state.
-
-**Acceptance Scenarios**:
-
-1. **Given** the settings dialog is open in the `General` area, **When** the user looks for a developer tools option, **Then** a toggle setting for developer tools is present.
-2. **Given** the developer tools toggle is enabled, **When** the user uses the developer tools keyboard shortcut, **Then** the developer tools open as expected.
-3. **Given** the developer tools toggle is disabled, **When** the user looks at the hamburger menu, **Then** the "Toggle Developer Tools" menu item is no longer present in the hamburger menu.
-4. **Given** the developer tools toggle has been changed, **When** the settings dialog is closed and reopened, **Then** the toggle reflects the last saved value.
-
----
-
 ### User Story 4 - View the editor with correct background on short documents (Priority: P1)
 
 A writer sees a consistent editor background colour across the full visible area, even when the document content is shorter than the editor viewport.
@@ -116,23 +99,22 @@ A writer can visually identify the "view source" action in the editor toolbar by
 - **FR-006**: Boolean settings MUST use a toggle control visually similar to Tailwind CSS form toggles (a sliding pill on a track).
 - **FR-007**: The `General` area MUST contain the spellcheck settings (enable/disable and language selection).
 - **FR-008**: The `General` area MUST contain a file-opening behaviour setting allowing the user to choose between "open in same tab" and "open in new tab".
-- **FR-009**: The `General` area MUST contain a toggle for developer tools.
-- **FR-010**: When the developer tools toggle is disabled, the "Toggle Developer Tools" item MUST be removed from the hamburger menu.
-- **FR-011**: When the developer tools toggle is enabled, the developer tools keyboard shortcuts MUST continue to function.
-- **FR-012**: The `Theme` area MUST contain the application theme setting (light, dark, system default).
-- **FR-013**: The `Theme` area MUST contain the editor theme setting (the named preset selector).
-- **FR-014**: The editor area MUST display the editor theme's canvas background colour across the full visible height, including below short documents whose content does not fill the viewport.
-- **FR-015**: The "view source" toolbar button MUST use the hero icons `code-bracket-square` glyph.
-- **FR-016**: The "view source" toolbar button icon MUST be rendered in dark blue.
-- **FR-017**: All new settings MUST be persisted using the existing settings persistence mechanism and survive application restarts.
-- **FR-018**: The file-opening behaviour setting MUST affect all file-open actions originating from the explorer (single-click, context menu "Open").
+- **FR-009**: The developer tools keyboard shortcuts (F12, Ctrl/Cmd+Shift+I) MUST be available unconditionally; no settings entry controls them.
+- **FR-010**: The "Toggle Developer Tools" item MUST remain absent from the hamburger menu.
+- **FR-011**: The `Theme` area MUST contain the application theme setting (light, dark, system default).
+- **FR-012**: The `Theme` area MUST contain the editor theme setting (the named preset selector).
+- **FR-013**: The editor area MUST display the editor theme's canvas background colour across the full visible height, including below short documents whose content does not fill the viewport.
+- **FR-014**: The "view source" toolbar button MUST use the hero icons `code-bracket-square` glyph.
+- **FR-015**: The "view source" toolbar button icon MUST be rendered in dark blue.
+- **FR-016**: All new settings MUST be persisted using the existing settings persistence mechanism and survive application restarts.
+- **FR-017**: The file-opening behaviour setting MUST affect all file-open actions originating from the explorer (single-click, context menu "Open").
 
 ### Key Entities
 
 - **Settings area**: A named grouping of related settings displayed in the main panel when its sidebar entry is selected.
 - **Toggle control**: A boolean input rendered as a sliding pill on a track, providing a clear on/off visual state.
 - **File-opening behaviour**: A user preference that determines whether opening a file from the explorer replaces the active tab or creates a new tab.
-- **Developer tools toggle**: A boolean setting that controls the availability of developer tools keyboard shortcuts. The hamburger menu item remains absent because the control has moved to settings.
+- **Developer tools**: A developer debugging surface opened by the F12 or Ctrl/Cmd+Shift+I keyboard shortcuts. It is always available and has no settings entry.
 - **Editor canvas background**: The background colour of the editor theme that must extend to fill the full visible editor area regardless of document length.
 
 ## Success Criteria *(mandatory)*
@@ -150,14 +132,14 @@ A writer can visually identify the "view source" action in the editor toolbar by
 
 - **Sidebar scope**: Only two areas (`General` and `Theme`) are required for this feature. Additional areas may be added in future features without restructuring the sidebar.
 - **Toggle styling**: The toggle component should visually match the Tailwind CSS forms toggle aesthetic (rounded pill, smooth transition, accent colour for the "on" state). The exact implementation (CSS custom properties, component library) is a planning concern.
-- **Developer tools default**: The developer tools toggle defaults to disabled (off), matching the current behaviour where developer tools are not expected to be open for normal use.
+- **Developer tools default**: Developer tools are always available via the keyboard shortcuts (F12, Ctrl/Cmd+Shift+I) and are not configurable in settings.
 - **File-opening default**: The file-opening behaviour defaults to the current behaviour (replace clean tab) to avoid surprising existing users.
 - **Icon colour**: "Dark blue" is interpreted as a visually distinct dark blue that is legible against both light and dark editor backgrounds. The exact hex value is a planning concern.
 - **Scope of bug fix**: The background colour fix applies to the editor area only. Other panels (explorer, tabs, status bar) are not affected.
-- **Hamburger menu**: The "Toggle Developer Tools" item is removed from the hamburger menu as part of moving it to settings. The keyboard shortcuts remain available when the toggle is enabled. The separator adjacent to the removed item is removed too, so no double separator remains between "Close Tab" and "Settings…".
+- **Hamburger menu**: The "Toggle Developer Tools" item is removed from the hamburger menu. The keyboard shortcuts remain available unconditionally. The separator adjacent to the removed item is removed too, so no double separator remains between "Close Tab" and "Settings…".
 
 ## Clarifications
 
 - **2026-08-08 - File-opening scope**: The preference applies only to explorer-originated single-click, activation, and context-menu `Open` actions. File-menu and recent-item opens retain their existing behavior. In same-tab mode, an active dirty document is never replaced; it opens the requested file in a new tab.
-- **2026-08-08 - Developer tools availability**: The hamburger item remains removed regardless of the setting. Enabling developer tools permits the existing keyboard shortcuts; disabling them closes any currently open developer tools and prevents those shortcuts from opening them. The setting applies immediately.
+- **2026-08-08 - Developer tools availability**: The hamburger item remains removed and no settings entry exists. The developer tools keyboard shortcuts (F12, Ctrl/Cmd+Shift+I) always function; the developer-tools toggle setting and its persisted `developerToolsEnabled` field are removed.
 - **2026-08-08 - Apply model**: General-area settings apply and persist immediately. Application theme keeps its existing immediate behavior, while editor-theme selection remains staged until the dialog's Save action.

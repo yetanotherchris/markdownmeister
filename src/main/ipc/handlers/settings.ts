@@ -1,5 +1,4 @@
 import { ipcMain } from 'electron'
-import type { BrowserWindow } from 'electron'
 import { loadSettings, updateSettings } from '../../settings'
 import { applyThemeOverride } from '../../theme'
 import { applySpellcheckSetting } from '../../spellcheck'
@@ -40,21 +39,9 @@ export function registerSettingsHandlers(window: Electron.BrowserWindow, _ctx: t
       // session spellchecker flips now, so markers vanish/return without
       // waiting for the debounced disk write. The language is applied too.
       applySpellcheckSetting(updated.spellcheckEnabled, updated.spellcheckLanguage)
-      // Spec 008 (clarification 2026-08-08): disabling developer tools closes
-      // any currently open DevTools window immediately.
-      applyDeveloperToolsDisable(window, updated.developerToolsEnabled)
       return ok(updated)
     } catch (e: unknown) {
       return err('IO', sanitizeError(e, null))
     }
   })
-}
-
-/** Spec 008: turning developer tools OFF closes an already-open DevTools
- *  window immediately. Enabled is a no-op here — the keyboard gate in
- *  `shortcuts.ts` controls opening. */
-function applyDeveloperToolsDisable(window: BrowserWindow, enabled: boolean): void {
-  if (!enabled && window.webContents.isDevToolsOpened()) {
-    window.webContents.closeDevTools()
-  }
 }
