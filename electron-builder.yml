@@ -30,6 +30,15 @@ files:
   - "!test-results/**"
   - "!playwright-report/**"
 
+# The Scoop manifest hooks (markdownmeister.json) call this script to
+# register/remove the "Open with" context-menu verbs on a portable install,
+# which has no installer to do it. It is shipped into the packaged app's
+# `resources/` (Scoop reaches it at `<dir>\resources\scripts\open-with.ps1`);
+# the Windows installer has its own NSIS registration and ignores it.
+extraResources:
+  - from: scripts/open-with.ps1
+    to: scripts/open-with.ps1
+
 # Every asset name carries product-version-os-arch (FR-005). The os token is
 # literal per platform so names read windows/macos/linux rather than electron-
 # builder's win/mac/linux abbreviations (contracts/release.md §2). The product
