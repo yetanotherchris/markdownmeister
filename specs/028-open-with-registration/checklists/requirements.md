@@ -35,7 +35,13 @@
   Windows-only Settings toggle; after discussion the registration was moved to
   the install channels (NSIS installer + Scoop manifest hooks) with no in-app
   control, and the spec was renamed from `028-open-with-toggle` to
-  `028-open-with-registration`. The two carry-over editor fixes (full-height
-  canvas colour, dark-blue code-bracket-square view-source icon) are unchanged
-  and independently testable. The exact dark-blue value and the Scoop hook /
-  registry mechanics are left to planning.
+  `028-open-with-registration`.
+- Third pass (2026-08-09): the released installer's extension-key verb was
+  empirically shown to be invisible when a Windows user-choice default exists
+  (the shell resolves to the chosen ProgID and ignores extension-key verbs).
+  Added FR-010 (register against the effective file type) and matching edge
+  cases/assumptions, verified on the Windows host.
+- The two carry-over editor fixes (full-height canvas colour, dark-blue
+  code-bracket-square view-source icon) are unchanged and independently
+  testable. The exact dark-blue value and the Scoop hook / registry mechanics
+  are left to planning.

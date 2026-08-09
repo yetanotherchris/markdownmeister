@@ -124,6 +124,13 @@ backgrounds.
   nothing lingers.
 - The user's default application for markdown files is a rich editor: adding or
   removing the action never changes that default.
+- The user has chosen a default application for markdown files (a Windows
+  user-choice exists for the extension): the action must still appear, so it is
+  registered against the effective file type rather than the bare extension key
+  (the shell ignores extension-key verbs in that case; verified 2026-08-09).
+- The effective file type for an extension differs between machines and changes
+  when the user picks a new default: the registration resolves the current
+  effective file type at install time rather than assuming a fixed ProgID.
 - A document has zero content or a single character: the editor canvas colour
   still fills the full editor region.
 - The view-source icon in dark mode sits on a dark canvas: the dark blue must
@@ -151,23 +158,29 @@ backgrounds.
   context-menu action.
 - **FR-009**: The context-menu label MUST derive from the same single product
   display name value as every other native action.
-- **FR-010**: The editor canvas colour of the active theme MUST extend from the
+- **FR-010**: The action MUST be registered against the file type a file
+  actually resolves to — the user-chosen default when one exists, otherwise the
+  extension's class — so it appears even when the user has selected a different
+  default application (registering under the bare extension key is insufficient
+  when a user-chosen default exists; verified 2026-08-09).
+- **FR-011**: The editor canvas colour of the active theme MUST extend from the
   top of the editor area to its bottom, regardless of document length.
-- **FR-011**: No region of the editor area MAY render a colour outside the
+- **FR-012**: No region of the editor area MAY render a colour outside the
   active theme's canvas palette.
-- **FR-012**: The full-height canvas behaviour MUST hold for every editor theme
+- **FR-013**: The full-height canvas behaviour MUST hold for every editor theme
   and in both light and dark modes.
-- **FR-013**: The view-source action MUST display the code-bracket-square icon
+- **FR-014**: The view-source action MUST display the code-bracket-square icon
   shape.
-- **FR-014**: The view-source icon MUST be rendered in a dark blue colour.
-- **FR-015**: The view-source icon MUST remain visible against both light and
+- **FR-015**: The view-source icon MUST be rendered in a dark blue colour.
+- **FR-016**: The view-source icon MUST remain visible against both light and
   dark editor backgrounds.
 
 ### Key Entities
 
 - **Context-menu registration**: The per-user operating-system state that makes
   the product-named action appear for supported markdown files and folders,
-  always pointing at the installed executable. It is created and removed only by
+  always pointing at the installed executable. It targets the effective file
+  type of each supported extension (FR-010) and is created and removed only by
   the install channels — never by the application at runtime.
 - **Editor canvas colour**: The theme's background palette value that fills the
   editing surface behind the document content.
@@ -205,7 +218,16 @@ backgrounds.
   registers (FR-003) and an uninstall-time step that removes (FR-004).
 - **The NSIS installer already handles itself**: The Windows installer registers
   on install and removes on uninstall (spec 006, `scripts/installer.nsh`), which
-  satisfies FR-001/FR-002.
+  satisfies FR-001/FR-002. Note: the currently released installer (v0.1.0)
+  registers the file verb under the bare extension key, which the shell ignores
+  when a user-chosen default exists (verified 2026-08-09); the corrected
+  effective-file-type registration (FR-010) fixes this for the next release.
+- **Registration location**: The file verb is registered against the effective
+  file type — the extension's user-chosen default (Windows user-choice) when one
+  exists, otherwise the extension's class ProgID, otherwise the extension key —
+  never the bare extension key alone (FR-010). Folders register under the
+  directory class. Resolving the effective file type happens at install time,
+  because it is per-user and changes when the user picks a new default.
 - **The release `.exe` is the NSIS installer**: The published
   `markdownmeister-<version>-windows-x64.exe` is the installer; the
   `...-windows-x64.zip` is the portable binary. Versions released before this
