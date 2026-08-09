@@ -118,14 +118,21 @@ describe('classifyOsTarget', () => {
 })
 
 describe('extractTargetFromArgv', () => {
+  // Targets must be absolute on the platform the test runs on (CI is Linux,
+  // where `path.isAbsolute('C:\\...')` is false). Build from the filesystem
+  // root so the same case works on Windows and POSIX.
+  const absPath = (...segments: string[]): string =>
+    path.resolve(path.parse(process.cwd()).root, ...segments)
+  const notesFile = absPath('notes', 'a.md')
+
   it('returns the target in a dev launch (executable, script, target)', () => {
-    const argv = ['/electron.exe', 'out/main/index.js', 'C:\\notes\\a.md']
-    expect(extractTargetFromArgv(argv)).toBe('C:\\notes\\a.md')
+    const argv = ['/electron.exe', 'out/main/index.js', notesFile]
+    expect(extractTargetFromArgv(argv)).toBe(notesFile)
   })
 
   it('returns the target in a packaged launch (executable, target)', () => {
-    const argv = ['C:\\Program Files\\MarkdownMeister\\markdownmeister.exe', 'C:\\notes\\a.md']
-    expect(extractTargetFromArgv(argv)).toBe('C:\\notes\\a.md')
+    const argv = [absPath('Program Files', 'MarkdownMeister', 'markdownmeister.exe'), notesFile]
+    expect(extractTargetFromArgv(argv)).toBe(notesFile)
   })
 
   it('skips switches and the Playwright loader/entry scripts injected before the target', () => {
@@ -136,14 +143,14 @@ describe('extractTargetFromArgv', () => {
       '--headless',
       '--no-sandbox',
       'out/main/index.js',
-      'C:\\notes\\a.md'
+      notesFile
     ]
-    expect(extractTargetFromArgv(argv)).toBe('C:\\notes\\a.md')
+    expect(extractTargetFromArgv(argv)).toBe(notesFile)
   })
 
   it('returns the target even when the argv order is shuffled', () => {
-    const argv = ['/electron.exe', 'C:\\notes\\a.md', '--headless', 'out/main/index.js']
-    expect(extractTargetFromArgv(argv)).toBe('C:\\notes\\a.md')
+    const argv = ['/electron.exe', notesFile, '--headless', 'out/main/index.js']
+    expect(extractTargetFromArgv(argv)).toBe(notesFile)
   })
 
   it('returns null when there is no target', () => {
@@ -160,13 +167,12 @@ describe('extractTargetFromArgv', () => {
 
   it('only ever treats an absolute path as a target', () => {
     expect(extractTargetFromArgv(['/electron.exe', 'notes.md'])).toBe(null)
-    expect(extractTargetFromArgv(['/electron.exe', 'out/main/index.js', 'C:\\notes\\a.md'])).toBe(
-      'C:\\notes\\a.md'
-    )
+    expect(extractTargetFromArgv(['/electron.exe', 'out/main/index.js', notesFile])).toBe(notesFile)
   })
 
   it('does not mistake a markdown file ending in .md for a script', () => {
-    const argv = ['/electron.exe', 'out/main/index.js', 'C:\\notes\\report.js.md']
-    expect(extractTargetFromArgv(argv)).toBe('C:\\notes\\report.js.md')
+    const jsMd = absPath('notes', 'report.js.md')
+    const argv = ['/electron.exe', 'out/main/index.js', jsMd]
+    expect(extractTargetFromArgv(argv)).toBe(jsMd)
   })
 })
