@@ -1,13 +1,17 @@
-; Spec 006 (FR-001/002/012/013/015): per-user Explorer context-menu verbs that
-; open .md/.markdown files and folders in MarkdownMeister WITHOUT changing the
-; user's default handler (research R5).
+; Spec 006 (FR-001/002/012/013/015) + fix 2026-08-09: per-user Explorer
+; context-menu verbs that open .md/.markdown files and folders in MarkdownMeister
+; WITHOUT changing the user's default application.
 ;
-; Registry strategy (research R5): HKCU\Software\Classes is the admin-free
-; per-user equivalent of HKCR. A freshly created per-user class key would shadow
-; the machine-wide class, so the effective (Default) is preserved BEFORE the
-; verb is written. Whether we CREATED a class is recorded in an app-owned state
-; key, so uninstall deletes a class only when it was ours; a pre-existing class
-; (or one the user has since extended) is left intact.
+; Registration targets the EFFECTIVE file type (fix 2026-08-09): the shell
+; ignores verbs registered under the bare extension key whenever a Windows
+; user-choice default exists (the file resolves to the chosen ProgID). For each
+; supported extension the verb is therefore registered under the per-user class
+; of the resolved ProgID when that is safe — the class already exists in HKCU,
+; or the ProgID is dead (registered nowhere, so a fresh HKCU class shadows
+; nothing) — otherwise under `*` (AllFilesystemObjects), which the shell always
+; enumerates. Folders register under `Directory`. Every class registered is
+; recorded in an app-owned state key so uninstall removes exactly what was
+; added, even if the user's default changed in between.
 
 !ifndef PRODUCT_NAME
   !define PRODUCT_NAME "MarkdownMeister"
@@ -21,50 +25,101 @@
 !define MM_VERB_DISPLAY "Open with ${PRODUCT_NAME}"
 !define MM_STATE_KEY "Software\MarkdownMeister\OsOpenState"
 
-; Register one verb for a class (".md", ".markdown", "Directory"). If the
-; per-user class did not already exist it is marked in the state key so
-; uninstall can remove it wholesale.
-!macro MM_RegisterVerb EXT
-  ReadRegStr $0 HKCR "${EXT}" ""
-  ClearErrors
-  ReadRegStr $1 HKCU "Software\Classes\${EXT}" ""
-  IfErrors 0 MM_EXISTS_${EXT}
-  WriteRegDWord HKCU "${MM_STATE_KEY}" "${EXT}" 1
-  MM_EXISTS_${EXT}:
-  WriteRegStr HKCU "Software\Classes\${EXT}" "" "$0"
-  WriteRegStr HKCU "Software\Classes\${EXT}\shell\${MM_VERB_NAME}" "" "${MM_VERB_DISPLAY}"
-  WriteRegStr HKCU "Software\Classes\${EXT}\shell\${MM_VERB_NAME}" "Icon" "$INSTDIR\${APP_EXECUTABLE_FILENAME}"
-  WriteRegStr HKCU "Software\Classes\${EXT}\shell\${MM_VERB_NAME}\command" "" '"$INSTDIR\${APP_EXECUTABLE_FILENAME}" "%1"'
+; Register the verb under an arbitrary class (a ProgID, `*`, or `Directory`) and
+; record the class for uninstall. `${CLASS}` may be a literal or a register
+; (e.g. `$1`) holding the class name at runtime.
+!macro MM_RegisterVerbClass CLASS
+  WriteRegStr HKCU "Software\Classes\${CLASS}\shell\${MM_VERB_NAME}" "" "${MM_VERB_DISPLAY}"
+  WriteRegStr HKCU "Software\Classes\${CLASS}\shell\${MM_VERB_NAME}" "Icon" "$INSTDIR\${APP_EXECUTABLE_FILENAME}"
+  WriteRegStr HKCU "Software\Classes\${CLASS}\shell\${MM_VERB_NAME}\command" "" '"$INSTDIR\${APP_EXECUTABLE_FILENAME}" "%1"'
+  WriteRegDWord HKCU "${MM_STATE_KEY}" "${CLASS}" 1
 !macroend
 
-; Remove a verb; then drop the class key only when we created it (state marker
-; set at install) AND it no longer holds a `shell` subkey — a pre-existing or
-; user-extended class is left intact.
-!macro MM_UnregisterVerb EXT
-  DeleteRegKey HKCU "Software\Classes\${EXT}\shell\${MM_VERB_NAME}"
-  EnumRegKey $1 HKCU "Software\Classes\${EXT}\shell" 0
-  StrCmp $1 "" 0 MM_KEEP_SHELL_${EXT}
-  DeleteRegKey HKCU "Software\Classes\${EXT}\shell"
-  MM_KEEP_SHELL_${EXT}:
-  ReadRegDWord $2 HKCU "${MM_STATE_KEY}" "${EXT}"
-  StrCmp $2 1 0 MM_KEEP_CLASS_${EXT}
-  DeleteRegKey HKCU "Software\Classes\${EXT}"
-  DeleteRegValue HKCU "${MM_STATE_KEY}" "${EXT}"
-  MM_KEEP_CLASS_${EXT}:
+; Resolve the effective ProgID for an extension and register the file verb.
+!macro MM_RegisterFileVerb EXT
+  ClearErrors
+  ReadRegStr $1 HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\${EXT}\UserChoice" "ProgId"
+  IfErrors 0 MM_PROGID_OK_${EXT}
+  ClearErrors
+  ReadRegStr $1 HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\${EXT}\UserChoiceLatest\ProgId" "ProgId"
+  IfErrors 0 MM_PROGID_OK_${EXT}
+  ClearErrors
+  ReadRegStr $1 HKCR "${EXT}" ""
+  IfErrors 0 MM_PROGID_OK_${EXT}
+  ; No ProgID resolves anywhere: register under `*`.
+  !insertmacro MM_RegisterVerbClass `*`
+  Goto MM_FILE_DONE_${EXT}
+  MM_PROGID_OK_${EXT}:
+  ; Use the resolved ProgID when its per-user class already exists (safe) or
+  ; when it is dead (registered nowhere, so creating it shadows nothing).
+  ClearErrors
+  ReadRegStr $2 HKCU "Software\Classes\$1" ""
+  IfErrors 0 MM_REG_UNDER_PROGID_${EXT}
+  ClearErrors
+  ReadRegStr $2 HKLM "Software\Classes\$1" ""
+  IfErrors MM_REG_UNDER_DEAD_${EXT}
+  Goto MM_REG_UNDER_STAR_${EXT}
+  MM_REG_UNDER_DEAD_${EXT}:
+  MM_REG_UNDER_PROGID_${EXT}:
+  !insertmacro MM_RegisterVerbClass `$1`
+  Goto MM_FILE_DONE_${EXT}
+  MM_REG_UNDER_STAR_${EXT}:
+  !insertmacro MM_RegisterVerbClass `*`
+  MM_FILE_DONE_${EXT}:
+!macroend
+
+; Remove the file verb for an extension: re-resolve the effective class and
+; delete the verb there, then drop a dead-ProgID class we created once it is
+; empty (the predefined `*` class is never removed).
+!macro MM_UnregisterFileVerb EXT
+  ClearErrors
+  ReadRegStr $1 HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\${EXT}\UserChoice" "ProgId"
+  IfErrors 0 MM_UNREG_HAS_PROGID_${EXT}
+  ClearErrors
+  ReadRegStr $1 HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\${EXT}\UserChoiceLatest\ProgId" "ProgId"
+  IfErrors 0 MM_UNREG_HAS_PROGID_${EXT}
+  ClearErrors
+  ReadRegStr $1 HKCR "${EXT}" ""
+  IfErrors 0 MM_UNREG_HAS_PROGID_${EXT}
+  StrCpy $1 `*`
+  MM_UNREG_HAS_PROGID_${EXT}:
+  DeleteRegKey HKCU "Software\Classes\$1\shell\${MM_VERB_NAME}"
+  StrCmp $1 `*` 0 MM_UNREG_KEEP_${EXT}
+  ClearErrors
+  ReadRegStr $2 HKCU "Software\Classes\$1" ""
+  IfErrors MM_UNREG_KEEP_${EXT}
+  EnumRegKey $3 HKCU "Software\Classes\$1" 0
+  StrCmp $3 "" 0 MM_UNREG_KEEP_${EXT}
+  StrCmp $2 "" 0 MM_UNREG_KEEP_${EXT}
+  DeleteRegKey HKCU "Software\Classes\$1"
+  MM_UNREG_KEEP_${EXT}:
 !macroend
 
 !macro customInstall
-  !insertmacro MM_RegisterVerb ".md"
-  !insertmacro MM_RegisterVerb ".markdown"
-  !insertmacro MM_RegisterVerb "Directory"
-  ; Refresh Explorer so the verbs appear without a shell restart (research R6).
+  !insertmacro MM_RegisterFileVerb ".md"
+  !insertmacro MM_RegisterFileVerb ".markdown"
+  !insertmacro MM_RegisterVerbClass "Directory"
+  ; Refresh Explorer so the verbs appear without a shell restart.
   System::Call 'shell32::SHChangeNotify(i, i, i, i) v (0x08000000, 0, 0, 0)'
 !macroend
 
 !macro customUnInstall
-  !insertmacro MM_UnregisterVerb ".md"
-  !insertmacro MM_UnregisterVerb ".markdown"
-  !insertmacro MM_UnregisterVerb "Directory"
+  ; Remove the verb from every class recorded at install — robust even when the
+  ; user changed their default application since.
+  StrCpy $0 0
+  MM_LOOP:
+  EnumRegValue $1 HKCU "${MM_STATE_KEY}" $0
+  StrCmp $1 "" MM_LOOP_DONE
+  DeleteRegKey HKCU "Software\Classes\$1\shell\${MM_VERB_NAME}"
+  IntOp $0 $0 + 1
+  Goto MM_LOOP
+  MM_LOOP_DONE:
   DeleteRegKey HKCU "${MM_STATE_KEY}"
+  ; Also clean the legacy v0.1.0 extension-key entries and the standard
+  ; locations, in case an earlier version or a manual change left them.
+  !insertmacro MM_UnregisterFileVerb ".md"
+  !insertmacro MM_UnregisterFileVerb ".markdown"
+  DeleteRegKey HKCU "Software\Classes\Directory\shell\${MM_VERB_NAME}"
+  DeleteRegKey HKCU "Software\Classes\*\shell\${MM_VERB_NAME}"
   System::Call 'shell32::SHChangeNotify(i, i, i, i) v (0x08000000, 0, 0, 0)'
 !macroend

@@ -47,15 +47,15 @@ $content = $content -replace "`r", ""
 # matched loosely so the rewrite works whether the committed formula still
 # carries the legacy product-name prefix or the current `markdownmeister`
 # prefix, and always writes the `markdownmeister-<version>` name.
-$baseUrl = "https://github.com/yetanotherchris/another-markdown-editor/releases/download/v$Version"
+$baseUrl = "https://github.com/yetanotherchris/markdownmeister/releases/download/v$Version"
 
 $content = $content -replace 'version "[\d\.]+"', "version `"$Version`""
 
 # The release tag in each URL path is rewritten to v$Version, not just the
 # filename, so the committed formula never points at a previous tag.
-$content = $content -replace '(url "https://github\.com/yetanotherchris/another-markdown-editor/releases/download/)v[\d\.]+/[^"]*(macos-arm64\.zip")', "`${1}v$Version/markdownmeister-$Version-`${2}"
-$content = $content -replace '(url "https://github\.com/yetanotherchris/another-markdown-editor/releases/download/)v[\d\.]+/[^"]*(macos-x64\.zip")', "`${1}v$Version/markdownmeister-$Version-`${2}"
-$content = $content -replace '(url "https://github\.com/yetanotherchris/another-markdown-editor/releases/download/)v[\d\.]+/[^"]*(linux-x64\.AppImage")', "`${1}v$Version/markdownmeister-$Version-`${2}"
+$content = $content -replace '(url "https://github\.com/yetanotherchris/markdownmeister/releases/download/)v[\d\.]+/[^"]*(macos-arm64\.zip")', "`${1}v$Version/markdownmeister-$Version-`${2}"
+$content = $content -replace '(url "https://github\.com/yetanotherchris/markdownmeister/releases/download/)v[\d\.]+/[^"]*(macos-x64\.zip")', "`${1}v$Version/markdownmeister-$Version-`${2}"
+$content = $content -replace '(url "https://github\.com/yetanotherchris/markdownmeister/releases/download/)v[\d\.]+/[^"]*(linux-x64\.AppImage")', "`${1}v$Version/markdownmeister-$Version-`${2}"
 
 # Update the sha256 that follows each known url line (order matches the formula
 # structure in Formula/markdownmeister.rb).
