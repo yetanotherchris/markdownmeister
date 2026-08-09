@@ -24,7 +24,7 @@ Write-Host "SHA256 of ${fileName}: $hash"
 # The release download URL is deterministic: v<version>/<artifact name>. The
 # tag is the exact release tag (FR-003/FR-008). The `markdownmeister` prefix has
 # no spaces, so no URL encoding is needed (spec 019).
-$url = "https://github.com/yetanotherchris/another-markdown-editor/releases/download/v$Version/markdownmeister-$Version-windows-x64.zip"
+$url = "https://github.com/yetanotherchris/markdownmeister/releases/download/v$Version/markdownmeister-$Version-windows-x64.zip"
 $manifestPath = Join-Path $PSScriptRoot "markdownmeister.json"
 
 if (-not (Test-Path -LiteralPath $manifestPath)) {
