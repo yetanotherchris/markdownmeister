@@ -3,9 +3,11 @@ import type { Result } from '../../../shared/ipc-contract'
 import { err, ok, ctx, isAuthorizedRenderer, validateShape } from './context'
 
 /**
- * App lifecycle channels (US1/FR-005): the quit/close guard and the devtools
- * toggle. `setupWindowCloseHandler` owns the `allowClose` flag — it is the only
- * path that may arm it, so a dirty document is never discarded silently.
+ * App lifecycle channels (US1/FR-005): the quit/close guard. `setupWindowCloseHandler`
+ * owns the `allowClose` flag — it is the only path that may arm it, so a dirty
+ * document is never discarded silently. (Spec 008: the devtools:toggle channel
+ * was removed — developer tools are toggled unconditionally by the main-process
+ * shortcut handler, never by a renderer IPC call.)
  */
 export function registerAppHandlers(window: BrowserWindow, _ctx: typeof ctx): void {
   setupWindowCloseHandler(window)
@@ -20,12 +22,6 @@ export function registerAppHandlers(window: BrowserWindow, _ctx: typeof ctx): vo
   ipcMain.handle('app:requestQuit', (event): Result<null> => {
     if (!isAuthorizedRenderer(event, window)) return err('IO', 'Unauthorized renderer')
     window.close()
-    return ok(null)
-  })
-
-  ipcMain.handle('devtools:toggle', (event): Result<null> => {
-    if (!isAuthorizedRenderer(event, window)) return err('IO', 'Unauthorized renderer')
-    window.webContents.toggleDevTools()
     return ok(null)
   })
 

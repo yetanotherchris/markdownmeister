@@ -235,13 +235,16 @@ test('US4 the settings toggle clears and restores the underlines', async () => {
   await openWorkspaceFile(window, 'misspelled.md')
   await expect.poll(() => markedWords(window)).toContain('teh')
 
+  // The spellcheck control is a pill switch (spec 008): click the switch
+  // container (the native checkbox is visually hidden and cannot be
+  // `.check()`ed directly).
   await openSettingsDialog(window)
-  await window.getByRole('checkbox', { name: 'Check spelling while typing' }).uncheck()
+  await window.locator('.settings-switch', { hasText: 'Check spelling while typing' }).click()
   await window.getByRole('button', { name: 'Close settings' }).click()
   await expect.poll(() => markedWords(window)).toEqual([])
 
   await openSettingsDialog(window)
-  await window.getByRole('checkbox', { name: 'Check spelling while typing' }).check()
+  await window.locator('.settings-switch', { hasText: 'Check spelling while typing' }).click()
   await window.getByRole('button', { name: 'Close settings' }).click()
   await expect.poll(() => markedWords(window)).toContain('teh')
 })

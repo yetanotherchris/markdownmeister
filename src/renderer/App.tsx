@@ -36,7 +36,7 @@ import './App.css'
 import './chrome/chrome.css'
 import './editor/editor.css'
 import './editor/themes.css'
-import { resolveEditorTheme, fontStackFor } from './editor/editorThemePresets'
+import { resolveEditorTheme, fontStackFor } from '../shared/editorThemePresets'
 
 const initialSession: EditingSession = {
   documents: [],
@@ -69,6 +69,8 @@ export default function App() {
     handleSpellcheckChange,
     spellcheckLanguage,
     handleSpellcheckLanguageChange,
+    fileOpenBehavior,
+    handleFileOpenBehaviorChange,
     themeChoice,
     handleThemeChange,
     themeMode
@@ -81,8 +83,7 @@ export default function App() {
   const resolvedEditorTheme = resolveEditorTheme({
     editorTheme,
     editorFont,
-    editorColors,
-    appMode: themeMode
+    editorColors
   })
   const dataEditorTheme =
     resolvedEditorTheme.kind === 'preset' ? resolvedEditorTheme.name : 'custom'
@@ -216,11 +217,12 @@ export default function App() {
   }, [])
 
   // Spec 024 (FR-005): middle-click opens the file in a NEW tab, bypassing the
-  // replace-clean-tab behaviour.
+  // replace-clean-tab behaviour (and any `same-tab` preference — explicit
+  // middle-click always wins over the setting, data-model decision table).
   const handleOpenNewTab = useCallback(
     (node: TreeNode) => {
       window.api.readFile(node.id).then((result) => {
-        if (result.ok) sessionApi.openFileFromTree(result.value, true)
+        if (result.ok) sessionApi.openFileFromExplorer(result.value, true)
       })
     },
     [sessionApi]
@@ -425,6 +427,8 @@ export default function App() {
           onSpellcheckChange={handleSpellcheckChange}
           spellcheckLanguage={spellcheckLanguage}
           onSpellcheckLanguageChange={handleSpellcheckLanguageChange}
+          fileOpenBehavior={fileOpenBehavior}
+          onFileOpenBehaviorChange={handleFileOpenBehaviorChange}
           onClose={() => setSettingsOpen(false)}
         />
       )}

@@ -1,10 +1,15 @@
-import type { EditorThemeName, EditorColors } from '../../shared/ipc-contract'
+import type { EditorThemeName, EditorColors } from './ipc-contract'
 
 /**
  * Spec 023 (FR-003/004/007): the canonical colours + font of the five editor
  * theme presets (spec 016), extracted from `editor/themes.css`, and the pure
  * detection that decides whether a stored configuration matches a preset or is
  * a Custom theme.
+ *
+ * Lives in `src/shared` so the electron-free main process can materialise the
+ * default preset's colours into `DEFAULTS.editorColors` (spec 008 clarification
+ * 2026-08-09: a fresh config's first write stores the preset's exact colours,
+ * not `null`).
  */
 
 export type EditorFont = 'serif' | 'sans-serif'
@@ -17,7 +22,7 @@ export interface EditorPreset {
   colors: EditorColors
 }
 
-const RUSTIC_COLORS: EditorColors = {
+export const RUSTIC_COLORS: EditorColors = {
   background: '#fdf6e3',
   foreground: '#1f1b16',
   accent: '#805610',
@@ -89,14 +94,13 @@ export interface ResolveInput {
   editorFont: EditorFont
   /** Custom colour overrides, or null (preset colours in effect). */
   editorColors: EditorColors | null
-  /** The resolved app theme mode (spec 013) — used for monotone matching. */
-  appMode: 'light' | 'dark'
 }
 
 /** Decide whether the stored colours + font match a preset exactly (FR-003/004/
  *  007). With no custom colours the stored preset name stands (backward
- *  compatibility, SC-005). Monotone presets match against the current app-theme
- *  variant. */
+ *  compatibility, SC-005). Monotone presets match EITHER the light or the dark
+ *  variant (clarified 2026-08-09: a saved preset materialises the app-theme
+ *  variant's colours, so detection must accept the other variant too). */
 export function resolveEditorTheme(input: ResolveInput): ResolvedEditorTheme {
   if (input.editorColors === null) {
     return { kind: 'preset', name: input.editorTheme }
@@ -108,14 +112,32 @@ export function resolveEditorTheme(input: ResolveInput): ResolvedEditorTheme {
     }
   }
 
-  const monotoneColors = MONOTONE_COLORS[input.appMode]
+  const monotoneMatch =
+    colorsMatch(MONOTONE_COLORS.light, input.editorColors) ||
+    colorsMatch(MONOTONE_COLORS.dark, input.editorColors)
   for (const preset of MONOTONE_PRESETS) {
-    if (colorsMatch(monotoneColors, input.editorColors) && preset.font === input.editorFont) {
+    if (monotoneMatch && preset.font === input.editorFont) {
       return { kind: 'preset', name: preset.name }
     }
   }
 
   return { kind: 'custom' }
+}
+
+/** The six colours the named preset implies — written to `editorColors` when
+ *  the preset is saved (clarified 2026-08-09: presets materialise their exact
+ *  colours in the config rather than storing null). Monotone uses the resolved
+ *  app-theme variant's palette, chosen by `appMode`. Returns a fresh copy so a
+ *  stored value can never alias the shared preset constants. */
+export function presetColorsFor(name: EditorThemeName, appMode: 'light' | 'dark'): EditorColors {
+  if (name === 'monotone' || name === 'monotone-serif') {
+    return { ...MONOTONE_COLORS[appMode] }
+  }
+  const preset = STATIC_PRESETS.find((p) => p.name === name)
+  if (!preset) {
+    throw new Error(`unknown editor theme preset: ${name}`)
+  }
+  return { ...preset.colors }
 }
 
 const SANS_STACK = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif"

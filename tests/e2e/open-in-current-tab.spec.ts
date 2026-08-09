@@ -49,6 +49,20 @@ async function openFromTree(name: string): Promise<void> {
   await expect(window.locator('.ProseMirror:visible')).toBeVisible()
 }
 
+/** Set the General-area explorer file-opening preference through the dialog. */
+async function setExplorerPreference(newTab: boolean): Promise<void> {
+  await window.getByRole('button', { name: 'Open menu' }).click()
+  await window.getByRole('menuitem', { name: 'Settings…' }).click()
+  const dialog = window.getByTestId('settings-dialog')
+  await dialog.waitFor()
+  const checkbox = dialog.getByRole('checkbox', { name: 'Open explorer files in a new tab' })
+  if ((await checkbox.isChecked()) !== newTab) {
+    await dialog.locator('.settings-switch', { hasText: 'Open explorer files in a new tab' }).click()
+  }
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click()
+  await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
+}
+
 test('US1/FR-001 a clean active tab is replaced (no new tab)', async () => {
   await openWorkspaceFolder()
   await openFromTree('alpha.md')
@@ -132,4 +146,62 @@ test('US3/FR-005 middle-click always opens a new tab', async () => {
   // The clean tab's content is unchanged.
   await window.getByRole('tab', { name: /alpha\.md/ }).click()
   await expect(window.locator('.document-title')).toContainText('alpha.md')
+})
+
+// ---------- Spec 008 US2: the explorer file-opening preference ----------
+
+test('FR-008 new-tab preference opens a new tab even when the active tab is clean', async () => {
+  await openWorkspaceFolder()
+  await setExplorerPreference(true)
+  await openFromTree('alpha.md')
+  await expect(window.getByRole('tab')).toHaveCount(1)
+  await expect(window.locator('.document-title')).toContainText('alpha.md')
+
+  await openFromTree('beta.md')
+  await expect(window.getByRole('tab')).toHaveCount(2)
+  await expect(window.getByRole('tab', { name: /alpha\.md/ })).toBeVisible()
+  await expect(window.getByRole('tab', { name: /beta\.md/ })).toBeVisible()
+})
+
+test('FR-008 new-tab preference activates an already-open file tab without a duplicate', async () => {
+  await openWorkspaceFolder()
+  await setExplorerPreference(true)
+  await openFromTree('alpha.md')
+  await openFromTree('beta.md')
+  await expect(window.getByRole('tab')).toHaveCount(2)
+
+  // Re-open alpha: its existing tab is activated, no new tab, no replacement.
+  await openFromTree('alpha.md')
+  await expect(window.getByRole('tab')).toHaveCount(2)
+  await expect(window.locator('.document-title')).toContainText('alpha.md')
+  await expect(window.getByRole('tab', { name: /beta\.md/ })).toBeVisible()
+})
+
+test('FR-008 new-tab preference keeps a dirty tab untouched and opens the new file', async () => {
+  await openWorkspaceFolder()
+  await setExplorerPreference(true)
+  await openFromTree('alpha.md')
+  await window.locator('[contenteditable="true"]').first().click()
+  await window.keyboard.type(' dirty edit')
+  await expect(window.locator('.document-title')).toContainText('\u2022')
+
+  await openFromTree('beta.md')
+  await expect(window.getByRole('tab')).toHaveCount(2)
+  await expect(window.getByRole('tab', { name: /alpha\.md/ })).toBeVisible()
+  await expect(window.getByRole('tab', { name: /beta\.md/ })).toBeVisible()
+  // The dirty tab keeps its dirty marker.
+  await window.getByRole('tab', { name: /alpha\.md/ }).click()
+  await expect(window.locator('.document-title')).toContainText('\u2022')
+})
+
+test('FR-008 same-tab preference replaces a clean active tab (no new tab)', async () => {
+  await openWorkspaceFolder()
+  await setExplorerPreference(false)
+  await openFromTree('alpha.md')
+  await expect(window.getByRole('tab')).toHaveCount(1)
+
+  await openFromTree('beta.md')
+  await expect(window.getByRole('tab')).toHaveCount(1)
+  await expect(window.locator('.document-title')).toContainText('beta.md')
+  await expect(window.getByRole('tab', { name: /alpha\.md/ })).toHaveCount(0)
 })

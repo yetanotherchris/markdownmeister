@@ -7,6 +7,7 @@ import { launchApp, closeAppSafely, stubTrash, stubMessageBox, messageBoxCallCou
 let app: ElectronApplication
 let window: Page
 let testFolder: string
+let configDir: string
 
 test.beforeAll(async () => {
   testFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'mm-source-e2e-'))
@@ -18,7 +19,8 @@ test.beforeAll(async () => {
 })
 
 test.beforeEach(async () => {
-  ;({ app, window } = await launchApp(undefined, testFolder))
+  configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mm-source-config-'))
+  ;({ app, window } = await launchApp(configDir, testFolder))
 
   // Deterministic trash for the delete-related flows.
   await stubTrash(app)
@@ -29,6 +31,7 @@ test.beforeEach(async () => {
 
 test.afterEach(async () => {
   await closeAppSafely(app)
+  fs.rmSync(configDir, { recursive: true, force: true })
 })
 
 test.afterAll(async () => {
@@ -383,6 +386,51 @@ test('US7 Open returns a source-view tab to visual editing', async () => {
   await expect(window.getByTestId('source-view')).toHaveCount(0)
   await expect(window.getByRole('tab', { name: /alpha\.md/ })).toHaveCount(1)
   await expect(window.locator('[contenteditable="true"]:visible').first()).toBeVisible()
+})
+
+// ---------- Spec 008 US2: explorer context-menu Open preference ----------
+
+test('US7 with new-tab preference, Open creates a new tab instead of replacing', async () => {
+  await openFolder()
+  // Set the General-area preference through the dialog.
+  await window.getByRole('button', { name: 'Open menu' }).click()
+  await window.getByRole('menuitem', { name: 'Settings…' }).click()
+  const settingsDialog = window.getByTestId('settings-dialog')
+  await settingsDialog.waitFor()
+  await settingsDialog.locator('.settings-switch', { hasText: 'Open explorer files in a new tab' }).click()
+  await settingsDialog.getByRole('button', { name: 'Close', exact: true }).click()
+  await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
+
+  await openFile('alpha.md')
+  await expect(window.getByRole('tab')).toHaveCount(1)
+
+  const betaRow = window.getByRole('treeitem').getByText('beta.md')
+  await betaRow.click({ button: 'right' })
+  await window.getByRole('menuitem', { name: 'Open' }).click()
+
+  // New tab: both tabs remain, beta is active in formatted view.
+  await expect(window.getByRole('tab', { name: /alpha\.md/ })).toBeVisible()
+  await expect(window.getByRole('tab', { name: /beta\.md/ })).toBeVisible()
+  await expect(window.locator('.document-title')).toContainText('beta.md')
+  await expect(window.getByTestId('source-view')).toHaveCount(0)
+})
+
+test('US7 with same-tab preference, Open replaces a clean active tab', async () => {
+  await openFolder()
+  await openFile('alpha.md')
+  // Await the editor mount so the baseline capture completes before the next
+  // open decides replace-vs-new (otherwise the fresh tab can look dirty).
+  await expect(window.locator('.ProseMirror:visible')).toBeVisible()
+  await expect(window.getByRole('tab')).toHaveCount(1)
+
+  const betaRow = window.getByRole('treeitem').getByText('beta.md')
+  await betaRow.click({ button: 'right' })
+  await window.getByRole('menuitem', { name: 'Open' }).click()
+
+  // Replacement: only one tab, now beta.
+  await expect(window.getByRole('tab')).toHaveCount(1)
+  await expect(window.locator('.document-title')).toContainText('beta.md')
+  await expect(window.getByRole('tab', { name: /alpha\.md/ })).toHaveCount(0)
 })
 })
 

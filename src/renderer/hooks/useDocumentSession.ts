@@ -3,6 +3,7 @@ import type { DocumentsAction, EditingSession, DocumentState } from '../state/do
 import { planClose } from '../state/documents'
 import type { OpenedFile } from '../../shared/ipc-contract'
 import { instancePool } from '../editor/instancePool'
+import { getSettings } from '../state/settings'
 import {
   getLiveContent as domainGetLiveContent,
   isDirtyLive as domainIsDirtyLive,
@@ -31,6 +32,16 @@ export interface DocumentSessionApi {
    *  create a new tab. Existing-tab activation is preserved (FR-001-005).
    *  An optional `view` (spec 002) is applied by the reducer. */
   openFileFromTree: (
+    file: OpenedFile & { view?: 'formatted' | 'source' },
+    explicitNew?: boolean
+  ) => void
+  /** Spec 008 FR-018: open a file from the explorer. Same contract as
+   *  `openFileFromTree`, except the persisted `fileOpenBehavior` preference
+   *  decides replacement vs new-tab (data-model decision table): a `new-tab`
+   *  preference always creates a new tab (unless the file is already open,
+   *  which activates its existing tab); `same-tab` keeps the generic
+   *  replace-live-clean behavior. */
+  openFileFromExplorer: (
     file: OpenedFile & { view?: 'formatted' | 'source' },
     explicitNew?: boolean
   ) => void
@@ -362,12 +373,20 @@ export function useDocumentSession(opts: {
   // the active tab. The gate is the LIVE dirty check (pool), never the debounced
   // store flag — a keystroke inside the 200 ms debounce must not be silently
   // discarded (Principle III). Existing-tab activation happens in the reducer.
-  const openFileFromTree = useCallback(
-    (file: OpenedFile & { view?: 'formatted' | 'source' }, explicitNew = false) => {
+  // Spec 008 FR-018: `explicitNew` forces a new tab; a `same-tab` preference
+  // keeps the replace-live-clean behavior (data-model decision table). An
+  // already-open file always activates its existing tab.
+  const openWithDecision = useCallback(
+    (
+      file: OpenedFile & { view?: 'formatted' | 'source' },
+      explicitNew: boolean,
+      preferNewTab: boolean
+    ) => {
       const current = sessionRef.current
       const active = current.documents.find((d) => d.id === current.activeId) ?? null
       const alreadyOpen = file.path !== null && current.documents.some((d) => d.path === file.path)
-      const replaceActive = !explicitNew && !alreadyOpen && active !== null && !isDirtyLive(active)
+      const replaceActive =
+        !preferNewTab && !explicitNew && !alreadyOpen && active !== null && !isDirtyLive(active)
       dispatch({
         type: 'OPEN_EXISTING',
         payload: { value: file, mode: replaceActive ? 'replace' : 'new' }
@@ -383,6 +402,23 @@ export function useDocumentSession(opts: {
     [dispatch, enforcePoolCap, isDirtyLive, sessionRef]
   )
 
+  const openFileFromTree = useCallback(
+    (file: OpenedFile & { view?: 'formatted' | 'source' }, explicitNew = false) => {
+      openWithDecision(file, explicitNew, false)
+    },
+    [openWithDecision]
+  )
+
+  // Spec 008 FR-018: the explorer entry point consults the persisted preference
+  // read at open time (the renderer cache mirrors main). `new-tab` → always a
+  // new tab unless already open; middle-click still forces explicit new.
+  const openFileFromExplorer = useCallback(
+    (file: OpenedFile & { view?: 'formatted' | 'source' }, explicitNew = false) => {
+      openWithDecision(file, explicitNew, getSettings().fileOpenBehavior === 'new-tab')
+    },
+    [openWithDecision]
+  )
+
   return {
     saveDocument,
     doClose,
@@ -396,6 +432,7 @@ export function useDocumentSession(opts: {
     handleActivate,
     handleNew,
     openFileFromTree,
+    openFileFromExplorer,
     getLiveContent,
     isDirtyLive
   }

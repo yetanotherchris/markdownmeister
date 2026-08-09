@@ -133,6 +133,13 @@ export interface EditorColors {
   code: string
 }
 
+/** Spec 008: how an explorer-originated file open places the document (FR-008,
+ *  clarification 2026-08-08). 'same-tab' replaces a live-clean active tab;
+ *  'new-tab' always opens a new tab. A closed union — validated in main, never
+ *  arbitrary text. Only explorer-originated opens consume it; File-menu and
+ *  recent-item opens keep their own generic behavior. */
+export type FileOpenBehavior = 'same-tab' | 'new-tab'
+
 export interface Settings {
   sidebarWidth: number
   themeOverride: 'light' | 'dark' | null
@@ -150,9 +157,11 @@ export interface Settings {
    *  `editorColors` is set, the effective theme is detected from the values
    *  instead (spec 023 FR-003/004/007). */
   editorTheme: EditorThemeName
-  /** Spec 023: custom editor colour overrides, or `null` when the preset's
-   *  colours are used (FR-001). A closed six-key record of `#rrggbb` hex
-   *  strings, validated in main (FR-010). */
+  /** Spec 023: the six editor colour tokens in effect. A preset selection
+   *  materialises the preset's exact colours here (clarified 2026-08-09), so
+   *  the field is only `null` for configs written before that change or by
+   *  hand. A closed six-key record of `#rrggbb` hex strings, validated in main
+   *  (FR-010). */
   editorColors: EditorColors | null
   /** Spec 020 FR-006/FR-009: whether the native spellchecker is enabled.
    *  Defaults to true. A closed type — validated in main as a boolean, never
@@ -162,6 +171,12 @@ export interface Settings {
    *  the platform/system default. A closed union — validated in main. Applied
    *  via `session.setSpellCheckerLanguages`. */
   spellcheckLanguage: SpellcheckLanguage | null
+  /** Spec 008 FR-008: whether an explorer-originated file open replaces the
+   *  active live-clean tab ('same-tab') or always opens a new tab ('new-tab').
+   *  Defaults to 'same-tab'. A closed union — validated in main. The explorer
+   *  single-click/activation/context-Open paths read it; a dirty active tab is
+   *  never replaced (Principle III). */
+  fileOpenBehavior: FileOpenBehavior
 }
 
 export interface DesktopApi {
@@ -220,8 +235,6 @@ export interface DesktopApi {
   /** Spec 010: request a quit through the normal window-close flow, so the
    *  renderer's unsaved-changes prompt still guards the exit (Principle III). */
   requestQuit(): Promise<Result<null>>
-  /** Spec 010: toggle the devtools window from the hamburger's View menu. */
-  toggleDevTools(): Promise<Result<null>>
   /** Spec 020 (JS spellchecker): the user's custom dictionary words. */
   getSpellcheckWords(): Promise<Result<string[]>>
   /** Spec 020 (JS spellchecker): teach the JS checker a word so it is never

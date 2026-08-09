@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import { loadSettings, updateSettings } from '../../settings'
 import { applyThemeOverride } from '../../theme'
 import { applySpellcheckSetting } from '../../spellcheck'
+import { validateSettingsPatch, DEFAULTS } from '../../settingsFile'
 import type { Result, Settings } from '../../../shared/ipc-contract'
 import { ctx, ok, err, sanitizeError, isAuthorizedRenderer } from './context'
 
@@ -15,16 +16,17 @@ export function registerSettingsHandlers(window: Electron.BrowserWindow, _ctx: t
     try {
       return ok(loadSettings())
     } catch {
-      return ok({ sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif', editorTheme: 'rustic', editorColors: null, spellcheckEnabled: true, spellcheckLanguage: null })
+      return ok({ ...DEFAULTS })
     }
   })
 
   ipcMain.handle('settings:update', (event, patch: unknown): Result<Settings> => {
     if (!isAuthorizedRenderer(event, window)) return err('IO', 'Unauthorized renderer')
     try {
-      if (!patch || typeof patch !== 'object') {
-        return err('IO', 'Settings must be an object')
-      }
+      // Spec 008 (R1): reject a PRESENT invalid new field before it reaches the
+      // tolerant merge — malformed IPC input is never silently coerced into the
+      // settings store. The typed IO error leaves memory and disk unchanged.
+      validateSettingsPatch(patch)
       // Merge in MAIN against the authoritative in-memory settings (not a stale
       // disk read), so two updates inside the 500 ms debounce window do not
       // clobber each other (review #27). Only the known fields are read.

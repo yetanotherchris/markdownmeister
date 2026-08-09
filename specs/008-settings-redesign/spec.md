@@ -46,23 +46,6 @@ A writer can choose whether opening a file from the explorer replaces the curren
 
 ---
 
-### User Story 3 - Toggle developer tools from settings (Priority: P2)
-
-A writer can enable or disable developer tools from the settings dialog, moving the toggle out of the hamburger menu and into a dedicated location.
-
-**Why this priority**: Developer tools are a debugging aid that most writers will rarely need. Placing the toggle in settings keeps the primary menu uncluttered while still making the feature available.
-
-**Independent Test**: Open the settings dialog, locate the developer tools toggle, change its state, and verify that the application's developer tools behaviour matches the toggle state.
-
-**Acceptance Scenarios**:
-
-1. **Given** the settings dialog is open in the `General` area, **When** the user looks for a developer tools option, **Then** a toggle setting for developer tools is present.
-2. **Given** the developer tools toggle is enabled, **When** the user uses the developer tools keyboard shortcut, **Then** the developer tools open as expected.
-3. **Given** the developer tools toggle is disabled, **When** the user looks at the hamburger menu, **Then** the "Toggle Developer Tools" menu item is no longer present in the hamburger menu.
-4. **Given** the developer tools toggle has been changed, **When** the settings dialog is closed and reopened, **Then** the toggle reflects the last saved value.
-
----
-
 ### User Story 4 - View the editor with correct background on short documents (Priority: P1)
 
 A writer sees a consistent editor background colour across the full visible area, even when the document content is shorter than the editor viewport.
@@ -102,7 +85,7 @@ A writer can visually identify the "view source" action in the editor toolbar by
 - The settings dialog is opened when no document is open: all areas and settings remain accessible and functional.
 - A setting is changed and the dialog is closed abruptly (e.g., application closed): the last saved value is preserved; partially applied changes do not corrupt the settings file.
 - The view source button is the only toolbar button: it still displays the correct icon and colour.
-- The editor theme is changed while a short document is open: the background colour below the content updates to match the new theme immediately.
+- The editor theme is saved while a short document is open: the background colour below the content updates to match the new theme immediately.
 
 ## Requirements *(mandatory)*
 
@@ -116,23 +99,22 @@ A writer can visually identify the "view source" action in the editor toolbar by
 - **FR-006**: Boolean settings MUST use a toggle control visually similar to Tailwind CSS form toggles (a sliding pill on a track).
 - **FR-007**: The `General` area MUST contain the spellcheck settings (enable/disable and language selection).
 - **FR-008**: The `General` area MUST contain a file-opening behaviour setting allowing the user to choose between "open in same tab" and "open in new tab".
-- **FR-009**: The `General` area MUST contain a toggle for developer tools.
-- **FR-010**: When the developer tools toggle is disabled, the "Toggle Developer Tools" item MUST be removed from the hamburger menu.
-- **FR-011**: When the developer tools toggle is enabled, the developer tools keyboard shortcuts MUST continue to function.
-- **FR-012**: The `Theme` area MUST contain the application theme setting (light, dark, system default).
-- **FR-013**: The `Theme` area MUST contain the editor theme setting (the named preset selector).
-- **FR-014**: The editor area MUST display the editor theme's canvas background colour across the full visible height, including below short documents whose content does not fill the viewport.
-- **FR-015**: The "view source" toolbar button MUST use the hero icons `code-bracket-square` glyph.
-- **FR-016**: The "view source" toolbar button icon MUST be rendered in dark blue.
-- **FR-017**: All new settings MUST be persisted using the existing settings persistence mechanism and survive application restarts.
-- **FR-018**: The file-opening behaviour setting MUST affect all file-open actions originating from the explorer (single-click, context menu "Open").
+- **FR-009**: The developer tools keyboard shortcuts (F12, Ctrl/Cmd+Shift+I) MUST be available unconditionally; no settings entry controls them.
+- **FR-010**: The "Toggle Developer Tools" item MUST remain absent from the hamburger menu.
+- **FR-011**: The `Theme` area MUST contain the application theme setting (light, dark, system default).
+- **FR-012**: The `Theme` area MUST contain the editor theme setting (the named preset selector).
+- **FR-013**: The editor area MUST display the editor theme's canvas background colour across the full visible height, including below short documents whose content does not fill the viewport.
+- **FR-014**: The "view source" toolbar button MUST use the hero icons `code-bracket-square` glyph.
+- **FR-015**: The "view source" toolbar button icon MUST be rendered in dark blue.
+- **FR-016**: All new settings MUST be persisted using the existing settings persistence mechanism and survive application restarts.
+- **FR-017**: The file-opening behaviour setting MUST affect all file-open actions originating from the explorer (single-click, context menu "Open").
 
 ### Key Entities
 
 - **Settings area**: A named grouping of related settings displayed in the main panel when its sidebar entry is selected.
 - **Toggle control**: A boolean input rendered as a sliding pill on a track, providing a clear on/off visual state.
 - **File-opening behaviour**: A user preference that determines whether opening a file from the explorer replaces the active tab or creates a new tab.
-- **Developer tools toggle**: A boolean setting that controls the availability of developer tools keyboard shortcuts and the hamburger menu item.
+- **Developer tools**: A developer debugging surface opened by the F12 or Ctrl/Cmd+Shift+I keyboard shortcuts. It is always available and has no settings entry.
 - **Editor canvas background**: The background colour of the editor theme that must extend to fill the full visible editor area regardless of document length.
 
 ## Success Criteria *(mandatory)*
@@ -150,8 +132,18 @@ A writer can visually identify the "view source" action in the editor toolbar by
 
 - **Sidebar scope**: Only two areas (`General` and `Theme`) are required for this feature. Additional areas may be added in future features without restructuring the sidebar.
 - **Toggle styling**: The toggle component should visually match the Tailwind CSS forms toggle aesthetic (rounded pill, smooth transition, accent colour for the "on" state). The exact implementation (CSS custom properties, component library) is a planning concern.
-- **Developer tools default**: The developer tools toggle defaults to disabled (off), matching the current behaviour where developer tools are not expected to be open for normal use.
+- **Developer tools default**: Developer tools are always available via the keyboard shortcuts (F12, Ctrl/Cmd+Shift+I) and are not configurable in settings.
 - **File-opening default**: The file-opening behaviour defaults to the current behaviour (replace clean tab) to avoid surprising existing users.
 - **Icon colour**: "Dark blue" is interpreted as a visually distinct dark blue that is legible against both light and dark editor backgrounds. The exact hex value is a planning concern.
 - **Scope of bug fix**: The background colour fix applies to the editor area only. Other panels (explorer, tabs, status bar) are not affected.
-- **Hamburger menu**: The "Toggle Developer Tools" item is removed from the hamburger menu as part of moving it to settings. The keyboard shortcuts remain available when the toggle is enabled.
+- **Hamburger menu**: The "Toggle Developer Tools" item is removed from the hamburger menu. The keyboard shortcuts remain available unconditionally. The separator adjacent to the removed item is removed too, so no double separator remains between "Close Tab" and "Settings…".
+
+## Clarifications
+
+- **2026-08-08 - File-opening scope**: The preference applies only to explorer-originated single-click, activation, and context-menu `Open` actions. File-menu and recent-item opens retain their existing behavior. In same-tab mode, an active dirty document is never replaced; it opens the requested file in a new tab.
+- **2026-08-08 - Developer tools availability**: The hamburger item remains removed and no settings entry exists. The developer tools keyboard shortcuts (F12, Ctrl/Cmd+Shift+I) always function; the developer-tools toggle setting and its persisted `developerToolsEnabled` field are removed.
+- **2026-08-08 - Apply model**: General-area settings apply and persist immediately. Application theme keeps its existing immediate behavior, while editor-theme selection remains staged until the dialog's Save action.
+- **2026-08-09 - Editor theme colours are materialised**: Saving a preset writes the preset's exact six colours into `editorColors` (no longer `null`), and its font into `editorFont`. A config whose stored colours AND font match a preset is detected as that preset; colours matching no preset (in either monotone variant) are detected as Custom. Existing configs written with `editorColors: null` before this change are left untouched and continue to resolve to their stored preset name. Only new saves materialise colours.
+- **2026-08-09 - Fresh configs materialise the default preset**: The *default* settings state (used when no config exists, e.g. after `config.json` is deleted) also carries the default preset's (Rustic) exact colours rather than `null`. Because every settings write persists the whole settings object, the first write after a fresh install — even one that only changes another field, like `explorerVisible` — stores the materialised Rustic palette instead of `null`. This is consistent with "only new saves materialise colours": a fresh config's first write is a new save. The Rustic palette therefore lives in `src/shared/` so the electron-free main process can reference it.
+- **2026-08-09 - File preference helper text removed**: The file-preference switch no longer shows adjacent `Same tab`/`New tab` helper text. The switch label and its checked state are the single state signal.
+- **2026-08-09 - Fresh configs are materialised at startup**: Startup materialisation writes the DEFAULTS settings section when the shared config file is missing OR contains valid JSON without a `.settings` key (e.g. only `recentItems`). The written defaults use `explorerVisible: false` because at startup no folder is open (FR-013 honesty — plain `true` would be corrected to `false` by reconcile on the next launch anyway). A malformed config — or valid JSON that is not a config object — is never overwritten by this implicit startup write (FR-009 tolerance); only a real user settings write may repair it. Materialisation runs once, inside the first settings load, and is best-effort: a write failure falls through to the in-memory defaults.

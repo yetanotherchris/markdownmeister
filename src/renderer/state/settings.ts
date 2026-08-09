@@ -1,14 +1,19 @@
 import type { Settings } from '../../shared/ipc-contract'
+import { RUSTIC_COLORS } from '../../shared/editorThemePresets'
 
+// Spec 008 clarification 2026-08-09: presets are materialised in the config,
+// not stored as null. The renderer's fallback mirrors main's DEFAULTS so a
+// fresh config never flashes or persists null editorColors.
 const defaults: Settings = {
   sidebarWidth: 30,
   themeOverride: null,
   explorerVisible: true,
   editorFont: 'sans-serif',
   editorTheme: 'rustic',
-  editorColors: null,
+  editorColors: RUSTIC_COLORS,
   spellcheckEnabled: true,
-  spellcheckLanguage: null
+  spellcheckLanguage: null,
+  fileOpenBehavior: 'same-tab'
 }
 
 let cached: Settings = { ...defaults }

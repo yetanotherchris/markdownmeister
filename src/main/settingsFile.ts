@@ -1,6 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import type { Settings, EditorThemeName, SpellcheckLanguage, EditorColors } from '../shared/ipc-contract'
+import type { Settings, EditorThemeName, SpellcheckLanguage, EditorColors, FileOpenBehavior } from '../shared/ipc-contract'
+import { RUSTIC_COLORS } from '../shared/editorThemePresets'
 import { atomicWrite } from './fs/atomicWrite'
 
 /**
@@ -25,9 +26,13 @@ export const DEFAULTS: Settings = {
   explorerVisible: true,
   editorFont: 'sans-serif',
   editorTheme: 'rustic',
-  editorColors: null,
+  // Spec 008 clarification 2026-08-09: presets are materialised in the config,
+  // not stored as null. A fresh config's first write must therefore persist the
+  // default preset's (rustic) exact colours, so the default carries them.
+  editorColors: RUSTIC_COLORS,
   spellcheckEnabled: true,
-  spellcheckLanguage: null
+  spellcheckLanguage: null,
+  fileOpenBehavior: 'same-tab'
 }
 
 /** Read the whole shared config file, tolerantly: `{}` when missing or invalid.
@@ -49,12 +54,19 @@ const EDITOR_THEME_NAMES: readonly EditorThemeName[] = [
 /** The closed union of selectable spellcheck languages (spec 020). */
 const SPELLCHECK_LANGUAGES: readonly SpellcheckLanguage[] = ['en-GB', 'en-US']
 
+/** The closed two-value union of explorer file-opening behavior (spec 008). */
+const FILE_OPEN_BEHAVIORS: readonly FileOpenBehavior[] = ['same-tab', 'new-tab']
+
 function isEditorThemeName(value: unknown): value is EditorThemeName {
   return typeof value === 'string' && (EDITOR_THEME_NAMES as readonly string[]).includes(value)
 }
 
 function isSpellcheckLanguage(value: unknown): value is SpellcheckLanguage {
   return typeof value === 'string' && (SPELLCHECK_LANGUAGES as readonly string[]).includes(value)
+}
+
+function isFileOpenBehavior(value: unknown): value is FileOpenBehavior {
+  return typeof value === 'string' && (FILE_OPEN_BEHAVIORS as readonly string[]).includes(value)
 }
 
 /** Spec 023 FR-010: a valid `EditorColors` is either `null` or a closed
@@ -91,7 +103,9 @@ function validateSettings(raw: unknown): Settings {
     spellcheckEnabled: typeof parsed.spellcheckEnabled === 'boolean'
       ? parsed.spellcheckEnabled : DEFAULTS.spellcheckEnabled,
     spellcheckLanguage: parsed.spellcheckLanguage === null || isSpellcheckLanguage(parsed.spellcheckLanguage)
-      ? parsed.spellcheckLanguage : DEFAULTS.spellcheckLanguage
+      ? parsed.spellcheckLanguage : DEFAULTS.spellcheckLanguage,
+    fileOpenBehavior: isFileOpenBehavior(parsed.fileOpenBehavior)
+      ? parsed.fileOpenBehavior : DEFAULTS.fileOpenBehavior
   }
 }
 
@@ -118,7 +132,28 @@ export function mergeSettingsPatch(current: Settings, patch: Partial<Settings>):
     spellcheckEnabled: typeof patch.spellcheckEnabled === 'boolean'
       ? patch.spellcheckEnabled : current.spellcheckEnabled,
     spellcheckLanguage: patch.spellcheckLanguage === null || isSpellcheckLanguage(patch.spellcheckLanguage)
-      ? patch.spellcheckLanguage : current.spellcheckLanguage
+      ? patch.spellcheckLanguage : current.spellcheckLanguage,
+    fileOpenBehavior: isFileOpenBehavior(patch.fileOpenBehavior)
+      ? patch.fileOpenBehavior : current.fileOpenBehavior
+  }
+}
+
+/**
+ * Strict pre-merge validation for a renderer-supplied `settings:update` patch
+ * (spec 008 R1, contracts/settings-ui.md §Settings IPC Validation): a PRESENT
+ * `fileOpenBehavior` outside the closed union throws before the patch reaches
+ * the tolerant merge — malformed IPC input is never silently coerced into the
+ * settings store. The disk-loaded path stays tolerant (validateSettings)
+ * because a hand-edited or partially-written config should recover per-field
+ * rather than be rejected whole. Electron-free so the handler is unit-testable.
+ */
+export function validateSettingsPatch(patch: unknown): void {
+  if (!patch || typeof patch !== 'object') {
+    throw Object.assign(new Error('Settings must be an object'), { code: 'IO' as const })
+  }
+  const record = patch as Record<string, unknown>
+  if ('fileOpenBehavior' in record && !isFileOpenBehavior(record.fileOpenBehavior)) {
+    throw Object.assign(new Error('fileOpenBehavior must be "same-tab" or "new-tab"'), { code: 'IO' as const })
   }
 }
 
@@ -148,7 +183,7 @@ export function migrateLegacySettingsFile(configPath: string, legacyPath: string
   // legacy file with, say, only `themeOverride` should still be imported rather
   // than dropped whole. validateSettings recovers every field individually.
   if (!legacy || typeof legacy !== 'object') return null
-  const known: (keyof Settings)[] = ['sidebarWidth', 'themeOverride', 'explorerVisible', 'editorFont', 'editorTheme', 'editorColors', 'spellcheckEnabled', 'spellcheckLanguage']
+  const known: (keyof Settings)[] = ['sidebarWidth', 'themeOverride', 'explorerVisible', 'editorFont', 'editorTheme', 'editorColors', 'spellcheckEnabled', 'spellcheckLanguage', 'fileOpenBehavior']
   if (!known.some((k) => k in legacy)) return null
   const migrated = validateSettings(legacy)
   try {
@@ -175,4 +210,66 @@ export function writeSettingsFile(filePath: string, settings: Settings): void {
   const dir = path.dirname(filePath)
   fs.mkdirSync(dir, { recursive: true })
   atomicWrite(filePath, JSON.stringify(updated, null, 2), 0o600)
+}
+
+/**
+ * Spec 008 clarification 2026-08-09: "Materialise defaults on first launch."
+ * When the shared config has no settings section — the file is missing (fresh
+ * install, config.json deleted) or it only carries sibling sections such as
+ * `recentItems` — write the DEFAULTS section so the default Rustic palette is
+ * persisted from the very first launch. Returns the settings written, or `null`
+ * when nothing was materialised.
+ *
+ * FR-009 tolerance: a MALFORMED file (or any valid JSON that is not a config
+ * object) is left untouched — an implicit startup write must never overwrite an
+ * invalid config; only a real user settings write may repair it (the
+ * malformed-config e2e tests depend on this). A config that already has a
+ * `.settings` key is also left alone.
+ *
+ * `explorerVisible` is a parameter so the caller can write the honest FR-013
+ * state (`false` at startup, when no folder is open — writing plain `true`
+ * would be flipped to `false` by reconcile on the next launch anyway).
+ *
+ * Best-effort: a write failure returns `null` and the caller falls through to
+ * the in-memory defaults (FR-009). Electron-free so the callers resolve the
+ * path (settings.ts) and this logic is unit-testable.
+ */
+export function materialiseDefaultSettings(filePath: string, explorerVisible: boolean): Settings | null {
+  let raw: string
+  try {
+    raw = fs.readFileSync(filePath, 'utf-8')
+  } catch {
+    // Missing or unreadable: treat as a fresh install and materialise. A write
+    // failure (e.g. EACCES) falls through to null — the defaults still apply.
+    return writeDefaults(filePath, explorerVisible)
+  }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    // Malformed JSON: never overwrite an invalid config implicitly (FR-009).
+    return null
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    // Valid JSON that is not a config object — leave it alone.
+    return null
+  }
+  if ('settings' in (parsed as Record<string, unknown>)) {
+    // A settings section already exists.
+    return null
+  }
+
+  return writeDefaults(filePath, explorerVisible)
+}
+
+function writeDefaults(filePath: string, explorerVisible: boolean): Settings | null {
+  const settings = { ...DEFAULTS, explorerVisible }
+  try {
+    writeSettingsFile(filePath, settings)
+  } catch {
+    return null
+  }
+  return settings
 }

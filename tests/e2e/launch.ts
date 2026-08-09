@@ -64,6 +64,18 @@ export async function openSettingsDialog(window: Page): Promise<Page> {
   return window
 }
 
+/** Spec 008 FR-003/FR-005: navigate the settings dialog to the Theme sidebar
+ *  area. Every mount starts on General (FR-005), so suites that exercise the
+ *  theme radios (spec 013 app-theme, spec 016 editor-theme) must call this
+ *  after `openSettingsDialog` before the radios render. */
+export async function openThemeArea(window: Page): Promise<void> {
+  await window
+    .getByTestId('settings-dialog')
+    .getByRole('button', { name: 'Theme', exact: true })
+    .click()
+  await expect(window.getByRole('group', { name: 'Editor Theme' })).toBeVisible()
+}
+
 /** Match a submenu label against a query the way the native menu helper did:
  *  exact, either-as-substring, or the path basenames agree. A full-path query
  *  must match a shortened label, and a tail query a full label. */

@@ -17,8 +17,10 @@ import { ctx } from './ipc/handlers/context'
  *
  * Guarded to act only on a VALID config that explicitly records
  * `explorerVisible: true`: a malformed config is left untouched (spec 012
- * FR-009 invariant — the settings dialog e2e proves it) and a missing config is
- * not created just to say "closed" (fresh installs start with defaults).
+ * FR-009 invariant — the settings dialog e2e proves it). A missing config is
+ * not created just to say "closed" — startup materialisation (spec 008
+ * clarification 2026-08-09) already writes the defaults with the honest closed
+ * state, so reconcile only corrects a stale VALID `true`.
  *
  * Runs in `app.whenReady()` before `createWindow`; best-effort like every other
  * config write (a failure is swallowed — FR-009).

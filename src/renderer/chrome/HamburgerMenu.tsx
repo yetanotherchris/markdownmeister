@@ -140,11 +140,9 @@ export default function HamburgerMenu({ onCommand, onOpenSettings }: HamburgerMe
     close()
   }, [close, onCommand])
 
-  const handleAction = useCallback((action: 'clear-recent' | 'toggle-devtools' | 'settings' | 'quit') => {
+  const handleAction = useCallback((action: 'clear-recent' | 'settings' | 'quit') => {
     if (action === 'clear-recent') {
       void window.api.clearRecentItems().then(() => loadRecent())
-    } else if (action === 'toggle-devtools') {
-      void window.api.toggleDevTools()
     } else if (action === 'settings') {
       onOpenSettings()
     } else {

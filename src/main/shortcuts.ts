@@ -61,6 +61,11 @@ export function matchShortcut(input: ShortcutInput): ShortcutResult | null {
  * `preventDefault()` and send the existing `menu:command` channel — the same
  * command bus the old native menu used and the renderer hamburger shares — so
  * shortcuts keep working after the menu bar is removed (spec 010 edge case).
+ *
+ * Spec 008 (clarification 2026-08-08): the developer-tools combos (F12,
+ * Ctrl/Cmd+Shift+I) always toggle developer tools. There is no settings gate —
+ * the developer-tools setting and its `developerToolsEnabled` field were
+ * removed as useless (plan R3).
  */
 export function registerShortcuts(window: BrowserWindow): void {
   window.webContents.on('before-input-event', (event, input) => {

@@ -3,7 +3,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { useSettingsState } from '../../src/renderer/hooks/useSettingsState'
 import { getSettings, updateSettings } from '../../src/renderer/state/settings'
-import type { EditorThemeName, SpellcheckLanguage } from '../../src/shared/ipc-contract'
+import type { EditorThemeName, SpellcheckLanguage, FileOpenBehavior } from '../../src/shared/ipc-contract'
 import type { ThemeChoice } from '../../src/renderer/hooks/useEffectiveTheme'
 
 /**
@@ -14,13 +14,20 @@ import type { ThemeChoice } from '../../src/renderer/hooks/useEffectiveTheme'
  * suite covers the real IPC).
  */
 
-// Minimal stub of the two DesktopApi calls the hook makes. The preload surface
+// Minimal stub of the DesktopApi call the hook makes. The preload surface
 // types `window.api` globally (src/renderer/types.d.ts); tests replace it.
+interface StubPatch {
+  editorTheme?: EditorThemeName
+  editorColors?: import('../../src/shared/ipc-contract').EditorColors | null
+  spellcheckEnabled?: boolean
+  spellcheckLanguage?: SpellcheckLanguage | null
+  fileOpenBehavior?: FileOpenBehavior
+}
 function stubApi(): void {
-  const calls: Array<{ editorTheme?: EditorThemeName; spellcheckEnabled?: boolean; spellcheckLanguage?: SpellcheckLanguage | null }> = []
-  ;(globalThis as unknown as { __apiCalls: Array<{ editorTheme?: EditorThemeName; spellcheckEnabled?: boolean; spellcheckLanguage?: SpellcheckLanguage | null }> }).__apiCalls = calls
+  const calls: StubPatch[] = []
+  ;(globalThis as unknown as { __apiCalls: StubPatch[] }).__apiCalls = calls
   window.api = {
-    updateSettings: (patch: { editorTheme?: EditorThemeName; spellcheckEnabled?: boolean; spellcheckLanguage?: SpellcheckLanguage | null }) => {
+    updateSettings: (patch: StubPatch) => {
       calls.push(patch)
       return Promise.resolve({ ok: true, value: getSettings() as never })
     }
@@ -79,12 +86,22 @@ describe('useSettingsState (spec 016)', () => {
     })
     expect(read().editorTheme).toBe('scholarly')
     expect(getSettings().editorTheme).toBe('scholarly')
-    // Spec 023 FR-005: selecting a preset clears custom colours and writes the
-    // preset's font into editorFont.
-    expect(getSettings().editorColors).toBeNull()
+    // Spec 023 (clarified 2026-08-09): selecting a preset materialises its
+    // exact colours (not null) and writes the preset's font into editorFont.
+    expect(getSettings().editorColors).toEqual({
+      background: '#ffffff', foreground: '#1a1a1a', accent: '#00b0e9',
+      surface: '#f7f7f7', outline: '#8a8a8a', code: '#b50000'
+    })
     expect(getSettings().editorFont).toBe('sans-serif')
     const calls = (globalThis as unknown as { __apiCalls: { editorTheme?: EditorThemeName }[] }).__apiCalls
-    expect(calls).toEqual([{ editorTheme: 'scholarly', editorColors: null, editorFont: 'sans-serif' }])
+    expect(calls).toEqual([{
+      editorTheme: 'scholarly',
+      editorColors: {
+        background: '#ffffff', foreground: '#1a1a1a', accent: '#00b0e9',
+        surface: '#f7f7f7', outline: '#8a8a8a', code: '#b50000'
+      },
+      editorFont: 'sans-serif'
+    }])
   })
 
   it('exposes the persisted spellcheckEnabled as the committed value', () => {
@@ -142,6 +159,29 @@ describe('useSettingsState (spec 016)', () => {
     updateSettings({ editorTheme: 'rustic' as EditorThemeName })
     const { read } = renderHook()
     expect(read().editorTheme).toBe('rustic')
+  })
+
+  it('exposes the persisted fileOpenBehavior as the committed value', () => {
+    updateSettings({ fileOpenBehavior: 'new-tab' })
+    const { read } = renderHook()
+    expect(read().fileOpenBehavior).toBe('new-tab')
+  })
+
+  it('handleFileOpenBehaviorChange updates local state, the cache, and the IPC', () => {
+    const { read } = renderHook()
+    act(() => {
+      read().handleFileOpenBehaviorChange('new-tab')
+    })
+    expect(read().fileOpenBehavior).toBe('new-tab')
+    expect(getSettings().fileOpenBehavior).toBe('new-tab')
+    const calls = (globalThis as unknown as { __apiCalls: { fileOpenBehavior?: FileOpenBehavior }[] }).__apiCalls
+    expect(calls).toEqual([{ fileOpenBehavior: 'new-tab' }])
+  })
+
+  it('does not expose a developer-tools control (removed in spec 008 clarification 2026-08-08)', () => {
+    const { read } = renderHook()
+    expect('developerToolsEnabled' in read()).toBe(false)
+    expect('handleDeveloperToolsEnabledChange' in read()).toBe(false)
   })
 })
 

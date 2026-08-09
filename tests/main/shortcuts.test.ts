@@ -49,4 +49,13 @@ describe('matchShortcut (spec 010 contracts/renderer.md)', () => {
     // With Shift held Electron reports the key in uppercase; toLowerCase normalises it.
     expect(matchShortcut(keyDown({ key: 'O', control: true, shift: true }))).toBe('open-folder')
   })
+
+  // Spec 008 (clarification 2026-08-08): the developer-tools shortcuts are
+  // always available — there is no setting gate, so `matchShortcut` returning
+  // 'devtools' is all the main-process handler needs to toggle.
+  it('always maps the devtools combos to the devtools toggle', () => {
+    expect(matchShortcut(keyDown({ key: 'F12' }))).toBe('devtools')
+    expect(matchShortcut(keyDown({ key: 'i', control: true, shift: true }))).toBe('devtools')
+    expect(matchShortcut(keyDown({ key: 'i', meta: true, shift: true }))).toBe('devtools')
+  })
 })

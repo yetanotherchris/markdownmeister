@@ -6,9 +6,11 @@ import {
   writeSettingsFile,
   migrateLegacySettingsFile,
   mergeSettingsPatch,
+  materialiseDefaultSettings,
   DEFAULTS
 } from './settingsFile'
 import { recentItemsConfigPath } from './recentItemsPath'
+import { ctx } from './ipc/handlers/context'
 
 export { DEFAULTS }
 
@@ -46,7 +48,13 @@ function loadFromDisk(): Settings {
   const configPath = settingsPath()
   const migrated = migrateLegacySettingsFile(configPath, legacySettingsPath())
   if (migrated) return migrated
-  return loadSettingsFile(configPath)
+  const settings = loadSettingsFile(configPath)
+  // Spec 008 clarification 2026-08-09: a fresh config (missing file, or a file
+  // with no settings section) is materialised on first launch so the default
+  // Rustic palette is persisted. At startup no folder is open, so the honest
+  // FR-013 explorer state is `false` (see workspaceExplorerState.ts).
+  materialiseDefaultSettings(configPath, ctx.workspaceRoot !== null)
+  return settings
 }
 
 export function loadSettings(): Settings {

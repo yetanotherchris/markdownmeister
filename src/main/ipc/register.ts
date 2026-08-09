@@ -14,7 +14,6 @@ export function registerIpcHandlers(window: BrowserWindow, approvedRendererUrl: 
   // command closes over a destroyed BrowserWindow.
   for (const channel of [
     'app:requestQuit',
-    'devtools:toggle',
     'quit:respond',
     'file:openDialog',
     'file:read',

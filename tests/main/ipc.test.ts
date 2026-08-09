@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { validateSettingsPatch } from '../../src/main/settingsFile'
 import type {
   Result, WorkspaceInfo, DirEntry, OpenedFile,
   WriteReceipt, TrashReceipt, ErrorCode, MenuCommand, RecentItem,
@@ -140,5 +141,36 @@ describe('DesktopApi native-dialog operations (spec 008)', () => {
     const opErr: DesktopApi['showConfirmation'] = () => Promise.resolve({ ok: false, code: 'IO', message: 'none' })
     expect(typeof op).toBe('function')
     expect(typeof opErr).toBe('function')
+  })
+})
+
+// Spec 008, contracts/settings-ui.md §Settings IPC Validation: `settings:update`
+// rejects a present new field with an invalid value as a typed IO result before
+// merging — malformed IPC input is never silently coerced into the settings
+// store. `validateSettingsPatch` is the pure, electron-free guard the handler
+// calls; these behavioral tests pin the closed-union/boolean rules (R1).
+describe('settings:update patch validation (spec 008)', () => {
+  it('accepts valid values for the new field', () => {
+    expect(() => validateSettingsPatch({ fileOpenBehavior: 'new-tab' })).not.toThrow()
+    expect(() => validateSettingsPatch({ fileOpenBehavior: 'same-tab' })).not.toThrow()
+  })
+
+  it('rejects a fileOpenBehavior outside the closed union', () => {
+    expect(() => validateSettingsPatch({ fileOpenBehavior: 'split' }))
+      .toThrow(/fileOpenBehavior/)
+  })
+
+  it('does not reject the removed developerToolsEnabled key (no longer validated)', () => {
+    expect(() => validateSettingsPatch({ developerToolsEnabled: 'yes' })).not.toThrow()
+  })
+
+  it('rejects a non-object patch', () => {
+    expect(() => validateSettingsPatch(null)).toThrow(/object/)
+    expect(() => validateSettingsPatch('same-tab')).toThrow(/object/)
+  })
+
+  it('does not reject unrelated legacy fields (tolerant merge handles them)', () => {
+    expect(() => validateSettingsPatch({ sidebarWidth: 42, editorFont: 'serif' })).not.toThrow()
+    expect(() => validateSettingsPatch({ themeOverride: 'dark', spellcheckEnabled: false })).not.toThrow()
   })
 })

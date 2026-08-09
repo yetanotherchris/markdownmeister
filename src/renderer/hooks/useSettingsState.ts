@@ -1,13 +1,13 @@
 import { useCallback, useState } from 'react'
 import { updateSettings, getSettings } from '../state/settings'
-import type { EditorThemeName, SpellcheckLanguage, EditorColors } from '../../shared/ipc-contract'
+import type { EditorThemeName, SpellcheckLanguage, EditorColors, FileOpenBehavior } from '../../shared/ipc-contract'
 import {
   useEffectiveTheme,
   themeChoiceFromOverride,
   themeOverrideFromChoice
 } from './useEffectiveTheme'
 import type { ThemeChoice } from './useEffectiveTheme'
-import { presetFontFor } from '../editor/editorThemePresets'
+import { presetFontFor, presetColorsFor } from '../../shared/editorThemePresets'
 
 /**
  * Spec 012/013/016: the settings-dialog state the composition root owns — the
@@ -32,6 +32,8 @@ export function useSettingsState(): {
   handleSpellcheckChange: (enabled: boolean) => void
   spellcheckLanguage: SpellcheckLanguage | null
   handleSpellcheckLanguageChange: (language: SpellcheckLanguage | null) => void
+  fileOpenBehavior: FileOpenBehavior
+  handleFileOpenBehaviorChange: (behavior: FileOpenBehavior) => void
   themeChoice: ThemeChoice
   handleThemeChange: (choice: ThemeChoice) => void
   themeMode: 'light' | 'dark'
@@ -42,6 +44,7 @@ export function useSettingsState(): {
   const [editorColors, setEditorColors] = useState<EditorColors | null>(getSettings().editorColors)
   const [spellcheckEnabled, setSpellcheckEnabled] = useState<boolean>(getSettings().spellcheckEnabled)
   const [spellcheckLanguage, setSpellcheckLanguage] = useState<SpellcheckLanguage | null>(getSettings().spellcheckLanguage)
+  const [fileOpenBehavior, setFileOpenBehavior] = useState<FileOpenBehavior>(getSettings().fileOpenBehavior)
   const [themeChoice, setThemeChoice] = useState<ThemeChoice>(() =>
     themeChoiceFromOverride(getSettings().themeOverride)
   )
@@ -51,16 +54,19 @@ export function useSettingsState(): {
   // by the dialog's Save button; the visual switch flows through `editorTheme`
   // → the `data-editor-theme` attribute (editor/themes.css). The persisted
   // value reaches main for validation via updateSettings.
-  // Spec 023 FR-005/FR-008: selecting a preset clears any custom colour
-  // overrides and writes the preset's font into `editorFont`.
+  // Spec 023 FR-005/FR-008: selecting a preset writes the preset's exact colours
+  // into `editorColors` (clarified 2026-08-09: presets are materialised in the
+  // config, not stored as null) and its font into `editorFont`. Monotone stores
+  // the resolved app-theme variant's palette.
   const handleEditorThemeChange = useCallback((theme: EditorThemeName) => {
     setEditorTheme(theme)
-    setEditorColors(null)
+    const presetColors = presetColorsFor(theme, themeMode)
+    setEditorColors(presetColors)
     const presetFont = presetFontFor(theme)
     setEditorFont(presetFont)
-    updateSettings({ editorTheme: theme, editorColors: null, editorFont: presetFont })
-    window.api.updateSettings({ editorTheme: theme, editorColors: null, editorFont: presetFont }).catch(() => { /* ignore */ })
-  }, [])
+    updateSettings({ editorTheme: theme, editorColors: presetColors, editorFont: presetFont })
+    window.api.updateSettings({ editorTheme: theme, editorColors: presetColors, editorFont: presetFont }).catch(() => { /* ignore */ })
+  }, [themeMode])
 
   // Spec 013: apply the theme immediately and persist (FR-006, FR-008). The
   // visual switch flows through `themeChoice` → `useEffectiveTheme` (the
@@ -91,12 +97,21 @@ export function useSettingsState(): {
     window.api.updateSettings({ spellcheckLanguage: language }).catch(() => { /* ignore */ })
   }, [])
 
+  // Spec 008 FR-008: apply the explorer file-opening preference immediately and
+  // persist it. The explorer open decision reads the cached value at open time.
+  const handleFileOpenBehaviorChange = useCallback((behavior: FileOpenBehavior) => {
+    setFileOpenBehavior(behavior)
+    updateSettings({ fileOpenBehavior: behavior })
+    window.api.updateSettings({ fileOpenBehavior: behavior }).catch(() => { /* ignore */ })
+  }, [])
+
   return {
     settingsOpen, setSettingsOpen,
     editorTheme, handleEditorThemeChange,
     editorFont, editorColors,
     spellcheckEnabled, handleSpellcheckChange,
     spellcheckLanguage, handleSpellcheckLanguageChange,
+    fileOpenBehavior, handleFileOpenBehaviorChange,
     themeChoice, handleThemeChange, themeMode
   }
 }
