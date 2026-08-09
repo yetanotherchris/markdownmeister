@@ -46,8 +46,7 @@ describe('resolveEditorTheme (spec 023 FR-003/004/007)', () => {
     expect(resolve('monotone', 'sans-serif', MONOTONE_COLORS.dark)).toEqual({ kind: 'preset', name: 'monotone' })
     expect(resolve('monotone', 'serif', MONOTONE_COLORS.dark)).toEqual({ kind: 'preset', name: 'monotone-serif' })
     // A palette saved under one variant is still a preset under the other.
-    expect(resolve('monotone', 'sans-serif', MONOTONE_COLORS.light)).toEqual({ kind: 'preset', name: 'monotone' })
-    expect(resolve('monotone', 'sans-serif', MONOTONE_COLORS.dark)).toEqual({ kind: 'preset', name: 'monotone' })
+    expect(resolve('monotone-serif', 'serif', MONOTONE_COLORS.light)).toEqual({ kind: 'preset', name: 'monotone-serif' })
   })
 
   it('treats a palette matching no preset variant as Custom', () => {

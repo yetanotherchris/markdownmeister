@@ -122,12 +122,17 @@ export function resolveEditorTheme(input: ResolveInput): ResolvedEditorTheme {
 /** The six colours the named preset implies — written to `editorColors` when
  *  the preset is saved (clarified 2026-08-09: presets materialise their exact
  *  colours in the config rather than storing null). Monotone uses the resolved
- *  app-theme variant's palette, chosen by `appMode`. */
+ *  app-theme variant's palette, chosen by `appMode`. Returns a fresh copy so a
+ *  stored value can never alias the shared preset constants. */
 export function presetColorsFor(name: EditorThemeName, appMode: 'light' | 'dark'): EditorColors {
   if (name === 'monotone' || name === 'monotone-serif') {
-    return MONOTONE_COLORS[appMode]
+    return { ...MONOTONE_COLORS[appMode] }
   }
-  return (STATIC_PRESETS.find((p) => p.name === name) ?? STATIC_PRESETS[0]).colors
+  const preset = STATIC_PRESETS.find((p) => p.name === name)
+  if (!preset) {
+    throw new Error(`unknown editor theme preset: ${name}`)
+  }
+  return { ...preset.colors }
 }
 
 const SANS_STACK = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif"

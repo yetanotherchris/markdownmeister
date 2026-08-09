@@ -8,7 +8,8 @@ import { launchApp, closeAppSafely, openFile, openSettingsDialog, openThemeArea 
  * Spec 023 suite (contracts/editor-theme.md): custom editor colours + font are
  * stored in the config, the settings dialog shows "Custom" when they match no
  * preset and the preset name when they match exactly, and choosing a preset
- * clears the overrides. Config is isolated per test via the MM_CONFIG_DIR seam.
+ * materialises its exact colours (spec 008 clarification 2026-08-09). Config is
+ * isolated per test via the MM_CONFIG_DIR seam.
  */
 
 let app: ElectronApplication
@@ -77,7 +78,7 @@ test('US1/US3/US4 a config with custom colours + font shows Custom and applies t
   await expect(window.locator('.milkdown')).toHaveCSS('--crepe-color-background', CUSTOM_COLORS.background)
 })
 
-test('US2 selecting a preset clears the custom overrides and shows the preset', async () => {
+test('US2 selecting a preset materialises the preset colours and shows the preset', async () => {
   writeSettings({ editorTheme: 'rustic', editorFont: 'serif', editorColors: CUSTOM_COLORS })
   await launch()
 
