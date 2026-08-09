@@ -111,6 +111,28 @@ const api: DesktopApi = {
     return () => ipcRenderer.removeListener('recentItems:ok', handler)
   },
 
+  onOsFileOpen: (cb: (file: OpenedFile) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, file: OpenedFile) => cb(file)
+    ipcRenderer.on('os:fileOpen', handler)
+    return () => ipcRenderer.removeListener('os:fileOpen', handler)
+  },
+
+  onOsFolderOpen: (cb: (info: WorkspaceInfo) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, info: WorkspaceInfo) => cb(info)
+    ipcRenderer.on('os:folderOpen', handler)
+    return () => ipcRenderer.removeListener('os:folderOpen', handler)
+  },
+
+  onOsOpenFailed: (cb: (message: string) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, payload: { message: string }) => cb(payload.message)
+    ipcRenderer.on('os:openFailed', handler)
+    return () => ipcRenderer.removeListener('os:openFailed', handler)
+  },
+
+  notifyOsReady: () => {
+    ipcRenderer.send('os:ready')
+  },
+
   onQuitRequested: (cb: () => void): (() => void) => {
     const handler = () => cb()
     ipcRenderer.on('app:quitRequested', handler)

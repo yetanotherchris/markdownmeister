@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-02
 
-**Status**: Draft
+**Status**: Archived (implemented in `006-file-association`, PR pending)
 
 **Input**: User description: "This speckit spec is to make an OS-native context menu item (Windows - use Mac equivalent too) to open files and folders using A.N.E"
 

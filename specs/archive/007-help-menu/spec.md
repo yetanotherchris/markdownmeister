@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-02
 
-**Status**: Draft
+**Status**: Archived (dropped — the feature is no longer needed; no implementation was attempted)
 
 **Input**: User description: "This speckit spec is to make a help menu. It should contain one item, a link to the github repository"
 

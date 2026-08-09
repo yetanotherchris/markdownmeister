@@ -36,6 +36,12 @@ export interface OpenedFile {
   content: string
   mtimeMs: number
   size: number
+  /** Spec 006 (research R8): the realpath of the file, populated by
+   *  `openFileFromPath` for every open (dialog, recent, OS). Gives a detached
+   *  file (`path: null`) a stable identity so FR-007 ("activate the existing
+   *  tab, never duplicate") holds outside the workspace too. Display-only —
+   *  the renderer never feeds it back into any filesystem call (Principle I). */
+  canonicalPath?: string
 }
 
 export interface WriteReceipt {
@@ -109,6 +115,15 @@ export type MenuCommand =
   | 'open-file' | 'open-folder' | 'save' | 'save-as'
   | 'close-tab' | 'new-file'
   | { type: 'open-recent'; path: string; kind: RecentKind }
+
+/** Spec 006: an OS-initiated open the main process has already validated and
+ *  read. Only read-ready data crosses the boundary — never a raw path the
+ *  renderer could act on (Principle I). Channels: 'os:fileOpen',
+ *  'os:folderOpen', 'os:openFailed'. */
+export type OsOpenRequest =
+  | { kind: 'file'; file: OpenedFile }
+  | { kind: 'folder'; info: WorkspaceInfo }
+  | { kind: 'failed'; message: string }
 
 /** The five named visual styles for the formatted WYSIWYG canvas (spec 016).
  *  A closed union — validated in main, never arbitrary text. The theme's values
@@ -220,6 +235,19 @@ export interface DesktopApi {
   onMenuCommand(cb: (c: MenuCommand) => void): () => void
   onRecentItemsWarning(cb: (w: RecentItemsWarning) => void): () => void
   onRecentItemsOk(cb: () => void): () => void
+  /** Spec 006: the main process validated an OS-initiated file open (FR-005).
+   *  The renderer routes it through the generic single-file open. */
+  onOsFileOpen(cb: (file: OpenedFile) => void): () => void
+  /** Spec 006: the main process validated an OS-initiated folder open and
+   *  prepared its workspace slot (FR-006); the renderer runs the existing
+   *  confirm→commit flow (FR-009). */
+  onOsFolderOpen(cb: (info: WorkspaceInfo) => void): () => void
+  /** Spec 006: an OS-initiated open was rejected in main; the renderer shows a
+   *  quiet in-context error and the session stays unchanged (FR-011). */
+  onOsOpenFailed(cb: (message: string) => void): () => void
+  /** Spec 006: signal that the renderer's OS-open listeners are live so main
+   *  drains any opens that arrived before the window was ready. */
+  notifyOsReady(): void
   onQuitRequested(cb: () => void): () => void
   confirmQuit(decision: 'quit' | 'cancel'): void
   /** Spec 008: show the platform-native confirmation box for the request and

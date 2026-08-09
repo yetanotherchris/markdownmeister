@@ -11,6 +11,11 @@ import type { DocumentSessionApi } from './useDocumentSession'
 export interface WorkspaceFolderApi {
   commitFolderOpen: () => Promise<void>
   runFolderOpenFlow: (requestPath?: string) => Promise<void>
+  /** Spec 006: an OS-initiated folder open whose prepare step main already ran
+   *  (the shared `ctx.pendingFolderOpen` slot is filled); the renderer runs the
+   *  same confirm→commit flow, so unsaved-work confirmation is preserved
+   *  (FR-009). */
+  runPreparedFolderOpen: (prepared: WorkspaceInfo) => Promise<void>
   dirtyWorkspaceRelativeDocs: () => DocumentState[]
   revealExplorer: () => void
 }
@@ -76,100 +81,136 @@ export function useWorkspaceFolder(opts: {
     revealExplorer()
   }, [dispatchWorkspace, revealExplorer, showOperationError])
 
+  // The confirm→commit steps shared by every folder open (spec 004 FR-004:
+  // dirty-check → confirm → save-or-discard → commit). `prepared` is main's
+  // prepared folder (its `ctx.pendingFolderOpen` slot is filled); the ref
+  // guards the renderer against overlapping confirmation flows.
+  const confirmAndCommitPrepared = useCallback(
+    async (prepared: WorkspaceInfo) => {
+      // ---- step 2: dirty-check (fast path commits when nothing is unsaved) ----
+      if (dirtyWorkspaceRelativeDocs().length === 0) {
+        await commitFolderOpen()
+        return
+      }
+      if (dialogInFlightRef.current) {
+        await window.api.cancelFolderOpen()
+        return
+      }
+
+      // ---- step 3: confirm (holds the single-prompt guard) ----
+      dialogInFlightRef.current = true
+      pendingFolderOpenRef.current = prepared
+      try {
+        const confirm = async (error?: string) =>
+          window.api.showConfirmation({
+            kind: 'folder-open',
+            documentTitles: dirtyWorkspaceRelativeDocs().map((d) => d.title),
+            ...(error ? { error } : {})
+          })
+        // ---- step 4: save-or-discard, then commit; a failure re-prompts ----
+        let error: string | undefined
+        for (;;) {
+          const result = await confirm(error)
+          if (!result.ok) {
+            await window.api.cancelFolderOpen()
+            return
+          }
+          const decision = result.value
+          if (decision === 'cancel') {
+            // FR-010: cancel keeps the session and the recent entry unchanged.
+            await window.api.cancelFolderOpen()
+            return
+          }
+          if (decision === 'discard-all') {
+            // FR-010 "Discard": the user chose to throw the unsaved changes
+            // away, so the dirty workspace-relative documents are CLOSED (their
+            // edits dropped) before the workspace swap rebinds their paths.
+            for (const doc of dirtyWorkspaceRelativeDocs()) {
+              session.doClose(doc.id)
+            }
+            await commitFolderOpen()
+            return
+          }
+          // save-all
+          let allSaved = true
+          for (const doc of dirtyWorkspaceRelativeDocs()) {
+            const saved = await session.saveDocument(doc)
+            if (saved !== 'saved') {
+              if (saved === 'failed') {
+                error = `Could not save ${doc.title}.`
+              }
+              // A failed save re-prompts with the failure explained; a
+              // cancelled Save-As re-prompts with the confirmation still open.
+              allSaved = !shouldRePromptForFailedSave(saved)
+              break
+            }
+          }
+          if (allSaved) {
+            await commitFolderOpen()
+            return
+          }
+          // A save failed or was cancelled — keep the confirmation open (the
+          // prepared folder was not committed) and re-prompt.
+        }
+      } finally {
+        pendingFolderOpenRef.current = null
+        releaseDialogSurface()
+      }
+    },
+    [
+      commitFolderOpen,
+      dialogInFlightRef,
+      dirtyWorkspaceRelativeDocs,
+      releaseDialogSurface,
+      session
+    ]
+  )
+
   // Both entry points (File > Open Folder and a recent-folder open, FR-007)
   // route through the same prepare → (confirm) → commit flow. A second folder
   // open while the confirmation is up is ignored here (main also rejects new
   // prepares while one is pending) so the in-flight flow cannot be clobbered.
-  //
-  // The flow is decomposed into named sub-steps (FR-004): prepare → confirm →
-  // save-or-discard → commit, so the sequence reads top-down.
-  const runFolderOpenFlow = useCallback(async (requestPath?: string) => {
-    // ---- step 1: prepare ----
-    if (pendingFolderOpenRef.current) return
-    const prepared = requestPath === undefined
-      ? await window.api.prepareFolderOpen()
-      : await window.api.prepareFolderOpen(requestPath)
-    if (!prepared.ok) {
-      void showOperationError(prepared.message)
-      return
-    }
-    if (!prepared.value) return // dialog cancelled — nothing pending
-
-    // ---- step 2: dirty-check (fast path commits when nothing is unsaved) ----
-    if (dirtyWorkspaceRelativeDocs().length === 0) {
-      await commitFolderOpen()
-      return
-    }
-    if (dialogInFlightRef.current) {
-      await window.api.cancelFolderOpen()
-      return
-    }
-
-    // ---- step 3: confirm (holds the single-prompt guard) ----
-    dialogInFlightRef.current = true
-    pendingFolderOpenRef.current = prepared.value
-    try {
-      const confirm = async (error?: string) => window.api.showConfirmation({
-        kind: 'folder-open',
-        documentTitles: dirtyWorkspaceRelativeDocs().map(d => d.title),
-        ...(error ? { error } : {})
-      })
-      // ---- step 4: save-or-discard, then commit; a failure re-prompts ----
-      let error: string | undefined
-      for (;;) {
-        const result = await confirm(error)
-        if (!result.ok) {
-          await window.api.cancelFolderOpen()
-          return
-        }
-        const decision = result.value
-        if (decision === 'cancel') {
-          // FR-010: cancel keeps the session and the recent entry unchanged.
-          await window.api.cancelFolderOpen()
-          return
-        }
-        if (decision === 'discard-all') {
-          // FR-010 "Discard": the user chose to throw the unsaved changes away, so
-          // the dirty workspace-relative documents are CLOSED (their edits
-          // dropped). They must not stay open: after the workspace swap their
-          // relative paths rebind to the new root, and a later Ctrl+S would write
-          // old-root content over whatever file shares the path there.
-          for (const doc of dirtyWorkspaceRelativeDocs()) {
-            session.doClose(doc.id)
-          }
-          await commitFolderOpen()
-          return
-        }
-        // save-all
-        let allSaved = true
-        for (const doc of dirtyWorkspaceRelativeDocs()) {
-          const saved = await session.saveDocument(doc)
-          if (saved !== 'saved') {
-            if (saved === 'failed') {
-              error = `Could not save ${doc.title}.`
-            }
-            // A failed save re-prompts with the failure explained; a cancelled
-            // Save-As re-prompts with the confirmation still open.
-            allSaved = !shouldRePromptForFailedSave(saved)
-            break
-          }
-        }
-        if (allSaved) {
-          await commitFolderOpen()
-          return
-        }
-        // A save failed or was cancelled — keep the confirmation open (the
-        // prepared folder was not committed) and re-prompt.
+  const runFolderOpenFlow = useCallback(
+    async (requestPath?: string) => {
+      // ---- step 1: prepare ----
+      if (pendingFolderOpenRef.current) return
+      const prepared =
+        requestPath === undefined
+          ? await window.api.prepareFolderOpen()
+          : await window.api.prepareFolderOpen(requestPath)
+      if (!prepared.ok) {
+        void showOperationError(prepared.message)
+        return
       }
-    } finally {
-      pendingFolderOpenRef.current = null
-      releaseDialogSurface()
-    }
-  }, [commitFolderOpen, dialogInFlightRef, dirtyWorkspaceRelativeDocs, releaseDialogSurface, session, showOperationError])
+      if (!prepared.value) return // dialog cancelled — nothing pending
+      await confirmAndCommitPrepared(prepared.value)
+    },
+    [confirmAndCommitPrepared, showOperationError]
+  )
+
+  // Spec 006: main already validated and prepared the folder (FR-006); the
+  // renderer only confirms and commits, so the OS open never bypasses the
+  // unsaved-work confirmation (FR-009, Principle III).
+  const runPreparedFolderOpen = useCallback(
+    async (prepared: WorkspaceInfo) => {
+      if (pendingFolderOpenRef.current) {
+        // A previous flow's commit/cancel may still be settling: main has
+        // already cleared its slot for THIS prepared folder, so release it —
+        // otherwise the slot stays filled with a folder nobody will commit and
+        // the next Open Folder errors "already in progress" (review finding
+        // 2026-08-09). Clearing an already-free slot is a no-op.
+        await window.api.cancelFolderOpen()
+        return
+      }
+      await confirmAndCommitPrepared(prepared)
+    },
+    [confirmAndCommitPrepared]
+  )
 
   return {
     commitFolderOpen,
     runFolderOpenFlow,
+    runPreparedFolderOpen,
     dirtyWorkspaceRelativeDocs,
     revealExplorer
   }

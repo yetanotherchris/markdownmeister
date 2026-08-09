@@ -28,6 +28,11 @@ import {
 /**
  * Workspace channels (US1/FR-005): the two-phase folder open (spec 004
  * FR-009/FR-010) and readDir. Bodies moved verbatim from the old handlers.ts.
+ *
+ * Spec 006: the prepared-but-unconfirmed folder slot lives in `ctx` (shared
+ * with the OS-open host), and `prepareFolderFromOsPath` is the entry point the
+ * OS host uses after its own validation — the recent-entry check is skipped
+ * because the OS path is not (and need not be) a recorded recent folder.
  */
 export function registerWorkspaceHandlers(window: Electron.BrowserWindow, _ctx: typeof ctx): void {
   // ---- spec-004 folder open is two-phase (FR-009/FR-010) ----
@@ -39,12 +44,6 @@ export function registerWorkspaceHandlers(window: Electron.BrowserWindow, _ctx: 
   // the target cannot be opened) and FR-010 (the renderer's unsaved-work
   // confirmation cancels cleanly) actually hold: main never destroys the live
   // workspace unless and until the renderer commits.
-  let pendingFolderOpen: {
-    root: string
-    name: string
-    entries: DirEntry[]
-    identity: { dev: number; ino: number }
-  } | null = null
 
   ipcMain.handle(
     'workspace:prepareFolderOpen',
@@ -59,7 +58,7 @@ export function registerWorkspaceHandlers(window: Electron.BrowserWindow, _ctx: 
         // flow's commit would otherwise swap to the second flow's folder, or the
         // second flow would error with "No folder open is pending". Reject the
         // new flow instead; the renderer surfaces the error in context.
-        if (pendingFolderOpen) {
+        if (ctx.pendingFolderOpen) {
           return err('IO', 'A folder open is already in progress')
         }
         if (args !== undefined && args !== null) {
@@ -86,23 +85,9 @@ export function registerWorkspaceHandlers(window: Electron.BrowserWindow, _ctx: 
         // unreadable root throws here instead of masquerading as an empty
         // workspace (FR-009).
         const realRootPath = fs.realpathSync(requestedPath)
-        const stat = fs.statSync(realRootPath)
-        if (!stat.isDirectory()) {
-          throw Object.assign(new Error('Target is not a directory'), {
-            code: 'NOT_FOUND' as const
-          })
-        }
-        const entries = readDir(realRootPath, '.')
-        const name = path.basename(realRootPath) || realRootPath
-        pendingFolderOpen = {
-          root: realRootPath,
-          name,
-          entries,
-          identity: { dev: stat.dev, ino: stat.ino }
-        }
-        return ok({ path: realRootPath, name, entries })
+        return prepareFolderFromRealPath(realRootPath)
       } catch (e: unknown) {
-        pendingFolderOpen = null
+        ctx.pendingFolderOpen = null
         // FR-009: a recent folder that cannot be opened drops the dead entry.
         if (isRecentRequest && requestedPath !== null) {
           removeRecent(requestedPath, 'folder')
@@ -115,7 +100,7 @@ export function registerWorkspaceHandlers(window: Electron.BrowserWindow, _ctx: 
 
   ipcMain.handle('workspace:commitFolderOpen', (event): Result<WorkspaceInfo> => {
     if (!isAuthorizedRenderer(event, window)) return err('IO', 'Unauthorized renderer')
-    const pending = pendingFolderOpen
+    const pending = ctx.pendingFolderOpen
     if (!pending) {
       return err('NO_WORKSPACE', 'No folder open is pending')
     }
@@ -143,7 +128,7 @@ export function registerWorkspaceHandlers(window: Electron.BrowserWindow, _ctx: 
         })
       }
     } catch (e: unknown) {
-      pendingFolderOpen = null
+      ctx.pendingFolderOpen = null
       removeRecent(pending.root, 'folder')
       const appErr = toAppError(e)
       return err(appErr.code, sanitizeError(e, ctx.workspaceRoot))
@@ -165,7 +150,7 @@ export function registerWorkspaceHandlers(window: Electron.BrowserWindow, _ctx: 
       const root = pending.root
       const name = pending.name
       ctx.workspaceRoot = root
-      pendingFolderOpen = null
+      ctx.pendingFolderOpen = null
 
       // FR-003/006: only a folder that was successfully opened is recorded /
       // bumped to the front. Best-effort (FR-011).
@@ -173,7 +158,7 @@ export function registerWorkspaceHandlers(window: Electron.BrowserWindow, _ctx: 
       return ok({ path: root, name, entries: pending.entries })
     } catch (e: unknown) {
       candidate?.close()
-      pendingFolderOpen = null
+      ctx.pendingFolderOpen = null
       // FR-009: a failure here (e.g. a watcher/environmental EMFILE/EPERM)
       // does NOT prove the folder invalid — the spec removes an entry only
       // after an attempted open proves it unavailable or invalid, so a still-
@@ -186,7 +171,7 @@ export function registerWorkspaceHandlers(window: Electron.BrowserWindow, _ctx: 
 
   ipcMain.handle('workspace:cancelFolderOpen', (event): Result<null> => {
     if (!isAuthorizedRenderer(event, window)) return err('IO', 'Unauthorized renderer')
-    pendingFolderOpen = null
+    ctx.pendingFolderOpen = null
     return ok(null)
   })
 
@@ -205,4 +190,42 @@ export function registerWorkspaceHandlers(window: Electron.BrowserWindow, _ctx: 
       return err(appErr.code, sanitizeError(e, ctx.workspaceRoot))
     }
   })
+}
+
+/** Validate an absolute folder path, read its entries, and fill the shared
+ *  prepared-folder slot WITHOUT touching the live workspace (spec 004
+ *  FR-009/FR-010). Throws (as the recent/dialog prepare path does) on an
+ *  unavailable or non-directory target. */
+function prepareFolderFromRealPath(realRootPath: string): Result<WorkspaceInfo> {
+  const stat = fs.statSync(realRootPath)
+  if (!stat.isDirectory()) {
+    throw Object.assign(new Error('Target is not a directory'), { code: 'NOT_FOUND' as const })
+  }
+  const entries = readDir(realRootPath, '.')
+  const name = path.basename(realRootPath) || realRootPath
+  ctx.pendingFolderOpen = {
+    root: realRootPath,
+    name,
+    entries,
+    identity: { dev: stat.dev, ino: stat.ino }
+  }
+  return ok({ path: realRootPath, name, entries })
+}
+
+/**
+ * Spec 006: the OS-open host entry point for a folder. Same prepare semantics
+ * as `workspace:prepareFolderOpen` minus the recent-entry check — the OS path
+ * was already validated and classified by the host (Principle II), so the only
+ * remaining guard is the single in-flight slot.
+ */
+export function prepareFolderFromOsPath(absolutePath: string): Result<WorkspaceInfo | null> {
+  if (ctx.pendingFolderOpen) {
+    return err('IO', 'A folder open is already in progress')
+  }
+  try {
+    return prepareFolderFromRealPath(absolutePath)
+  } catch (e: unknown) {
+    const appErr = toAppError(e)
+    return err(appErr.code, sanitizeError(e, ctx.workspaceRoot))
+  }
 }

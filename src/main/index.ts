@@ -10,6 +10,7 @@ import { registerSpellcheckContextMenu } from './contextMenu'
 import { resolveLaunchBounds, trackWindowState, flushWindowState } from './windowState'
 import { reconcileExplorerClosedWithoutWorkspace } from './workspaceExplorerState'
 import { legacyConfigPath, universalConfigPath, migrateConfigFile } from './configPath'
+import { initOsOpenHost, setOsOpenWindow, clearOsOpenWindow } from './osOpenHost'
 import * as os from 'os'
 import { pathToFileURL } from 'url'
 
@@ -94,10 +95,16 @@ function createWindow(): void {
 
   mainWindow.on('closed', () => {
     mainWindow = null
+    // Spec 006 (review 2026-08-09): macOS keeps the process alive after the
+    // last window closes — the OS-open host must not target the destroyed
+    // webContents, and a re-created window re-arms via os:ready.
+    clearOsOpenWindow()
   })
+  // Spec 006: bind the OS-open host to this window so queued opens can drain.
+  setOsOpenWindow(mainWindow)
 }
 
-app.whenReady().then(() => {
+function bootApp(): void {
   // Spec 022 FR-004: move an existing config from the legacy appData location
   // to the universal ~/.config location BEFORE anything reads it. Skipped under
   // the MM_CONFIG_DIR test seam (tests must never move the developer's real
@@ -144,7 +151,16 @@ app.whenReady().then(() => {
   // window loads, so the first paint already honours it.
   applySpellcheckSetting(loadSettings().spellcheckEnabled, loadSettings().spellcheckLanguage)
   createWindow()
-})
+}
+
+// Spec 006 (research R7): single-instance lock + OS-open listeners, BEFORE
+// ready (the macOS `open-file` event can fire early). Returns false when
+// another instance holds the lock and this process must exit.
+const shouldContinue = initOsOpenHost()
+
+if (shouldContinue) {
+  app.whenReady().then(bootApp)
+}
 
 app.on('window-all-closed', () => {
   // Review #27: flush any pending debounced settings write before exit so a
