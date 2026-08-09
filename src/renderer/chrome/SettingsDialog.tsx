@@ -35,8 +35,8 @@ interface SettingsDialogProps {
   editorTheme: EditorThemeName | 'custom'
   /** Spec 016, FR-003/US1 S4: called by the Save button with the staged
    *  selection, then the dialog closes. Closing without Save leaves the canvas
-   *  at the committed value. Spec 023 FR-005: committing a preset clears any
-   *  custom colour overrides. */
+   *  at the committed value. Spec 023 (clarified 2026-08-09): committing a
+   *  preset materialises its exact colours into the config. */
   onEditorThemeSave: (theme: EditorThemeName) => void
   /** The currently selected app theme (from persisted settings). */
   theme: ThemeChoice
@@ -223,10 +223,6 @@ export default function SettingsDialog({
                     <span className="settings-switch-track" aria-hidden="true" />
                     <span className="settings-switch-text">Open explorer files in a new tab</span>
                   </label>
-                  {/* Spec 008: both states are stated next to the switch. */}
-                  <p className="settings-switch-helper">
-                    {fileOpenBehavior === 'new-tab' ? 'New tab' : 'Same tab'}
-                  </p>
                 </fieldset>
               </>
             ) : (

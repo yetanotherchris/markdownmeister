@@ -16,7 +16,7 @@
 | Spellcheck language | `Language` | Existing language or system default | Existing immediate language behavior |
 | File preference | `Open explorer files in a new tab` | `fileOpenBehavior === 'new-tab'` | Immediately controls explorer open decisions |
 
-Every boolean control is a semantic native checkbox styled as a pill switch. The file preference communicates both states with adjacent helper text: Same tab when off and New tab when on.
+Every boolean control is a semantic native checkbox styled as a pill switch. The file preference's label reads `Open explorer files in a new tab`; its checked state is the single state signal (clarified 2026-08-09: the adjacent Same tab/New tab helper text was removed).
 
 ## Theme Area
 
