@@ -109,7 +109,11 @@ export function initOsOpenHost(): boolean {
     enqueueTarget(filePath)
   })
 
-  ipcMain.on('os:ready', () => {
+  // Gated like every IPC entry point (review finding 2026-08-09): only the
+  // bound window's own renderer may arm the drain, so a compromised page cannot
+  // force early drains (dropped opens / a stuck pending-folder slot).
+  ipcMain.on('os:ready', (event) => {
+    if (!currentWindow || event.sender !== currentWindow.webContents) return
     rendererReady = true
     drain()
   })
@@ -122,8 +126,18 @@ export function initOsOpenHost(): boolean {
 }
 
 /** Bind the live window (called after `createWindow`; on macOS re-created
- *  windows re-bind). Drains any queued opens once the renderer is ready. */
+ *  windows re-bind). A fresh window has no renderer listeners yet, so the drain
+ *  is disarmed until that renderer sends `os:ready`. */
 export function setOsOpenWindow(window: BrowserWindow): void {
   currentWindow = window
+  rendererReady = false
   drain()
+}
+
+/** Clear the bound window (called when the window closes). macOS keeps the
+ *  process alive after the last window closes, so a later OS open must not
+ *  target a destroyed webContents (review finding 2026-08-09). */
+export function clearOsOpenWindow(): void {
+  currentWindow = null
+  rendererReady = false
 }

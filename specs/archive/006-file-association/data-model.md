@@ -65,11 +65,12 @@ export type OsOpenRequest =
 
 ## 4. Installer state (Windows registry, uninstall cleanup)
 
-There is no app-side state. The NSIS uninstall macro decides which class keys to
-drop structurally: after removing its verb, it deletes a class key **only when
-the key now holds no remaining subkeys** — so a pre-existing class (or one the
-user extended) is never touched, while a class the installer created fresh
-restores the machine to its pre-install merged view (research R5).
+There is no app-side state. The NSIS install records a per-class marker in
+`HKCU\Software\MarkdownMeister\OsOpenState` only for class keys it created
+fresh. Uninstall deletes a class key only when that marker is set **and** the
+key now holds no remaining subkeys — so a pre-existing class (or one the user
+extended) is never touched, while a class the installer created restores the
+machine to its pre-install merged view (research R5).
 
 ## 5. No changes to
 

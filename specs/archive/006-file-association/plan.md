@@ -95,14 +95,17 @@ note. The workspace handler module refactors its `pendingFolderOpen` slot into
 shared state (`ctx.pendingFolderOpen`) so both the IPC handler and the OS host
 can set it.
 
-**D3 — Windows registration (installer, per-user).** New `build/installer.nsh`
+**D3 — Windows registration (installer, per-user).** New `scripts/installer.nsh`
 included via `nsis.include`, using `!macro customInstall` / `!macro
 customUnInstall`. customInstall writes verbs for `.md`, `.markdown`, and
 `Directory` under `HKCU\Software\Classes`, preserving the pre-existing default
-per R5, with label and icon derived from the product name. customUnInstall
-removes our verb keys, drops a class key it created only when it now holds no
+per R5, with label and icon derived from the product name, and marks each class
+key it created fresh in an app-owned state key. customUnInstall removes our verb
+keys, deletes a class key it created (state marker) only when it now holds no
 remaining subkeys, then `SHChangeNotify`. `fileAssociations` is NOT used on
 Windows (R2). Verb command: `"$INSTDIR\markdownmeister.exe" "%1"`.
+`scripts/` is the git-tracked home (electron-builder's conventional `build/` is
+gitignored here, so a file there would never ship — review finding 2026-08-09).
 
 **D4 — macOS registration (Info.plist).** `mac.extendInfo.CFBundleDocumentTypes`
 declares the full array: `.md`/`.markdown` (via `CFBundleTypeExtensions`, role
@@ -175,7 +178,7 @@ src/renderer/
 ├── hooks/useWorkspaceFolder.ts     # + runPreparedFolderOpen (shared confirm→commit)
 └── App.tsx                         # wire useOsOpen
 
-build/installer.nsh                 # NEW NSIS customInstall/customUnInstall
+scripts/installer.nsh              # NEW NSIS customInstall/customUnInstall
 electron-builder.yml                # nsis.include; mac.extendInfo CFBundleDocumentTypes
 
 tests/main/osOpen.test.ts           # NEW adversarial validation tests

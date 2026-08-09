@@ -72,8 +72,8 @@ installer's registry claims get an install→assert→uninstall verification
 
 **Purpose**: Windows Explorer verb + macOS Finder declaration
 
-- [x] T017 Add `nsis.include: build/installer.nsh` and `mac.extendInfo.CFBundleDocumentTypes` (`.md`/`.markdown` via `CFBundleTypeExtensions`, role `Viewer`, `LSHandlerRank: Alternate`; `public.folder`, role `Viewer`, `LSHandlerRank: Alternate`) to electron-builder.yml (research R3/R4)
-- [x] T018 Add build/installer.nsh: `!macro customInstall` writes per-user verbs for `.md`, `.markdown`, `Directory` under `HKCU\Software\Classes` (label + icon from the product name; preserves any pre-existing `(Default)` per research R5; stashes created-class flags in `HKCU\Software\MarkdownMeister\OsOpenState`); `!macro customUnInstall` removes them + `SHChangeNotify` (research R6)
+- [x] T017 Add `nsis.include: scripts/installer.nsh` and `mac.extendInfo.CFBundleDocumentTypes` (`.md`/`.markdown` via `CFBundleTypeExtensions`, role `Viewer`, `LSHandlerRank: Alternate`; `public.folder`, role `Viewer`, `LSHandlerRank: Alternate`) to electron-builder.yml (research R3/R4)
+- [x] T018 Add scripts/installer.nsh: `!macro customInstall` writes per-user verbs for `.md`, `.markdown`, `Directory` under `HKCU\Software\Classes` (label + icon from the product name; preserves any pre-existing `(Default)` per research R5; marks created class keys in `HKCU\Software\MarkdownMeister\OsOpenState`); `!macro customUnInstall` removes them + `SHChangeNotify` (research R6)
 - [x] T019 Verify `${PRODUCT_NAME}` exists in the generated NSIS script (build once, grep `dist/__uninstaller.nsi`); if absent, define it locally mirroring `productName` and record the deviation in plan.md D5
 
 ---

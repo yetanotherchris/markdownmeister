@@ -73,12 +73,14 @@ workspace with unsaved workspace-relative documents prompts before replacing.
 
 ## 6. Windows installer registration (FR-001/002/012/013/015)
 
-- Install (`!macro customInstall` in `build/installer.nsh`): per-user verbs
+- Install (`!macro customInstall` in `scripts/installer.nsh`): per-user verbs
   `Open with <product name>` for `.md`, `.markdown`, and `Directory`, each
   `command` = `"$INSTDIR\markdownmeister.exe" "%1"`, icon = the exe; preserves
-  any pre-existing `(Default)` (research R5); stashes created-class flags.
-- Uninstall (`!macro customUnInstall`): removes the three verb keys, the stashed
-  created class keys, and `OsOpenState`; then `SHChangeNotify`.
+  any pre-existing `(Default)` (research R5); marks each class key it created
+  fresh in `HKCU\Software\MarkdownMeister\OsOpenState`.
+- Uninstall (`!macro customUnInstall`): removes the three verb keys; deletes a
+  created class key (state marker set at install) only when it now holds no
+  remaining subkeys; clears the state key; then `SHChangeNotify`.
 - Never writes the extension `(Default)` to a value it did not preserve; never
   registers a ProgID as the default; `fileAssociations` is NOT used on Windows
   (research R2). Result: the existing default handler is unchanged (FR-012).

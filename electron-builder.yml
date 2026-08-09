@@ -43,10 +43,10 @@ win:
       arch: [x64]
 
 # Spec 006 (FR-001/002/012): the Windows installer registers per-user Explorer
-# context-menu verbs (build/installer.nsh) instead of electron-builder's
+# context-menu verbs (scripts/installer.nsh) instead of electron-builder's
 # `fileAssociations`, which would take over the default handler (research R2).
 nsis:
-  include: build/installer.nsh
+  include: scripts/installer.nsh
 
 mac:
   artifactName: markdownmeister-${version}-macos-${arch}.${ext}

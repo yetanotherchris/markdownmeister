@@ -194,14 +194,18 @@ export function handleOpenNew(state: EditingSession): EditingSession {
 
 export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload): EditingSession {
   const value = p.value
-  // Spec 006 (research R8): dedupe on the canonical realpath in addition to the
-  // workspace-relative path, so a detached file (path null) opened twice —
-  // e.g. two OS-opens of the same file — activates its existing tab instead of
-  // duplicating it (FR-007).
+  // Spec 006 (research R8): a DETACHED open (path null) dedupes on the
+  // canonical realpath main supplied, so a file opened twice from outside the
+  // workspace activates its existing tab instead of duplicating it (FR-007).
+  // Workspace opens already dedupe by relative path; canonical dedupe is
+  // restricted to detached opens because a renamed document keeps a stale
+  // canonicalPath and would otherwise false-dedupe onto a re-created file at
+  // the old location (review finding 2026-08-09).
   const existing = state.documents.find(
     (d) =>
       (d.path === value.path && value.path !== null) ||
-      (d.canonicalPath !== undefined &&
+      (value.path === null &&
+        d.canonicalPath !== undefined &&
         value.canonicalPath !== undefined &&
         d.canonicalPath === value.canonicalPath)
   )

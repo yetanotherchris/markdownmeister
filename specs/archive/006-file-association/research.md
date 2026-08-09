@@ -101,11 +101,13 @@ host**:
 does not exist): before writing a verb, read the merged default
 (`ReadRegStr … HKCR ".md" ""`) and write it back as the new `HKCU\.md` `(Default)`
 value. The verb is then added under the preserved class, so the effective default
-is byte-for-byte the same as before install. Uninstall deletes only our verb
-keys and then drops a class key it created **only when the key now holds no
-remaining subkeys** — a pre-existing class (or one the user extended) is never
-touched. **Final safety check remains the automated install/uninstall assertion
-in `tasks.md` / `quickstart.md`.**
+is byte-for-byte the same as before install. Uninstall removes our verb keys and
+then drops a class key it created — recognised by a per-class marker written at
+install to `HKCU\Software\MarkdownMeister\OsOpenState` — **only when the key now
+holds no remaining subkeys**; a pre-existing class (or one the user extended) is
+never touched. **Final safety check remains the automated install/uninstall
+assertion in `tasks.md` / `quickstart.md`, verified on this host: verbs appear,
+defaults unchanged, cleanup exact.**
 
 Key layout used (Microsoft "Extending Shortcut Menus", "Predefined Shell Objects"):
 

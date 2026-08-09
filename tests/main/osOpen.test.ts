@@ -153,6 +153,18 @@ describe('extractTargetFromArgv', () => {
     expect(extractTargetFromArgv([])).toBe(null)
   })
 
+  it('ignores the bare working directory that `electron .` passes (dev/preview)', () => {
+    expect(extractTargetFromArgv(['/electron.exe', '.'])).toBe(null)
+    expect(extractTargetFromArgv(['/electron.exe', '..', '--no-sandbox'])).toBe(null)
+  })
+
+  it('only ever treats an absolute path as a target', () => {
+    expect(extractTargetFromArgv(['/electron.exe', 'notes.md'])).toBe(null)
+    expect(extractTargetFromArgv(['/electron.exe', 'out/main/index.js', 'C:\\notes\\a.md'])).toBe(
+      'C:\\notes\\a.md'
+    )
+  })
+
   it('does not mistake a markdown file ending in .md for a script', () => {
     const argv = ['/electron.exe', 'out/main/index.js', 'C:\\notes\\report.js.md']
     expect(extractTargetFromArgv(argv)).toBe('C:\\notes\\report.js.md')

@@ -69,14 +69,15 @@ export function classifyOsTarget(absPath: unknown): OsTargetResult {
 /**
  * Extract the OS-supplied open target from a command line.
  *
- * Windows passes the selected item as a positional argument. The argv also
- * carries the executable (argv[0]), the dev entry script (`out/main/index.js`),
- * Node/Electron loaders (`-r loader.js`, Playwright's harness), and a swarm of
- * Chromium switches. The target is the only remaining positional: it is never a
- * `.js`-family script (the app only opens `.md`/`.markdown` files or folders)
- * and never the executable, so scanning from the end for the first arg that is
- * neither a switch nor a script file is robust against any of those extras and
- * against argv reordering (research R1). Returns `null` when there is no target.
+ * Windows passes the selected item as an absolute positional argument. The argv
+ * also carries the executable (argv[0]), the dev entry script
+ * (`out/main/index.js`), Node/Electron loaders (`-r loader.js`, Playwright's
+ * harness), Chromium switches, and — under `electron .` — a bare `'.'` that
+ * must never be treated as a target. The OS always delivers an absolute path
+ * (`%1` / Finder), so scanning from the end for the first arg that is absolute,
+ * not a switch, and not a `.js`-family script is robust against all the extras
+ * and against argv reordering (research R1). Returns `null` when there is no
+ * target.
  */
 const SCRIPT_EXTENSION_RE = /\.(js|mjs|cjs)$/i
 
@@ -84,6 +85,7 @@ export function extractTargetFromArgv(argv: readonly string[]): string | null {
   for (let i = argv.length - 1; i > 0; i--) {
     const arg = argv[i]
     if (arg.startsWith('-')) continue
+    if (!path.isAbsolute(arg)) continue
     if (SCRIPT_EXTENSION_RE.test(arg)) continue
     return arg
   }

@@ -193,7 +193,15 @@ export function useWorkspaceFolder(opts: {
   // unsaved-work confirmation (FR-009, Principle III).
   const runPreparedFolderOpen = useCallback(
     async (prepared: WorkspaceInfo) => {
-      if (pendingFolderOpenRef.current) return
+      if (pendingFolderOpenRef.current) {
+        // A previous flow's commit/cancel may still be settling: main has
+        // already cleared its slot for THIS prepared folder, so release it —
+        // otherwise the slot stays filled with a folder nobody will commit and
+        // the next Open Folder errors "already in progress" (review finding
+        // 2026-08-09). Clearing an already-free slot is a no-op.
+        await window.api.cancelFolderOpen()
+        return
+      }
       await confirmAndCommitPrepared(prepared)
     },
     [confirmAndCommitPrepared]
