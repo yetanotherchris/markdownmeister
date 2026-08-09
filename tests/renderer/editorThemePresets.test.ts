@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { EditorThemeName, EditorColors } from '../../src/shared/ipc-contract'
-import { resolveEditorTheme, MONOTONE_COLORS, presetColorsFor } from '../../src/renderer/editor/editorThemePresets'
+import { resolveEditorTheme, MONOTONE_COLORS, presetColorsFor } from '../../src/shared/editorThemePresets'
 
 const RUSTIC: EditorColors = {
   background: '#fdf6e3', foreground: '#1f1b16', accent: '#805610',

@@ -1,10 +1,15 @@
-import type { EditorThemeName, EditorColors } from '../../shared/ipc-contract'
+import type { EditorThemeName, EditorColors } from './ipc-contract'
 
 /**
  * Spec 023 (FR-003/004/007): the canonical colours + font of the five editor
  * theme presets (spec 016), extracted from `editor/themes.css`, and the pure
  * detection that decides whether a stored configuration matches a preset or is
  * a Custom theme.
+ *
+ * Lives in `src/shared` so the electron-free main process can materialise the
+ * default preset's colours into `DEFAULTS.editorColors` (spec 008 clarification
+ * 2026-08-09: a fresh config's first write stores the preset's exact colours,
+ * not `null`).
  */
 
 export type EditorFont = 'serif' | 'sans-serif'
@@ -17,7 +22,7 @@ export interface EditorPreset {
   colors: EditorColors
 }
 
-const RUSTIC_COLORS: EditorColors = {
+export const RUSTIC_COLORS: EditorColors = {
   background: '#fdf6e3',
   foreground: '#1f1b16',
   accent: '#805610',

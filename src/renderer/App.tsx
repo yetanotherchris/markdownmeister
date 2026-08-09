@@ -36,7 +36,7 @@ import './App.css'
 import './chrome/chrome.css'
 import './editor/editor.css'
 import './editor/themes.css'
-import { resolveEditorTheme, fontStackFor } from './editor/editorThemePresets'
+import { resolveEditorTheme, fontStackFor } from '../shared/editorThemePresets'
 
 const initialSession: EditingSession = {
   documents: [],

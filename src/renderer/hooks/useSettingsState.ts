@@ -7,7 +7,7 @@ import {
   themeOverrideFromChoice
 } from './useEffectiveTheme'
 import type { ThemeChoice } from './useEffectiveTheme'
-import { presetFontFor, presetColorsFor } from '../editor/editorThemePresets'
+import { presetFontFor, presetColorsFor } from '../../shared/editorThemePresets'
 
 /**
  * Spec 012/013/016: the settings-dialog state the composition root owns — the
