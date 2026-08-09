@@ -1,4 +1,4 @@
-# Specification Quality Checklist: Open With Toggle
+# Specification Quality Checklist: Open With Registration
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-08-09
@@ -31,9 +31,11 @@
 
 ## Notes
 
-- Validation passed on 2026-08-09. The spec bundles the primary feature (a
-  Windows-only "Open with" Settings toggle for runtime registration) with two
-  carry-over editor fixes (full-height canvas colour, dark-blue
-  code-bracket-square view-source icon) per the user's request. All three are
-  independently testable (P1/P2 stories). The exact dark-blue value and the
-  registry/package-manager mechanics are left to planning.
+- Validation passed on 2026-08-09 (second pass). The earlier draft proposed a
+  Windows-only Settings toggle; after discussion the registration was moved to
+  the install channels (NSIS installer + Scoop manifest hooks) with no in-app
+  control, and the spec was renamed from `028-open-with-toggle` to
+  `028-open-with-registration`. The two carry-over editor fixes (full-height
+  canvas colour, dark-blue code-bracket-square view-source icon) are unchanged
+  and independently testable. The exact dark-blue value and the Scoop hook /
+  registry mechanics are left to planning.
