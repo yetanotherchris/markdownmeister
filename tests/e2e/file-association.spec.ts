@@ -38,15 +38,20 @@ test.afterEach(async () => {
  * single-instance lock is held by the primary; the secondary forwards its argv
  * to the primary's `second-instance` handler and then quits (FR-008). It quits
  * so fast Playwright may or may not attach — either way the argv is delivered.
+ * A timeout guard ensures a stuck `electron.launch` (slow CI) can never hang
+ * the test; the primary's assertions poll regardless.
  */
 async function launchSecondary(target: string): Promise<void> {
   const env: Record<string, string> = { ...process.env } as Record<string, string>
   env.MM_USER_DATA_DIR = userDataDir
   env.MM_SINGLE_INSTANCE = '1'
   try {
-    const second = await electron.launch({ args: [...electronLaunchArgs, target], env })
+    const second = await Promise.race([
+      electron.launch({ args: [...electronLaunchArgs, target], env }),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 10_000))
+    ])
     await new Promise((resolve) => setTimeout(resolve, 1500))
-    await second.close().catch(() => {})
+    await second?.close().catch(() => {})
   } catch {
     /* the secondary exited before Playwright attached — argv already forwarded */
   }
