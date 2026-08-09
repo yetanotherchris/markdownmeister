@@ -3,7 +3,7 @@ import type { Locator } from '@playwright/test'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { closeAppSafely, launchApp, openFile, openSettingsDialog } from './launch'
+import { closeAppSafely, launchApp, openFile, openSettingsDialog, openThemeArea } from './launch'
 
 /**
  * Spec 014 suite (contracts/renderer.md): the View source action is the last
@@ -92,6 +92,7 @@ test('FR-005 the icon stays distinct and accent-coloured in the dark theme', asy
 
   // Choose the Dark theme override (deterministic; matches US2 of spec 013).
   await openSettingsDialog(window)
+  await openThemeArea(window)
   await window.getByRole('radio', { name: 'Dark', exact: true }).check()
   await expect(window.locator('.app-container')).toHaveAttribute('data-theme', 'dark')
 

@@ -2,7 +2,7 @@ import { test, expect, ElectronApplication, Page } from '@playwright/test'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { closeAppSafely, launchApp, openSettingsDialog, openFile } from './launch'
+import { closeAppSafely, launchApp, openSettingsDialog, openFile, openThemeArea } from './launch'
 
 /**
  * Spec 013 theme suite (contracts/renderer.md §E2e): the Theme setting's three
@@ -75,6 +75,7 @@ async function setOsColorScheme(scheme: 'light' | 'dark'): Promise<void> {
 test('US1 choosing Light applies the light chrome palette', async () => {
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
 
   await dialog.getByRole('radio', { name: 'Light', exact: true }).check()
 
@@ -86,6 +87,7 @@ test('US1 choosing Light applies the light chrome palette', async () => {
 test('US2 choosing Dark applies the dark chrome palette and persists it', async () => {
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
 
   await dialog.getByRole('radio', { name: 'Dark', exact: true }).check()
 
@@ -100,6 +102,7 @@ test('US2 choosing Dark applies the dark chrome palette and persists it', async 
 test('US3 System default follows the OS theme live (FR-005)', async () => {
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   await dialog.getByRole('radio', { name: 'System default', exact: true }).check()
 
   // In System mode the palette follows the OS colour-scheme query. Simulate the
@@ -119,6 +122,7 @@ test('US3 System default follows the OS theme live (FR-005)', async () => {
 test('US4 the theme survives a restart', async () => {
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   await dialog.getByRole('radio', { name: 'Dark', exact: true }).check()
   await expect.poll(persistedThemeOverride).toBe('dark')
 
@@ -142,6 +146,7 @@ test('FR-010 the default Rustic canvas keeps its palette in dark mode; Monotone 
   // owns the canvas; only the Monotone themes follow the resolved app theme
   // (spec 016 user decision 2026-08-07; research R5). The chrome flips dark.
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   await dialog.getByRole('radio', { name: 'Dark', exact: true }).check()
   await expect(window.locator('.app-container')).toHaveAttribute('data-theme', 'dark')
   await expect.poll(headerBackground).toBe('rgb(31, 31, 31)') // chrome dark
@@ -168,6 +173,7 @@ test('FR-010 the default Rustic canvas keeps its palette in dark mode; Monotone 
 test('FR-007 the Theme group is keyboard-reachable and arrow-key navigable', async () => {
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
 
   // The theme radios are real radios in the dialog's focus trap.
   const themeGroup = dialog.getByRole('group', { name: 'Theme', exact: true })
@@ -184,6 +190,7 @@ test('FR-009 a missing config opens with System default and a change writes a va
   // No config.json exists yet (fresh MM_CONFIG_DIR).
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   await expect(dialog.getByRole('radio', { name: 'System default', exact: true })).toBeChecked()
 
   await dialog.getByRole('radio', { name: 'Dark', exact: true }).check()
@@ -202,6 +209,7 @@ test('FR-009 a malformed config still opens the dialog with System default', asy
   // Opening the dialog directly exercises the true malformed-config path (no
   // folder-open recent-item write repairs the file first).
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   await expect(dialog.getByRole('radio', { name: 'System default', exact: true })).toBeChecked()
   const contents = fs.readFileSync(configPath, 'utf-8')
   expect(contents === '{ not json' || JSON.parse(contents).windowState !== undefined).toBe(true)

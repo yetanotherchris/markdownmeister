@@ -2,7 +2,7 @@ import { test, expect, ElectronApplication, Page } from '@playwright/test'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { closeAppSafely, launchApp, openSettingsDialog, openFile, stubMessageBox } from './launch'
+import { closeAppSafely, launchApp, openSettingsDialog, openFile, stubMessageBox, openThemeArea } from './launch'
 
 /**
  * Spec 016 editor-theme suite (contracts/renderer.md §E2e): the five named
@@ -88,6 +88,7 @@ async function setOsColorScheme(scheme: 'light' | 'dark' | 'no-preference'): Pro
 test('US1 the Editor Theme group lists all five themes', async () => {
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
 
   const group = dialog.getByRole('group', { name: 'Editor Theme' })
   await expect(group).toBeVisible()
@@ -101,6 +102,7 @@ test('US1 the Editor Theme group lists all five themes', async () => {
 test('US1 S2/S3 selecting Scholarly and pressing Save re-themes the canvas and persists it', async () => {
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
 
   await dialog.getByRole('radio', { name: 'Scholarly', exact: true }).check()
   await dialog.getByRole('button', { name: 'Save' }).click()
@@ -124,6 +126,7 @@ test('US1 S4 closing the dialog without Save leaves the canvas unchanged', async
   await expect.poll(canvasBackground).toBe('rgb(253, 246, 227)') // #fdf6e3
 
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   await dialog.getByRole('radio', { name: 'Scholarly', exact: true }).check()
   // Close via the X — the staged selection is discarded (US1 S4).
   await dialog.getByRole('button', { name: 'Close settings' }).click()
@@ -137,6 +140,7 @@ test('US1 S4 closing the dialog without Save leaves the canvas unchanged', async
 test('US2 the editor theme survives a restart', async () => {
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   await dialog.getByRole('radio', { name: 'Scholarly', exact: true }).check()
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect.poll(persistedEditorTheme).toBe('scholarly')
@@ -166,6 +170,7 @@ test('US3 the default canvas is the Rustic theme', async () => {
 test('US4 Rustic Serif keeps the warm canvas but renders body and headings in a serif face', async () => {
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   await dialog.getByRole('radio', { name: 'Rustic Serif', exact: true }).check()
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
@@ -181,6 +186,7 @@ test('US4 Rustic Serif keeps the warm canvas but renders body and headings in a 
 test('US5 Monotone follows the resolved app theme (light: black on white)', async () => {
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   await dialog.getByRole('radio', { name: 'Monotone', exact: true }).check()
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
@@ -194,6 +200,7 @@ test('US5 Monotone follows the resolved app theme (light: black on white)', asyn
 test('US5 Monotone follows the resolved app theme (dark: white on black)', async () => {
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   // Set the app theme to Dark first (spec 013, applies immediately).
   await dialog.getByRole('radio', { name: 'Dark', exact: true }).check()
   await dialog.getByRole('radio', { name: 'Monotone', exact: true }).check()
@@ -208,6 +215,7 @@ test('US5 Monotone follows the resolved app theme (dark: white on black)', async
 test('US5 Monotone follows an OS switch live in system mode (FR-010)', async () => {
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   await dialog.getByRole('radio', { name: 'System default', exact: true }).check()
   await dialog.getByRole('radio', { name: 'Monotone', exact: true }).check()
   await dialog.getByRole('button', { name: 'Save' }).click()
@@ -234,6 +242,7 @@ test('US5 Monotone follows an OS switch live in system mode (FR-010)', async () 
 test('US5 Monotone falls back to the light scheme when the OS reports no preference (FR-010 S4)', async () => {
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   await dialog.getByRole('radio', { name: 'System default', exact: true }).check()
   await dialog.getByRole('radio', { name: 'Monotone Serif', exact: true }).check()
   await dialog.getByRole('button', { name: 'Save' }).click()
@@ -250,6 +259,7 @@ test('US5 Monotone falls back to the light scheme when the OS reports no prefere
 test('US6 Scholarly renders its specified values', async () => {
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   await dialog.getByRole('radio', { name: 'Scholarly', exact: true }).check()
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
@@ -275,6 +285,7 @@ test('FR-014 changing the editor theme leaves document content, dirty state, and
   // Switch themes repeatedly via Save.
   for (const theme of ['Rustic Serif', 'Monotone', 'Scholarly'] as const) {
     const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
     await dialog.getByRole('radio', { name: theme, exact: true }).check()
     await dialog.getByRole('button', { name: 'Save' }).click()
     await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
@@ -293,6 +304,7 @@ test('FR-006 a missing config opens with the default Rustic theme and a change w
   await expect.poll(canvasBackground).toBe('rgb(253, 246, 227)')
 
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   await dialog.getByRole('radio', { name: 'Rustic Serif', exact: true }).check()
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect.poll(persistedEditorTheme).toBe('rustic-serif')
@@ -314,6 +326,7 @@ test('FR-006 a malformed config still opens with the default Rustic theme', asyn
   // true malformed-config tolerance path — the app still starts with the Rustic
   // default (FR-006).
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   await expect(window.locator('.app-container')).toHaveAttribute('data-editor-theme', 'rustic')
   await expect(dialog.getByRole('radio', { name: 'Rustic', exact: true })).toBeChecked()
   const contents = fs.readFileSync(configPath, 'utf-8')

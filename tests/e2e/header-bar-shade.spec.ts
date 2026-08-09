@@ -2,7 +2,7 @@ import { test, expect, ElectronApplication, Page } from '@playwright/test'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { closeAppSafely, launchApp, openFile, openSettingsDialog } from './launch'
+import { closeAppSafely, launchApp, openFile, openSettingsDialog, openThemeArea } from './launch'
 
 /**
  * Spec 018 header-bar-shade suite (contracts/renderer.md §E2e): the WYSIWYG
@@ -112,6 +112,7 @@ test('FR-007 in dark mode the toolbar stays a step below the dark pill', async (
   await openFile(window, 'alpha.md')
 
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   await dialog.getByRole('radio', { name: 'Dark', exact: true }).check()
   await expect(window.locator('.app-container')).toHaveAttribute('data-theme', 'dark')
 

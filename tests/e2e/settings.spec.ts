@@ -2,7 +2,7 @@ import { test, expect, ElectronApplication, Page, Locator } from '@playwright/te
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { closeAppSafely, launchApp, openHamburger, openSettingsDialog } from './launch'
+import { closeAppSafely, launchApp, openHamburger, openSettingsDialog, openThemeArea } from './launch'
 
 /**
  * Spec 008/016 settings suite (contracts/settings-ui.md §E2e): the Settings
@@ -61,12 +61,6 @@ async function persistedSetting<T>(key: string): Promise<T | undefined> {
   const configPath = path.join(configDir, 'config.json')
   if (!fs.existsSync(configPath)) return undefined
   return JSON.parse(fs.readFileSync(configPath, 'utf-8')).settings?.[key]
-}
-
-/** Click the Theme entry in the settings sidebar. */
-async function openThemeArea(dialog: Page): Promise<void> {
-  await dialog.getByTestId('settings-dialog').getByRole('button', { name: 'Theme', exact: true }).click()
-  await expect(dialog.getByRole('group', { name: 'Editor Theme' })).toBeVisible()
 }
 
 /** The labelled element that currently holds focus inside the dialog. */
@@ -153,10 +147,8 @@ test('US1 the General area has pill switches for spellcheck and the file prefere
   // Spec 008 (clarification 2026-08-08): no developer-tools control remains.
   await expect(box.getByRole('checkbox', { name: 'Enable developer tools' })).toHaveCount(0)
 
-  // The file preference states both outcomes next to the switch.
-  await expect(box.getByText('Same tab', { exact: true })).toBeVisible()
+  // The file preference switch alone conveys its state (helper removed).
   await clickSwitch(box, 'Open explorer files in a new tab')
-  await expect(box.getByText('New tab', { exact: true })).toBeVisible()
   await expect(filePreference).toBeChecked()
 })
 
