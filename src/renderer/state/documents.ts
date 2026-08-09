@@ -36,6 +36,11 @@ export function editorMatchesContent(live: string, content: string): boolean {
 export interface DocumentState {
   id: string
   path: string | null
+  /** Spec 006 (research R8): the file's realpath, when main supplied one.
+   *  Gives a detached file (`path: null`) a stable identity so FR-007
+   *  ("activate the existing tab, never duplicate") holds outside the
+   *  workspace. Display-only — never fed back into a filesystem call. */
+  canonicalPath?: string
   title: string
   baseline: string
   /** The editor's serialization of the content it last parsed, captured after a
@@ -104,6 +109,7 @@ export function openFile(opened: {
   content: string
   mtimeMs: number
   size: number
+  canonicalPath?: string
   view?: 'formatted' | 'source'
 }): DocumentState {
   const path = opened.path
@@ -116,6 +122,7 @@ export function openFile(opened: {
   return {
     id,
     path,
+    canonicalPath: opened.canonicalPath,
     title: opened.name,
     baseline: opened.content,
     editorBaseline: body,
@@ -187,7 +194,17 @@ export function handleOpenNew(state: EditingSession): EditingSession {
 
 export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload): EditingSession {
   const value = p.value
-  const existing = state.documents.find((d) => d.path === value.path && value.path !== null)
+  // Spec 006 (research R8): dedupe on the canonical realpath in addition to the
+  // workspace-relative path, so a detached file (path null) opened twice —
+  // e.g. two OS-opens of the same file — activates its existing tab instead of
+  // duplicating it (FR-007).
+  const existing = state.documents.find(
+    (d) =>
+      (d.path === value.path && value.path !== null) ||
+      (d.canonicalPath !== undefined &&
+        value.canonicalPath !== undefined &&
+        d.canonicalPath === value.canonicalPath)
+  )
   if (existing) {
     // Reopening an evicted document must bring its editor back — the
     // active tab would otherwise render the empty evicted container.

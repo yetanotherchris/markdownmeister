@@ -99,10 +99,10 @@ can set it.
 included via `nsis.include`, using `!macro customInstall` / `!macro
 customUnInstall`. customInstall writes verbs for `.md`, `.markdown`, and
 `Directory` under `HKCU\Software\Classes`, preserving the pre-existing default
-per R5, with label and icon derived from the product name, and stashes which
-class keys it created. customUnInstall removes only our keys and the class keys
-it created, then `SHChangeNotify`. `fileAssociations` is NOT used on Windows
-(R2). Verb command: `"$INSTDIR\markdownmeister.exe" "%1"`.
+per R5, with label and icon derived from the product name. customUnInstall
+removes our verb keys, drops a class key it created only when it now holds no
+remaining subkeys, then `SHChangeNotify`. `fileAssociations` is NOT used on
+Windows (R2). Verb command: `"$INSTDIR\markdownmeister.exe" "%1"`.
 
 **D4 — macOS registration (Info.plist).** `mac.extendInfo.CFBundleDocumentTypes`
 declares the full array: `.md`/`.markdown` (via `CFBundleTypeExtensions`, role
@@ -112,11 +112,14 @@ without becoming default (R3/R4). **UNVERIFIED on a Mac** — quickstart covers 
 
 **D5 — Product display name (FR-015).** One value in `package.json`/
 `electron-builder.yml` (`productName: MarkdownMeister`). The NSIS label text is
-built from electron-builder's `${PRODUCT_NAME}` define if present, else a local
-`!define` mirroring the same value; the macOS `CFBundleTypeName` strings carry
-the same value. Verified during implementation against the generated NSIS
-script; if `${PRODUCT_NAME}` is not available the local define is used and the
-deviation is recorded here.
+built from electron-builder's `${PRODUCT_NAME}` define (verified 2026-08-09: it
+is passed to makensis as a command-line define), and the launcher path uses
+electron-builder's `${APP_EXECUTABLE_FILENAME}` define (defined as
+`${PRODUCT_FILENAME}.exe` in its `common.nsh` — the installer must NOT redefine
+it). The macOS `CFBundleTypeName` strings carry the same product-name value.
+Verified end-to-end with a silent install→registry-assert→uninstall on the
+Windows host: verbs written with the product label, defaults preserved,
+cleanup exact (research R5 / quickstart §2).
 
 **D6 — Detached-file dedupe (FR-007).** `OpenedFile` gains optional
 `canonicalPath` (realpath); `openFileFromPath` populates it; `DocumentState`

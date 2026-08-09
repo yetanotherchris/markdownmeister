@@ -19,6 +19,7 @@ import { useSourceViewToggle } from './hooks/useSourceViewToggle'
 import { useWorkspaceTree } from './hooks/useWorkspaceTree'
 import { useExternalFileEvents } from './hooks/useExternalFileEvents'
 import { useMenuCommands } from './hooks/useMenuCommands'
+import { useOsOpen } from './hooks/useOsOpen'
 import { useWorkspaceFolder } from './hooks/useWorkspaceFolder'
 import { useSidebarLayout } from './hooks/useSidebarLayout'
 import { useSettingsState } from './hooks/useSettingsState'
@@ -195,6 +196,9 @@ export default function App() {
     dispatch,
     enforcePoolCap: pool.enforcePoolCap
   })
+  // Spec 006: route OS-initiated opens through the existing session/folder
+  // flows; a rejected open surfaces as a quiet footer note (FR-011).
+  useOsOpen({ session: sessionApi, folder, onOpenFailed: setFooterNote })
 
   const { handleMenuCommand } = menu
   const { handleQuitRequest } = sessionApi

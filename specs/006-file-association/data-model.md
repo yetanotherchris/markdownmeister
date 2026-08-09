@@ -65,11 +65,11 @@ export type OsOpenRequest =
 
 ## 4. Installer state (Windows registry, uninstall cleanup)
 
-`HKCU\Software\MarkdownMeister\OsOpenState` holds one DWORD per class key the
-installer created fresh (`mdCreated`, `markdownCreated`), so uninstall deletes
-whole keys it created but never touches keys that pre-existed (or gained other
-content). This is written and read only by the NSIS `customInstall` /
-`customUnInstall` macros — it is not app state.
+There is no app-side state. The NSIS uninstall macro decides which class keys to
+drop structurally: after removing its verb, it deletes a class key **only when
+the key now holds no remaining subkeys** — so a pre-existing class (or one the
+user extended) is never touched, while a class the installer created fresh
+restores the machine to its pre-install merged view (research R5).
 
 ## 5. No changes to
 

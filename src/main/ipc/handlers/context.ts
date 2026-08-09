@@ -30,12 +30,23 @@ import type {
  * handlers.ts — only the module boundary changed (FR-005).
  */
 
+/** The prepared-but-unconfirmed folder open (spec 004 FR-009/FR-010). A single
+ *  slot shared by the `workspace:prepareFolderOpen` handler and the spec 006
+ *  OS-open host, so a second prepare while one is pending is refused. */
+export interface PendingFolderOpen {
+  root: string
+  name: string
+  entries: DirEntry[]
+  identity: { dev: number; ino: number }
+}
+
 export const ctx = {
   workspaceState: null as WorkspaceState | null,
   workspaceRoot: null as string | null,
   allowClose: false,
   quitRequestPending: false,
-  approvedRendererUrl: null as string | null
+  approvedRendererUrl: null as string | null,
+  pendingFolderOpen: null as PendingFolderOpen | null
 }
 
 export function ok<T>(value: T): Result<T> {
@@ -222,7 +233,8 @@ export function canonicalPath(p: string): string {
 // Opens a file by absolute path, mirroring the dialog handler: when the file
 // sits inside the current workspace the response carries the workspace-
 // relative path and the parent is watched; otherwise the content is read
-// directly with a `path: null` response.
+// directly with a `path: null` response. `canonicalPath` (the realpath) is
+// always populated so the renderer can dedupe detached files (spec 006 R8).
 export function openFileFromPath(filePath: string): OpenedFile {
   // Research R4 step 2: confirm the target still exists and has the right
   // type — a recorded 'file' whose path was replaced by a directory must not
@@ -232,6 +244,8 @@ export function openFileFromPath(filePath: string): OpenedFile {
     throw Object.assign(new Error('Target is not a file'), { code: 'NOT_TEXT' as ErrorCode })
   }
 
+  const canonical = canonicalPath(filePath)
+
   if (ctx.workspaceRoot) {
     const relativePath = resolveAbsolutePath(ctx.workspaceRoot, filePath)
     if (relativePath) {
@@ -240,7 +254,7 @@ export function openFileFromPath(filePath: string): OpenedFile {
         ? relativePath.split('/').slice(0, -1).join('/')
         : '.'
       ctx.workspaceState?.watchDir(parent)
-      return opened
+      return { ...opened, canonicalPath: canonical }
     }
   }
 
@@ -259,7 +273,8 @@ export function openFileFromPath(filePath: string): OpenedFile {
     name: path.basename(filePath),
     content: buffer.toString('utf-8'),
     mtimeMs: stat.mtimeMs,
-    size: stat.size
+    size: stat.size,
+    canonicalPath: canonical
   }
 }
 

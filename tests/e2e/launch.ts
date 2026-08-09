@@ -254,14 +254,20 @@ export async function launchApp(
   configDir?: string,
   openFolderPath?: string,
   userDataDir?: string,
-  extraEnv?: Record<string, string>
+  extraEnv?: Record<string, string>,
+  extraArgs?: string[]
 ): Promise<LaunchResult> {
   const env: Record<string, string> = { ...process.env } as Record<string, string>
   if (configDir) env.MM_CONFIG_DIR = configDir
   if (userDataDir) env.MM_USER_DATA_DIR = userDataDir
+  // Spec 006 (research R7): most tests launch against the shared default
+  // user-data dir, so the single-instance lock must NOT engage — a test app
+  // could otherwise collide with the developer's real running app and quit.
+  // The dedicated second-instance spec opts back in via extraEnv.
+  env.MM_SINGLE_INSTANCE = '0'
   if (extraEnv) Object.assign(env, extraEnv)
   const instance = await electron.launch({
-    args: electronLaunchArgs,
+    args: [...electronLaunchArgs, ...(extraArgs ?? [])],
     env
   })
   const page = await instance.firstWindow()

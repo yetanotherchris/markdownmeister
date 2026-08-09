@@ -42,6 +42,12 @@ win:
     - target: zip
       arch: [x64]
 
+# Spec 006 (FR-001/002/012): the Windows installer registers per-user Explorer
+# context-menu verbs (build/installer.nsh) instead of electron-builder's
+# `fileAssociations`, which would take over the default handler (research R2).
+nsis:
+  include: build/installer.nsh
+
 mac:
   artifactName: markdownmeister-${version}-macos-${arch}.${ext}
   target:
@@ -49,6 +55,24 @@ mac:
       arch: [x64, arm64]
     - target: zip
       arch: [x64, arm64]
+  # Spec 006 (FR-003/004/012, research R3/R4): declare the app's document types
+  # so it appears in Finder's "Open With…" for .md/.markdown files and folders
+  # WITHOUT becoming the default handler (role Viewer, LSHandlerRank Alternate).
+  # electron-builder cannot express the folder type, so the full array is set
+  # here rather than via `fileAssociations`.
+  extendInfo:
+    CFBundleDocumentTypes:
+      - CFBundleTypeName: MarkdownMeister Markdown Document
+        CFBundleTypeRole: Viewer
+        LSHandlerRank: Alternate
+        CFBundleTypeExtensions:
+          - md
+          - markdown
+      - CFBundleTypeName: MarkdownMeister Folder
+        CFBundleTypeRole: Viewer
+        LSHandlerRank: Alternate
+        LSItemContentTypes:
+          - public.folder
 
 linux:
   # Hard-code x64 rather than using ${arch}: electron-builder's ${arch} macro
