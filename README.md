@@ -15,7 +15,7 @@ brew install yetanotherchris/tap/markdownmeister
 ### Windows (Scoop)
 
 ```sh
-scoop bucket add markdownmeister https://github.com/yetanotherchris/another-markdown-editor
+scoop bucket add markdownmeister https://github.com/yetanotherchris/markdownmeister
 scoop install markdownmeister
 ```
 
