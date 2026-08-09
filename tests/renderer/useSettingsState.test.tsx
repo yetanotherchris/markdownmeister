@@ -16,11 +16,18 @@ import type { ThemeChoice } from '../../src/renderer/hooks/useEffectiveTheme'
 
 // Minimal stub of the DesktopApi call the hook makes. The preload surface
 // types `window.api` globally (src/renderer/types.d.ts); tests replace it.
+interface StubPatch {
+  editorTheme?: EditorThemeName
+  editorColors?: import('../../src/shared/ipc-contract').EditorColors | null
+  spellcheckEnabled?: boolean
+  spellcheckLanguage?: SpellcheckLanguage | null
+  fileOpenBehavior?: FileOpenBehavior
+}
 function stubApi(): void {
-  const calls: Array<{ editorTheme?: EditorThemeName; spellcheckEnabled?: boolean; spellcheckLanguage?: SpellcheckLanguage | null; fileOpenBehavior?: FileOpenBehavior }> = []
-  ;(globalThis as unknown as { __apiCalls: Array<{ editorTheme?: EditorThemeName; spellcheckEnabled?: boolean; spellcheckLanguage?: SpellcheckLanguage | null; fileOpenBehavior?: FileOpenBehavior }> }).__apiCalls = calls
+  const calls: StubPatch[] = []
+  ;(globalThis as unknown as { __apiCalls: StubPatch[] }).__apiCalls = calls
   window.api = {
-    updateSettings: (patch: { editorTheme?: EditorThemeName; spellcheckEnabled?: boolean; spellcheckLanguage?: SpellcheckLanguage | null; fileOpenBehavior?: FileOpenBehavior }) => {
+    updateSettings: (patch: StubPatch) => {
       calls.push(patch)
       return Promise.resolve({ ok: true, value: getSettings() as never })
     }
@@ -79,12 +86,22 @@ describe('useSettingsState (spec 016)', () => {
     })
     expect(read().editorTheme).toBe('scholarly')
     expect(getSettings().editorTheme).toBe('scholarly')
-    // Spec 023 FR-005: selecting a preset clears custom colours and writes the
-    // preset's font into editorFont.
-    expect(getSettings().editorColors).toBeNull()
+    // Spec 023 (clarified 2026-08-09): selecting a preset materialises its
+    // exact colours (not null) and writes the preset's font into editorFont.
+    expect(getSettings().editorColors).toEqual({
+      background: '#ffffff', foreground: '#1a1a1a', accent: '#00b0e9',
+      surface: '#f7f7f7', outline: '#8a8a8a', code: '#b50000'
+    })
     expect(getSettings().editorFont).toBe('sans-serif')
     const calls = (globalThis as unknown as { __apiCalls: { editorTheme?: EditorThemeName }[] }).__apiCalls
-    expect(calls).toEqual([{ editorTheme: 'scholarly', editorColors: null, editorFont: 'sans-serif' }])
+    expect(calls).toEqual([{
+      editorTheme: 'scholarly',
+      editorColors: {
+        background: '#ffffff', foreground: '#1a1a1a', accent: '#00b0e9',
+        surface: '#f7f7f7', outline: '#8a8a8a', code: '#b50000'
+      },
+      editorFont: 'sans-serif'
+    }])
   })
 
   it('exposes the persisted spellcheckEnabled as the committed value', () => {

@@ -83,8 +83,7 @@ export default function App() {
   const resolvedEditorTheme = resolveEditorTheme({
     editorTheme,
     editorFont,
-    editorColors,
-    appMode: themeMode
+    editorColors
   })
   const dataEditorTheme =
     resolvedEditorTheme.kind === 'preset' ? resolvedEditorTheme.name : 'custom'

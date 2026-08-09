@@ -12,7 +12,7 @@ The existing `config.json` shape remains `{ recentItems?: RecentItem[], settings
 | `themeOverride` | `'light' | 'dark' | null` | `null` | Existing closed union | Theme area |
 | `editorTheme` | `EditorThemeName` | `'rustic'` | Existing closed union | Theme area |
 
-The persisted internal fields `sidebarWidth`, `explorerVisible`, `editorFont`, and `editorColors` are not new dialog controls and retain their existing behavior.
+The persisted internal fields `sidebarWidth`, `explorerVisible`, `editorFont`, and `editorColors` are not new dialog controls and retain their existing behavior. `editorColors` is written with the preset's exact colours whenever a preset is saved (spec 023, clarified 2026-08-09: presets are materialised in the config rather than stored as `null`; monotone stores the resolved app-theme variant's palette).
 
 Developer tools are not part of the settings model. The F12 and Ctrl/Cmd+Shift+I shortcuts always toggle them; no `developerToolsEnabled` field exists.
 

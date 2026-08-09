@@ -2,7 +2,7 @@ import { test, expect, ElectronApplication, Page } from '@playwright/test'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { launchApp, closeAppSafely, openFile, openSettingsDialog } from './launch'
+import { launchApp, closeAppSafely, openFile, openSettingsDialog, openThemeArea } from './launch'
 
 /**
  * Spec 023 suite (contracts/editor-theme.md): custom editor colours + font are
@@ -66,6 +66,7 @@ test('US1/US3/US4 a config with custom colours + font shows Custom and applies t
 
   // The settings dialog shows the display-only Custom option selected.
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   const customRadio = dialog.getByRole('radio', { name: 'Custom', exact: true })
   await expect(customRadio).toBeChecked()
   await expect(customRadio).toBeDisabled()
@@ -81,20 +82,26 @@ test('US2 selecting a preset clears the custom overrides and shows the preset', 
   await launch()
 
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   await expect(dialog.getByRole('radio', { name: 'Custom', exact: true })).toBeChecked()
 
-  // Choose Rustic (sans) and Save — overrides are cleared (FR-005).
+  // Choose Rustic (sans) and Save — the preset's colours are materialised
+  // (spec 023 clarification 2026-08-09) and its font written.
   await dialog.getByRole('radio', { name: 'Rustic', exact: true }).check()
   await dialog.getByRole('button', { name: 'Save' }).click()
 
   await expect.poll(() => readSettings()).toMatchObject({
     editorTheme: 'rustic',
     editorFont: 'sans-serif',
-    editorColors: null
+    editorColors: {
+      background: '#fdf6e3', foreground: '#1f1b16', accent: '#805610',
+      surface: '#fdf3d9', outline: '#817567', code: '#ba1a1a'
+    }
   })
 
   // The dialog now shows the preset, not Custom.
   const dialog2 = await openSettingsDialog(window)
+  await openThemeArea(window)
   await expect(dialog2.getByRole('radio', { name: 'Rustic', exact: true })).toBeChecked()
   await expect(dialog2.getByRole('radio', { name: 'Custom', exact: true })).toHaveCount(0)
 })
@@ -112,6 +119,7 @@ test('US1 exact preset values are detected as the preset, not Custom', async () 
   await launch()
 
   const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
   await expect(dialog.getByRole('radio', { name: 'Scholarly', exact: true })).toBeChecked()
   await expect(dialog.getByRole('radio', { name: 'Custom', exact: true })).toHaveCount(0)
 })

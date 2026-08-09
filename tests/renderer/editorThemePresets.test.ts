@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { EditorThemeName, EditorColors } from '../../src/shared/ipc-contract'
-import { resolveEditorTheme, MONOTONE_COLORS } from '../../src/renderer/editor/editorThemePresets'
+import { resolveEditorTheme, MONOTONE_COLORS, presetColorsFor } from '../../src/renderer/editor/editorThemePresets'
 
 const RUSTIC: EditorColors = {
   background: '#fdf6e3', foreground: '#1f1b16', accent: '#805610',
@@ -11,8 +11,8 @@ const SCHOLARLY: EditorColors = {
   surface: '#f7f7f7', outline: '#8a8a8a', code: '#b50000'
 }
 
-function resolve(editorTheme: EditorThemeName, editorFont: 'serif' | 'sans-serif', editorColors: EditorColors | null, appMode: 'light' | 'dark' = 'light') {
-  return resolveEditorTheme({ editorTheme, editorFont, editorColors, appMode })
+function resolve(editorTheme: EditorThemeName, editorFont: 'serif' | 'sans-serif', editorColors: EditorColors | null) {
+  return resolveEditorTheme({ editorTheme, editorFont, editorColors })
 }
 
 describe('resolveEditorTheme (spec 023 FR-003/004/007)', () => {
@@ -41,13 +41,29 @@ describe('resolveEditorTheme (spec 023 FR-003/004/007)', () => {
     expect(resolve('scholarly', 'sans-serif', custom)).toEqual({ kind: 'custom' })
   })
 
-  it('matches the monotone presets against the current app-theme variant', () => {
-    expect(resolve('monotone', 'sans-serif', MONOTONE_COLORS.light, 'light')).toEqual({ kind: 'preset', name: 'monotone' })
-    expect(resolve('monotone', 'sans-serif', MONOTONE_COLORS.dark, 'dark')).toEqual({ kind: 'preset', name: 'monotone' })
-    expect(resolve('monotone', 'serif', MONOTONE_COLORS.dark, 'dark')).toEqual({ kind: 'preset', name: 'monotone-serif' })
+  it('matches the monotone presets against EITHER app-theme variant (clarified 2026-08-09)', () => {
+    expect(resolve('monotone', 'sans-serif', MONOTONE_COLORS.light)).toEqual({ kind: 'preset', name: 'monotone' })
+    expect(resolve('monotone', 'sans-serif', MONOTONE_COLORS.dark)).toEqual({ kind: 'preset', name: 'monotone' })
+    expect(resolve('monotone', 'serif', MONOTONE_COLORS.dark)).toEqual({ kind: 'preset', name: 'monotone-serif' })
+    // A palette saved under one variant is still a preset under the other.
+    expect(resolve('monotone', 'sans-serif', MONOTONE_COLORS.light)).toEqual({ kind: 'preset', name: 'monotone' })
+    expect(resolve('monotone', 'sans-serif', MONOTONE_COLORS.dark)).toEqual({ kind: 'preset', name: 'monotone' })
   })
 
-  it('does not match a monotone light palette while the app is dark', () => {
-    expect(resolve('monotone', 'sans-serif', MONOTONE_COLORS.light, 'dark')).toEqual({ kind: 'custom' })
+  it('treats a palette matching no preset variant as Custom', () => {
+    const custom = { ...MONOTONE_COLORS.light, background: '#2b2b2b' }
+    expect(resolve('monotone', 'sans-serif', custom)).toEqual({ kind: 'custom' })
+  })
+})
+
+describe('presetColorsFor (spec 023 clarification 2026-08-09)', () => {
+  it('returns the preset colours for a static preset', () => {
+    expect(presetColorsFor('rustic', 'light')).toEqual(RUSTIC)
+    expect(presetColorsFor('scholarly', 'dark')).toEqual(SCHOLARLY)
+  })
+
+  it('returns the app-theme variant colours for a monotone preset', () => {
+    expect(presetColorsFor('monotone', 'light')).toEqual(MONOTONE_COLORS.light)
+    expect(presetColorsFor('monotone-serif', 'dark')).toEqual(MONOTONE_COLORS.dark)
   })
 })

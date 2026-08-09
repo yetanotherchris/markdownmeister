@@ -157,9 +157,11 @@ export interface Settings {
    *  `editorColors` is set, the effective theme is detected from the values
    *  instead (spec 023 FR-003/004/007). */
   editorTheme: EditorThemeName
-  /** Spec 023: custom editor colour overrides, or `null` when the preset's
-   *  colours are used (FR-001). A closed six-key record of `#rrggbb` hex
-   *  strings, validated in main (FR-010). */
+  /** Spec 023: the six editor colour tokens in effect. A preset selection
+   *  materialises the preset's exact colours here (clarified 2026-08-09), so
+   *  the field is only `null` for configs written before that change or by
+   *  hand. A closed six-key record of `#rrggbb` hex strings, validated in main
+   *  (FR-010). */
   editorColors: EditorColors | null
   /** Spec 020 FR-006/FR-009: whether the native spellchecker is enabled.
    *  Defaults to true. A closed type — validated in main as a boolean, never
