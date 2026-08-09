@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-08
 
-**Status**: Draft
+**Status**: Archived (implemented in `008-settings-redesign`, PR #46)
 
 **Input**: User description: "Make the settings window wider, introduce a tailwind-style sidebar navigation for areas. Two areas: general, theme. Use a toggle component similar to that found in tailwind css forms. Move the existing settings into the relevant area. Add a new setting for open file in same tab, or open in new tab. Add a new setting: toggle developer tools moved to settings. Bug: small pages don't have full background colour in the editor. Change the view source icon to hero icons code-bracket-square, make it dark blue."
 
