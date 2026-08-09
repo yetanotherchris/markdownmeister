@@ -1,6 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import type { Settings, EditorThemeName, SpellcheckLanguage, EditorColors, FileOpenBehavior } from '../shared/ipc-contract'
+import { RUSTIC_COLORS } from '../shared/editorThemePresets'
 import { atomicWrite } from './fs/atomicWrite'
 
 /**
@@ -25,7 +26,10 @@ export const DEFAULTS: Settings = {
   explorerVisible: true,
   editorFont: 'sans-serif',
   editorTheme: 'rustic',
-  editorColors: null,
+  // Spec 008 clarification 2026-08-09: presets are materialised in the config,
+  // not stored as null. A fresh config's first write must therefore persist the
+  // default preset's (rustic) exact colours, so the default carries them.
+  editorColors: RUSTIC_COLORS,
   spellcheckEnabled: true,
   spellcheckLanguage: null,
   fileOpenBehavior: 'same-tab'
@@ -206,4 +210,66 @@ export function writeSettingsFile(filePath: string, settings: Settings): void {
   const dir = path.dirname(filePath)
   fs.mkdirSync(dir, { recursive: true })
   atomicWrite(filePath, JSON.stringify(updated, null, 2), 0o600)
+}
+
+/**
+ * Spec 008 clarification 2026-08-09: "Materialise defaults on first launch."
+ * When the shared config has no settings section — the file is missing (fresh
+ * install, config.json deleted) or it only carries sibling sections such as
+ * `recentItems` — write the DEFAULTS section so the default Rustic palette is
+ * persisted from the very first launch. Returns the settings written, or `null`
+ * when nothing was materialised.
+ *
+ * FR-009 tolerance: a MALFORMED file (or any valid JSON that is not a config
+ * object) is left untouched — an implicit startup write must never overwrite an
+ * invalid config; only a real user settings write may repair it (the
+ * malformed-config e2e tests depend on this). A config that already has a
+ * `.settings` key is also left alone.
+ *
+ * `explorerVisible` is a parameter so the caller can write the honest FR-013
+ * state (`false` at startup, when no folder is open — writing plain `true`
+ * would be flipped to `false` by reconcile on the next launch anyway).
+ *
+ * Best-effort: a write failure returns `null` and the caller falls through to
+ * the in-memory defaults (FR-009). Electron-free so the callers resolve the
+ * path (settings.ts) and this logic is unit-testable.
+ */
+export function materialiseDefaultSettings(filePath: string, explorerVisible: boolean): Settings | null {
+  let raw: string
+  try {
+    raw = fs.readFileSync(filePath, 'utf-8')
+  } catch {
+    // Missing or unreadable: treat as a fresh install and materialise. A write
+    // failure (e.g. EACCES) falls through to null — the defaults still apply.
+    return writeDefaults(filePath, explorerVisible)
+  }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    // Malformed JSON: never overwrite an invalid config implicitly (FR-009).
+    return null
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    // Valid JSON that is not a config object — leave it alone.
+    return null
+  }
+  if ('settings' in (parsed as Record<string, unknown>)) {
+    // A settings section already exists.
+    return null
+  }
+
+  return writeDefaults(filePath, explorerVisible)
+}
+
+function writeDefaults(filePath: string, explorerVisible: boolean): Settings | null {
+  const settings = { ...DEFAULTS, explorerVisible }
+  try {
+    writeSettingsFile(filePath, settings)
+  } catch {
+    return null
+  }
+  return settings
 }

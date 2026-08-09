@@ -41,6 +41,12 @@ test.afterAll(async () => {
   fs.rmSync(testFolder, { recursive: true, force: true })
 })
 
+/** The Rustic palette's six canonical colours (spec 023, contract). */
+const RUSTIC_PALETTE = {
+  background: '#fdf6e3', foreground: '#1f1b16', accent: '#805610',
+  surface: '#fdf3d9', outline: '#817567', code: '#ba1a1a'
+}
+
 /** The canvas background (the theme's `--crepe-color-background` token). */
 async function canvasBackground(): Promise<string> {
   return window.locator('.milkdown').evaluate((el) => getComputedStyle(el).backgroundColor)
@@ -314,6 +320,9 @@ test('FR-006 a missing config opens with the default Rustic theme and a change w
   const parsed = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
   expect(parsed.settings.editorTheme).toBe('rustic-serif')
   expect(parsed.recentItems).toBeDefined()
+  // A fresh config's first write materialises the default preset's colours
+  // (spec 008 clarification 2026-08-09): never `null`.
+  expect(parsed.settings.editorColors).toEqual(RUSTIC_PALETTE)
 })
 
 test('FR-006 a malformed config still opens with the default Rustic theme', async () => {
@@ -331,6 +340,23 @@ test('FR-006 a malformed config still opens with the default Rustic theme', asyn
   await expect(dialog.getByRole('radio', { name: 'Rustic', exact: true })).toBeChecked()
   const contents = fs.readFileSync(configPath, 'utf-8')
   expect(contents === '{ not json' || JSON.parse(contents).windowState !== undefined).toBe(true)
+})
+
+test('a fresh launch materialises the default settings section (spec 008 clarification 2026-08-09)', async () => {
+  // beforeAll/beforeEach launched against a fresh MM_CONFIG_DIR, so config.json
+  // was missing at startup. Materialisation writes the defaults on first launch.
+  const configPath = path.join(configDir, 'config.json')
+  await expect
+    .poll(() => {
+      if (!fs.existsSync(configPath)) return null
+      return JSON.parse(fs.readFileSync(configPath, 'utf-8')).settings ?? null
+    })
+    .toBeTruthy()
+  const parsed = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
+  // The default preset's exact palette is persisted, never null.
+  expect(parsed.settings.editorColors).toEqual(RUSTIC_PALETTE)
+  // No folder is open at startup, so the honest FR-013 state is closed.
+  expect(parsed.settings.explorerVisible).toBe(false)
 })
 
 test('addendum: list spacing, blockquote indent, number alignment, and hidden HTML comments', async () => {

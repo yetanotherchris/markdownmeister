@@ -9,9 +9,11 @@ import {
   readConfigFile,
   migrateLegacySettingsFile,
   mergeSettingsPatch,
+  materialiseDefaultSettings,
   DEFAULTS
 } from '../../src/main/settingsFile'
 import type { RecentItem } from '../../src/shared/ipc-contract'
+import { RUSTIC_COLORS } from '../../src/shared/editorThemePresets'
 
 function tempDir(): string {
   return path.join(os.tmpdir(), `mm-settings-${Date.now()}-${Math.random().toString(36).slice(2)}`)
@@ -34,6 +36,12 @@ describe('loadSettingsFile', () => {
     expect(result.explorerVisible).toBe(true)
     expect(result.editorFont).toBe('sans-serif')
     expect(result.editorTheme).toBe('rustic')
+  })
+
+  it('materialises the default preset colours for a fresh config (clarification 2026-08-09)', () => {
+    // A deleted/missing config is a fresh install: its defaults must carry the
+    // Rustic palette, not null, so the first settings write persists colours.
+    expect(loadSettingsFile(path.join(os.tmpdir(), 'does-not-exist.json')).editorColors).toEqual(RUSTIC_COLORS)
   })
 
   it('returns the defaults when the file is malformed', () => {
@@ -285,6 +293,15 @@ describe('writeSettingsFile (shared config, spec 012 FR-002)', () => {
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
+  it('persists the materialised default palette, not null, on a fresh write (clarification 2026-08-09)', () => {
+    const file = tempSettingsFile()
+    writeSettingsFile(file, DEFAULTS)
+    expect(loadSettingsFile(file).editorColors).toEqual(RUSTIC_COLORS)
+    const written = JSON.parse(fs.readFileSync(file, 'utf-8'))
+    expect(written.settings.editorColors).not.toBeNull()
+    fs.rmSync(path.dirname(file), { recursive: true, force: true })
+  })
+
   it('preserves a pre-existing recentItems key (read-modify-write)', () => {
     const file = tempSettingsFile()
     const recentItems: RecentItem[] = [{
@@ -417,6 +434,57 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
     expect('developerToolsEnabled' in (migrated ?? {})).toBe(false)
     expect(loadSettingsFile(configPath).fileOpenBehavior).toBe('new-tab')
     fs.rmSync(path.dirname(configPath), { recursive: true, force: true })
+  })
+})
+
+describe('materialiseDefaultSettings (spec 008 clarification 2026-08-09)', () => {
+  it('writes the defaults (with the honest closed explorer state) when the file is missing', () => {
+    const file = path.join(
+      os.tmpdir(),
+      `mm-materialise-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      'config.json'
+    )
+    expect(materialiseDefaultSettings(file, false)).toEqual({ ...DEFAULTS, explorerVisible: false })
+    expect(loadSettingsFile(file)).toEqual({ ...DEFAULTS, explorerVisible: false })
+    expect(loadSettingsFile(file).editorColors).toEqual(RUSTIC_COLORS)
+    fs.rmSync(path.dirname(file), { recursive: true, force: true })
+  })
+
+  it('adds a settings section to a valid config that lacks one, preserving siblings', () => {
+    const recentItems: RecentItem[] = [{ path: '/w/a.md', kind: 'file', name: 'a.md', lastOpenedAt: 1 }]
+    const file = tempSettingsFile(JSON.stringify({ recentItems }))
+    expect(materialiseDefaultSettings(file, false)).toEqual({ ...DEFAULTS, explorerVisible: false })
+    expect(hasSettingsKey(file)).toBe(true)
+    expect(readConfigFile(file).recentItems).toEqual(recentItems)
+    fs.rmSync(path.dirname(file), { recursive: true, force: true })
+  })
+
+  it('does not touch a config that already has a settings section', () => {
+    const file = tempSettingsFile(JSON.stringify({ settings: { sidebarWidth: 42, themeOverride: 'dark' } }))
+    expect(materialiseDefaultSettings(file, false)).toBeNull()
+    expect(loadSettingsFile(file).sidebarWidth).toBe(42)
+    fs.rmSync(path.dirname(file), { recursive: true, force: true })
+  })
+
+  it('never overwrites a malformed config (FR-009 tolerance)', () => {
+    const file = tempSettingsFile('{ not json')
+    expect(materialiseDefaultSettings(file, false)).toBeNull()
+    expect(fs.readFileSync(file, 'utf-8')).toBe('{ not json')
+    fs.rmSync(path.dirname(file), { recursive: true, force: true })
+  })
+
+  it('never overwrites valid JSON that is not a config object', () => {
+    const file = tempSettingsFile(JSON.stringify([1, 2, 3]))
+    expect(materialiseDefaultSettings(file, false)).toBeNull()
+    expect(JSON.parse(fs.readFileSync(file, 'utf-8'))).toEqual([1, 2, 3])
+    fs.rmSync(path.dirname(file), { recursive: true, force: true })
+  })
+
+  it('honours the explorerVisible parameter (FR-013 honest closed state)', () => {
+    const file = tempSettingsFile()
+    materialiseDefaultSettings(file, false)
+    expect(loadSettingsFile(file).explorerVisible).toBe(false)
+    fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 })
 
