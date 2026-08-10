@@ -79,10 +79,11 @@ Candidates, with approximate WCAG contrast against the two dark chrome surfaces:
 
 `#2563eb` is the chosen value. On light surfaces it is clearly a dark blue (≈5.2:1
 on white, ≈3.9:1 on the light toolbar `#e0e0e0`). On dark chrome the ≈2.9:1
-reading on the toolbar is just under the 3:1 non-text guideline; it is mitigated
-by the existing translucent pill behind the glyph (retinted to the same token,
-D4) and by the glyph's 24px size. `#1d4ed8` was rejected for being too dim on the
-dark toolbar; `#3b82f6` for not reading as dark blue. The value is defined once in
+reading on the toolbar is just under the 3:1 non-text guideline; the glyph's 24px
+size and stroke weight keep it distinguishable (plan D4 — the spec-014
+translucent pill was removed at the user's request on 2026-08-10, so it is no
+longer a mitigation). `#1d4ed8` was rejected for being too dim on the dark
+toolbar; `#3b82f6` for not reading as dark blue. The value is defined once in
 `:root` and intentionally NOT re-defined under `[data-theme='dark']` — the single
 curated colour must be identical in both modes (FR-005/006).
 

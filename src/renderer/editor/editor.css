@@ -76,15 +76,15 @@
    buildTopBar — see CrepeHost.tsx and toolbarLabels.ts). Crepe gives every
    top-bar button the same outline-coloured icon, so the source action is easy
    to miss. Make it prominent: the icon is rendered in the spec-028 dark-blue
-   token and the button sits on a translucent token-tinted background, while
-   keeping Crepe's button size/alignment and the muted styling of the surrounding
-   controls (contracts/renderer.md R1-R3; spec 028 D4: the spec-014 accent
-   colour is superseded by --mm-view-source).
+   token, with NO background fill — the blue glyph alone stands out from the
+   muted formatting controls while keeping Crepe's button size/alignment
+   (contracts/renderer.md R1-R3; spec 028 D4 as amended 2026-08-10: the pill
+   was removed at the user's request, and the spec-014 accent colour is
+   superseded by --mm-view-source).
    The :last-child target is deliberately coupled to Crepe's group order; the
    e2e `isLast` assertion in tests/e2e/view-source-icon.spec.ts is the tripwire
    if a future group is appended after 'view'. */
 .milkdown .milkdown-top-bar .top-bar-inner > .top-bar-item:last-child {
-  background: color-mix(in srgb, var(--mm-view-source) 14%, transparent);
   border-radius: 4px;
 }
 
@@ -96,10 +96,6 @@
   color: var(--mm-view-source);
   stroke: var(--mm-view-source);
   fill: none;
-}
-
-.milkdown .milkdown-top-bar .top-bar-inner > .top-bar-item:last-child:hover {
-  background: color-mix(in srgb, var(--mm-view-source) 24%, transparent);
 }
 
 /* GitHub-style block spacing (2026-08-07): Crepe's reset.css collapses block

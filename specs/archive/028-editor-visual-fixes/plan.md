@@ -137,13 +137,14 @@ heroicons outline icon is stroke-based (`fill="none"`, `stroke="currentColor"`,
 solid). The context-menu "View source" item gains the same glyph via the
 `CodeBracketSquareIcon` React component, coloured with the token.
 
-### D4: keep the top-bar pill treatment, retinted
+### D4: the view-source glyph is a blue foreground, no background pill
 
 Spec 014 made the last top-bar item prominent with a translucent accent pill. 028
-keeps that affordance but retints pill and glyph to the dark-blue token, keeping
-the "deliberate colour" discoverability while satisfying FR-005/006. This is a
-plan-level choice (the spec does not mention the pill); recorded in the decision
-log.
+initially kept that affordance retinted to the dark-blue token, but at the user's
+request (2026-08-10) the pill was removed entirely: the action is now the blue
+glyph alone on the plain toolbar, with no background fill. The blue glyph still
+stands out from the muted formatting controls (FR-005/006) and keeps Crepe's
+button size/alignment. Recorded in the decision log.
 
 ## Project Structure
 
@@ -191,7 +192,7 @@ No shared- or main-process file changes are needed.
 | Violation | Why needed | Simpler alternative rejected because |
 |-----------|------------|-------------------------------------|
 | Two copies of the code-bracket-square path (raw SVG string for Crepe's `buildTopBar` + React component for the context menu) | Crepe's toolbar API takes an icon as an SVG *string*; the context menu renders React elements. Keeping one source would require a React renderer inside the toolbar or parsing the string in the menu — both worse | Inlining the path once in React and stringifying it for Crepe (a second, slightly different representation; also impossible without a render-to-string dependency) |
-| Dark-blue contrast on the dark toolbar `#262626` is ≈2.9:1 (under the 3:1 non-text guideline) | The spec requires a *dark blue* that is also distinguishable on dark surfaces; a darker value (e.g. `#1d4ed8`) drops to ≈2.3:1, a brighter one (`#3b82f6`) stops reading as "dark blue". The chosen `#2563eb` plus the translucent pill and 24px glyph keeps the action clearly visible | Picking a theme-dependent colour (violates the single-curated-colour assumption) or a lighter blue (violates FR-005 wording) |
+| Dark-blue contrast on the dark toolbar `#262626` is ≈2.9:1 (under the 3:1 non-text guideline) | The spec requires a *dark blue* that is also distinguishable on dark surfaces; a darker value (e.g. `#1d4ed8`) drops to ≈2.3:1, a brighter one (`#3b82f6`) stops reading as "dark blue". The chosen `#2563eb` with a 24px stroke glyph keeps the action clearly visible (the former translucent pill was removed at the user's request, D4) | Picking a theme-dependent colour (violates the single-curated-colour assumption) or a lighter blue (violates FR-005 wording) |
 
 ## Decision log
 
@@ -203,10 +204,12 @@ No shared- or main-process file changes are needed.
 - **`--mm-view-source: #2563eb`** (D2): single curated dark blue, defined once in
   `:root`, distinct from the accent in both modes. Chosen after evaluating
   `#1d4ed8` (too dim on dark chrome) and `#3b82f6` (reads as light blue).
-- **Icon treatment kept but retinted** (D4): the spec-014 translucent pill on the
-  last top-bar item is retained and tinted with the token so the action stays
-  prominent; the glyph colour assertion in the archived `view-source-icon.spec.ts`
-  is updated to the token (028 supersedes 014's accent colour).
+- **Icon treatment — blue foreground, no pill** (D4): the spec-014 translucent
+  pill was initially retinted to the token, then REMOVED at the user's request
+  (2026-08-10): the view-source action is now the dark-blue glyph alone, with no
+  background fill. The glyph colour assertion in the archived
+  `view-source-icon.spec.ts` is updated to the token (028 supersedes 014's accent
+  colour).
 - **Context-menu glyph added** (D3): "View source" in the explorer context menu
   gains the same code-bracket-square glyph, coloured with the token (US2 scenario
   3).
