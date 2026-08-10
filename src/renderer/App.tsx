@@ -371,6 +371,7 @@ export default function App() {
                     selectedId={workspace.selectedId}
                     onSelect={tree.handleTreeSelect}
                     onActivate={tree.handleTreeActivate}
+                    onFileOpen={tree.handleFileOpen}
                     onToggle={tree.handleTreeToggle}
                     pendingEditId={pendingEditId}
                     onRename={tree.handleRename}
