@@ -117,10 +117,14 @@ against the built app; the glyph renders in dark blue in both surfaces.
       `npm run test:e2e`, `npm run check`. Fix any violations.
       **Final gate (2026-08-10)**: lint 0, typecheck 0, 608 unit tests pass, 241
       e2e tests pass (233 baseline + 8 new), `npm run check` reports no violations.
-- [ ] T012 Archive the spec: `git mv specs/028-editor-visual-fixes specs/archive/028-editor-visual-fixes`,
+- [X] T012 Archive the spec: `git mv specs/028-editor-visual-fixes specs/archive/028-editor-visual-fixes`,
       set its `**Status**` to `Archived`, and update the Current implementation
       status table in `AGENTS.md`. Create the phase PR against `main` with an
       `AI usage:` line naming the contributing models.
+      **Done (2026-08-10)**: spec archived (Status: Archived). No Current
+      implementation status table exists in this repo's `AGENTS.md` (the
+      template reference is stale), so there was nothing to update there. Phase
+      PR: https://github.com/yetanotherchris/markdownmeister/pull/50
 
 ---
 
