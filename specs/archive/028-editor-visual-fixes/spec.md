@@ -48,17 +48,15 @@ the theme's canvas colour edge to edge.
 ### User Story 2 - Recognisable, coloured view-source action (Priority: P2)
 
 A writer can identify the view-source action at a glance by its familiar
-code-bracket-square glyph in dark blue, in both the editor top bar and the
-explorer context menu.
+code-bracket-square glyph in dark blue, in the editor top bar.
 
 **Why this priority**: The action is currently easy to miss and uses a generic
 chevron glyph; a recognisable icon in a deliberate colour makes the most-used
 editing action discoverable.
 
 **Independent Test**: Open a document, inspect the view-source action in the
-editor top bar and the explorer context menu, and verify the glyph is the
-code-bracket-square shape rendered in dark blue against both light and dark
-backgrounds.
+editor top bar, and verify the glyph is the code-bracket-square shape rendered in
+dark blue against both light and dark backgrounds.
 
 **Acceptance Scenarios**:
 
@@ -67,8 +65,9 @@ backgrounds.
 2. **Given** the view-source action is visible, **When** the user inspects its
    colour, **Then** it is dark blue.
 3. **Given** the view-source action is shown in the explorer context menu,
-   **When** the user inspects it, **Then** it uses the same glyph and dark-blue
-   colour.
+   **When** the user inspects it, **Then** it is a plain text item with no glyph
+   (clarified 2026-08-10: the dark-blue code-bracket-square icon is a top-bar
+   affordance only; the context menu keeps its text label).
 4. **Given** either light or dark mode, **When** the user looks at the action,
    **Then** it remains clearly visible against the background.
 
@@ -95,8 +94,8 @@ backgrounds.
   active theme's canvas palette.
 - **FR-003**: The full-height canvas behaviour MUST hold for every editor theme,
   including custom themes, and in both light and dark modes.
-- **FR-004**: The view-source action MUST display the code-bracket-square icon
-  shape.
+- **FR-004**: The view-source action in the editor top bar MUST display the
+  code-bracket-square icon shape.
 - **FR-005**: The view-source icon MUST be rendered in a dark blue colour.
 - **FR-006**: The view-source icon MUST remain visible against both light and
   dark editor backgrounds.
@@ -124,8 +123,9 @@ backgrounds.
 - **Dark blue**: "Dark blue" is a single curated colour distinct from the accent
   token, chosen so it reads clearly on both light and dark canvases (FR-006);
   the exact value is a plan-level decision.
-- **Scope**: The view-source action appears in the editor top bar and the
-  explorer context menu; both places use the same glyph and colour.
+- **Scope**: The view-source icon appears in the editor top bar only. The
+  explorer context menu keeps its plain "View source" text item with no glyph
+  (clarified 2026-08-10).
 - **Carry-over fixes**: These two issues were part of the settings-redesign
   feature's original input but were not fully delivered; this spec covers them
   explicitly so their completion is verifiable. (The "Open with" context-menu

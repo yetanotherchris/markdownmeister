@@ -55,9 +55,9 @@ async function setExplorerPreference(newTab: boolean): Promise<void> {
   await window.getByRole('menuitem', { name: 'Settings…' }).click()
   const dialog = window.getByTestId('settings-dialog')
   await dialog.waitFor()
-  const checkbox = dialog.getByRole('checkbox', { name: 'Open explorer files in a new tab' })
+  const checkbox = dialog.getByRole('checkbox', { name: 'Open files in a new tab' })
   if ((await checkbox.isChecked()) !== newTab) {
-    await dialog.locator('.settings-switch', { hasText: 'Open explorer files in a new tab' }).click()
+    await dialog.locator('.settings-switch', { hasText: 'Open files in a new tab' }).click()
   }
   await dialog.getByRole('button', { name: 'Close', exact: true }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)

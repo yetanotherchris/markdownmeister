@@ -26,7 +26,7 @@ $env:MM_CONFIG_DIR = Join-Path $env:TEMP "mm-settings-redesign-manual"
 
 ## File Preference
 
-1. In General, enable `Open explorer files in a new tab`.
+1. In General, enable `Open files in a new tab`.
 2. Open two distinct files from the explorer with an ordinary click; confirm both tabs remain.
 3. Open the first file again; confirm its existing tab activates rather than duplicating.
 4. Disable the control, ensure the active tab is clean, and open another explorer file; confirm the active tab is replaced.

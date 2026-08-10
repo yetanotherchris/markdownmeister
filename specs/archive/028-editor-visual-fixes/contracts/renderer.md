@@ -25,8 +25,9 @@ suite (`tests/e2e/editor-visual-fixes.spec.ts`) and the updated spec-014 suite
    `d`). Its `title`/`aria-label` stay "View source" (label pipeline unchanged).
 2. **Colour**: the glyph's computed colour equals the `--mm-view-source` token
    (`#2563eb`), in both light and dark modes, and differs from the accent token.
-3. **Explorer context menu**: the "View source" `menuitem` shows the same
-   code-bracket-square glyph in the same colour.
+3. **Explorer context menu**: the "View source" `menuitem` is a plain text item
+   with no glyph (spec clarification 2026-08-10; the icon is a top-bar
+   affordance only).
 
 ## E2e contract (`tests/e2e/editor-visual-fixes.spec.ts`)
 
@@ -51,7 +52,7 @@ suite (`tests/e2e/editor-visual-fixes.spec.ts`) and the updated spec-014 suite
    computed colour equals the `--mm-view-source` token and differs from the accent
    in both light and dark mode.
 9. **US2 context menu** — right-click a file in the explorer: the "View source"
-   menuitem shows the code-bracket-square glyph in the dark-blue token colour.
+   menuitem is a plain text item with no glyph (no `svg` child).
 
 ## Updated spec-014 suite (`tests/e2e/view-source-icon.spec.ts`)
 

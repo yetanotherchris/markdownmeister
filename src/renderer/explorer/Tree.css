@@ -133,9 +133,7 @@
 }
 
 .context-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: block;
   width: 100%;
   text-align: left;
   background: none;
@@ -145,25 +143,6 @@
   cursor: pointer;
   font-size: 13px;
   color: var(--mm-text-secondary);
-}
-
-/* Spec 028 (FR-004/005): the "View source" item's leading glyph — the heroicons
-   code-bracket-square in the --mm-view-source dark blue, matching the editor top
-   bar. Heroicons outline icons paint via stroke: currentColor, so the colour
-   token on the wrapper is enough. */
-.context-menu-item-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 14px;
-  height: 14px;
-  color: var(--mm-view-source);
-}
-
-.context-menu-item-icon svg {
-  width: 14px;
-  height: 14px;
 }
 
 .context-menu-item:hover {

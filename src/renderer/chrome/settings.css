@@ -21,6 +21,11 @@
 .settings-dialog {
   width: 640px;
   max-width: calc(100vw - 32px);
+  /* Spec 028 follow-up (2026-08-10): the Theme area is taller than General, so
+     switching areas used to resize the dialog (314px vs 434px at 640px width).
+     Pin a minimum height at the taller area's height so the dialog stays the
+     same size whichever area is shown; .settings-main scrolls if content grows. */
+  min-height: 440px;
   max-height: calc(100vh - 32px);
   display: flex;
   flex-direction: column;

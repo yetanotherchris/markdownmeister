@@ -125,17 +125,15 @@ checks (research R2): ≈5.2:1 on white, ≈3.9:1 on the light toolbar `#e0e0e0`
 `#262626` — the last reading just under 3:1, mitigated by the existing translucent
 pill (now tinted with the same token) behind the glyph and the glyph's 24px size.
 
-### D3: heroicons code-bracket-square, stroke-based, in both surfaces
+### D3: heroicons code-bracket-square, stroke-based, in the top bar only
 
 The top-bar icon is injected as a raw SVG string into Crepe's `buildTopBar`
-(`CrepeHost.tsx`). The context menu is React. Both use the identical
-code-bracket-square path so the glyph is recognisably the same in both places
-(FR-004, spec Assumption "both places use the same glyph and colour"). The
-heroicons outline icon is stroke-based (`fill="none"`, `stroke="currentColor"`,
-`stroke-width="1.5"`), so the CSS must colour it via `color`/`stroke` and force
-`fill: none` (the existing override set `fill`, which would paint the square
-solid). The context-menu "View source" item gains the same glyph via the
-`CodeBracketSquareIcon` React component, coloured with the token.
+(`CrepeHost.tsx`). The heroicons outline icon is stroke-based (`fill="none"`,
+`stroke="currentColor"`, `stroke-width="1.5"`), so the CSS must colour it via
+`color`/`stroke` and force `fill: none` (the existing override set `fill`, which
+would paint the square solid). The explorer context menu keeps its plain
+text-only "View source" item — the glyph is a top-bar affordance only (spec
+clarification 2026-08-10).
 
 ### D4: the view-source glyph is a blue foreground, no background pill
 
@@ -167,13 +165,14 @@ specs/028-editor-visual-fixes/
 ```text
 src/renderer/
 ├── App.css                      # MODIFY: add --mm-view-source token to :root
-├── editor/editor.css            # MODIFY: .editor-host .milkdown { min-height: 100% };
-│                                #         last top-bar item pill+glyph retinted to token
-├── editor/CrepeHost.tsx         # MODIFY: VIEW_SOURCE_ICON → heroicons code-bracket-square
-└── explorer/
-    ├── Tree.tsx                 # MODIFY: "View source" menu item gains the code-bracket-square glyph
-    └── Tree.css                 # MODIFY: .context-menu-item-icon colour + sizing
+├── editor/editor.css            # MODIFY: .editor-host column flex + wrapper/.milkdown
+│                                #         min-height: 100%; top-bar glyph coloured with token
+└── editor/CrepeHost.tsx         # MODIFY: VIEW_SOURCE_ICON → heroicons code-bracket-square
 ```
+
+(Scope note: an earlier draft also styled the explorer context menu with the
+glyph in `Tree.tsx`/`Tree.css`; that was reverted at the user's request on
+2026-08-10 — the context-menu "View source" item is text-only.)
 
 ```text
 tests/e2e/
@@ -191,7 +190,7 @@ No shared- or main-process file changes are needed.
 
 | Violation | Why needed | Simpler alternative rejected because |
 |-----------|------------|-------------------------------------|
-| Two copies of the code-bracket-square path (raw SVG string for Crepe's `buildTopBar` + React component for the context menu) | Crepe's toolbar API takes an icon as an SVG *string*; the context menu renders React elements. Keeping one source would require a React renderer inside the toolbar or parsing the string in the menu — both worse | Inlining the path once in React and stringifying it for Crepe (a second, slightly different representation; also impossible without a render-to-string dependency) |
+| The code-bracket-square path exists as a raw SVG string for Crepe's `buildTopBar` | Crepe's toolbar API takes an icon as an SVG *string*; there is no React path (the context-menu variant was reverted on 2026-08-10) | Inlining the path in React and stringifying it for Crepe (a second, slightly different representation; also impossible without a render-to-string dependency) |
 | Dark-blue contrast on the dark toolbar `#262626` is ≈2.9:1 (under the 3:1 non-text guideline) | The spec requires a *dark blue* that is also distinguishable on dark surfaces; a darker value (e.g. `#1d4ed8`) drops to ≈2.3:1, a brighter one (`#3b82f6`) stops reading as "dark blue". The chosen `#2563eb` with a 24px stroke glyph keeps the action clearly visible (the former translucent pill was removed at the user's request, D4) | Picking a theme-dependent colour (violates the single-curated-colour assumption) or a lighter blue (violates FR-005 wording) |
 
 ## Decision log
@@ -210,6 +209,16 @@ No shared- or main-process file changes are needed.
   background fill. The glyph colour assertion in the archived
   `view-source-icon.spec.ts` is updated to the token (028 supersedes 014's accent
   colour).
-- **Context-menu glyph added** (D3): "View source" in the explorer context menu
-  gains the same code-bracket-square glyph, coloured with the token (US2 scenario
-  3).
+- **Context-menu item is text-only** (D3): the "View source" item in the
+  explorer context menu keeps its plain text label — the code-bracket-square
+  glyph is a top-bar affordance only (user request 2026-08-10, spec
+  clarification). The initial implementation added the glyph to the menu item;
+  that was reverted.
+- **Settings dialog minimum height** (user request 2026-08-10): the Theme area
+  is taller than General, so switching areas resized the dialog. A
+  `min-height: 440px` on `.settings-dialog` pins the height to the taller area;
+  the settings area scrolls if content grows (unrelated to spec 028, recorded
+  here for the change log).
+- **File-preference label** (user request 2026-08-10): the General-area switch
+  label reads "Open files in a new tab" (was "Open explorer files in a new
+  tab"). Unrelated to spec 028, recorded here for the change log.

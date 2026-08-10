@@ -110,11 +110,11 @@ Two consequences for the implementation:
    solid. The existing `color: var(--mm-accent)` on the last top-bar item's `svg`
    becomes `color: var(--mm-view-source); stroke: var(--mm-view-source);
    fill: none`.
-2. **The same path in both surfaces.** The editor top bar's icon is passed to
-   Crepe's `buildTopBar` as an SVG *string* (`CrepeHost.tsx`), while the explorer
-   context menu renders React elements (`Tree.tsx`). Using the same path string in
-   both keeps the glyph identical (FR-004 / spec Assumption). The React
-   component import in `Tree.tsx` renders the identical `<path d=…>`.
+2. **The glyph lives in the top bar only.** The editor top bar's icon is passed
+   to Crepe's `buildTopBar` as an SVG *string* (`CrepeHost.tsx`). The explorer
+   context menu keeps its plain text-only "View source" item (spec clarification
+   2026-08-10), so no second representation is needed — the earlier `(spec 028
+   draft) React-component variant in `Tree.tsx` was reverted.
 
 The toolbar label pipeline (`src/renderer/editor/toolbarLabels.ts`) labels the
 view-source button by DOM order (`title`/`aria-label` = "View source"); the icon

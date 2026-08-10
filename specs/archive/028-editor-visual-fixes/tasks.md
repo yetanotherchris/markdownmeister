@@ -124,6 +124,13 @@ against the built app; the glyph renders in dark blue in both surfaces.
       to the spec's zero-content / single-character edge cases and to all five
       preset themes (SC-001); `research.md` R1 DOM diagram corrected to the
       actual `createViewContainer` nesting.
+      **Follow-up changes (user request 2026-08-10)**: the view-source icon is a
+      top-bar affordance only — the context-menu "View source" item is a plain
+      text item (glyph + Tree.tsx/Tree.css icon styling reverted; spec US2
+      clarified); the settings dialog pins `min-height: 440px` so General and
+      Theme areas share a stable height (e2e asserted in `settings.spec.ts`); the
+      file-preference label reads "Open files in a new tab" (tests + archived 008
+      contract updated).
 - [X] T012 Archive the spec: `git mv specs/028-editor-visual-fixes specs/archive/028-editor-visual-fixes`,
       set its `**Status**` to `Archived`, and update the Current implementation
       status table in `AGENTS.md`. Create the phase PR against `main` with an

@@ -221,7 +221,7 @@ export default function SettingsDialog({
                       onChange={(e) => onFileOpenBehaviorChange(e.target.checked ? 'new-tab' : 'same-tab')}
                     />
                     <span className="settings-switch-track" aria-hidden="true" />
-                    <span className="settings-switch-text">Open explorer files in a new tab</span>
+                    <span className="settings-switch-text">Open files in a new tab</span>
                   </label>
                 </fieldset>
               </>

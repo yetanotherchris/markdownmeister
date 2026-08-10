@@ -80,7 +80,8 @@ npm run dev
    code-bracket-square shape in dark blue `#2563eb` (light and dark modes).
    Hovering still shows the "View source" tooltip.
 6. **US2 — context menu**: Right-click a file in the explorer. The "View source"
-   item shows the same code-bracket-square glyph in the same dark blue.
+   item is a plain text label with no icon (the code-bracket-square dark-blue
+   glyph is a top-bar affordance only).
 
 ## Expected outcomes
 

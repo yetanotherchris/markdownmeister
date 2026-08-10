@@ -301,22 +301,16 @@ test('US2 the top-bar view-source glyph stays the dark blue in dark mode', async
   expect(expected).not.toBe(await accentColour())
 })
 
-test('US2 the explorer context-menu View source item shows the same glyph and colour', async () => {
+test('US2 the explorer context-menu View source item is a plain text label', async () => {
   await openFile(window, 'short.md')
 
   await window.getByRole('treeitem').getByText('short.md').click({ button: 'right' })
   const item = window.getByRole('menuitem', { name: 'View source' })
   await expect(item).toBeVisible()
 
-  // FR-004: the context-menu glyph is the same code-bracket-square outline.
-  const pathD = await item
-    .locator('.context-menu-item-icon svg path')
-    .evaluate((p) => p.getAttribute('d'))
-  expect(pathD).toBe(CODE_BRACKET_SQUARE_D)
-
-  // FR-005/006: rendered in the same dark blue.
-  const iconColour = await item
-    .locator('.context-menu-item-icon')
-    .evaluate((el) => getComputedStyle(el).color)
-  expect(iconColour).toBe(await viewSourceColour())
+  // The context-menu action is a plain text item — no glyph. The code-bracket-
+  // square dark-blue icon lives only in the editor top bar (spec 028 follow-up
+  // 2026-08-10).
+  await expect(item.locator('svg')).toHaveCount(0)
+  await expect(item).toHaveText('View source')
 })
