@@ -115,8 +115,15 @@ against the built app; the glyph renders in dark blue in both surfaces.
       `Updated spec-014 suite`).
 - [X] T011 Run the full gate: `npm run lint`, `npm run typecheck`, `npm run test`,
       `npm run test:e2e`, `npm run check`. Fix any violations.
-      **Final gate (2026-08-10)**: lint 0, typecheck 0, 608 unit tests pass, 241
-      e2e tests pass (233 baseline + 8 new), `npm run check` reports no violations.
+      **Final gate (2026-08-10)**: lint 0, typecheck 0, 608 unit tests pass, 243
+      e2e tests pass (233 baseline + 10 new), `npm run check` reports no
+      violations. The pre-existing `native.spec.ts` US3 footer flake was observed
+      once under full-suite load and passes in isolation (same class of flake as
+      archived 016/004 notes); a clean full run is recorded above.
+      **Post-review additions (code review 2026-08-10)**: e2e coverage extended
+      to the spec's zero-content / single-character edge cases and to all five
+      preset themes (SC-001); `research.md` R1 DOM diagram corrected to the
+      actual `createViewContainer` nesting.
 - [X] T012 Archive the spec: `git mv specs/028-editor-visual-fixes specs/archive/028-editor-visual-fixes`,
       set its `**Status**` to `Archived`, and update the Current implementation
       status table in `AGENTS.md`. Create the phase PR against `main` with an

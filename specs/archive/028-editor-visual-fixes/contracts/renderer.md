@@ -42,10 +42,15 @@ suite (`tests/e2e/editor-visual-fixes.spec.ts`) and the updated spec-014 suite
    (Monotone): the full-height canvas shows the theme's dark canvas colour.
 5. **US1 custom theme** — a config carrying custom colours renders the custom
    canvas colour full-height (per spec 023 fixture pattern).
-6. **US2 top bar** — the view-source button glyph is code-bracket-square; its
+6. **US1 zero/single-character documents** — empty and single-character documents
+   still fill the editor with the canvas colour (spec Edge Cases).
+7. **US1 all five presets** — each preset theme (Rustic, Rustic Serif, Scholarly,
+   Monotone, Monotone Serif) fills the editor with its own canvas colour
+   (SC-001).
+8. **US2 top bar** — the view-source button glyph is code-bracket-square; its
    computed colour equals the `--mm-view-source` token and differs from the accent
    in both light and dark mode.
-7. **US2 context menu** — right-click a file in the explorer: the "View source"
+9. **US2 context menu** — right-click a file in the explorer: the "View source"
    menuitem shows the code-bracket-square glyph in the dark-blue token colour.
 
 ## Updated spec-014 suite (`tests/e2e/view-source-icon.spec.ts`)

@@ -8,28 +8,33 @@ Evidence collected during planning. Each decision cites the check it rests on.
 
 The editor region's DOM is (verified in `src/renderer/App.tsx`,
 `src/renderer/editor/EditorPanel.tsx`, `CrepeHost.tsx` and
-`node_modules/@milkdown/crepe/src/core/builder.ts`):
+`node_modules/@milkdown/crepe/src/core/builder.ts` + `@milkdown/core`
+`internal-plugin/editor-view.ts`):
 
 ```text
 .editor-area                 (flex: 1, position: relative, background: var(--mm-editor-bg))
 └── .editor-host             (position: absolute; inset via top/left/width/height; overflow: auto)
-    └── .milkdown            (Crepe root; background: var(--crepe-color-background))
-        ├── .milkdown-top-bar
-        └── .ProseMirror
+    └── div                  (the container div passed to `new Crepe(...)`, no class)
+        └── .milkdown        (Crepe root; background: var(--crepe-color-background))
+            ├── .milkdown-top-bar
+            └── .ProseMirror
 ```
 
-- Crepe's `root` (the `containerRef` div passed to `new Crepe(...)`) receives the
-  class `milkdown` (`@milkdown/core` editor-view plugin:
-  `container.className = 'milkdown'`), and `reset.css` paints it
-  `background: var(--crepe-color-background)`.
+- Crepe does NOT put the `milkdown` class on the container div it is handed.
+  `@milkdown/core`'s `createViewContainer` (`internal-plugin/editor-view.ts`)
+  creates a NEW `div.milkdown` and appends it INSIDE the container, then moves
+  the editor's DOM into it. So the Crepe root is a child of the wrapper div, not
+  a direct child of `.editor-host` — the wrapper must stretch too (research R1
+  fix, verified live in the built app).
+- `reset.css` paints `.milkdown` `background: var(--crepe-color-background)`.
 - The theme blocks in `src/renderer/editor/themes.css` set
   `--crepe-color-background` per `.app-container[data-editor-theme=…] .milkdown`;
   the custom theme maps `--mm-custom-background` onto the same token. The source
   of the canvas colour is therefore already the `.milkdown` element's background.
 - For a short document `.milkdown` is only as tall as its content, so the
-  transparent `.editor-host` exposes `.editor-area`'s `--mm-editor-bg` below the
-  last line — white in light, the dark chrome surface in dark. That is the
-  "white/chrome patch" of US1.
+  transparent wrapper and `.editor-host` expose `.editor-area`'s `--mm-editor-bg`
+  below the last line — white in light, the dark chrome surface in dark. That is
+  the "white/chrome patch" of US1.
 
 **Fix**: `.editor-host` becomes a column flex container and both the Crepe wrapper
 and the root stretch: `.editor-host > div { min-height: 100% }` and

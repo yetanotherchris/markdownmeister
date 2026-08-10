@@ -34,6 +34,8 @@ let configDir: string
 test.beforeAll(async () => {
   testFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'mm-visual-fixes-ws-'))
   fs.writeFileSync(path.join(testFolder, 'short.md'), '# Short\n')
+  fs.writeFileSync(path.join(testFolder, 'empty.md'), '')
+  fs.writeFileSync(path.join(testFolder, 'single.md'), 'x')
   fs.writeFileSync(
     path.join(testFolder, 'long.md'),
     Array.from({ length: 80 }, (_, i) => `Line ${i} with enough body text to fill the editor.`).join('\n')
@@ -225,6 +227,44 @@ test('US1 a custom theme fills the editor with its canvas colour', async () => {
     .toBe('#2b2b2b')
   await expect.poll(canvasFillRatio).toBeGreaterThanOrEqual(0.99)
   await expect.poll(editorColourAtBottom).toBe('rgb(43, 43, 43)')
+})
+
+test('US1 zero-content and single-character documents still fill the editor', async () => {
+  // Spec edge cases: no content at all, and a single character.
+  for (const name of ['empty.md', 'single.md'] as const) {
+    await closeAppSafely(app)
+    ;({ app, window } = await launchApp(configDir, testFolder))
+    await openFile(window, name)
+    await expect.poll(canvasFillRatio).toBeGreaterThanOrEqual(0.99)
+    await expect.poll(editorColourAtBottom).toBe('rgb(253, 246, 227)')
+  }
+})
+
+test('US1 every preset theme fills the editor with its own canvas colour', async () => {
+  // SC-001: the full-height behaviour holds across all five preset themes. Open
+  // the dialog, select each theme, Save, and verify the canvas fills and paints
+  // the theme's canvas value.
+  await openFile(window, 'short.md')
+
+  const themes: { name: string; canvas: string }[] = [
+    { name: 'Rustic', canvas: 'rgb(253, 246, 227)' },
+    { name: 'Rustic Serif', canvas: 'rgb(253, 246, 227)' },
+    { name: 'Scholarly', canvas: 'rgb(255, 255, 255)' },
+    { name: 'Monotone', canvas: 'rgb(255, 255, 255)' }, // light app theme
+    { name: 'Monotone Serif', canvas: 'rgb(255, 255, 255)' } // light app theme
+  ]
+
+  for (const theme of themes) {
+    const dialog = await openSettingsDialog(window)
+    await openThemeArea(window)
+    await dialog.getByRole('radio', { name: theme.name, exact: true }).check()
+    await dialog.getByRole('button', { name: 'Save' }).click()
+    await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
+
+    await expect.poll(canvasColour).toBe(theme.canvas)
+    await expect.poll(canvasFillRatio).toBeGreaterThanOrEqual(0.99)
+    await expect.poll(editorColourAtBottom).toBe(theme.canvas)
+  }
 })
 
 // ---------- US2: dark-blue code-bracket-square view-source ----------
