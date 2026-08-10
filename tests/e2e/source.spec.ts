@@ -397,7 +397,7 @@ test('US7 with new-tab preference, Open creates a new tab instead of replacing',
   await window.getByRole('menuitem', { name: 'Settings…' }).click()
   const settingsDialog = window.getByTestId('settings-dialog')
   await settingsDialog.waitFor()
-  await settingsDialog.locator('.settings-switch', { hasText: 'Open explorer files in a new tab' }).click()
+  await settingsDialog.locator('.settings-switch', { hasText: 'Open files in a new tab' }).click()
   await settingsDialog.getByRole('button', { name: 'Close', exact: true }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
 

@@ -54,6 +54,12 @@ button, input, select, textarea {
   --mm-accent: #d96b27;
   --mm-control: #2d2d2d;
   --mm-editor-bg: #ffffff;
+  /* Spec 028 (FR-005/006): the single curated dark blue for the view-source
+     action — the heroicons code-bracket-square glyph. Deliberately distinct
+     from the accent token (orange in light, #3794ff in dark) and defined ONCE
+     here, NOT under [data-theme='dark'], so the colour is identical in both
+     modes (plan D2 / research R2). */
+  --mm-view-source: #2563eb;
 }
 
 /* Spec 013, FR-002/FR-003: the dark palette (VS Code Dark, user decision

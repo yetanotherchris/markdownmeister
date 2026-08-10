@@ -140,7 +140,7 @@ test('US1 the General area has pill switches for spellcheck and the file prefere
   // FR-006: the booleans are checkboxes rendered as switches (native, so role
   // checkbox; the visual pill is a styling concern).
   const spellcheck = box.getByRole('checkbox', { name: 'Check spelling while typing' })
-  const filePreference = box.getByRole('checkbox', { name: 'Open explorer files in a new tab' })
+  const filePreference = box.getByRole('checkbox', { name: 'Open files in a new tab' })
   await expect(spellcheck).toBeChecked()
   await expect(filePreference).not.toBeChecked()
 
@@ -148,7 +148,7 @@ test('US1 the General area has pill switches for spellcheck and the file prefere
   await expect(box.getByRole('checkbox', { name: 'Enable developer tools' })).toHaveCount(0)
 
   // The file preference switch alone conveys its state (helper removed).
-  await clickSwitch(box, 'Open explorer files in a new tab')
+  await clickSwitch(box, 'Open files in a new tab')
   await expect(filePreference).toBeChecked()
 })
 
@@ -157,7 +157,7 @@ test('US1 General settings persist immediately and survive a restart', async () 
   const dialog = await openSettingsDialog(window)
   const box = dialog.getByTestId('settings-dialog')
 
-  await clickSwitch(box, 'Open explorer files in a new tab')
+  await clickSwitch(box, 'Open files in a new tab')
   // Immediate persistence — no Save required for General (spec 008 apply model).
   await expect.poll(() => persistedSetting<string>('fileOpenBehavior')).toBe('new-tab')
 
@@ -165,7 +165,7 @@ test('US1 General settings persist immediately and survive a restart', async () 
   ;({ app, window } = await launchApp(configDir, testFolder))
   await openFile()
   const reopened = await openSettingsDialog(window)
-  await expect(reopened.getByTestId('settings-dialog').getByRole('checkbox', { name: 'Open explorer files in a new tab' })).toBeChecked()
+  await expect(reopened.getByTestId('settings-dialog').getByRole('checkbox', { name: 'Open files in a new tab' })).toBeChecked()
 })
 
 test('US1 S2/S3 selecting a theme and pressing Save applies it and persists it', async () => {
@@ -399,4 +399,24 @@ test('edge case: at a very narrow width the sidebar and panel stay usable withou
   // Both area entries remain reachable after the resize.
   await box.getByRole('button', { name: 'Theme', exact: true }).click()
   await expect(box.getByRole('group', { name: 'Editor Theme' })).toBeVisible()
+})
+
+test('the dialog keeps a stable height across General and Theme areas', async () => {
+  // Spec 028 follow-up (2026-08-10): the Theme area is taller than General, so
+  // switching areas must not resize the dialog — .settings-dialog pins a
+  // min-height at the taller area's height.
+  await openFile()
+  const dialog = await openSettingsDialog(window)
+  const box = dialog.getByTestId('settings-dialog')
+
+  const height = async () =>
+    box.evaluate((el) => Math.round(el.getBoundingClientRect().height))
+
+  const generalHeight = await height()
+  await box.getByRole('button', { name: 'Theme', exact: true }).click()
+  await expect(box.getByRole('group', { name: 'Editor Theme' })).toBeVisible()
+  const themeHeight = await height()
+
+  expect(themeHeight).toBe(generalHeight)
+  expect(generalHeight).toBeGreaterThanOrEqual(400)
 })

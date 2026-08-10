@@ -18,6 +18,33 @@
   width: 100%;
   height: 100%;
   overflow: auto;
+  /* Spec 028 (FR-001/002/003): a column flex makes the Crepe wrapper a flex
+     item with a definite resolved height, so .milkdown's percentage min-height
+     can resolve against it (research R1 / plan D1). Without this, the wrapper's
+     specified height stays auto and the child's min-height: 100% computes to
+     auto — the short-document canvas never fills the host. */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Spec 028 (FR-001/002/003): the theme canvas colour fills the whole editor
+   region, not just the content height. Crepe's root (.milkdown) paints
+   background: var(--crepe-color-background), but for a short document it only
+   spans the content, exposing .editor-area's --mm-editor-bg below the last line
+   as a white/chrome patch. Stretching the root to the host's height makes the
+   canvas colour reach the bottom edge to edge; a longer document still grows
+   past 100% and scrolls with the colour behind it (research R1, plan D1).
+   Crepe nests .milkdown inside the container div passed to its constructor
+   (editor-view.ts createViewContainer), so BOTH the wrapper and the root must
+   stretch — a percentage min-height only resolves against a definite-height
+   parent. The `.editor-host > div` rule also matches the absolutely-positioned
+   .source-view, which is inset: 0 and therefore unaffected. */
+.editor-host > div {
+  min-height: 100%;
+}
+
+.editor-host .milkdown {
+  min-height: 100%;
 }
 
 /* While the source overlay is visible, the host must not scroll the crepe
@@ -48,25 +75,27 @@
    top-bar-item inside .top-bar-inner (the custom 'view' group is appended by
    buildTopBar — see CrepeHost.tsx and toolbarLabels.ts). Crepe gives every
    top-bar button the same outline-coloured icon, so the source action is easy
-   to miss. Make it prominent: the icon is rendered in the app accent token and
-   the button sits on a translucent accent background, while keeping Crepe's
-   button size/alignment and the muted styling of the surrounding controls
-   (contracts/renderer.md R1-R3).
+   to miss. Make it prominent: the icon is rendered in the spec-028 dark-blue
+   token, with NO background fill — the blue glyph alone stands out from the
+   muted formatting controls while keeping Crepe's button size/alignment
+   (contracts/renderer.md R1-R3; spec 028 D4 as amended 2026-08-10: the pill
+   was removed at the user's request, and the spec-014 accent colour is
+   superseded by --mm-view-source).
    The :last-child target is deliberately coupled to Crepe's group order; the
    e2e `isLast` assertion in tests/e2e/view-source-icon.spec.ts is the tripwire
    if a future group is appended after 'view'. */
 .milkdown .milkdown-top-bar .top-bar-inner > .top-bar-item:last-child {
-  background: color-mix(in srgb, var(--mm-accent) 14%, transparent);
   border-radius: 4px;
 }
 
+/* Spec 028 (FR-004/005): the glyph is the heroicons code-bracket-square outline,
+   which paints via stroke (fill: none). Crepe's base rule sets fill on every
+   top-bar svg, so the outline must be re-asserted or the square fills solid
+   (research R3). */
 .milkdown .milkdown-top-bar .top-bar-inner > .top-bar-item:last-child svg {
-  color: var(--mm-accent);
-  fill: var(--mm-accent);
-}
-
-.milkdown .milkdown-top-bar .top-bar-inner > .top-bar-item:last-child:hover {
-  background: color-mix(in srgb, var(--mm-accent) 24%, transparent);
+  color: var(--mm-view-source);
+  stroke: var(--mm-view-source);
+  fill: none;
 }
 
 /* GitHub-style block spacing (2026-08-07): Crepe's reset.css collapses block
