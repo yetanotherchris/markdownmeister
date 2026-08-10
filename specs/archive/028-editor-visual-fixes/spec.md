@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-09
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "Fix two editor issues carried over from the
 settings-redesign work: small pages leave white behind in the editor instead of

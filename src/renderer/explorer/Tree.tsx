@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Tree as ArboristTree, NodeApi, TreeApi } from 'react-arborist'
 import type { RowRendererProps, NodeRendererProps } from 'react-arborist'
 import { Folder, FolderOpen, FileText, ChevronRight, ChevronDown } from 'lucide-react'
+import { CodeBracketSquareIcon } from '@heroicons/react/24/outline'
 import type { TreeNode } from '../state/workspace'
 import { findNodeById, parentPathOf } from '../state/workspace'
 import { useElementSize } from '../hooks/useElementSize'
@@ -425,7 +426,11 @@ export default function Tree({
     setContextMenu({ x: e.clientX, y: e.clientY, node: null })
   }, [])
 
-  const menuItem = (label: string, onClick: () => void) => (
+  // Spec 028 (FR-004, US2 scenario 3): a menu item may carry a leading glyph.
+  // Only the "View source" item passes one today — the code-bracket-square in
+  // the --mm-view-source dark blue (same glyph and colour as the editor top
+  // bar, spec Assumption).
+  const menuItem = (label: string, onClick: () => void, icon?: React.ReactNode) => (
     <button
       type="button"
       className="context-menu-item"
@@ -436,6 +441,7 @@ export default function Tree({
         onClick()
       }}
     >
+      {icon && <span className="context-menu-item-icon" aria-hidden="true">{icon}</span>}
       {label}
     </button>
   )
@@ -472,7 +478,11 @@ export default function Tree({
           {contextMenu.node.kind === 'file' && (
             <>
               {menuItem('Open', () => onOpen(contextMenu.node!.id))}
-              {menuItem('View source', () => onViewSource(contextMenu.node!.id))}
+              {menuItem(
+                'View source',
+                () => onViewSource(contextMenu.node!.id),
+                <CodeBracketSquareIcon />
+              )}
               <div className="context-menu-separator" />
             </>
           )}
