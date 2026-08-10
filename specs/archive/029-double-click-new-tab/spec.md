@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-10
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "This spec is to add the feature where double clicking a file will open it in a new tab. This should only happen if the 'open in new tab' setting is disabled."
 
@@ -97,6 +97,11 @@ A writer double-clicking a folder expands or collapses it exactly as today; no d
 - **SC-003**: In 100% of tests with the setting enabled, double-clicking a file produces the same tab result as a single-click, with no duplicate tabs.
 - **SC-004**: In 100% of tests, double-clicking an already-open file activates the existing tab without creating a duplicate.
 - **SC-005**: In 100% of tests, double-clicking a directory expands or collapses it and never opens a document tab.
+
+## Clarifications
+
+- **2026-08-10**: US3/FR-006 state directories expand/collapse on double-click "exactly as today", but today a directory double-click does nothing (the row's `node.activate()` is a no-op for directories). The acceptance scenarios and SC-005 are authoritative: this feature **adds** directory double-click → expand/collapse (and never opens a tab).
+- **2026-08-10**: The single-click deferral window is fixed at **500 ms** (the Windows OS double-click time). This is the minimum window that guarantees the browser's `dblclick` (detail=2) always lands before the deferred single-click open commits (FR-003); shorter windows would let a slow double-click replace the tab before the new-tab behaviour fires.
 
 ## Assumptions
 

@@ -107,7 +107,10 @@ test('bullet and ordered list markers both render (clip-path neutralised)', asyn
   await window.getByRole('treeitem').getByText('other.md').click()
   await expect(window.locator('.ProseMirror:visible')).toBeVisible()
   await window.getByRole('treeitem').getByText('list.md').click()
-  await expect(window.locator('.ProseMirror:visible')).toBeVisible()
+  // Spec 029: a same-tab replace of a clean active tab is deferred by the
+  // double-click window (FR-003), so wait for the list content to actually
+  // mount before inspecting it.
+  await expect(window.locator('.ProseMirror:visible .label.ordered')).toHaveCount(2)
 
   const clips = await window
     .locator('.ProseMirror:visible .list-item .label-wrapper svg g[clip-path]')

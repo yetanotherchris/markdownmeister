@@ -8,6 +8,8 @@ import { findNodeById, parentPathOf } from '../state/workspace'
 import { useElementSize } from '../hooks/useElementSize'
 import { treeMoveTarget, treeWouldMoveIntoOwnDescendant } from './treeMove'
 import { treeRenameLabel } from './treeRename'
+import { isOpenableFile } from './openGesture'
+import type { FileOpenGesture } from './openGesture'
 import type { EntryKind } from '../../shared/ipc-contract'
 import './Tree.css'
 
@@ -37,6 +39,11 @@ interface TreeProps {
   /** Spec 024 (FR-005): explicitly open a file in a NEW tab (middle-click),
    *  bypassing the replace-clean-tab behaviour. */
   onOpenNewTab: (node: TreeNode) => void
+  /** Spec 029: a click on a FILE row resolved into a gesture. Single-click
+   *  follows the file-opening preference (same-tab: deferred by the double-click
+   *  window); double-click always opens a new tab. The row is the sole mouse
+   *  open path for files — `node.handleClick` is not called for them. */
+  onFileOpen: (node: TreeNode, gesture: FileOpenGesture) => void
   /** Spec 002 (US004): imperative handle the app uses to open parents and
    *  scroll a node into view (explorer active-file highlight). */
   apiRef?: React.MutableRefObject<TreeApi<TreeNode> | null> | null
@@ -120,13 +127,16 @@ function RenameInput({ node }: { node: NodeApi<TreeNode> }) {
 function TreeNode({ node, style, dragHandle, onRowContextMenu }: TreeNodeProps) {
   const isDir = node.data.kind === 'directory'
 
+  // Spec 029: click routing lives on the ROW (TreeRow.handleRowClick /
+  // handleRowDoubleClick) so files resolve single vs double via the gesture
+  // path and directories toggle. This inner div must not re-open files: its
+  // old onDoubleClick={node.activate} fired handleTreeActivate immediately,
+  // bypassing the deferral. Selection still reaches the row via bubbling.
   return (
     <div
       ref={dragHandle}
       style={style}
       className={`tree-node ${node.isSelected ? 'selected' : ''} ${node.isLeaf ? 'leaf' : ''}`}
-      onClick={() => node.select()}
-      onDoubleClick={() => node.activate()}
       onContextMenu={(e) => {
         e.preventDefault()
         e.stopPropagation()
@@ -175,6 +185,8 @@ interface TreeRowProps extends RowRendererProps<TreeNode> {
   onDeleteKey: (node: TreeNode) => void
   /** Spec 024: middle-click opens the file in a new tab. */
   onOpenNewTab: (node: TreeNode) => void
+  /** Spec 029: click gesture on a file row (single vs double). */
+  onFileOpen: (node: TreeNode, gesture: FileOpenGesture) => void
 }
 
 /**
@@ -183,7 +195,7 @@ interface TreeRowProps extends RowRendererProps<TreeNode> {
  * Row would be a new component type per render, remounting all rows' DOM and
  * dropping the inline-rename caret).
  */
-function TreeRow({ node, attrs, innerRef, children, onKeyboardMenu, onRenameKey, onDeleteKey, onOpenNewTab }: TreeRowProps) {
+function TreeRow({ node, attrs, innerRef, children, onKeyboardMenu, onRenameKey, onDeleteKey, onOpenNewTab, onFileOpen }: TreeRowProps) {
   const isDir = node.data.kind === 'directory'
 
   // Keyboard access to the row operations (WCAG 2.1.1): F2 renames, Delete
@@ -203,6 +215,27 @@ function TreeRow({ node, attrs, innerRef, children, onKeyboardMenu, onRenameKey,
     }
   }
 
+  // Spec 029: file rows route clicks through the file-open gesture so a
+  // double-click can be recognised from the first click (FR-003). `node.select()`
+  // preserves selection; `node.handleClick` is NOT called for files because it
+  // fires `activate()` on every click and would open the file immediately,
+  // bypassing the deferral. Directories select on click and toggle on the
+  // completing click of a double-click (US3/FR-006); `e.detail` is the detector
+  // for both (a `dblclick` event is not reliably delivered, R1).
+  const handleRowClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return
+    if (isOpenableFile(node.data)) {
+      node.select()
+      onFileOpen(node.data, e.detail >= 2 ? 'double-click' : 'single-click')
+      return
+    }
+    if (e.detail >= 2) {
+      node.toggle()
+      return
+    }
+    node.handleClick(e)
+  }
+
   return (
     <div
       ref={innerRef}
@@ -213,7 +246,7 @@ function TreeRow({ node, attrs, innerRef, children, onKeyboardMenu, onRenameKey,
       aria-level={node.level + 1}
       aria-selected={node.isSelected}
       aria-expanded={isDir ? node.isOpen : undefined}
-      onClick={node.handleClick}
+      onClick={handleRowClick}
       onKeyDown={onKeyDown}
       onAuxClick={(e) => {
         // Spec 024 FR-005: middle-click opens a FILE in a new tab, bypassing
@@ -245,6 +278,7 @@ export default function Tree({
   onViewSource,
   onReveal,
   onOpenNewTab,
+  onFileOpen,
   apiRef
 }: TreeProps) {
   const [containerRef, size] = useElementSize<HTMLDivElement>()
@@ -405,8 +439,9 @@ export default function Tree({
       onRenameKey={handleRenameKey}
       onDeleteKey={handleDeleteKey}
       onOpenNewTab={onOpenNewTab}
+      onFileOpen={onFileOpen}
     />
-  ), [handleKeyboardMenu, handleRenameKey, handleDeleteKey, onOpenNewTab])
+  ), [handleKeyboardMenu, handleRenameKey, handleDeleteKey, onOpenNewTab, onFileOpen])
 
   const disableDrop = useCallback(({ parentNode, dragNodes }: {
     parentNode: NodeApi<TreeNode>

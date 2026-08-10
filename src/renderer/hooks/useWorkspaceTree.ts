@@ -4,6 +4,7 @@ import type { EntryKind } from '../../shared/ipc-contract'
 import type { DocumentsAction, EditingSession } from '../state/documents'
 import type { WorkspaceState, TreeNode, WorkspaceAction } from '../state/workspace'
 import { findNodeById } from '../state/workspace'
+import type { FileOpenGesture } from '../explorer/openGesture'
 import {
   renameTargetPath,
   moveTargetPath,
@@ -15,10 +16,14 @@ import {
 } from '../explorer/operations'
 import type { DialogQueue } from './useDialogQueue'
 import type { DocumentSessionApi } from './useDocumentSession'
+import { useFileOpenGesture } from './useFileOpenGesture'
 
 export interface WorkspaceTreeApi {
-  handleTreeSelect: (id: string | null) => Promise<void>
+  handleTreeSelect: (id: string | null) => void
   handleTreeActivate: (id: string) => Promise<void>
+  /** Spec 029: a resolved click gesture on a file row. Single-click follows the
+   *  preference (deferred in same-tab mode); double-click opens a new tab. */
+  handleFileOpen: (node: TreeNode, gesture: FileOpenGesture) => Promise<void>
   handleTreeToggle: (id: string, isLoaded: boolean) => Promise<void>
   applyMove: (fromPath: string, toPath: string) => Promise<boolean>
   handleRename: (node: TreeNode, newName: string) => Promise<boolean>
@@ -59,19 +64,11 @@ export function useWorkspaceTree(opts: {
   const { dialogInFlightRef, releaseDialogSurface, showOperationError } = dialog
   const { doClose, isDirtyLive, openFileFromExplorer } = session
 
-  const handleTreeSelect = useCallback(async (id: string | null) => {
+  // Spec 029: selection only. Mouse opens go through the row gesture router
+  // (handleFileOpen); `handleTreeActivate` stays for keyboard activation (Space).
+  const handleTreeSelect = useCallback((id: string | null) => {
     dispatchWorkspace({ type: 'SELECT', payload: { id } })
-    if (!id) return
-    const node = findNodeById(workspaceRef.current.nodes, id)
-    if (!node || node.kind !== 'file') return
-    const result = await window.api.readFile(id)
-    if (result.ok) {
-      // Spec 024: open through the session gate so a clean active tab is
-      // replaced instead of spawning a new tab (FR-001). Spec 008 FR-018: the
-      // explorer path consults the file-opening preference.
-      openFileFromExplorer(result.value)
-    }
-  }, [dispatchWorkspace, openFileFromExplorer, workspaceRef])
+  }, [dispatchWorkspace])
 
   const handleTreeActivate = useCallback(async (id: string) => {
     const node = findNodeById(workspaceRef.current.nodes, id)
@@ -82,6 +79,10 @@ export function useWorkspaceTree(opts: {
       openFileFromExplorer(result.value)
     }
   }, [openFileFromExplorer, workspaceRef])
+
+  // Spec 029: mouse opens of files go through the gesture deferral
+  // (useFileOpenGesture); handleTreeActivate stays the keyboard (Space) path.
+  const { handleFileOpen } = useFileOpenGesture({ sessionRef, session })
 
   const handleTreeToggle = useCallback(async (id: string, isLoaded: boolean) => {
     if (isLoaded) {
@@ -284,6 +285,7 @@ export function useWorkspaceTree(opts: {
   return {
     handleTreeSelect,
     handleTreeActivate,
+    handleFileOpen,
     handleTreeToggle,
     applyMove,
     handleRename,
