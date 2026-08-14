@@ -2,7 +2,7 @@
 
 Input for a Spec Kit spec against:
 
-`https://github.com/yetanotherchris/another-markdown-editor`
+`https://github.com/yetanotherchris/markdownmeister`
 
 ---
 
