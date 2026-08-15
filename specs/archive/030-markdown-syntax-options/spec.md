@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-13
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "I want to create a new spec, which will add to the settings various options that Milkdown provides. For example the various variations of markdown it might support (maybe 5-6 options)"
 

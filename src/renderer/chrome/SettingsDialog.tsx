@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { EditorThemeName, SpellcheckLanguage, FileOpenBehavior } from '../../shared/ipc-contract'
 import type { ThemeChoice } from '../hooks/useEffectiveTheme'
+import type { MarkdownSyntaxOptions } from '../editor/markdownSyntaxOptions'
 import { EDITOR_THEMES } from '../editor/editorThemes'
 import './settings.css'
 
@@ -21,12 +22,14 @@ export const SPELLCHECK_LANGUAGE_CHOICES: { value: SpellcheckLanguage; label: st
 ]
 
 /** Spec 008 FR-002: the settings areas shown in the sidebar navigation. Each
- *  mount starts with `general` selected (FR-005). */
-export type SettingsArea = 'general' | 'theme'
+ *  mount starts with `general` selected (FR-005). Spec 030 FR-001 adds a
+ *  `Markdown` area. */
+export type SettingsArea = 'general' | 'theme' | 'markdown'
 
 export const SETTINGS_AREAS: { value: SettingsArea; label: string }[] = [
   { value: 'general', label: 'General' },
-  { value: 'theme', label: 'Theme' }
+  { value: 'theme', label: 'Theme' },
+  { value: 'markdown', label: 'Markdown' }
 ]
 
 interface SettingsDialogProps {
@@ -54,6 +57,9 @@ interface SettingsDialogProps {
    *  create a new tab. Applied immediately. */
   fileOpenBehavior: FileOpenBehavior
   onFileOpenBehaviorChange: (behavior: FileOpenBehavior) => void
+  /** Spec 030: the six markdown syntax options (FR-003..FR-008). */
+  markdownOptions: MarkdownSyntaxOptions
+  onMarkdownOptionChange: (patch: Partial<MarkdownSyntaxOptions>) => void
   onClose: () => void
 }
 
@@ -73,6 +79,7 @@ export default function SettingsDialog({
   editorTheme, onEditorThemeSave, theme, onThemeChange,
   spellcheckEnabled, onSpellcheckChange, spellcheckLanguage, onSpellcheckLanguageChange,
   fileOpenBehavior, onFileOpenBehaviorChange,
+  markdownOptions, onMarkdownOptionChange,
   onClose
 }: SettingsDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -222,6 +229,78 @@ export default function SettingsDialog({
                     />
                     <span className="settings-switch-track" aria-hidden="true" />
                     <span className="settings-switch-text">Open files in a new tab</span>
+                  </label>
+                </fieldset>
+              </>
+            ) : area === 'markdown' ? (
+              <>
+                <fieldset className="settings-fieldset">
+                  <legend className="settings-legend">Markdown</legend>
+                  <label className="settings-switch">
+                    <input
+                      type="checkbox"
+                      className="settings-switch-input"
+                      name="markdown-hard-breaks"
+                      checked={markdownOptions.hardBreaks}
+                      onChange={(e) => onMarkdownOptionChange({ hardBreaks: e.target.checked })}
+                    />
+                    <span className="settings-switch-track" aria-hidden="true" />
+                    <span className="settings-switch-text">Convert single line breaks to hard breaks</span>
+                  </label>
+                  <label className="settings-switch">
+                    <input
+                      type="checkbox"
+                      className="settings-switch-input"
+                      name="markdown-strikethrough"
+                      checked={markdownOptions.strikethrough}
+                      onChange={(e) => onMarkdownOptionChange({ strikethrough: e.target.checked })}
+                    />
+                    <span className="settings-switch-track" aria-hidden="true" />
+                    <span className="settings-switch-text">Strikethrough formatting (~~text~~)</span>
+                  </label>
+                  <label className="settings-switch">
+                    <input
+                      type="checkbox"
+                      className="settings-switch-input"
+                      name="markdown-tables"
+                      checked={markdownOptions.tables}
+                      onChange={(e) => onMarkdownOptionChange({ tables: e.target.checked })}
+                    />
+                    <span className="settings-switch-track" aria-hidden="true" />
+                    <span className="settings-switch-text">Tables formatting (| column |)</span>
+                  </label>
+                  <label className="settings-switch">
+                    <input
+                      type="checkbox"
+                      className="settings-switch-input"
+                      name="markdown-task-lists"
+                      checked={markdownOptions.taskLists}
+                      onChange={(e) => onMarkdownOptionChange({ taskLists: e.target.checked })}
+                    />
+                    <span className="settings-switch-track" aria-hidden="true" />
+                    <span className="settings-switch-text">Task list checkboxes (- [ ] / - [x])</span>
+                  </label>
+                  <label className="settings-switch">
+                    <input
+                      type="checkbox"
+                      className="settings-switch-input"
+                      name="markdown-math"
+                      checked={markdownOptions.math}
+                      onChange={(e) => onMarkdownOptionChange({ math: e.target.checked })}
+                    />
+                    <span className="settings-switch-track" aria-hidden="true" />
+                    <span className="settings-switch-text">Math and LaTeX expressions ($...$ and $$...$$)</span>
+                  </label>
+                  <label className="settings-switch">
+                    <input
+                      type="checkbox"
+                      className="settings-switch-input"
+                      name="markdown-autolink"
+                      checked={markdownOptions.autolink}
+                      onChange={(e) => onMarkdownOptionChange({ autolink: e.target.checked })}
+                    />
+                    <span className="settings-switch-track" aria-hidden="true" />
+                    <span className="settings-switch-text">Automatic link detection for URLs and emails</span>
                   </label>
                 </fieldset>
               </>

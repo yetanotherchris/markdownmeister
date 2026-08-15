@@ -8,6 +8,9 @@ import {
 } from './useEffectiveTheme'
 import type { ThemeChoice } from './useEffectiveTheme'
 import { presetFontFor, presetColorsFor } from '../../shared/editorThemePresets'
+import { instancePool } from '../editor/instancePool'
+import { reconfigureAll } from '../editor/markdownSyntaxRuntime'
+import type { MarkdownSyntaxOptions } from '../editor/markdownSyntaxOptions'
 
 /**
  * Spec 012/013/016: the settings-dialog state the composition root owns — the
@@ -34,6 +37,8 @@ export function useSettingsState(): {
   handleSpellcheckLanguageChange: (language: SpellcheckLanguage | null) => void
   fileOpenBehavior: FileOpenBehavior
   handleFileOpenBehaviorChange: (behavior: FileOpenBehavior) => void
+  markdownOptions: MarkdownSyntaxOptions
+  handleMarkdownOptionChange: (patch: Partial<MarkdownSyntaxOptions>) => void
   themeChoice: ThemeChoice
   handleThemeChange: (choice: ThemeChoice) => void
   themeMode: 'light' | 'dark'
@@ -45,6 +50,14 @@ export function useSettingsState(): {
   const [spellcheckEnabled, setSpellcheckEnabled] = useState<boolean>(getSettings().spellcheckEnabled)
   const [spellcheckLanguage, setSpellcheckLanguage] = useState<SpellcheckLanguage | null>(getSettings().spellcheckLanguage)
   const [fileOpenBehavior, setFileOpenBehavior] = useState<FileOpenBehavior>(getSettings().fileOpenBehavior)
+  const [markdownOptions, setMarkdownOptions] = useState<MarkdownSyntaxOptions>(() => ({
+    hardBreaks: getSettings().hardBreaks,
+    strikethrough: getSettings().strikethrough,
+    tables: getSettings().tables,
+    taskLists: getSettings().taskLists,
+    math: getSettings().math,
+    autolink: getSettings().autolink
+  }))
   const [themeChoice, setThemeChoice] = useState<ThemeChoice>(() =>
     themeChoiceFromOverride(getSettings().themeOverride)
   )
@@ -105,6 +118,21 @@ export function useSettingsState(): {
     window.api.updateSettings({ fileOpenBehavior: behavior }).catch(() => { /* ignore */ })
   }, [])
 
+  // Spec 030 (FR-003..FR-012): apply a markdown syntax toggle immediately and
+  // persist it. The settings cache is updated synchronously, then the merged
+  // six-field snapshot is pushed into every live editor so all open tabs
+  // re-parse (research R5/R6, FR-010/011). The re-parse never touches dirty
+  // state, undo history, cursor, or scroll (suppressed in markdownSyntaxRuntime).
+  const handleMarkdownOptionChange = useCallback((patch: Partial<MarkdownSyntaxOptions>) => {
+    setMarkdownOptions((prev) => {
+      const next = { ...prev, ...patch }
+      updateSettings(next)
+      window.api.updateSettings(next).catch(() => { /* ignore */ })
+      reconfigureAll(instancePool, next)
+      return next
+    })
+  }, [])
+
   return {
     settingsOpen, setSettingsOpen,
     editorTheme, handleEditorThemeChange,
@@ -112,6 +140,7 @@ export function useSettingsState(): {
     spellcheckEnabled, handleSpellcheckChange,
     spellcheckLanguage, handleSpellcheckLanguageChange,
     fileOpenBehavior, handleFileOpenBehaviorChange,
+    markdownOptions, handleMarkdownOptionChange,
     themeChoice, handleThemeChange, themeMode
   }
 }

@@ -13,7 +13,14 @@ const defaults: Settings = {
   editorColors: RUSTIC_COLORS,
   spellcheckEnabled: true,
   spellcheckLanguage: null,
-  fileOpenBehavior: 'same-tab'
+  fileOpenBehavior: 'same-tab',
+  // Spec 030 FR-013: hard breaks off, the five syntax extensions on.
+  hardBreaks: false,
+  strikethrough: true,
+  tables: true,
+  taskLists: true,
+  math: true,
+  autolink: true
 }
 
 let cached: Settings = { ...defaults }

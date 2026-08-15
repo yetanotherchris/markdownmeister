@@ -9,7 +9,7 @@ interface InstanceEntry {
   lastActiveAt: number
 }
 
-class InstancePool {
+export class InstancePool {
   private instances = new Map<string, InstanceEntry>()
 
   register(documentId: string, editor: Crepe): void {
@@ -32,6 +32,11 @@ class InstancePool {
     // Reading the editor is a use: keep true LRU ordering for eviction.
     entry.lastActiveAt = Date.now()
     return entry.editor.getMarkdown()
+  }
+
+  /** Run `fn` for every live editor (spec 030 reconfiguration fan-out). */
+  forEach(fn: (editor: Crepe) => void): void {
+    this.instances.forEach((entry) => fn(entry.editor))
   }
 
   /**
