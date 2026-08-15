@@ -16,6 +16,10 @@ import { closeAppSafely, launchApp, openHamburger, openSettingsDialog } from './
 const SCRATCH = [
   '~~struck~~ and $E=mc^2$ and https://example.com',
   '',
+  '$$',
+  '\\sum_{i=1}^{n} i',
+  '$$',
+  '',
   '| a | b |',
   '|---|---|',
   '| 1 | 2 |',
@@ -30,6 +34,8 @@ const SCRATCH = [
   ''
 ].join('\n')
 
+const SECOND_FILE = '## Second\n\n~~also struck~~'
+
 let app: ElectronApplication
 let window: Page
 let testFolder: string
@@ -38,6 +44,7 @@ let configDir: string
 test.beforeAll(async () => {
   testFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'mm-md-syntax-e2e-'))
   fs.writeFileSync(path.join(testFolder, 'syntax.md'), SCRATCH)
+  fs.writeFileSync(path.join(testFolder, 'second.md'), SECOND_FILE)
 })
 
 test.beforeEach(async () => {
@@ -185,6 +192,41 @@ test('US3 toggling a setting preserves unsaved edits and dirty state across tabs
   await expect(window.locator('.ProseMirror:visible del')).toHaveCount(0)
 })
 
+test('US3 two open tabs both re-render on a toggle (2026-08-15 review fix)', async () => {
+  // Contract §E2e multi-tab sync: every open tab re-renders on a toggle, not
+  // just the active one. Open two documents, dirty the second, then toggle.
+  await openFile()
+  // A single click on a clean active tab REPLACES it (spec 024 FR-005), so open
+  // the second file in a new tab via middle-click.
+  await window.getByRole('treeitem').getByText('second.md').click({ button: 'middle' })
+  await expect(window.getByRole('tab')).toHaveCount(2)
+
+  // Make the active (second) tab dirty with an unsaved edit.
+  await window.locator('.ProseMirror:visible').click()
+  await window.keyboard.press('End')
+  await window.keyboard.type(' EXTRA')
+  const secondTab = window.getByRole('tab', { name: /second\.md/ })
+  await expect(secondTab.locator('.tab-dirty')).toBeVisible()
+
+  const dialog = await openMarkdownArea()
+  await toggle(dialog, /Strikethrough formatting/)
+
+  // The dirty dot and the unsaved edit survive the toggle...
+  await expect(secondTab.locator('.tab-dirty')).toBeVisible()
+  await expect(window.locator('.ProseMirror:visible')).toContainText('EXTRA')
+  // ...and BOTH tabs re-rendered: strike text is gone from the active second
+  // tab and from the background syntax.md tab.
+  await expect(window.locator('.ProseMirror:visible del')).toHaveCount(0)
+
+  const firstTab = window.getByRole('tab', { name: /syntax\.md/ })
+  // Close the dialog so its overlay does not intercept the tab click.
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click()
+  await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
+  await firstTab.click()
+  await expect(window.locator('.ProseMirror:visible')).toContainText('~~struck~~')
+  await expect(window.locator('.ProseMirror:visible del')).toHaveCount(0)
+})
+
 test('US4 markdown settings persist across a restart', async () => {
   await openFile()
   const dialog = await openMarkdownArea()
@@ -243,6 +285,107 @@ test('edge case: unclosed delimiters stay literal in both states', async () => {
 
   await expect(window.locator('.ProseMirror:visible')).toContainText('~not-closed')
   await expect(window.locator('.ProseMirror:visible')).toContainText('$not-closed')
+})
+
+test('US3 undo/redo history survives a toggle, and a re-enable restores the rich element', async () => {
+  await openFile()
+  // Make a real edit so undo has a step to revisit.
+  await window.locator('.ProseMirror:visible').click()
+  await window.keyboard.press('End')
+  await window.keyboard.type(' EXTRA')
+
+  const dialog = await openMarkdownArea()
+  await toggle(dialog, /Strikethrough formatting/)
+  // FR-011: the toggle added an ordinary undoable transaction, never cleared
+  // the history — undoing the edit the user made BEFORE the toggle must work.
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click()
+  await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
+  await window.locator('.ProseMirror:visible').click()
+  await window.keyboard.press('Control+z')
+  await expect(window.locator('.ProseMirror:visible')).not.toContainText('EXTRA')
+
+  // Re-enable: the still-present `~~struck~~` literal re-parses back to rich.
+  const reopened = await openMarkdownArea()
+  await toggle(reopened, /Strikethrough formatting/)
+  await expect(window.locator('.ProseMirror:visible del')).toHaveCount(1)
+})
+
+test('US3 a toggle preserves the cursor position in the active tab', async () => {
+  await openFile()
+  // Put the caret at the start of the "line one" paragraph, then read its
+  // absolute document offset (walk the text nodes under the editor root so the
+  // value is independent of DOM restructuring after the re-parse). The hard
+  // breaks toggle keeps every text node identical (a soft-break newline and a
+  // hard `<br>` both contribute no text), so the offset must survive unchanged.
+  const editor = window.locator('.ProseMirror:visible')
+  await editor.getByText('line one').click()
+  await window.keyboard.press('Home')
+  const docOffset = (): Promise<number> =>
+    editor.evaluate((el) => {
+      const sel = el.ownerDocument.getSelection()
+      if (!sel?.anchorNode) return -1
+      const walker = el.ownerDocument.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+      let offset = 0
+      let node = walker.nextNode()
+      while (node) {
+        if (node === sel.anchorNode) return offset + sel.anchorOffset
+        offset += node.textContent?.length ?? 0
+        node = walker.nextNode()
+      }
+      return -1
+    })
+  const before = await docOffset()
+
+  const dialog = await openMarkdownArea()
+  await toggle(dialog, /Convert single line breaks to hard breaks/)
+
+  // Best-effort offset restore (research R6) — the caret must survive the
+  // re-parse at the same absolute document offset, not jump to the top.
+  expect(await docOffset()).toBe(before)
+})
+
+test('US1 block math $$…$$ renders when enabled and stays literal when disabled', async () => {
+  await openFile()
+  // `$$...$$` on its own lines is block math. Enabled, it renders as a latex
+  // code block (KaTeX preview), so the literal delimiters do not appear.
+  await expect(window.locator('.ProseMirror:visible')).not.toContainText('$$')
+
+  const dialog = await openMarkdownArea()
+  await toggle(dialog, /Math and LaTeX expressions/)
+
+  // Disabled, the block delimiters stay literal text (FR-014).
+  await expect(window.locator('.ProseMirror:visible')).toContainText('$$')
+})
+
+test('US1 autolink enabled renders a bare URL as a link', async () => {
+  await openFile()
+  // FR-008 enabled: the bare URL in the fixture auto-links on load.
+  await expect(window.locator('.ProseMirror:visible a[href="https://example.com"]')).toHaveCount(1)
+})
+
+test('SC-004 enabling a syntax present in the raw file does not rewrite it on save', async () => {
+  // Pre-seed the config with the math syntax disabled, then enable it in the
+  // dialog. The raw file still holds `$E=mc^2$`; saving must not rewrite it.
+  fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ settings: { math: false } }), 'utf-8')
+  await closeAppSafely(app)
+  ;({ app, window } = await launchApp(configDir, testFolder))
+  await openFile()
+  // Math off: the inline formula stays literal.
+  await expect(window.locator('.ProseMirror:visible')).toContainText('$E=mc^2$')
+
+  const dialog = await openMarkdownArea()
+  await toggle(dialog, /Math and LaTeX expressions/)
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click()
+  await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
+
+  // Make a real edit, save, and verify the raw file still round-trips the
+  // enabled syntax byte-for-byte (SC-004).
+  await window.locator('.ProseMirror:visible').click()
+  await window.keyboard.press('End')
+  await window.keyboard.type(' ')
+  await window.keyboard.press('Control+s')
+
+  await expect.poll(() => fs.readFileSync(path.join(testFolder, 'syntax.md'), 'utf-8')).toContain('$E=mc^2$')
 })
 
 test('edge case: source view is immune to markdown toggles', async () => {

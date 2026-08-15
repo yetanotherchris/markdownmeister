@@ -124,14 +124,12 @@ export function useSettingsState(): {
   // re-parse (research R5/R6, FR-010/011). The re-parse never touches dirty
   // state, undo history, cursor, or scroll (suppressed in markdownSyntaxRuntime).
   const handleMarkdownOptionChange = useCallback((patch: Partial<MarkdownSyntaxOptions>) => {
-    setMarkdownOptions((prev) => {
-      const next = { ...prev, ...patch }
-      updateSettings(next)
-      window.api.updateSettings(next).catch(() => { /* ignore */ })
-      reconfigureAll(instancePool, next)
-      return next
-    })
-  }, [])
+    const next = { ...markdownOptions, ...patch }
+    setMarkdownOptions(next)
+    updateSettings(next)
+    window.api.updateSettings(next).catch(() => { /* ignore */ })
+    reconfigureAll(instancePool, next)
+  }, [markdownOptions])
 
   return {
     settingsOpen, setSettingsOpen,

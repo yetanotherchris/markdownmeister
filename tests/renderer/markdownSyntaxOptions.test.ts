@@ -130,4 +130,38 @@ describe('markdownSyntaxRemark (spec 030 options→extension matrix)', () => {
     expect(offBreaks.length).toBeGreaterThan(0)
     expect(offBreaks[0].data?.isInline).toBe(true)
   })
+
+  describe('serialization stays enabled for disabled syntax (2026-08-15 review fix)', () => {
+    function stringify(text: string, options: MarkdownSyntaxOptions): string {
+      // Parse the doc with ALL syntaxes enabled so it actually CONTAINS the
+      // node/mark of the syntax under test, then serialize with the given
+      // options. Before the fix, serializing a table/strikethrough node while
+      // the matching option was off threw "Cannot handle unknown node" — which
+      // made saves fail on a doc that held a now-disabled syntax (review Major).
+      const parse = unified().use(remarkParse).use(markdownSyntaxRemark(ALL_ON))
+      const tree = parse.runSync(parse.parse(text)) as unknown as MdNode
+      const serialize = unified().use(remarkStringify).use(markdownSyntaxRemark(options))
+      return serialize.stringify(tree as Parameters<typeof serialize.stringify>[0])
+    }
+
+    it('strikethrough node serializes even when the option is off', () => {
+      expect(() => stringify('~~x~~', ALL_OFF)).not.toThrow()
+      expect(stringify('~~x~~', ALL_OFF)).toContain('~~x~~')
+    })
+
+    it('table node serializes even when the option is off', () => {
+      expect(() => stringify('| a |\n| - |', ALL_OFF)).not.toThrow()
+      expect(stringify('| a |\n| - |', ALL_OFF)).toContain('|')
+    })
+
+    it('task list serializes even when the option is off', () => {
+      expect(() => stringify('- [x] done', ALL_OFF)).not.toThrow()
+      expect(stringify('- [x] done', ALL_OFF)).toContain('[x]')
+    })
+
+    it('math node serializes even when the option is off', () => {
+      expect(() => stringify('$x$', ALL_OFF)).not.toThrow()
+      expect(stringify('$x$', ALL_OFF)).toContain('$x$')
+    })
+  })
 })

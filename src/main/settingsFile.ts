@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import type { Settings, EditorThemeName, SpellcheckLanguage, EditorColors, FileOpenBehavior } from '../shared/ipc-contract'
 import { RUSTIC_COLORS } from '../shared/editorThemePresets'
+import { MARKDOWN_SYNTAX_DEFAULTS } from '../shared/markdownSyntaxDefaults'
 import { atomicWrite } from './fs/atomicWrite'
 
 /**
@@ -33,14 +34,10 @@ export const DEFAULTS: Settings = {
   spellcheckEnabled: true,
   spellcheckLanguage: null,
   fileOpenBehavior: 'same-tab',
-  // Spec 030 FR-013: hard breaks off (strict CommonMark soft breaks), the five
-  // syntax extensions on (a rich out-of-the-box editing experience).
-  hardBreaks: false,
-  strikethrough: true,
-  tables: true,
-  taskLists: true,
-  math: true,
-  autolink: true
+  // Spec 030 FR-013 (shared markdownSyntaxDefaults): hard breaks off (strict
+  // CommonMark soft breaks), the five syntax extensions on (a rich out-of-the-box
+  // editing experience).
+  ...MARKDOWN_SYNTAX_DEFAULTS
 }
 
 /** Read the whole shared config file, tolerantly: `{}` when missing or invalid.
@@ -215,7 +212,11 @@ export function migrateLegacySettingsFile(configPath: string, legacyPath: string
   // legacy file with, say, only `themeOverride` should still be imported rather
   // than dropped whole. validateSettings recovers every field individually.
   if (!legacy || typeof legacy !== 'object') return null
-  const known: (keyof Settings)[] = ['sidebarWidth', 'themeOverride', 'explorerVisible', 'editorFont', 'editorTheme', 'editorColors', 'spellcheckEnabled', 'spellcheckLanguage', 'fileOpenBehavior', 'hardBreaks', 'strikethrough', 'tables', 'taskLists', 'math', 'autolink']
+  const known: (keyof Settings)[] = [
+    'sidebarWidth', 'themeOverride', 'explorerVisible', 'editorFont', 'editorTheme',
+    'editorColors', 'spellcheckEnabled', 'spellcheckLanguage', 'fileOpenBehavior',
+    'hardBreaks', 'strikethrough', 'tables', 'taskLists', 'math', 'autolink'
+  ]
   if (!known.some((k) => k in legacy)) return null
   const migrated = validateSettings(legacy)
   try {

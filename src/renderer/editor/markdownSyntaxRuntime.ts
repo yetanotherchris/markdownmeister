@@ -20,6 +20,7 @@ import type { EditorView } from '@milkdown/kit/prose/view'
 import type { Crepe } from '@milkdown/crepe'
 import type { InstancePool } from './instancePool'
 import { markdownSyntaxRemark, type MarkdownSyntaxOptions } from './markdownSyntaxOptions'
+import { setMarkdownSyntaxGateOptions } from './markdownSyntaxInputRules'
 
 /**
  * Spec 030 (research R3/R6): runtime reconfiguration of every live editor's
@@ -45,7 +46,8 @@ interface CursorSnapshot {
 }
 
 function scrollElement(view: EditorView): HTMLElement | null {
-  return (view.dom.closest('.editor-host') ?? view.dom.parentElement) as HTMLElement | null
+  const el = view.dom.closest('.editor-host') ?? view.dom.parentElement
+  return el instanceof HTMLElement ? el : null
 }
 
 function captureCursor(view: EditorView): CursorSnapshot {
@@ -72,11 +74,22 @@ function restoreCursor(view: EditorView, snapshot: CursorSnapshot): void {
  * syntax (bundled inside remark-gfm) is re-added unconditionally by the
  * composer. The latex feature's math-block transform stays (it is a no-op when
  * no math node exists).
+ *
+ * The gfm/math exclusion matches by reference OR by the plugin function's
+ * stable `.name`, so it still filters correctly if npm ever resolves two
+ * copies of remark-gfm/remark-math (the composer and the ctx would then hold
+ * different function identities for the same plugin).
  */
+const EXCLUDED_REMARK_PLUGINS = new Set(['remarkGfm', 'remarkMath'])
+
+function isExcludedRemarkPlugin(plugin: unknown): boolean {
+  return plugin === remarkGFM || plugin === remarkMath || (typeof plugin === 'function' && EXCLUDED_REMARK_PLUGINS.has(plugin.name))
+}
+
 function buildRemarkProcessor(ctx: Ctx, options: MarkdownSyntaxOptions) {
   const processor = unified().use(remarkParse).use(remarkStringify, ctx.get(remarkStringifyOptionsCtx))
   for (const p of ctx.get(remarkPluginsCtx)) {
-    if (p.plugin === remarkGFM || p.plugin === remarkMath) continue
+    if (isExcludedRemarkPlugin(p.plugin)) continue
     processor.use(p.plugin, p.options)
   }
   return processor.use(markdownSyntaxRemark(options))
@@ -86,13 +99,17 @@ function buildRemarkProcessor(ctx: Ctx, options: MarkdownSyntaxOptions) {
 export function reconfigureEditor(
   editor: Crepe,
   options: MarkdownSyntaxOptions,
-  sourceMarkdown?: string,
-  suppressEmission = true
+  params: { sourceMarkdown?: string; suppressEmission?: boolean } = {}
 ): void {
+  const { sourceMarkdown, suppressEmission = true } = params
+  // Point the input-rule gate at the same options so typing a disabled syntax
+  // never auto-formats (research R4, contract "Input-rule gate").
+  setMarkdownSyntaxGateOptions(options)
   // Capture BEFORE the serializer swap so a `~~x~~` still serializes to `~~x~~`.
   // `sourceMarkdown` is the raw on-disk/initial content for the CREATE path,
-  // where `getMarkdown()` would already have normalized an autolink into
-  // `[url](url)` (explicit link syntax) that the new parser could not undo.
+  // where `getMarkdown()` would already have emitted an autolink URL as
+  // `<url>` (the default link handler renders url === text as a bare angle-
+  // bracketed link), which a re-parse could not undo.
   const markdown = sourceMarkdown ?? editor.getMarkdown()
   const view = editor.editor.action((ctx) => ctx.get(editorViewCtx))
   const cursor = captureCursor(view)
@@ -118,6 +135,6 @@ export function reconfigureEditor(
 
 /** Reconfigure every live editor in the pool (multi-tab sync, FR-010). */
 export function reconfigureAll(pool: InstancePool, options: MarkdownSyntaxOptions): void {
-  pool.forEach((editor) => reconfigureEditor(editor, options, undefined, true))
+  pool.forEach((editor) => reconfigureEditor(editor, options, { suppressEmission: true }))
 }
 

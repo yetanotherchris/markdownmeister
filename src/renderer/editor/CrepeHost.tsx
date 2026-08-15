@@ -10,6 +10,7 @@ import { planTaskBackspace } from './taskBackspace'
 import { tightListPlugins } from './tightList'
 import { spellcheckPlugin, type SpellingMenuState } from './spellcheckPlugin'
 import { reconfigureEditor, isReconfigureSuppressed } from './markdownSyntaxRuntime'
+import { markdownSyntaxInputRuleGate, setMarkdownSyntaxGateOptions } from './markdownSyntaxInputRules'
 import type { MarkdownSyntaxOptions } from './markdownSyntaxOptions'
 
 export interface CursorState {
@@ -166,6 +167,15 @@ export default function CrepeHost({
       // menu. The wrapper reads the latest onSpellingMenu prop via the ref.
       crepe.editor.use($prose(() => spellcheckPlugin((menu) => onSpellingMenuRef.current(menu))))
 
+      // Spec 030 (research R4): gate the syntax-producing input rules so typing
+      // a disabled syntax never auto-formats it. Registered before create so
+      // its SchemaReady continuation wraps the `$inputRule` pushes (which were
+      // registered during construction) before editorState reads the slice.
+      // The gate's handlers consult the shared options ref at invoke time, so
+      // the initial options must be set before create as well.
+      setMarkdownSyntaxGateOptions(markdownOptions)
+      crepe.editor.use(markdownSyntaxInputRuleGate)
+
       try {
         await crepe.create()
       } catch (error) {
@@ -211,8 +221,9 @@ export default function CrepeHost({
       // persisted options (defaults all-on are a no-op re-parse). This runs
       // BEFORE the baseline capture so the baseline reflects the final pipeline.
       // The raw `defaultValue` is the source: `getMarkdown()` would have already
-      // normalized an autolink into `[url](url)`, which a re-parse could not undo.
-      reconfigureEditor(crepe, markdownOptions, defaultValue, false)
+      // emitted an autolink URL as `<url>` (the default link handler renders
+      // url === text as a bare angle-bracketed link), which a re-parse could not undo.
+      reconfigureEditor(crepe, markdownOptions, { sourceMarkdown: defaultValue, suppressEmission: false })
       // The listener plugin only emits markdownUpdated on the first *edit*
       // (its handler is debounced by 200 ms and no doc-changing transaction
       // fires on load), so the baseline cannot come from the first emission.
