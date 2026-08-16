@@ -44,6 +44,23 @@ A writer can continue using source view as before: enter it, edit the full docum
 
 ---
 
+### User Story 3 - Control visual-editor code highlighting (Priority: P2)
+
+A writer can choose whether code blocks in visual editing receive syntax highlighting. The setting is enabled by default, is available with the existing Markdown settings, and does not change document content or source-view highlighting.
+
+**Why this priority**: Syntax colors make visual-editor code blocks easier to read, while a setting lets writers who prefer an uncolored visual editor turn them off.
+
+**Independent Test**: Open a visual-editor document containing a code block, verify it is highlighted by default, turn off the setting, and verify the code block remains editable but is no longer syntax-highlighted. Re-enable it and verify highlighting returns.
+
+**Acceptance Scenarios**:
+
+1. **Given** a writer has not changed the setting, **When** a document with a code block opens in visual editing, **Then** the code block is syntax-highlighted.
+2. **Given** visual-editor code highlighting is enabled, **When** the writer disables it in Markdown settings, **Then** syntax highlighting is removed from visual-editor code blocks without changing their text, language label, selection, undo history, or dirty state.
+3. **Given** visual-editor code highlighting is disabled, **When** the writer enables it in Markdown settings, **Then** syntax highlighting returns to visual-editor code blocks without changing document content.
+4. **Given** a writer changes the setting, **When** the app is restarted, **Then** the chosen setting is retained.
+
+---
+
 ### Edge Cases
 
 - An empty document, a document without a trailing newline, and a document up to 10,000 lines remain editable without gratuitous content changes.
@@ -67,6 +84,9 @@ A writer can continue using source view as before: enter it, edit the full docum
 - **FR-010**: The existing compact source-view toolbar and its clearly labeled return-to-visual-editing action MUST remain available.
 - **FR-011**: The feature MUST NOT introduce filesystem access, a new renderer-to-main-process operation, or a change to existing save semantics.
 - **FR-012**: The feature MUST NOT add autocomplete, code completion, language-specific code highlighting, source-editing commands, or other source-editor features beyond basic Markdown and YAML-frontmatter syntax highlighting.
+- **FR-013**: The Markdown settings MUST include a visual-editor code-highlighting toggle that is enabled by default and persists the writer's choice across restarts.
+- **FR-014**: When visual-editor code highlighting is enabled, code blocks in visual editing MUST display syntax highlighting without changing the document's markdown, language label, selection, undo history, or dirty state.
+- **FR-015**: When visual-editor code highlighting is disabled, visual-editor code blocks MUST remain readable and editable without syntax highlighting; source-view Markdown and YAML-frontmatter highlighting MUST remain unaffected.
 
 ### Key Entities
 
@@ -83,10 +103,12 @@ A writer can continue using source view as before: enter it, edit the full docum
 - **SC-003**: For documents up to 10,000 lines, at least 95% of normal typing interactions update the displayed source within 100 milliseconds and do not cause a focus loss or modal interruption.
 - **SC-004**: In automated end-to-end tests, switching between two source-view tabs retains the edited source text, selection context, and scroll position for both tabs in 100% of tested cases.
 - **SC-005**: In automated end-to-end tests, 100% of malformed Markdown and YAML-frontmatter cases remain editable and preserve their raw text.
+- **SC-006**: In automated end-to-end tests, visual-editor code highlighting is enabled for a new setting, can be disabled and re-enabled without document changes, and retains the selected state after an app restart in 100% of tested cases.
 
 ## Assumptions
 
 - The existing source-view entry points, compact return toolbar, visual editor, document model, save flow, and unsaved-change confirmations remain in scope and retain their current user-facing behavior.
 - The first release covers standard Markdown syntax and YAML frontmatter only; language-specific highlighting inside fenced code is out of scope.
-- The feature is limited to the editable source view. It does not change syntax presentation in visual editing, introduce a split editor/preview, autocomplete, code completion, or source-editing commands such as find-and-replace.
+- Apart from visual-editor code highlighting, the feature is limited to the editable source view. It does not introduce a split editor/preview, autocomplete, code completion, or source-editing commands such as find-and-replace.
+- Visual-editor code highlighting is a separate, presentation-only capability controlled by its own setting. It applies only to visual-editor code blocks and does not alter the source-view highlighting scope or syntax coverage.
 - The editor preserves the raw source as authored; highlighting is presentational and must not normalize line endings, whitespace, frontmatter, or markdown syntax.

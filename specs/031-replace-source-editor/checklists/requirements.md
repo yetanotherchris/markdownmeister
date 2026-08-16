@@ -31,4 +31,4 @@
 
 ## Notes
 
-- Validation passed after scope refinement. The user's selected highlighting solution is intentionally deferred to planning, keeping this specification focused on basic Markdown and YAML-frontmatter highlighting behavior.
+- Validation passed after scope refinement. The user's selected highlighting solution is intentionally deferred to planning. The specification covers basic Markdown and YAML-frontmatter highlighting in source view plus an independently controlled, default-on visual-editor code-highlighting setting.
