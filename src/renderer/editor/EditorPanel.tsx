@@ -22,7 +22,12 @@ interface EditorPanelProps {
   onContentChange: (id: string, content: string) => void
   onBaselineCapture: (id: string, baseline: string) => void
   onCursorState: (id: string, cursorOffset: number, scrollTop: number) => void
-  onSourceContext: (id: string, selectionAnchor: number, selectionHead: number, scrollTop: number) => void
+  onSourceContext: (
+    id: string,
+    selectionAnchor: number,
+    selectionHead: number,
+    scrollTop: number
+  ) => void
   onRequestViewSource: (id: string) => void
   onReturnToFormatted: (id: string) => void
 }

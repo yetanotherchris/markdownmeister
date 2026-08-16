@@ -188,7 +188,7 @@
    and still round-trips to disk on save, so no content is lost. The attribute
    value is the raw comment (e.g. `<!-- note -->`), so the prefix selector
    catches every comment node and only comments. */
-.editor-host .milkdown .ProseMirror span[data-type="html"][data-value^="<!--"] {
+.editor-host .milkdown .ProseMirror span[data-type='html'][data-value^='<!--'] {
   display: none;
 }
 
@@ -254,7 +254,13 @@
   background: var(--mm-surface-secondary);
 }
 
-.source-view .cm-editor {
+.source-editor-host {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.source-editor-host .cm-editor {
   flex: 1;
   width: 100%;
   border: none;

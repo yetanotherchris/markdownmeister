@@ -2,7 +2,14 @@ import { test, expect, ElectronApplication, Page } from '@playwright/test'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { launchApp, closeAppSafely, stubTrash, stubMessageBox, messageBoxCallCount, openFolder as openWorkspaceFolder } from './launch'
+import {
+  launchApp,
+  closeAppSafely,
+  stubTrash,
+  stubMessageBox,
+  messageBoxCallCount,
+  openFolder as openWorkspaceFolder
+} from './launch'
 
 let app: ElectronApplication
 let window: Page
@@ -53,427 +60,446 @@ function getViewSourceButton(): ReturnType<Page['getByRole']> {
 // ---------- US1: toolbar View source, edit, return ----------
 
 test.describe('US1 toolbar view source', () => {
-test('view source slides in, takes the tab, and returns (US1)', async () => {
-  await openFolder()
-  await openFile('alpha.md')
-  await expect(window.locator('.document-title')).toContainText('alpha.md')
+  test('view source slides in, takes the tab, and returns (US1)', async () => {
+    await openFolder()
+    await openFile('alpha.md')
+    await expect(window.locator('.document-title')).toContainText('alpha.md')
 
-  // The toolbar View source button is present and labelled (US4).
-  await expect(getViewSourceButton()).toHaveCount(1)
-  await getViewSourceButton().click()
+    // The toolbar View source button is present and labelled (US4).
+    await expect(getViewSourceButton()).toHaveCount(1)
+    await getViewSourceButton().click()
 
-  // The source view overlay replaces the formatted editor in the same tab.
-  await expect(window.getByTestId('source-view')).toBeVisible()
-  await expect(window.getByTestId('source-textarea')).toBeVisible()
-  expect(await window.locator('.source-textarea').evaluate((el) =>
-    Array.from(el.querySelectorAll('.cm-line')).map((line) => line.textContent).join('\n')
-  ))
-    .toBe('# Alpha\n\nHello world.')
+    // The source view overlay replaces the formatted editor in the same tab.
+    await expect(window.getByTestId('source-view')).toBeVisible()
+    await expect(window.getByTestId('source-textarea')).toBeVisible()
+    expect(
+      await window.locator('.source-textarea').evaluate((el) =>
+        Array.from(el.querySelectorAll('.cm-line'))
+          .map((line) => line.textContent)
+          .join('\n')
+      )
+    ).toBe('# Alpha\n\nHello world.')
 
-  // Edit the raw markdown; the document becomes dirty like formatted edits.
-  await window.getByTestId('source-textarea').fill('# Alpha\n\nEdited in source.')
-  await expect(window.locator('.document-title')).toContainText('\u2022')
+    // Edit the raw markdown; the document becomes dirty like formatted edits.
+    await window.getByTestId('source-textarea').fill('# Alpha\n\nEdited in source.')
+    await expect(window.locator('.document-title')).toContainText('\u2022')
 
-  // Return to formatted view: the edit is reflected and still unsaved.
-  await window.getByRole('button', { name: /Back to visual editing/ }).click()
-  await expect(window.getByTestId('source-view')).toHaveCount(0)
-  await expect(window.locator('.document-title')).toContainText('\u2022')
+    // Return to formatted view: the edit is reflected and still unsaved.
+    await window.getByRole('button', { name: /Back to visual editing/ }).click()
+    await expect(window.getByTestId('source-view')).toHaveCount(0)
+    await expect(window.locator('.document-title')).toContainText('\u2022')
 
-  // Saving writes the edited text back to disk (the dirty-tab close prompts
-  // through the stubbed native box: answer "Save").
-  await stubMessageBox(app, 'Save')
-  await window.getByRole('button', { name: 'Close alpha.md' }).click()
-  const disk = fs.readFileSync(path.join(testFolder, 'alpha.md'), 'utf-8')
-  expect(disk).toContain('Edited in source.')
-})
+    // Saving writes the edited text back to disk (the dirty-tab close prompts
+    // through the stubbed native box: answer "Save").
+    await stubMessageBox(app, 'Save')
+    await window.getByRole('button', { name: 'Close alpha.md' }).click()
+    const disk = fs.readFileSync(path.join(testFolder, 'alpha.md'), 'utf-8')
+    expect(disk).toContain('Edited in source.')
+  })
 
-test('US1 no-edit round trip keeps content and dirty state', async () => {
-  await openFolder()
-  await openFile('alpha.md')
-  await getViewSourceButton().click()
-  await expect(window.getByTestId('source-view')).toBeVisible()
+  test('US1 no-edit round trip keeps content and dirty state', async () => {
+    await openFolder()
+    await openFile('alpha.md')
+    await getViewSourceButton().click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
 
-  // No edits in source.
-  await window.getByRole('button', { name: /Back to visual editing/ }).click()
-  await expect(window.getByTestId('source-view')).toHaveCount(0)
-  // Clean document — no dirty dot appeared because nothing changed.
-  await expect(window.locator('.document-title')).not.toContainText('\u2022')
-})
+    // No edits in source.
+    await window.getByRole('button', { name: /Back to visual editing/ }).click()
+    await expect(window.getByTestId('source-view')).toHaveCount(0)
+    // Clean document — no dirty dot appeared because nothing changed.
+    await expect(window.locator('.document-title')).not.toContainText('\u2022')
+  })
 })
 
 // ---------- US1 regressions (2026-08-07): theme focus ring ----------
 
 test.describe('US1 source-view regressions', () => {
-test('returning to formatted editing removes the source view immediately (no exit animation)', async () => {
-  await openFolder()
-  await openFile('alpha.md')
-  await getViewSourceButton().click()
-  await expect(window.getByTestId('source-view')).toBeVisible()
-  await expect(window.getByTestId('source-view')).toHaveCSS('transform', 'none')
+  test('returning to formatted editing removes the source view immediately (no exit animation)', async () => {
+    await openFolder()
+    await openFile('alpha.md')
+    await getViewSourceButton().click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
+    await expect(window.getByTestId('source-view')).toHaveCSS('transform', 'none')
 
-  await window.getByRole('button', { name: /Back to visual editing/ }).click()
+    await window.getByRole('button', { name: /Back to visual editing/ }).click()
 
-  // The overlay is removed without a lingering slide-out animation.
-  await expect(window.getByTestId('source-view')).toHaveCount(0)
-})
-
-test('the source textarea focus ring is a subtle theme-neutral colour, not the loud accent or a hardcoded blue', async () => {
-  await openFolder()
-  await openFile('alpha.md')
-  await getViewSourceButton().click()
-  await expect(window.getByTestId('source-view')).toBeVisible()
-  await window.getByTestId('source-textarea').focus()
-
-  const outlineColor = await window
-    .getByTestId('source-textarea')
-    .evaluate((el) => getComputedStyle(el).outlineColor)
-  // The ring resolves to the same rgb as --mm-muted (a neutral focus colour),
-  // never the loud accent (orange in light) or the old hardcoded #4a90d9
-  // (rgb(74, 144, 217)) which read as a window border around the source view.
-  const mutedToRgb = await window.evaluate(() => {
-    const probe = document.createElement('div')
-    probe.style.color = getComputedStyle(document.documentElement)
-      .getPropertyValue('--mm-muted')
-      .trim()
-    document.body.appendChild(probe)
-    const rgb = getComputedStyle(probe).color
-    probe.remove()
-    return rgb
+    // The overlay is removed without a lingering slide-out animation.
+    await expect(window.getByTestId('source-view')).toHaveCount(0)
   })
-  expect(outlineColor).toBe(mutedToRgb)
-  expect(outlineColor).not.toBe('rgb(74, 144, 217)')
-})
+
+  test('the source textarea focus ring is a subtle theme-neutral colour, not the loud accent or a hardcoded blue', async () => {
+    await openFolder()
+    await openFile('alpha.md')
+    await getViewSourceButton().click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
+    await window.getByTestId('source-textarea').focus()
+
+    const outlineColor = await window
+      .getByTestId('source-textarea')
+      .evaluate((el) => getComputedStyle(el).outlineColor)
+    // The ring resolves to the same rgb as --mm-muted (a neutral focus colour),
+    // never the loud accent (orange in light) or the old hardcoded #4a90d9
+    // (rgb(74, 144, 217)) which read as a window border around the source view.
+    const mutedToRgb = await window.evaluate(() => {
+      const probe = document.createElement('div')
+      probe.style.color = getComputedStyle(document.documentElement)
+        .getPropertyValue('--mm-muted')
+        .trim()
+      document.body.appendChild(probe)
+      const rgb = getComputedStyle(probe).color
+      probe.remove()
+      return rgb
+    })
+    expect(outlineColor).toBe(mutedToRgb)
+    expect(outlineColor).not.toBe('rgb(74, 144, 217)')
+  })
 })
 
 // ---------- US2: explorer context menu ----------
 
 test.describe('US2 explorer context menu', () => {
-test('US2 opens an unopened file directly in source view', async () => {
-  await openFolder()
+  test('US2 opens an unopened file directly in source view', async () => {
+    await openFolder()
 
-  const row = window.getByRole('treeitem').getByText('beta.md')
-  await row.click({ button: 'right' })
-  await window.getByRole('menuitem', { name: 'View source' }).click()
+    const row = window.getByRole('treeitem').getByText('beta.md')
+    await row.click({ button: 'right' })
+    await window.getByRole('menuitem', { name: 'View source' }).click()
 
-  await expect(window.getByRole('tab', { name: /beta\.md/ })).toBeVisible()
-  await expect(window.getByTestId('source-textarea')).toBeVisible()
-  await expect(window.locator('.document-title')).toContainText('beta.md')
-  expect(await window.locator('[data-testid="source-textarea"]').evaluate((el) =>
-    Array.from(el.querySelectorAll('.cm-line')).map((line) => line.textContent).join('\n')
-  ))
-    .toBe('# Beta\n\nSecond file.')
-})
+    await expect(window.getByRole('tab', { name: /beta\.md/ })).toBeVisible()
+    await expect(window.getByTestId('source-textarea')).toBeVisible()
+    await expect(window.locator('.document-title')).toContainText('beta.md')
+    expect(
+      await window.locator('[data-testid="source-textarea"]').evaluate((el) =>
+        Array.from(el.querySelectorAll('.cm-line'))
+          .map((line) => line.textContent)
+          .join('\n')
+      )
+    ).toBe('# Beta\n\nSecond file.')
+  })
 
-test('US2 context-menu View source reuses the already-open formatted tab', async () => {
-  await openFolder()
-  await openFile('alpha.md')
-  await expect(window.getByRole('tab', { name: /alpha\.md/ })).toBeVisible()
-  // Second tab via the explicit new-tab action (spec 024 FR-005) so alpha
-  // stays open.
-  await window.getByRole('treeitem').getByText('beta.md').click({ button: 'middle' })
+  test('US2 context-menu View source reuses the already-open formatted tab', async () => {
+    await openFolder()
+    await openFile('alpha.md')
+    await expect(window.getByRole('tab', { name: /alpha\.md/ })).toBeVisible()
+    // Second tab via the explicit new-tab action (spec 024 FR-005) so alpha
+    // stays open.
+    await window.getByRole('treeitem').getByText('beta.md').click({ button: 'middle' })
 
-  const alphaRow = window.getByRole('treeitem').getByText('alpha.md')
-  await alphaRow.click({ button: 'right' })
-  await window.getByRole('menuitem', { name: 'View source' }).click()
+    const alphaRow = window.getByRole('treeitem').getByText('alpha.md')
+    await alphaRow.click({ button: 'right' })
+    await window.getByRole('menuitem', { name: 'View source' }).click()
 
-  // No duplicate tab; the existing alpha tab becomes active in source view.
-  await expect(window.getByTestId('source-view')).toBeVisible()
-  await expect(window.getByRole('tab', { name: /alpha\.md/ })).toHaveCount(1)
-  await expect(window.locator('.document-title')).toContainText('alpha.md')
-})
+    // No duplicate tab; the existing alpha tab becomes active in source view.
+    await expect(window.getByTestId('source-view')).toBeVisible()
+    await expect(window.getByRole('tab', { name: /alpha\.md/ })).toHaveCount(1)
+    await expect(window.locator('.document-title')).toContainText('alpha.md')
+  })
 })
 
 // ---------- US3: mutual exclusivity ----------
 
 test.describe('US3 mutual exclusivity', () => {
-test('US3 exactly one editing view is visible during a switch', async () => {
-  await openFolder()
-  await openFile('alpha.md')
-  await getViewSourceButton().click()
-  await expect(window.getByTestId('source-view')).toBeVisible()
-  // Wait for the slide-in to settle; until it finishes, the overlay sits
-  // offset from the host and would not intercept clicks at the editor's center.
-  await expect(window.getByTestId('source-view')).toHaveCSS('transform', 'none')
+  test('US3 exactly one editing view is visible during a switch', async () => {
+    await openFolder()
+    await openFile('alpha.md')
+    await getViewSourceButton().click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
+    // Wait for the slide-in to settle; until it finishes, the overlay sits
+    // offset from the host and would not intercept clicks at the editor's center.
+    await expect(window.getByTestId('source-view')).toHaveCSS('transform', 'none')
 
-  // The overlay and the textarea are the only editable surface. A real click at
-  // the centre of the (covered) ProseMirror must land on the source textarea —
-  // the ProseMirror underneath is not the interactive target (FR-009).
-  const covered = window.locator('.editor-host .ProseMirror').first()
-  await expect(covered).toBeAttached()
-  const box = (await covered.boundingBox()) as { x: number; y: number; width: number; height: number }
-  await window.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
-  const focused = await window.evaluate(() => {
-    const el = document.activeElement as HTMLElement | null
-    return el ? el.className : ''
+    // The overlay and the textarea are the only editable surface. A real click at
+    // the centre of the (covered) ProseMirror must land on the source textarea —
+    // the ProseMirror underneath is not the interactive target (FR-009).
+    const covered = window.locator('.editor-host .ProseMirror').first()
+    await expect(covered).toBeAttached()
+    const box = (await covered.boundingBox()) as {
+      x: number
+      y: number
+      width: number
+      height: number
+    }
+    await window.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+    const focused = await window.evaluate(() => {
+      const el = document.activeElement as HTMLElement | null
+      return el ? el.className : ''
+    })
+    expect(focused).toContain('source-textarea')
+
+    await window.getByRole('button', { name: /Back to visual editing/ }).click()
+    await expect(window.getByTestId('source-view')).toHaveCount(0)
+    const editable = window.locator('[contenteditable="true"]').first()
+    await expect(editable).toBeAttached()
   })
-  expect(focused).toContain('source-textarea')
-
-  await window.getByRole('button', { name: /Back to visual editing/ }).click()
-  await expect(window.getByTestId('source-view')).toHaveCount(0)
-  const editable = window.locator('[contenteditable="true"]').first()
-  await expect(editable).toBeAttached()
-})
 })
 
 // ---------- US4: tooltips ----------
 
 test.describe('US4 tooltips', () => {
-test('US4 every formatted toolbar control has a tooltip', async () => {
-  await openFolder()
-  await openFile('alpha.md')
-  await expect(getViewSourceButton()).toHaveCount(1)
+  test('US4 every formatted toolbar control has a tooltip', async () => {
+    await openFolder()
+    await openFile('alpha.md')
+    await expect(getViewSourceButton()).toHaveCount(1)
 
-  // The label pass assigns title/aria-label to all top-bar controls by order.
-  const labels = await window.locator('.milkdown-top-bar button').evaluateAll((buttons) =>
-    buttons.map((b) => (b instanceof SVGElement ? '' : b.getAttribute('aria-label') ?? b.title ?? ''))
-  )
-  expect(labels.length).toBeGreaterThan(10)
-  for (const label of labels) {
-    expect(label.length).toBeGreaterThan(0)
-  }
-  // Semantic spot checks: the heading selector is first, Bold carries its own
-  // label (the exact misalignment the 13-entry draft produced) and the trailing
-  // custom control is the View source action.
-  expect(labels[0]).toContain('Paragraph or heading style')
-  expect(labels).toContain('Bold')
-  expect(labels[labels.length - 1]).toBe('View source')
-})
+    // The label pass assigns title/aria-label to all top-bar controls by order.
+    const labels = await window
+      .locator('.milkdown-top-bar button')
+      .evaluateAll((buttons) =>
+        buttons.map((b) =>
+          b instanceof SVGElement ? '' : (b.getAttribute('aria-label') ?? b.title ?? '')
+        )
+      )
+    expect(labels.length).toBeGreaterThan(10)
+    for (const label of labels) {
+      expect(label.length).toBeGreaterThan(0)
+    }
+    // Semantic spot checks: the heading selector is first, Bold carries its own
+    // label (the exact misalignment the 13-entry draft produced) and the trailing
+    // custom control is the View source action.
+    expect(labels[0]).toContain('Paragraph or heading style')
+    expect(labels).toContain('Bold')
+    expect(labels[labels.length - 1]).toBe('View source')
+  })
 })
 
 // ---------- US5: task backspace ----------
 
 test.describe('US5 task backspace', () => {
-test('US5: Backspace removes an empty task item', async () => {
-  await openFolder()
-  await openFile('alpha.md')
-  // Place the caret in the paragraph text, then add one empty block.
-  await window.locator('[contenteditable="true"] p').last().click()
-  await window.keyboard.press('End')
-  // Wait for the new empty paragraph Enter creates to be ingested BEFORE
-  // toggling it — the toolbar button reads the block state, and clicking it
-  // before the new block lands can toggle the previous paragraph, so no list
-  // item ever appears (pre-existing race, fixed 2026-08-07).
-  const blockCount = await window.locator('[contenteditable="true"] p').count()
-  await window.keyboard.press('Enter')
-  await expect(window.locator('[contenteditable="true"] p')).toHaveCount(blockCount + 1)
-  // Ensure the caret is inside the new empty block before the toolbar toggle —
-  // Enter alone may leave the selection at the old block under load.
-  await window.locator('[contenteditable="true"] p').last().click()
-  // Create the task item strictly with the checklist control (SC-005) rather
-  // than by typing `- [ ] ` raw — the raw path makes the button click race the
-  // ingest of the typed text and is flaky.
-  await window.getByRole('button', { name: 'Task list' }).click()
-  await expect(window.locator('.list-item .label-wrapper')).toBeVisible()
+  test('US5: Backspace removes an empty task item', async () => {
+    await openFolder()
+    await openFile('alpha.md')
+    // Place the caret in the paragraph text, then add one empty block.
+    await window.locator('[contenteditable="true"] p').last().click()
+    await window.keyboard.press('End')
+    // Wait for the new empty paragraph Enter creates to be ingested BEFORE
+    // toggling it — the toolbar button reads the block state, and clicking it
+    // before the new block lands can toggle the previous paragraph, so no list
+    // item ever appears (pre-existing race, fixed 2026-08-07).
+    const blockCount = await window.locator('[contenteditable="true"] p').count()
+    await window.keyboard.press('Enter')
+    await expect(window.locator('[contenteditable="true"] p')).toHaveCount(blockCount + 1)
+    // Ensure the caret is inside the new empty block before the toolbar toggle —
+    // Enter alone may leave the selection at the old block under load.
+    await window.locator('[contenteditable="true"] p').last().click()
+    // Create the task item strictly with the checklist control (SC-005) rather
+    // than by typing `- [ ] ` raw — the raw path makes the button click race the
+    // ingest of the typed text and is flaky.
+    await window.getByRole('button', { name: 'Task list' }).click()
+    await expect(window.locator('.list-item .label-wrapper')).toBeVisible()
 
-  // Cursor at the start of the empty task item; Backspace removes it.
-  await window.keyboard.press('Home')
-  await window.keyboard.press('Backspace')
-  await expect(window.locator('.list-item .label-wrapper')).toHaveCount(0)
-})
+    // Cursor at the start of the empty task item; Backspace removes it.
+    await window.keyboard.press('Home')
+    await window.keyboard.press('Backspace')
+    await expect(window.locator('.list-item .label-wrapper')).toHaveCount(0)
+  })
 })
 
 // ---------- FR-12: normalization is preserved, not announced ----------
 
 test.describe('FR-12 normalization is preserved, not announced', () => {
-test('FR-12: a construct Crepe normalises is preserved verbatim through a round trip', async () => {
-  await openFolder()
-  await openFile('alpha.md')
-  await getViewSourceButton().click()
-  // An https autolink round-trips as a bracketed link in Crepe's
-  // serialization, so the fresh editor's baseline differs from the raw text
-  // the user typed — the FR-12 "cannot be represented verbatim" case.
-  const raw = '# Alpha\n\nhttp://example.com/path'
-  await window.getByTestId('source-textarea').fill(raw)
-  await window.getByRole('button', { name: /Back to visual editing/ }).click()
-  await expect(window.getByTestId('source-view')).toHaveCount(0)
+  test('FR-12: a construct Crepe normalises is preserved verbatim through a round trip', async () => {
+    await openFolder()
+    await openFile('alpha.md')
+    await getViewSourceButton().click()
+    // An https autolink round-trips as a bracketed link in Crepe's
+    // serialization, so the fresh editor's baseline differs from the raw text
+    // the user typed — the FR-12 "cannot be represented verbatim" case.
+    const raw = '# Alpha\n\nhttp://example.com/path'
+    await window.getByTestId('source-textarea').fill(raw)
+    await window.getByRole('button', { name: /Back to visual editing/ }).click()
+    await expect(window.getByTestId('source-view')).toHaveCount(0)
 
-  // The raw text survived into the document and saves verbatim.
-  await stubMessageBox(app, 'Save')
-  await window.getByRole('button', { name: 'Close alpha.md' }).click()
-  const disk = fs.readFileSync(path.join(testFolder, 'alpha.md'), 'utf-8')
-  expect(disk).toContain('http://example.com/path')
-})
+    // The raw text survived into the document and saves verbatim.
+    await stubMessageBox(app, 'Save')
+    await window.getByRole('button', { name: 'Close alpha.md' }).click()
+    const disk = fs.readFileSync(path.join(testFolder, 'alpha.md'), 'utf-8')
+    expect(disk).toContain('http://example.com/path')
+  })
 
-test('a no-edit view-source round trip does not mark a normalising file as changed', async () => {
-  fs.writeFileSync(path.join(testFolder, 'link.md'), '# Alpha\n\nhttp://example.com/path')
-  await openFolder()
-  await openFile('link.md')
-  await expect(window.locator('.document-title')).not.toContainText('\u2022')
+  test('a no-edit view-source round trip does not mark a normalising file as changed', async () => {
+    fs.writeFileSync(path.join(testFolder, 'link.md'), '# Alpha\n\nhttp://example.com/path')
+    await openFolder()
+    await openFile('link.md')
+    await expect(window.locator('.document-title')).not.toContainText('\u2022')
 
-  // View source and back without editing.
-  await getViewSourceButton().click()
-  await expect(window.getByTestId('source-textarea')).toBeVisible()
-  await window.getByRole('button', { name: /Back to visual editing/ }).click()
-  await expect(window.getByTestId('source-view')).toHaveCount(0)
+    // View source and back without editing.
+    await getViewSourceButton().click()
+    await expect(window.getByTestId('source-textarea')).toBeVisible()
+    await window.getByRole('button', { name: /Back to visual editing/ }).click()
+    await expect(window.getByTestId('source-view')).toHaveCount(0)
 
-  // No dirty dot, and closing the tab does NOT prompt for unsaved changes.
-  await expect(window.locator('.document-title')).not.toContainText('\u2022')
-  await window.getByRole('button', { name: 'Close link.md' }).click()
-  // The native prompt must not have fired.
-  await expect.poll(() => messageBoxCallCount(app)).toBe(0)
-  await expect(window.getByRole('button', { name: 'Open menu' })).toBeVisible()
-})
+    // No dirty dot, and closing the tab does NOT prompt for unsaved changes.
+    await expect(window.locator('.document-title')).not.toContainText('\u2022')
+    await window.getByRole('button', { name: 'Close link.md' }).click()
+    // The native prompt must not have fired.
+    await expect.poll(() => messageBoxCallCount(app)).toBe(0)
+    await expect(window.getByRole('button', { name: 'Open menu' })).toBeVisible()
+  })
 
-test('saving a pristine normalising file from the formatted view keeps its bytes', async () => {
-  fs.writeFileSync(path.join(testFolder, 'link.md'), '# Alpha\n\nhttp://example.com/path')
-  await openFolder()
-  await openFile('link.md')
-  await expect(window.locator('.document-title')).not.toContainText('\u2022')
+  test('saving a pristine normalising file from the formatted view keeps its bytes', async () => {
+    fs.writeFileSync(path.join(testFolder, 'link.md'), '# Alpha\n\nhttp://example.com/path')
+    await openFolder()
+    await openFile('link.md')
+    await expect(window.locator('.document-title')).not.toContainText('\u2022')
 
-  // A pristine normalising file is not treated as having unsaved changes: no
-  // save prompt on close, and the bytes on disk stay identical.
-  await window.getByRole('button', { name: 'Close link.md' }).click()
-  await expect.poll(() => messageBoxCallCount(app)).toBe(0)
-  const disk = fs.readFileSync(path.join(testFolder, 'link.md'), 'utf-8')
-  expect(disk).toBe('# Alpha\n\nhttp://example.com/path')
-})
+    // A pristine normalising file is not treated as having unsaved changes: no
+    // save prompt on close, and the bytes on disk stay identical.
+    await window.getByRole('button', { name: 'Close link.md' }).click()
+    await expect.poll(() => messageBoxCallCount(app)).toBe(0)
+    const disk = fs.readFileSync(path.join(testFolder, 'link.md'), 'utf-8')
+    expect(disk).toBe('# Alpha\n\nhttp://example.com/path')
+  })
 
-test('source-view save writes the exact raw bytes, never adding a trailing newline', async () => {
-  await openFolder()
-  const row = window.getByRole('treeitem').getByText('no-newline.md')
-  await row.click({ button: 'right' })
-  await window.getByRole('menuitem', { name: 'View source' }).click()
-  await expect(window.getByTestId('source-textarea')).toHaveText('No trailing newline')
+  test('source-view save writes the exact raw bytes, never adding a trailing newline', async () => {
+    await openFolder()
+    const row = window.getByRole('treeitem').getByText('no-newline.md')
+    await row.click({ button: 'right' })
+    await window.getByRole('menuitem', { name: 'View source' }).click()
+    await expect(window.getByTestId('source-textarea')).toHaveText('No trailing newline')
 
-  // Edit AND save while still in source view: the disk write must be the raw
-  // store bytes — neither a re-serialized editor output nor an added `\n`.
-  await window.getByTestId('source-textarea').fill('Edited raw source, no newline')
-  await stubMessageBox(app, 'Save')
-  await window.getByRole('button', { name: 'Close no-newline.md' }).click()
+    // Edit AND save while still in source view: the disk write must be the raw
+    // store bytes — neither a re-serialized editor output nor an added `\n`.
+    await window.getByTestId('source-textarea').fill('Edited raw source, no newline')
+    await stubMessageBox(app, 'Save')
+    await window.getByRole('button', { name: 'Close no-newline.md' }).click()
 
-  const disk = fs.readFileSync(path.join(testFolder, 'no-newline.md'), 'utf-8')
-  expect(disk).toBe('Edited raw source, no newline')
-})
+    const disk = fs.readFileSync(path.join(testFolder, 'no-newline.md'), 'utf-8')
+    expect(disk).toBe('Edited raw source, no newline')
+  })
 })
 
 // ---------- US7: explorer context-menu Open ----------
 
 test.describe('US7 explorer context-menu Open', () => {
-test('US7 Open opens an unopened file in a formatted tab', async () => {
-  await openFolder()
+  test('US7 Open opens an unopened file in a formatted tab', async () => {
+    await openFolder()
 
-  const row = window.getByRole('treeitem').getByText('beta.md')
-  await row.click({ button: 'right' })
-  await window.getByRole('menuitem', { name: 'Open' }).click()
+    const row = window.getByRole('treeitem').getByText('beta.md')
+    await row.click({ button: 'right' })
+    await window.getByRole('menuitem', { name: 'Open' }).click()
 
-  await expect(window.getByRole('tab', { name: /beta\.md/ })).toBeVisible()
-  // Formatted view, not source.
-  await expect(window.getByTestId('source-view')).toHaveCount(0)
-  await expect(window.locator('.document-title')).toContainText('beta.md')
-  await expect(window.locator('[contenteditable="true"]:visible').first()).toBeVisible()
-})
+    await expect(window.getByRole('tab', { name: /beta\.md/ })).toBeVisible()
+    // Formatted view, not source.
+    await expect(window.getByTestId('source-view')).toHaveCount(0)
+    await expect(window.locator('.document-title')).toContainText('beta.md')
+    await expect(window.locator('[contenteditable="true"]:visible').first()).toBeVisible()
+  })
 
-test('US7 Open activates the existing tab of an already-open formatted file', async () => {
-  await openFolder()
-  await openFile('alpha.md')
-  await openFile('beta.md')
-  await expect(window.locator('.document-title')).toContainText('beta.md')
+  test('US7 Open activates the existing tab of an already-open formatted file', async () => {
+    await openFolder()
+    await openFile('alpha.md')
+    await openFile('beta.md')
+    await expect(window.locator('.document-title')).toContainText('beta.md')
 
-  const alphaRow = window.getByRole('treeitem').getByText('alpha.md')
-  await alphaRow.click({ button: 'right' })
-  await window.getByRole('menuitem', { name: 'Open' }).click()
+    const alphaRow = window.getByRole('treeitem').getByText('alpha.md')
+    await alphaRow.click({ button: 'right' })
+    await window.getByRole('menuitem', { name: 'Open' }).click()
 
-  // No duplicate tab; the existing alpha tab becomes active in formatted view.
-  await expect(window.getByRole('tab', { name: /alpha\.md/ })).toHaveCount(1)
-  await expect(window.locator('.document-title')).toContainText('alpha.md')
-  await expect(window.getByTestId('source-view')).toHaveCount(0)
-})
+    // No duplicate tab; the existing alpha tab becomes active in formatted view.
+    await expect(window.getByRole('tab', { name: /alpha\.md/ })).toHaveCount(1)
+    await expect(window.locator('.document-title')).toContainText('alpha.md')
+    await expect(window.getByTestId('source-view')).toHaveCount(0)
+  })
 
-test('US7 Open returns a source-view tab to visual editing', async () => {
-  await openFolder()
-  await openFile('alpha.md')
-  await getViewSourceButton().click()
-  await expect(window.getByTestId('source-view')).toBeVisible()
+  test('US7 Open returns a source-view tab to visual editing', async () => {
+    await openFolder()
+    await openFile('alpha.md')
+    await getViewSourceButton().click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
 
-  const alphaRow = window.getByRole('treeitem').getByText('alpha.md')
-  await alphaRow.click({ button: 'right' })
-  await window.getByRole('menuitem', { name: 'Open' }).click()
+    const alphaRow = window.getByRole('treeitem').getByText('alpha.md')
+    await alphaRow.click({ button: 'right' })
+    await window.getByRole('menuitem', { name: 'Open' }).click()
 
-  await expect(window.getByTestId('source-view')).toHaveCount(0)
-  await expect(window.getByRole('tab', { name: /alpha\.md/ })).toHaveCount(1)
-  await expect(window.locator('[contenteditable="true"]:visible').first()).toBeVisible()
-})
+    await expect(window.getByTestId('source-view')).toHaveCount(0)
+    await expect(window.getByRole('tab', { name: /alpha\.md/ })).toHaveCount(1)
+    await expect(window.locator('[contenteditable="true"]:visible').first()).toBeVisible()
+  })
 
-// ---------- Spec 008 US2: explorer context-menu Open preference ----------
+  // ---------- Spec 008 US2: explorer context-menu Open preference ----------
 
-test('US7 with new-tab preference, Open creates a new tab instead of replacing', async () => {
-  await openFolder()
-  // Set the General-area preference through the dialog.
-  await window.getByRole('button', { name: 'Open menu' }).click()
-  await window.getByRole('menuitem', { name: 'Settings…' }).click()
-  const settingsDialog = window.getByTestId('settings-dialog')
-  await settingsDialog.waitFor()
-  await settingsDialog.locator('.settings-switch', { hasText: 'Open files in a new tab' }).click()
-  await settingsDialog.getByRole('button', { name: 'Close', exact: true }).click()
-  await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
+  test('US7 with new-tab preference, Open creates a new tab instead of replacing', async () => {
+    await openFolder()
+    // Set the General-area preference through the dialog.
+    await window.getByRole('button', { name: 'Open menu' }).click()
+    await window.getByRole('menuitem', { name: 'Settings…' }).click()
+    const settingsDialog = window.getByTestId('settings-dialog')
+    await settingsDialog.waitFor()
+    await settingsDialog.locator('.settings-switch', { hasText: 'Open files in a new tab' }).click()
+    await settingsDialog.getByRole('button', { name: 'Close', exact: true }).click()
+    await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
 
-  await openFile('alpha.md')
-  await expect(window.getByRole('tab')).toHaveCount(1)
+    await openFile('alpha.md')
+    await expect(window.getByRole('tab')).toHaveCount(1)
 
-  const betaRow = window.getByRole('treeitem').getByText('beta.md')
-  await betaRow.click({ button: 'right' })
-  await window.getByRole('menuitem', { name: 'Open' }).click()
+    const betaRow = window.getByRole('treeitem').getByText('beta.md')
+    await betaRow.click({ button: 'right' })
+    await window.getByRole('menuitem', { name: 'Open' }).click()
 
-  // New tab: both tabs remain, beta is active in formatted view.
-  await expect(window.getByRole('tab', { name: /alpha\.md/ })).toBeVisible()
-  await expect(window.getByRole('tab', { name: /beta\.md/ })).toBeVisible()
-  await expect(window.locator('.document-title')).toContainText('beta.md')
-  await expect(window.getByTestId('source-view')).toHaveCount(0)
-})
+    // New tab: both tabs remain, beta is active in formatted view.
+    await expect(window.getByRole('tab', { name: /alpha\.md/ })).toBeVisible()
+    await expect(window.getByRole('tab', { name: /beta\.md/ })).toBeVisible()
+    await expect(window.locator('.document-title')).toContainText('beta.md')
+    await expect(window.getByTestId('source-view')).toHaveCount(0)
+  })
 
-test('US7 with same-tab preference, Open replaces a clean active tab', async () => {
-  await openFolder()
-  await openFile('alpha.md')
-  // Await the editor mount so the baseline capture completes before the next
-  // open decides replace-vs-new (otherwise the fresh tab can look dirty).
-  await expect(window.locator('.ProseMirror:visible')).toBeVisible()
-  await expect(window.getByRole('tab')).toHaveCount(1)
+  test('US7 with same-tab preference, Open replaces a clean active tab', async () => {
+    await openFolder()
+    await openFile('alpha.md')
+    // Await the editor mount so the baseline capture completes before the next
+    // open decides replace-vs-new (otherwise the fresh tab can look dirty).
+    await expect(window.locator('.ProseMirror:visible')).toBeVisible()
+    await expect(window.getByRole('tab')).toHaveCount(1)
 
-  const betaRow = window.getByRole('treeitem').getByText('beta.md')
-  await betaRow.click({ button: 'right' })
-  await window.getByRole('menuitem', { name: 'Open' }).click()
+    const betaRow = window.getByRole('treeitem').getByText('beta.md')
+    await betaRow.click({ button: 'right' })
+    await window.getByRole('menuitem', { name: 'Open' }).click()
 
-  // Replacement: only one tab, now beta.
-  await expect(window.getByRole('tab')).toHaveCount(1)
-  await expect(window.locator('.document-title')).toContainText('beta.md')
-  await expect(window.getByRole('tab', { name: /alpha\.md/ })).toHaveCount(0)
-})
+    // Replacement: only one tab, now beta.
+    await expect(window.getByRole('tab')).toHaveCount(1)
+    await expect(window.locator('.document-title')).toContainText('beta.md')
+    await expect(window.getByRole('tab', { name: /alpha\.md/ })).toHaveCount(0)
+  })
 })
 
 // ---------- Edges ----------
 
 test.describe('Edges', () => {
-test('tab-switch mid-view leaves the other tab usable', async () => {
-  await openFolder()
-  await openFile('alpha.md')
-  await getViewSourceButton().click()
-  await expect(window.getByTestId('source-view')).toBeVisible()
+  test('tab-switch mid-view leaves the other tab usable', async () => {
+    await openFolder()
+    await openFile('alpha.md')
+    await getViewSourceButton().click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
 
-  // Switch to the other already-open tab (middle-click opens it in a new tab
-  // without replacing the alpha source tab, spec 024 FR-005).
-  await window.getByRole('treeitem').getByText('beta.md').click({ button: 'middle' })
-  await expect(window.locator('.document-title')).toContainText('beta.md')
-  // The beta tab's (already-open) formatted editor is the live surface; the
-  // first contenteditable in DOM order belongs to the hidden alpha panel.
-  const editable = window.locator('[contenteditable="true"]:visible').first()
-  await expect(editable).toBeVisible()
+    // Switch to the other already-open tab (middle-click opens it in a new tab
+    // without replacing the alpha source tab, spec 024 FR-005).
+    await window.getByRole('treeitem').getByText('beta.md').click({ button: 'middle' })
+    await expect(window.locator('.document-title')).toContainText('beta.md')
+    // The beta tab's (already-open) formatted editor is the live surface; the
+    // first contenteditable in DOM order belongs to the hidden alpha panel.
+    const editable = window.locator('[contenteditable="true"]:visible').first()
+    await expect(editable).toBeVisible()
 
-  // Back to the source tab: the source view is complete and intact.
-  await window.getByRole('tab', { name: /alpha\.md/ }).click()
-  await expect(window.getByTestId('source-view')).toBeVisible()
-  await expect(window.locator('[data-testid="source-textarea"]')).toHaveText(/# Alpha/)
-})
+    // Back to the source tab: the source view is complete and intact.
+    await window.getByRole('tab', { name: /alpha\.md/ }).click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
+    await expect(window.locator('[data-testid="source-textarea"]')).toHaveText(/# Alpha/)
+  })
 
-test('active document in a nested folder is highlighted in the explorer (FR-6)', async () => {
-  await openFolder()
-  // Reveal the nested folder first, then open the nested file; the tree must
-  // highlight it when it is active.
-  await window.getByRole('treeitem').filter({ hasText: 'nested' }).getByRole('button', { name: 'Expand' }).click()
-  await openFile('deep.md')
-  await expect(window.locator('.document-title')).toContainText('deep.md')
+  test('active document in a nested folder is highlighted in the explorer (FR-6)', async () => {
+    await openFolder()
+    // Reveal the nested folder first, then open the nested file; the tree must
+    // highlight it when it is active.
+    await window
+      .getByRole('treeitem')
+      .filter({ hasText: 'nested' })
+      .getByRole('button', { name: 'Expand' })
+      .click()
+    await openFile('deep.md')
+    await expect(window.locator('.document-title')).toContainText('deep.md')
 
-  const deepRow = window.getByRole('treeitem').filter({ hasText: 'deep.md' })
-  await expect(deepRow).toBeVisible()
-  await expect(deepRow).toHaveAttribute('aria-selected', 'true')
-})
+    const deepRow = window.getByRole('treeitem').filter({ hasText: 'deep.md' })
+    await expect(deepRow).toBeVisible()
+    await expect(deepRow).toHaveAttribute('aria-selected', 'true')
+  })
 })

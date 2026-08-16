@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { EditorSelection, EditorState } from '@codemirror/state'
+import { Annotation, EditorSelection, EditorState } from '@codemirror/state'
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { markdown } from '@codemirror/lang-markdown'
 import { yamlFrontmatter } from '@codemirror/lang-yaml'
@@ -18,7 +18,13 @@ interface SourceViewProps {
   onContextChange: (selectionAnchor: number, selectionHead: number, scrollTop: number) => void
 }
 
-function sourceContext(view: EditorView): { selectionAnchor: number; selectionHead: number; scrollTop: number } {
+const externalContentUpdate = Annotation.define<boolean>()
+
+function sourceContext(view: EditorView): {
+  selectionAnchor: number
+  selectionHead: number
+  scrollTop: number
+} {
   return {
     selectionAnchor: view.state.selection.main.anchor,
     selectionHead: view.state.selection.main.head,
@@ -70,7 +76,11 @@ export default function SourceView({
           spellcheck: String(spellcheckEnabled)
         }),
         EditorView.updateListener.of((update) => {
-          if (update.docChanged) onChangeRef.current(update.state.doc.toString())
+          const isExternalUpdate = update.transactions.some((transaction) =>
+            transaction.annotation(externalContentUpdate)
+          )
+          if (update.docChanged && !isExternalUpdate)
+            onChangeRef.current(update.state.doc.toString())
           if (update.selectionSet) captureContext(update.view)
         })
       ]
@@ -95,6 +105,15 @@ export default function SourceView({
 
   useEffect(() => {
     const view = viewRef.current
+    if (!view || view.state.doc.toString() === value) return
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: value },
+      annotations: externalContentUpdate.of(true)
+    })
+  }, [value])
+
+  useEffect(() => {
+    const view = viewRef.current
     if (!view) return
     if (isActive) {
       const length = view.state.doc.length
@@ -111,7 +130,12 @@ export default function SourceView({
   }, [isActive])
 
   return (
-    <div className="source-view" data-testid="source-view" role="region" aria-label="Markdown source">
+    <div
+      className="source-view"
+      data-testid="source-view"
+      role="region"
+      aria-label="Markdown source"
+    >
       <div className="source-toolbar">
         <button
           type="button"
@@ -123,7 +147,7 @@ export default function SourceView({
           ← Visual Editing
         </button>
       </div>
-      <div ref={hostRef} />
+      <div ref={hostRef} className="source-editor-host" />
     </div>
   )
 }

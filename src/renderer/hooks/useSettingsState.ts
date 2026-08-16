@@ -1,6 +1,11 @@
 import { useCallback, useState } from 'react'
 import { updateSettings, getSettings } from '../state/settings'
-import type { EditorThemeName, SpellcheckLanguage, EditorColors, FileOpenBehavior } from '../../shared/ipc-contract'
+import type {
+  EditorThemeName,
+  SpellcheckLanguage,
+  EditorColors,
+  FileOpenBehavior
+} from '../../shared/ipc-contract'
 import {
   useEffectiveTheme,
   themeChoiceFromOverride,
@@ -49,9 +54,15 @@ export function useSettingsState(): {
   const [editorTheme, setEditorTheme] = useState<EditorThemeName>(getSettings().editorTheme)
   const [editorFont, setEditorFont] = useState<'serif' | 'sans-serif'>(getSettings().editorFont)
   const [editorColors, setEditorColors] = useState<EditorColors | null>(getSettings().editorColors)
-  const [spellcheckEnabled, setSpellcheckEnabled] = useState<boolean>(getSettings().spellcheckEnabled)
-  const [spellcheckLanguage, setSpellcheckLanguage] = useState<SpellcheckLanguage | null>(getSettings().spellcheckLanguage)
-  const [fileOpenBehavior, setFileOpenBehavior] = useState<FileOpenBehavior>(getSettings().fileOpenBehavior)
+  const [spellcheckEnabled, setSpellcheckEnabled] = useState<boolean>(
+    getSettings().spellcheckEnabled
+  )
+  const [spellcheckLanguage, setSpellcheckLanguage] = useState<SpellcheckLanguage | null>(
+    getSettings().spellcheckLanguage
+  )
+  const [fileOpenBehavior, setFileOpenBehavior] = useState<FileOpenBehavior>(
+    getSettings().fileOpenBehavior
+  )
   const [markdownOptions, setMarkdownOptions] = useState<MarkdownSyntaxOptions>(() => ({
     hardBreaks: getSettings().hardBreaks,
     strikethrough: getSettings().strikethrough,
@@ -60,7 +71,9 @@ export function useSettingsState(): {
     math: getSettings().math,
     autolink: getSettings().autolink
   }))
-  const [visualCodeHighlighting, setVisualCodeHighlighting] = useState(getSettings().visualCodeHighlighting)
+  const [visualCodeHighlighting, setVisualCodeHighlighting] = useState(
+    getSettings().visualCodeHighlighting
+  )
   const [themeChoice, setThemeChoice] = useState<ThemeChoice>(() =>
     themeChoiceFromOverride(getSettings().themeOverride)
   )
@@ -74,15 +87,22 @@ export function useSettingsState(): {
   // into `editorColors` (clarified 2026-08-09: presets are materialised in the
   // config, not stored as null) and its font into `editorFont`. Monotone stores
   // the resolved app-theme variant's palette.
-  const handleEditorThemeChange = useCallback((theme: EditorThemeName) => {
-    setEditorTheme(theme)
-    const presetColors = presetColorsFor(theme, themeMode)
-    setEditorColors(presetColors)
-    const presetFont = presetFontFor(theme)
-    setEditorFont(presetFont)
-    updateSettings({ editorTheme: theme, editorColors: presetColors, editorFont: presetFont })
-    window.api.updateSettings({ editorTheme: theme, editorColors: presetColors, editorFont: presetFont }).catch(() => { /* ignore */ })
-  }, [themeMode])
+  const handleEditorThemeChange = useCallback(
+    (theme: EditorThemeName) => {
+      setEditorTheme(theme)
+      const presetColors = presetColorsFor(theme, themeMode)
+      setEditorColors(presetColors)
+      const presetFont = presetFontFor(theme)
+      setEditorFont(presetFont)
+      updateSettings({ editorTheme: theme, editorColors: presetColors, editorFont: presetFont })
+      window.api
+        .updateSettings({ editorTheme: theme, editorColors: presetColors, editorFont: presetFont })
+        .catch(() => {
+          /* ignore */
+        })
+    },
+    [themeMode]
+  )
 
   // Spec 013: apply the theme immediately and persist (FR-006, FR-008). The
   // visual switch flows through `themeChoice` → `useEffectiveTheme` (the
@@ -92,7 +112,9 @@ export function useSettingsState(): {
     setThemeChoice(choice)
     const override = themeOverrideFromChoice(choice)
     updateSettings({ themeOverride: override })
-    window.api.updateSettings({ themeOverride: override }).catch(() => { /* ignore */ })
+    window.api.updateSettings({ themeOverride: override }).catch(() => {
+      /* ignore */
+    })
   }, [])
 
   // Spec 020 FR-006/US4: apply the spellcheck choice immediately and persist.
@@ -102,7 +124,9 @@ export function useSettingsState(): {
   const handleSpellcheckChange = useCallback((enabled: boolean) => {
     setSpellcheckEnabled(enabled)
     updateSettings({ spellcheckEnabled: enabled })
-    window.api.updateSettings({ spellcheckEnabled: enabled }).catch(() => { /* ignore */ })
+    window.api.updateSettings({ spellcheckEnabled: enabled }).catch(() => {
+      /* ignore */
+    })
   }, [])
 
   // Spec 020 (2026-08-07): apply the chosen spellchecker language immediately
@@ -110,7 +134,9 @@ export function useSettingsState(): {
   const handleSpellcheckLanguageChange = useCallback((language: SpellcheckLanguage | null) => {
     setSpellcheckLanguage(language)
     updateSettings({ spellcheckLanguage: language })
-    window.api.updateSettings({ spellcheckLanguage: language }).catch(() => { /* ignore */ })
+    window.api.updateSettings({ spellcheckLanguage: language }).catch(() => {
+      /* ignore */
+    })
   }, [])
 
   // Spec 008 FR-008: apply the explorer file-opening preference immediately and
@@ -118,7 +144,9 @@ export function useSettingsState(): {
   const handleFileOpenBehaviorChange = useCallback((behavior: FileOpenBehavior) => {
     setFileOpenBehavior(behavior)
     updateSettings({ fileOpenBehavior: behavior })
-    window.api.updateSettings({ fileOpenBehavior: behavior }).catch(() => { /* ignore */ })
+    window.api.updateSettings({ fileOpenBehavior: behavior }).catch(() => {
+      /* ignore */
+    })
   }, [])
 
   // Spec 030 (FR-003..FR-012): apply a markdown syntax toggle immediately and
@@ -126,29 +154,46 @@ export function useSettingsState(): {
   // six-field snapshot is pushed into every live editor so all open tabs
   // re-parse (research R5/R6, FR-010/011). The re-parse never touches dirty
   // state, undo history, cursor, or scroll (suppressed in markdownSyntaxRuntime).
-  const handleMarkdownOptionChange = useCallback((patch: Partial<MarkdownSyntaxOptions>) => {
-    const next = { ...markdownOptions, ...patch }
-    setMarkdownOptions(next)
-    updateSettings(next)
-    window.api.updateSettings(next).catch(() => { /* ignore */ })
-    reconfigureAll(instancePool, next)
-  }, [markdownOptions])
+  const handleMarkdownOptionChange = useCallback(
+    (patch: Partial<MarkdownSyntaxOptions>) => {
+      const next = { ...markdownOptions, ...patch }
+      setMarkdownOptions(next)
+      updateSettings(next)
+      window.api.updateSettings(next).catch(() => {
+        /* ignore */
+      })
+      reconfigureAll(instancePool, next)
+    },
+    [markdownOptions]
+  )
 
   const handleVisualCodeHighlightingChange = useCallback((enabled: boolean) => {
     setVisualCodeHighlighting(enabled)
     updateSettings({ visualCodeHighlighting: enabled })
-    window.api.updateSettings({ visualCodeHighlighting: enabled }).catch(() => { /* ignore */ })
+    window.api.updateSettings({ visualCodeHighlighting: enabled }).catch(() => {
+      /* ignore */
+    })
   }, [])
 
   return {
-    settingsOpen, setSettingsOpen,
-    editorTheme, handleEditorThemeChange,
-    editorFont, editorColors,
-    spellcheckEnabled, handleSpellcheckChange,
-    spellcheckLanguage, handleSpellcheckLanguageChange,
-    fileOpenBehavior, handleFileOpenBehaviorChange,
-    markdownOptions, handleMarkdownOptionChange,
-    visualCodeHighlighting, handleVisualCodeHighlightingChange,
-    themeChoice, handleThemeChange, themeMode
+    settingsOpen,
+    setSettingsOpen,
+    editorTheme,
+    handleEditorThemeChange,
+    editorFont,
+    editorColors,
+    spellcheckEnabled,
+    handleSpellcheckChange,
+    spellcheckLanguage,
+    handleSpellcheckLanguageChange,
+    fileOpenBehavior,
+    handleFileOpenBehaviorChange,
+    markdownOptions,
+    handleMarkdownOptionChange,
+    visualCodeHighlighting,
+    handleVisualCodeHighlightingChange,
+    themeChoice,
+    handleThemeChange,
+    themeMode
   }
 }

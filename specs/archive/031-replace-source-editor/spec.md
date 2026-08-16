@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-16
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "can you create a speckit spec (in a new branch) to set this as the replacement for the current view code textarea"
 
