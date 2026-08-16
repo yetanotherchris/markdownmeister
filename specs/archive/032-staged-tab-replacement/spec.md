@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-16
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "Same-tab file opens leave the visual editor blank for about one second while Milkdown initializes."
 

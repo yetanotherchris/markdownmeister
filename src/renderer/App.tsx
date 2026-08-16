@@ -407,7 +407,7 @@ export default function App() {
               ) : (
                 session.documents.map((doc) => (
                   <EditorPanel
-                    key={doc.id}
+                    key={doc.panelId}
                     document={doc}
                     isActive={doc.id === session.activeId}
                     markdownOptions={markdownOptions}
@@ -415,6 +415,7 @@ export default function App() {
                     onSpellingMenu={setSpellMenu}
                     onContentChange={sessionApi.handleContentChange}
                     onBaselineCapture={sessionApi.handleBaselineCapture}
+                    onStagedEditorReady={sessionApi.handleStagedEditorReady}
                     onCursorState={sessionApi.handleCursorState}
                     onSourceContext={sessionApi.handleSourceContext}
                     onRequestViewSource={source.handleShowSource}

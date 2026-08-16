@@ -210,7 +210,6 @@ export default function CrepeHost({
       // so Chromium's native markers are switched OFF here to avoid double
       // underlines. The source view keeps native spellchecking (FR-007).
       view.dom.spellcheck = false
-      onReady(crepe)
       // Spec 002, US5 (FR-016/017): Backspace at the start of an empty task
       // item removes it. Bound on `view.dom` in the CAPTURE phase so this runs
       // before ProseMirror's own keydown handler registers the key (the editor
@@ -248,6 +247,7 @@ export default function CrepeHost({
       // Reading the freshly parsed content directly is the reliable source
       // (research.md R4, verified in Phase 5).
       onBaselineCapture(crepe.getMarkdown())
+      onReady(crepe)
       applyInert()
       if (active) {
         applyCursorState(view)

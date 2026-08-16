@@ -75,6 +75,23 @@ test('US1/FR-001 a clean active tab is replaced (no new tab)', async () => {
   await expect(window.getByRole('tab', { name: /alpha\.md/ })).toHaveCount(0)
 })
 
+test('spec 032 keeps the outgoing editor visible until the staged replacement commits', async () => {
+  await openWorkspaceFolder()
+  await openFromTree('alpha.md')
+  const outgoingEditor = window.locator('.ProseMirror:visible')
+  await expect(outgoingEditor).toContainText('Hello alpha.')
+
+  await window.getByRole('treeitem').getByText('beta.md').click()
+  // Crepe initialization is asynchronous. Until its ready callback commits the
+  // staged document, the old title and its non-empty editor remain on screen.
+  await expect(window.locator('.document-title')).toContainText('alpha.md')
+  await expect(outgoingEditor).toBeVisible()
+  await expect(outgoingEditor).toContainText('Hello alpha.')
+
+  await expect(window.locator('.document-title')).toContainText('beta.md')
+  await expect(window.locator('.ProseMirror:visible')).toContainText('Hello beta.')
+})
+
 test('US1/FR-002 a dirty active tab opens a new tab and stays open', async () => {
   await openWorkspaceFolder()
   await openFromTree('alpha.md')

@@ -208,6 +208,12 @@
   pointer-events: none;
 }
 
+/* Spec 032: Milkdown must have a layoutable host while initializing, but the
+   staged editor must neither flash nor receive input before its atomic commit. */
+.editor-host.staged {
+  pointer-events: none;
+}
+
 /* Spec 002: the source view is an opaque overlay inside the editor host,
    sliding in from the right to replace the formatted editor (FR-003, FR-009).
    The Crepe host stays mounted underneath but is covered while source shows.

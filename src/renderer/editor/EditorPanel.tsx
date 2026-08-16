@@ -12,67 +12,60 @@ import './editor.css'
 interface EditorPanelProps {
   document: DocumentState
   isActive: boolean
-  /** Spec 030: the markdown syntax options (read at editor mount). */
   markdownOptions: MarkdownSyntaxOptions
-  /** Spec 020: whether native spellcheck is enabled — applies to the source
-   *  view textarea only (the WYSIWYG uses the JS spellchecker). */
   spellcheckEnabled: boolean
-  /** Spec 020 (JS spellchecker): the WYSIWYG correction menu, or null. */
   onSpellingMenu: (menu: SpellingMenuState | null) => void
   onContentChange: (id: string, content: string) => void
   onBaselineCapture: (id: string, baseline: string) => void
+  onStagedEditorReady: (id: string) => void
   onCursorState: (id: string, cursorOffset: number, scrollTop: number) => void
-  onSourceContext: (
-    id: string,
-    selectionAnchor: number,
-    selectionHead: number,
-    scrollTop: number
-  ) => void
+  onSourceContext: (id: string, selectionAnchor: number, selectionHead: number, scrollTop: number) => void
   onRequestViewSource: (id: string) => void
   onReturnToFormatted: (id: string) => void
 }
 
-export default function EditorPanel({
+interface DocumentHostProps extends Omit<EditorPanelProps, 'document' | 'isActive' | 'onStagedEditorReady'> {
+  document: DocumentState
+  isActive: boolean
+  staged?: boolean
+  onStagedEditorReady?: (id: string) => void
+}
+
+function DocumentHost({
   document,
   isActive,
+  staged = false,
   markdownOptions,
   spellcheckEnabled,
   onSpellingMenu,
   onContentChange,
   onBaselineCapture,
+  onStagedEditorReady,
   onCursorState,
   onSourceContext,
   onRequestViewSource,
   onReturnToFormatted
-}: EditorPanelProps) {
+}: DocumentHostProps) {
+  const inSource = !staged && document.view === 'source'
   const handleMarkdownUpdated = useCallback(
-    (markdown: string) => {
-      onContentChange(document.id, markdown)
-    },
+    (markdown: string) => onContentChange(document.id, markdown),
     [document.id, onContentChange]
   )
-
   const handleBaselineCapture = useCallback(
-    (baseline: string) => {
-      onBaselineCapture(document.id, baseline)
-    },
+    (baseline: string) => onBaselineCapture(document.id, baseline),
     [document.id, onBaselineCapture]
   )
-
   const handleCursorState = useCallback(
-    (cursor: CursorState) => {
-      onCursorState(document.id, cursor.cursorOffset, cursor.scrollTop)
-    },
+    (cursor: CursorState) => onCursorState(document.id, cursor.cursorOffset, cursor.scrollTop),
     [document.id, onCursorState]
   )
-
   const handleReady = useCallback(
     (crepe: Crepe) => {
       instancePool.register(document.id, crepe)
+      if (staged) onStagedEditorReady?.(document.id)
     },
-    [document.id]
+    [document.id, onStagedEditorReady, staged]
   )
-
   const handleSourceContext = useCallback(
     (selectionAnchor: number, selectionHead: number, scrollTop: number) => {
       onSourceContext(document.id, selectionAnchor, selectionHead, scrollTop)
@@ -80,41 +73,19 @@ export default function EditorPanel({
     [document.id, onSourceContext]
   )
 
-  if (document.editorState === 'evicted') {
-    // Instance destroyed to free memory; content retained in the store.
-    // A fresh CrepeHost mounts when the document is reactivated. The
-    // placeholder must not swallow pointer events meant for the visible
-    // editor below it. If the tab was in source view it stays in source
-    // view once remounted.
-    return <div className="editor-host evicted" />
-  }
-
-  const inSource = document.view === 'source'
-
-  const sourceView = inSource && (
-    <SourceView
-      value={joinFrontmatter(document.frontmatter, document.content)}
-      onChange={(content) => onContentChange(document.id, content)}
-      onReturnToFormatted={() => onReturnToFormatted(document.id)}
-      isActive={isActive}
-      spellcheckEnabled={spellcheckEnabled}
-      selectionAnchor={document.sourceSelectionAnchor}
-      selectionHead={document.sourceSelectionHead}
-      scrollTop={document.sourceScrollTop}
-      onContextChange={handleSourceContext}
-    />
-  )
+  if (document.editorState === 'evicted') return <div className="editor-host evicted" />
 
   return (
     <div
-      className={sourceView ? 'editor-host has-source' : 'editor-host'}
-      style={{ visibility: isActive ? 'visible' : 'hidden' }}
+      className={`editor-host${inSource ? ' has-source' : ''}${staged ? ' staged' : ''}`}
+      style={{ visibility: isActive && !staged ? 'visible' : 'hidden' }}
+      aria-hidden={staged || undefined}
     >
       <CrepeHost
         key={`${document.id}-v${document.contentVersion}`}
         defaultValue={document.content}
-        active={isActive && !inSource}
-        locked={inSource}
+        active={isActive && !inSource && !staged}
+        locked={inSource || staged}
         markdownOptions={markdownOptions}
         onSpellingMenu={onSpellingMenu}
         restoreCursor={{ cursorOffset: document.cursorOffset, scrollTop: document.scrollTop }}
@@ -124,7 +95,39 @@ export default function EditorPanel({
         onCursorState={handleCursorState}
         onRequestViewSource={() => onRequestViewSource(document.id)}
       />
-      {sourceView}
+      {inSource && (
+        <SourceView
+          value={joinFrontmatter(document.frontmatter, document.content)}
+          onChange={(content) => onContentChange(document.id, content)}
+          onReturnToFormatted={() => onReturnToFormatted(document.id)}
+          isActive={isActive}
+          spellcheckEnabled={spellcheckEnabled}
+          selectionAnchor={document.sourceSelectionAnchor}
+          selectionHead={document.sourceSelectionHead}
+          scrollTop={document.sourceScrollTop}
+          onContextChange={handleSourceContext}
+        />
+      )}
     </div>
+  )
+}
+
+export default function EditorPanel(props: EditorPanelProps) {
+  const { document, onStagedEditorReady, ...hostProps } = props
+  const staged = document.pendingReplacement
+  return (
+    <>
+      <DocumentHost key={document.id} document={document} {...hostProps} />
+      {staged && (
+        <DocumentHost
+          key={staged.id}
+          document={staged}
+          {...hostProps}
+          isActive={false}
+          staged
+          onStagedEditorReady={onStagedEditorReady}
+        />
+      )}
+    </>
   )
 }
