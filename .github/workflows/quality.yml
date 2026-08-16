@@ -2,8 +2,32 @@ name: Quality Gates
 
 on:
   pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'electron-builder.yml'
+      - 'electron.vite.config.ts'
+      - 'eslint.config.mjs'
+      - 'playwright.config.ts'
+      - 'tsconfig*.json'
+      - 'vitest.config.ts'
   push:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'electron-builder.yml'
+      - 'electron.vite.config.ts'
+      - 'eslint.config.mjs'
+      - 'playwright.config.ts'
+      - 'tsconfig*.json'
+      - 'vitest.config.ts'
 
 permissions:
   contents: read
