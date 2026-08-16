@@ -295,7 +295,7 @@ export function handleCommitStagedReplacement(
   return {
     ...state,
     documents: state.documents.map((d) => (d.id === outgoing.id ? incoming : d)),
-    activeId: incoming.id
+    activeId: state.activeId === outgoing.id ? incoming.id : state.activeId
   }
 }
 
@@ -381,7 +381,13 @@ export function handleCaptureBaseline(
   const { id, baseline } = payload
   return {
     ...state,
-    documents: state.documents.map((d) => (d.id === id ? { ...d, editorBaseline: baseline } : d))
+    documents: state.documents.map((d) => {
+      if (d.id === id) return { ...d, editorBaseline: baseline }
+      if (d.pendingReplacement?.id === id) {
+        return { ...d, pendingReplacement: { ...d.pendingReplacement, editorBaseline: baseline } }
+      }
+      return d
+    })
   }
 }
 
