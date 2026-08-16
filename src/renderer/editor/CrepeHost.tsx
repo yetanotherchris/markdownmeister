@@ -9,6 +9,12 @@ import { applyToolbarLabels } from './toolbarLabels'
 import { planTaskBackspace } from './taskBackspace'
 import { tightListPlugins } from './tightList'
 import { spellcheckPlugin, type SpellingMenuState } from './spellcheckPlugin'
+import { reconfigureEditor, isReconfigureSuppressed } from './markdownSyntaxRuntime'
+import {
+  markdownSyntaxInputRuleGate,
+  setMarkdownSyntaxGateOptions
+} from './markdownSyntaxInputRules'
+import type { MarkdownSyntaxOptions } from './markdownSyntaxOptions'
 
 export interface CursorState {
   cursorOffset: number
@@ -23,6 +29,10 @@ interface CrepeHostProps {
    *  otherwise clobber raw source edits) and the covered editor is made
    *  inert so it leaves the keyboard and accessibility tree (FR-009). */
   locked: boolean
+  /** Spec 030: the markdown syntax options this editor is created with. A
+   *  runtime toggle reconfigures the live editor in place, so this prop is
+   *  read once at mount for the initial pipeline. */
+  markdownOptions: MarkdownSyntaxOptions
   /** Spec 020 (JS spellchecker): called with the right-click correction menu
    *  (or `null` to dismiss). Owned by the spellcheck plugin. */
   onSpellingMenu: (menu: SpellingMenuState | null) => void
@@ -44,6 +54,7 @@ export default function CrepeHost({
   defaultValue,
   active,
   locked,
+  markdownOptions,
   onSpellingMenu,
   restoreCursor,
   onMarkdownUpdated,
@@ -139,7 +150,9 @@ export default function CrepeHost({
           // 200 ms debounce-outstanding changes is not the store's state, so a
           // late emission from a superseded edit must not overwrite the raw
           // text the user is typing (research R3, 2026-08-02 data-loss fix).
-          if (mounted && !lockedRef.current) {
+          // Spec 030: also drop the re-parse emission from a settings toggle
+          // (research R3), so a syntax reconfiguration never touches the store.
+          if (mounted && !lockedRef.current && !isReconfigureSuppressed()) {
             onMarkdownUpdated(markdown)
           }
         })
@@ -156,6 +169,15 @@ export default function CrepeHost({
       // Spec 020 (JS spellchecker): whole-document checking + the correction
       // menu. The wrapper reads the latest onSpellingMenu prop via the ref.
       crepe.editor.use($prose(() => spellcheckPlugin((menu) => onSpellingMenuRef.current(menu))))
+
+      // Spec 030 (research R4): gate the syntax-producing input rules so typing
+      // a disabled syntax never auto-formats it. Registered before create so
+      // its SchemaReady continuation wraps the `$inputRule` pushes (which were
+      // registered during construction) before editorState reads the slice.
+      // The gate's handlers consult the shared options ref at invoke time, so
+      // the initial options must be set before create as well.
+      setMarkdownSyntaxGateOptions(markdownOptions)
+      crepe.editor.use(markdownSyntaxInputRuleGate)
 
       try {
         await crepe.create()
@@ -197,6 +219,17 @@ export default function CrepeHost({
       // assign them by DOM order now that the tree exists (toolbarLabels.ts).
       const topBar = containerRef.current?.querySelector<HTMLElement>('.milkdown-top-bar')
       if (topBar) applyToolbarLabels(topBar)
+      // Spec 030: build the conditional remark pipeline at create — reconfigure
+      // the freshly parsed editor in place so the initial pipeline matches the
+      // persisted options (defaults all-on are a no-op re-parse). This runs
+      // BEFORE the baseline capture so the baseline reflects the final pipeline.
+      // The raw `defaultValue` is the source: `getMarkdown()` would have already
+      // emitted an autolink URL as `<url>` (the default link handler renders
+      // url === text as a bare angle-bracketed link), which a re-parse could not undo.
+      reconfigureEditor(crepe, markdownOptions, {
+        sourceMarkdown: defaultValue,
+        suppressEmission: false
+      })
       // The listener plugin only emits markdownUpdated on the first *edit*
       // (its handler is debounced by 200 ms and no doc-changing transaction
       // fires on load), so the baseline cannot come from the first emission.

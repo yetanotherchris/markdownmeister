@@ -192,6 +192,27 @@ export interface Settings {
    *  single-click/activation/context-Open paths read it; a dirty active tab is
    *  never replaced (Principle III). */
   fileOpenBehavior: FileOpenBehavior
+  /** Spec 030 FR-003: whether a single newline within a paragraph renders as a
+   *  hard break (`<br>`) instead of a soft break (space). Defaults to false
+   *  (strict CommonMark soft breaks, FR-013). A boolean — validated in main,
+   *  never coerced (research R5). */
+  hardBreaks: boolean
+  /** Spec 030 FR-004: whether `~~text~~` parses into a strikethrough mark.
+   *  Defaults to true (FR-013). A boolean — validated in main, never coerced. */
+  strikethrough: boolean
+  /** Spec 030 FR-005: whether pipe-delimited markdown parses into a table.
+   *  Defaults to true (FR-013). A boolean — validated in main, never coerced. */
+  tables: boolean
+  /** Spec 030 FR-006: whether `- [ ]` / `- [x]` parses into task checkboxes.
+   *  Defaults to true (FR-013). A boolean — validated in main, never coerced. */
+  taskLists: boolean
+  /** Spec 030 FR-007: whether `$…$` / `$$…$$` parses into math formulas.
+   *  Defaults to true (FR-013). A boolean — validated in main, never coerced. */
+  math: boolean
+  /** Spec 030 FR-008: whether bare URLs/emails auto-link without explicit
+   *  markdown link syntax. Defaults to true (FR-013). A boolean — validated in
+   *  main, never coerced. */
+  autolink: boolean
 }
 
 export interface DesktopApi {

@@ -10,6 +10,7 @@ import {
   migrateLegacySettingsFile,
   mergeSettingsPatch,
   materialiseDefaultSettings,
+  validateSettingsPatch,
   DEFAULTS
 } from '../../src/main/settingsFile'
 import type { RecentItem } from '../../src/shared/ipc-contract'
@@ -61,7 +62,7 @@ describe('loadSettingsFile', () => {
       settings: { sidebarWidth: 42, themeOverride: 'dark', explorerVisible: false, editorFont: 'serif', editorTheme: 'scholarly', spellcheckEnabled: false, spellcheckLanguage: 'en-GB', fileOpenBehavior: 'new-tab' }
     }))
     expect(loadSettingsFile(file))
-      .toEqual({ sidebarWidth: 42, themeOverride: 'dark', explorerVisible: false, editorFont: 'serif', editorTheme: 'scholarly', editorColors: null, spellcheckEnabled: false, spellcheckLanguage: 'en-GB', fileOpenBehavior: 'new-tab' })
+      .toEqual({ sidebarWidth: 42, themeOverride: 'dark', explorerVisible: false, editorFont: 'serif', editorTheme: 'scholarly', editorColors: null, spellcheckEnabled: false, spellcheckLanguage: 'en-GB', fileOpenBehavior: 'new-tab', hardBreaks: false, strikethrough: true, tables: true, taskLists: true, math: true, autolink: true })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
@@ -269,7 +270,13 @@ describe('loadSettingsFile', () => {
       editorColors: null,
       spellcheckEnabled: true,
       spellcheckLanguage: null,
-      fileOpenBehavior: 'same-tab'
+      fileOpenBehavior: 'same-tab',
+      hardBreaks: false,
+      strikethrough: true,
+      tables: true,
+      taskLists: true,
+      math: true,
+      autolink: true
     })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
@@ -278,7 +285,7 @@ describe('loadSettingsFile', () => {
 describe('writeSettingsFile (shared config, spec 012 FR-002)', () => {
   it('writes a settings section that round-trips', () => {
     const file = tempSettingsFile()
-    writeSettingsFile(file, { sidebarWidth: 25, themeOverride: null, explorerVisible: false, editorFont: 'serif', editorTheme: 'rustic', editorColors: null, spellcheckEnabled: true, spellcheckLanguage: null, fileOpenBehavior: 'new-tab' })
+    writeSettingsFile(file, { sidebarWidth: 25, themeOverride: null, explorerVisible: false, editorFont: 'serif', editorTheme: 'rustic', editorColors: null, spellcheckEnabled: true, spellcheckLanguage: null, fileOpenBehavior: 'new-tab', hardBreaks: false, strikethrough: true, tables: true, taskLists: true, math: true, autolink: true })
     expect(loadSettingsFile(file)).toEqual({
       sidebarWidth: 25,
       themeOverride: null,
@@ -288,7 +295,13 @@ describe('writeSettingsFile (shared config, spec 012 FR-002)', () => {
       editorColors: null,
       spellcheckEnabled: true,
       spellcheckLanguage: null,
-      fileOpenBehavior: 'new-tab'
+      fileOpenBehavior: 'new-tab',
+      hardBreaks: false,
+      strikethrough: true,
+      tables: true,
+      taskLists: true,
+      math: true,
+      autolink: true
     })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
@@ -343,7 +356,7 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
 
     const migrated = migrateLegacySettingsFile(configPath, legacyPath)
     expect(migrated).toEqual({
-      sidebarWidth: 44, themeOverride: 'dark', explorerVisible: false, editorFont: 'sans-serif', editorTheme: 'rustic', editorColors: null, spellcheckEnabled: true, spellcheckLanguage: null, fileOpenBehavior: 'same-tab'
+      sidebarWidth: 44, themeOverride: 'dark', explorerVisible: false, editorFont: 'sans-serif', editorTheme: 'rustic', editorColors: null, spellcheckEnabled: true, spellcheckLanguage: null, fileOpenBehavior: 'same-tab', hardBreaks: false, strikethrough: true, tables: true, taskLists: true, math: true, autolink: true
     })
     // The values are now in config.json (read back through the shared file).
     expect(loadSettingsFile(configPath)).toEqual(migrated)
@@ -554,5 +567,81 @@ describe('mergeSettingsPatch (review #27: authoritative in-memory merge)', () =>
     expect(mergeSettingsPatch(base, { fileOpenBehavior: 'split' as 'new-tab' }).fileOpenBehavior).toBe('same-tab')
     const nt = mergeSettingsPatch({ ...base, fileOpenBehavior: 'new-tab' }, { fileOpenBehavior: 'split' as 'new-tab' })
     expect(nt.fileOpenBehavior).toBe('new-tab')
+  })
+})
+
+describe('markdown syntax options (spec 030)', () => {
+  const MARKDOWN_FIELDS = ['hardBreaks', 'strikethrough', 'tables', 'taskLists', 'math', 'autolink'] as const
+
+  it('defaults each of the six fields per FR-013 when missing from disk', () => {
+    const file = tempSettingsFile(JSON.stringify({
+      settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif' }
+    }))
+    const result = loadSettingsFile(file)
+    expect(result.hardBreaks).toBe(false)
+    expect(result.strikethrough).toBe(true)
+    expect(result.tables).toBe(true)
+    expect(result.taskLists).toBe(true)
+    expect(result.math).toBe(true)
+    expect(result.autolink).toBe(true)
+    fs.rmSync(path.dirname(file), { recursive: true, force: true })
+  })
+
+  it('reads each of the six fields from a valid settings section', () => {
+    const file = tempSettingsFile(JSON.stringify({
+      settings: {
+        sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif',
+        hardBreaks: true, strikethrough: false, tables: false, taskLists: false, math: false, autolink: false
+      }
+    }))
+    const result = loadSettingsFile(file)
+    expect(result.hardBreaks).toBe(true)
+    expect(result.strikethrough).toBe(false)
+    expect(result.tables).toBe(false)
+    expect(result.taskLists).toBe(false)
+    expect(result.math).toBe(false)
+    expect(result.autolink).toBe(false)
+    fs.rmSync(path.dirname(file), { recursive: true, force: true })
+  })
+
+  it('rejects a non-boolean value on disk per-field (tolerant load)', () => {
+    const file = tempSettingsFile(JSON.stringify({
+      settings: {
+        sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif',
+        strikethrough: 'yes', tables: 'no'
+      }
+    }))
+    const result = loadSettingsFile(file)
+    expect(result.strikethrough).toBe(true)
+    expect(result.tables).toBe(true)
+    fs.rmSync(path.dirname(file), { recursive: true, force: true })
+  })
+
+  it('merges valid boolean patches for the six fields', () => {
+    for (const key of MARKDOWN_FIELDS) {
+      const patch = { [key]: false } as Partial<typeof DEFAULTS>
+      expect(mergeSettingsPatch(DEFAULTS, patch)[key]).toBe(false)
+    }
+  })
+
+  it('rejects a non-boolean patch, keeping the current value', () => {
+    for (const key of MARKDOWN_FIELDS) {
+      const patch = { [key]: 'nope' as unknown as boolean }
+      expect(mergeSettingsPatch(DEFAULTS, patch)[key]).toBe(DEFAULTS[key])
+    }
+  })
+
+  it('validateSettingsPatch accepts present booleans and rejects non-booleans (strict, research R5)', () => {
+    for (const key of MARKDOWN_FIELDS) {
+      expect(() => validateSettingsPatch({ [key]: true })).not.toThrow()
+      expect(() => validateSettingsPatch({ [key]: false })).not.toThrow()
+      expect(() => validateSettingsPatch({ [key]: 'true' })).toThrow()
+      expect(() => validateSettingsPatch({ [key]: 1 })).toThrow()
+      expect(() => validateSettingsPatch({ [key]: null })).toThrow()
+    }
+  })
+
+  it('validateSettingsPatch does not reject an absent markdown field', () => {
+    expect(() => validateSettingsPatch({ sidebarWidth: 30 })).not.toThrow()
   })
 })

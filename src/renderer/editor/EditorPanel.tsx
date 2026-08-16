@@ -5,12 +5,15 @@ import { instancePool } from './instancePool'
 import { joinFrontmatter } from '../domain/frontmatter'
 import CrepeHost, { type CursorState } from './CrepeHost'
 import type { SpellingMenuState } from './spellcheckPlugin'
+import type { MarkdownSyntaxOptions } from './markdownSyntaxOptions'
 import SourceView from './SourceView'
 import './editor.css'
 
 interface EditorPanelProps {
   document: DocumentState
   isActive: boolean
+  /** Spec 030: the markdown syntax options (read at editor mount). */
+  markdownOptions: MarkdownSyntaxOptions
   /** Spec 020: whether native spellcheck is enabled — applies to the source
    *  view textarea only (the WYSIWYG uses the JS spellchecker). */
   spellcheckEnabled: boolean
@@ -26,6 +29,7 @@ interface EditorPanelProps {
 export default function EditorPanel({
   document,
   isActive,
+  markdownOptions,
   spellcheckEnabled,
   onSpellingMenu,
   onContentChange,
@@ -93,6 +97,7 @@ export default function EditorPanel({
         defaultValue={document.content}
         active={isActive && !inSource}
         locked={inSource}
+        markdownOptions={markdownOptions}
         onSpellingMenu={onSpellingMenu}
         restoreCursor={{ cursorOffset: document.cursorOffset, scrollTop: document.scrollTop }}
         onMarkdownUpdated={handleMarkdownUpdated}

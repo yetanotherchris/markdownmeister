@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import type { Settings, EditorThemeName, SpellcheckLanguage, EditorColors, FileOpenBehavior } from '../shared/ipc-contract'
 import { RUSTIC_COLORS } from '../shared/editorThemePresets'
+import { MARKDOWN_SYNTAX_DEFAULTS } from '../shared/markdownSyntaxDefaults'
 import { atomicWrite } from './fs/atomicWrite'
 
 /**
@@ -32,7 +33,11 @@ export const DEFAULTS: Settings = {
   editorColors: RUSTIC_COLORS,
   spellcheckEnabled: true,
   spellcheckLanguage: null,
-  fileOpenBehavior: 'same-tab'
+  fileOpenBehavior: 'same-tab',
+  // Spec 030 FR-013 (shared markdownSyntaxDefaults): hard breaks off (strict
+  // CommonMark soft breaks), the five syntax extensions on (a rich out-of-the-box
+  // editing experience).
+  ...MARKDOWN_SYNTAX_DEFAULTS
 }
 
 /** Read the whole shared config file, tolerantly: `{}` when missing or invalid.
@@ -105,7 +110,13 @@ function validateSettings(raw: unknown): Settings {
     spellcheckLanguage: parsed.spellcheckLanguage === null || isSpellcheckLanguage(parsed.spellcheckLanguage)
       ? parsed.spellcheckLanguage : DEFAULTS.spellcheckLanguage,
     fileOpenBehavior: isFileOpenBehavior(parsed.fileOpenBehavior)
-      ? parsed.fileOpenBehavior : DEFAULTS.fileOpenBehavior
+      ? parsed.fileOpenBehavior : DEFAULTS.fileOpenBehavior,
+    hardBreaks: typeof parsed.hardBreaks === 'boolean' ? parsed.hardBreaks : DEFAULTS.hardBreaks,
+    strikethrough: typeof parsed.strikethrough === 'boolean' ? parsed.strikethrough : DEFAULTS.strikethrough,
+    tables: typeof parsed.tables === 'boolean' ? parsed.tables : DEFAULTS.tables,
+    taskLists: typeof parsed.taskLists === 'boolean' ? parsed.taskLists : DEFAULTS.taskLists,
+    math: typeof parsed.math === 'boolean' ? parsed.math : DEFAULTS.math,
+    autolink: typeof parsed.autolink === 'boolean' ? parsed.autolink : DEFAULTS.autolink
   }
 }
 
@@ -134,7 +145,13 @@ export function mergeSettingsPatch(current: Settings, patch: Partial<Settings>):
     spellcheckLanguage: patch.spellcheckLanguage === null || isSpellcheckLanguage(patch.spellcheckLanguage)
       ? patch.spellcheckLanguage : current.spellcheckLanguage,
     fileOpenBehavior: isFileOpenBehavior(patch.fileOpenBehavior)
-      ? patch.fileOpenBehavior : current.fileOpenBehavior
+      ? patch.fileOpenBehavior : current.fileOpenBehavior,
+    hardBreaks: typeof patch.hardBreaks === 'boolean' ? patch.hardBreaks : current.hardBreaks,
+    strikethrough: typeof patch.strikethrough === 'boolean' ? patch.strikethrough : current.strikethrough,
+    tables: typeof patch.tables === 'boolean' ? patch.tables : current.tables,
+    taskLists: typeof patch.taskLists === 'boolean' ? patch.taskLists : current.taskLists,
+    math: typeof patch.math === 'boolean' ? patch.math : current.math,
+    autolink: typeof patch.autolink === 'boolean' ? patch.autolink : current.autolink
   }
 }
 
@@ -154,6 +171,18 @@ export function validateSettingsPatch(patch: unknown): void {
   const record = patch as Record<string, unknown>
   if ('fileOpenBehavior' in record && !isFileOpenBehavior(record.fileOpenBehavior)) {
     throw Object.assign(new Error('fileOpenBehavior must be "same-tab" or "new-tab"'), { code: 'IO' as const })
+  }
+  // Spec 030 FR-003..FR-008 (research R5): the six markdown syntax toggles are
+  // strictly validated — a PRESENT non-boolean is rejected whole (never
+  // silently coerced), matching fileOpenBehavior strictness. This is a
+  // deliberate tightening over the older spellcheckEnabled/explorerVisible
+  // booleans: a syntax toggle is a parse-behaviour switch whose corruption
+  // should never be coerced.
+  const markdownBooleans = ['hardBreaks', 'strikethrough', 'tables', 'taskLists', 'math', 'autolink'] as const
+  for (const key of markdownBooleans) {
+    if (key in record && typeof record[key] !== 'boolean') {
+      throw Object.assign(new Error(`${key} must be a boolean`), { code: 'IO' as const })
+    }
   }
 }
 
@@ -183,7 +212,11 @@ export function migrateLegacySettingsFile(configPath: string, legacyPath: string
   // legacy file with, say, only `themeOverride` should still be imported rather
   // than dropped whole. validateSettings recovers every field individually.
   if (!legacy || typeof legacy !== 'object') return null
-  const known: (keyof Settings)[] = ['sidebarWidth', 'themeOverride', 'explorerVisible', 'editorFont', 'editorTheme', 'editorColors', 'spellcheckEnabled', 'spellcheckLanguage', 'fileOpenBehavior']
+  const known: (keyof Settings)[] = [
+    'sidebarWidth', 'themeOverride', 'explorerVisible', 'editorFont', 'editorTheme',
+    'editorColors', 'spellcheckEnabled', 'spellcheckLanguage', 'fileOpenBehavior',
+    'hardBreaks', 'strikethrough', 'tables', 'taskLists', 'math', 'autolink'
+  ]
   if (!known.some((k) => k in legacy)) return null
   const migrated = validateSettings(legacy)
   try {

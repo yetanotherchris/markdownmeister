@@ -72,6 +72,8 @@ export default function App() {
     handleSpellcheckLanguageChange,
     fileOpenBehavior,
     handleFileOpenBehaviorChange,
+    markdownOptions,
+    handleMarkdownOptionChange,
     themeChoice,
     handleThemeChange,
     themeMode
@@ -405,6 +407,7 @@ export default function App() {
                     key={doc.id}
                     document={doc}
                     isActive={doc.id === session.activeId}
+                    markdownOptions={markdownOptions}
                     spellcheckEnabled={spellcheckEnabled}
                     onSpellingMenu={setSpellMenu}
                     onContentChange={sessionApi.handleContentChange}
@@ -434,6 +437,8 @@ export default function App() {
           onSpellcheckLanguageChange={handleSpellcheckLanguageChange}
           fileOpenBehavior={fileOpenBehavior}
           onFileOpenBehaviorChange={handleFileOpenBehaviorChange}
+          markdownOptions={markdownOptions}
+          onMarkdownOptionChange={handleMarkdownOptionChange}
           onClose={() => setSettingsOpen(false)}
         />
       )}

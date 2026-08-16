@@ -22,6 +22,12 @@ interface StubPatch {
   spellcheckEnabled?: boolean
   spellcheckLanguage?: SpellcheckLanguage | null
   fileOpenBehavior?: FileOpenBehavior
+  hardBreaks?: boolean
+  strikethrough?: boolean
+  tables?: boolean
+  taskLists?: boolean
+  math?: boolean
+  autolink?: boolean
 }
 function stubApi(): void {
   const calls: StubPatch[] = []
@@ -182,6 +188,28 @@ describe('useSettingsState (spec 016)', () => {
     const { read } = renderHook()
     expect('developerToolsEnabled' in read()).toBe(false)
     expect('handleDeveloperToolsEnabledChange' in read()).toBe(false)
+  })
+
+  it('seeds the six markdown options from the cache with FR-013 defaults', () => {
+    updateSettings({ hardBreaks: false, strikethrough: true, tables: true, taskLists: true, math: true, autolink: true })
+    const { read } = renderHook()
+    expect(read().markdownOptions).toEqual({
+      hardBreaks: false, strikethrough: true, tables: true, taskLists: true, math: true, autolink: true
+    })
+  })
+
+  it('handleMarkdownOptionChange updates local state, the cache, and the IPC', () => {
+    const { read } = renderHook()
+    act(() => {
+      read().handleMarkdownOptionChange({ strikethrough: false })
+    })
+    expect(read().markdownOptions.strikethrough).toBe(false)
+    expect(getSettings().strikethrough).toBe(false)
+    const calls = (globalThis as unknown as { __apiCalls: { strikethrough?: boolean }[] }).__apiCalls
+    // The handler persists the FULL six-field snapshot, not just the patch.
+    expect(calls).toEqual([{
+      hardBreaks: false, strikethrough: false, tables: true, taskLists: true, math: true, autolink: true
+    }])
   })
 })
 
