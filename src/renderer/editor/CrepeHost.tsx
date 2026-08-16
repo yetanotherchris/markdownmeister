@@ -10,7 +10,10 @@ import { planTaskBackspace } from './taskBackspace'
 import { tightListPlugins } from './tightList'
 import { spellcheckPlugin, type SpellingMenuState } from './spellcheckPlugin'
 import { reconfigureEditor, isReconfigureSuppressed } from './markdownSyntaxRuntime'
-import { markdownSyntaxInputRuleGate, setMarkdownSyntaxGateOptions } from './markdownSyntaxInputRules'
+import {
+  markdownSyntaxInputRuleGate,
+  setMarkdownSyntaxGateOptions
+} from './markdownSyntaxInputRules'
 import type { MarkdownSyntaxOptions } from './markdownSyntaxOptions'
 
 export interface CursorState {
@@ -223,7 +226,10 @@ export default function CrepeHost({
       // The raw `defaultValue` is the source: `getMarkdown()` would have already
       // emitted an autolink URL as `<url>` (the default link handler renders
       // url === text as a bare angle-bracketed link), which a re-parse could not undo.
-      reconfigureEditor(crepe, markdownOptions, { sourceMarkdown: defaultValue, suppressEmission: false })
+      reconfigureEditor(crepe, markdownOptions, {
+        sourceMarkdown: defaultValue,
+        suppressEmission: false
+      })
       // The listener plugin only emits markdownUpdated on the first *edit*
       // (its handler is debounced by 200 ms and no doc-changing transaction
       // fires on load), so the baseline cannot come from the first emission.
