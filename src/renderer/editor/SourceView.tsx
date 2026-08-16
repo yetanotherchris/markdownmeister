@@ -1,37 +1,113 @@
-import { useCallback, useEffect, useRef } from 'react'
-import type { ChangeEvent } from 'react'
+import { useEffect, useRef } from 'react'
+import { EditorSelection, EditorState } from '@codemirror/state'
+import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language'
+import { markdown } from '@codemirror/lang-markdown'
+import { yamlFrontmatter } from '@codemirror/lang-yaml'
+import { EditorView } from '@codemirror/view'
 
 interface SourceViewProps {
   value: string
   onChange: (value: string) => void
   onReturnToFormatted: () => void
-  /** Focus the textarea only when this tab is actually visible (FR-021). */
+  /** Focus the source surface only when this tab is actually visible. */
   isActive: boolean
-  /** Spec 020 FR-007: whether the native spellchecker is enabled. Reflected
-   *  onto the textarea so Chromium draws the squiggly underline here too. */
   spellcheckEnabled: boolean
+  selectionAnchor: number
+  selectionHead: number
+  scrollTop: number
+  onContextChange: (selectionAnchor: number, selectionHead: number, scrollTop: number) => void
+}
+
+function sourceContext(view: EditorView): { selectionAnchor: number; selectionHead: number; scrollTop: number } {
+  return {
+    selectionAnchor: view.state.selection.main.anchor,
+    selectionHead: view.state.selection.main.head,
+    scrollTop: view.scrollDOM.scrollTop
+  }
 }
 
 /**
- * Plain-text markdown editor (spec 002, FR-007). The textarea's changes flow
- * through the same UPDATE_CONTENT path as formatted edits, so dirty state and
- * saving behave identically (FR-013). A compact top toolbar mirroring the Crepe
- * top bar's height hosts the labeled return control (FR-008).
+ * Spec 031: an editable raw Markdown surface. CodeMirror decorations are
+ * presentational only; every document change remains the exact source text.
  */
-export default function SourceView({ value, onChange, onReturnToFormatted, isActive, spellcheckEnabled }: SourceViewProps) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+export default function SourceView({
+  value,
+  onChange,
+  onReturnToFormatted,
+  isActive,
+  spellcheckEnabled,
+  selectionAnchor,
+  selectionHead,
+  scrollTop,
+  onContextChange
+}: SourceViewProps) {
+  const hostRef = useRef<HTMLDivElement>(null)
+  const viewRef = useRef<EditorView | null>(null)
+  const onChangeRef = useRef(onChange)
+  const onContextChangeRef = useRef(onContextChange)
+  const wasActiveRef = useRef(isActive)
+  onChangeRef.current = onChange
+  onContextChangeRef.current = onContextChange
 
-  const handleChange = useCallback(
-    (event: ChangeEvent<HTMLTextAreaElement>) => {
-      onChange(event.target.value)
-    },
-    [onChange]
-  )
-
-  // Focus management (US1/US3): entering source view or activating a tab that
-  // is already in source view puts the caret straight into the raw text.
   useEffect(() => {
-    if (isActive) textareaRef.current?.focus()
+    if (!hostRef.current) return
+
+    const captureContext = (view: EditorView) => {
+      const context = sourceContext(view)
+      onContextChangeRef.current(context.selectionAnchor, context.selectionHead, context.scrollTop)
+    }
+    const state = EditorState.create({
+      doc: value,
+      selection: EditorSelection.single(selectionAnchor, selectionHead),
+      extensions: [
+        markdown(),
+        yamlFrontmatter({ content: markdown() }),
+        syntaxHighlighting(defaultHighlightStyle),
+        EditorView.contentAttributes.of({
+          'aria-label': 'Markdown source',
+          class: 'source-textarea',
+          'data-testid': 'source-textarea',
+          spellcheck: String(spellcheckEnabled)
+        }),
+        EditorView.updateListener.of((update) => {
+          if (update.docChanged) onChangeRef.current(update.state.doc.toString())
+          if (update.selectionSet) captureContext(update.view)
+        })
+      ]
+    })
+    const view = new EditorView({ state, parent: hostRef.current })
+    viewRef.current = view
+    view.scrollDOM.scrollTop = scrollTop
+    view.scrollDOM.addEventListener('scroll', () => captureContext(view), { passive: true })
+
+    return () => {
+      captureContext(view)
+      view.destroy()
+      viewRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    const view = viewRef.current
+    if (!view) return
+    view.contentDOM.spellcheck = spellcheckEnabled
+  }, [spellcheckEnabled])
+
+  useEffect(() => {
+    const view = viewRef.current
+    if (!view) return
+    if (isActive) {
+      const length = view.state.doc.length
+      const anchor = Math.min(selectionAnchor, length)
+      const head = Math.min(selectionHead, length)
+      view.dispatch({ selection: EditorSelection.single(anchor, head) })
+      view.scrollDOM.scrollTop = scrollTop
+      view.focus()
+    } else if (wasActiveRef.current) {
+      const context = sourceContext(view)
+      onContextChange(context.selectionAnchor, context.selectionHead, context.scrollTop)
+    }
+    wasActiveRef.current = isActive
   }, [isActive])
 
   return (
@@ -47,15 +123,7 @@ export default function SourceView({ value, onChange, onReturnToFormatted, isAct
           ← Visual Editing
         </button>
       </div>
-      <textarea
-        ref={textareaRef}
-        className="source-textarea"
-        data-testid="source-textarea"
-        value={value}
-        onChange={handleChange}
-        spellCheck={spellcheckEnabled}
-        aria-label="Markdown source"
-      />
+      <div ref={hostRef} />
     </div>
   )
 }

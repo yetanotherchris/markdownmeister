@@ -213,6 +213,9 @@ export interface Settings {
    *  markdown link syntax. Defaults to true (FR-013). A boolean — validated in
    *  main, never coerced. */
   autolink: boolean
+  /** Spec 031 FR-013: whether fenced code blocks in visual editing retain
+   *  syntax colors. This is presentation-only and defaults to enabled. */
+  visualCodeHighlighting: boolean
 }
 
 export interface DesktopApi {

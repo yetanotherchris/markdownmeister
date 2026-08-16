@@ -22,6 +22,7 @@ interface EditorPanelProps {
   onContentChange: (id: string, content: string) => void
   onBaselineCapture: (id: string, baseline: string) => void
   onCursorState: (id: string, cursorOffset: number, scrollTop: number) => void
+  onSourceContext: (id: string, selectionAnchor: number, selectionHead: number, scrollTop: number) => void
   onRequestViewSource: (id: string) => void
   onReturnToFormatted: (id: string) => void
 }
@@ -35,6 +36,7 @@ export default function EditorPanel({
   onContentChange,
   onBaselineCapture,
   onCursorState,
+  onSourceContext,
   onRequestViewSource,
   onReturnToFormatted
 }: EditorPanelProps) {
@@ -66,6 +68,13 @@ export default function EditorPanel({
     [document.id]
   )
 
+  const handleSourceContext = useCallback(
+    (selectionAnchor: number, selectionHead: number, scrollTop: number) => {
+      onSourceContext(document.id, selectionAnchor, selectionHead, scrollTop)
+    },
+    [document.id, onSourceContext]
+  )
+
   if (document.editorState === 'evicted') {
     // Instance destroyed to free memory; content retained in the store.
     // A fresh CrepeHost mounts when the document is reactivated. The
@@ -84,6 +93,10 @@ export default function EditorPanel({
       onReturnToFormatted={() => onReturnToFormatted(document.id)}
       isActive={isActive}
       spellcheckEnabled={spellcheckEnabled}
+      selectionAnchor={document.sourceSelectionAnchor}
+      selectionHead={document.sourceSelectionHead}
+      scrollTop={document.sourceScrollTop}
+      onContextChange={handleSourceContext}
     />
   )
 

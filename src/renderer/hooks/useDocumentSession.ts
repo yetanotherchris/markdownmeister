@@ -25,6 +25,7 @@ export interface DocumentSessionApi {
   handleContentChange: (id: string, content: string) => void
   handleBaselineCapture: (id: string, baseline: string) => void
   handleCursorState: (id: string, cursorOffset: number, scrollTop: number) => void
+  handleSourceContext: (id: string, selectionAnchor: number, selectionHead: number, scrollTop: number) => void
   handleActivate: (id: string) => void
   handleNew: () => void
   /** Spec 024: open a file read from disk, replacing the active tab's content
@@ -343,6 +344,13 @@ export function useDocumentSession(opts: {
     [dispatch]
   )
 
+  const handleSourceContext = useCallback(
+    (id: string, selectionAnchor: number, selectionHead: number, scrollTop: number) => {
+      dispatch({ type: 'CAPTURE_SOURCE_CONTEXT', payload: { id, selectionAnchor, selectionHead, scrollTop } })
+    },
+    [dispatch]
+  )
+
   const handleActivate = useCallback(
     (id: string) => {
       const current = sessionRef.current
@@ -429,6 +437,7 @@ export function useDocumentSession(opts: {
     handleContentChange,
     handleBaselineCapture,
     handleCursorState,
+    handleSourceContext,
     handleActivate,
     handleNew,
     openFileFromTree,

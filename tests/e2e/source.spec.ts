@@ -65,7 +65,10 @@ test('view source slides in, takes the tab, and returns (US1)', async () => {
   // The source view overlay replaces the formatted editor in the same tab.
   await expect(window.getByTestId('source-view')).toBeVisible()
   await expect(window.getByTestId('source-textarea')).toBeVisible()
-  await expect(window.locator('.source-textarea')).toHaveValue('# Alpha\n\nHello world.')
+  expect(await window.locator('.source-textarea').evaluate((el) =>
+    Array.from(el.querySelectorAll('.cm-line')).map((line) => line.textContent).join('\n')
+  ))
+    .toBe('# Alpha\n\nHello world.')
 
   // Edit the raw markdown; the document becomes dirty like formatted edits.
   await window.getByTestId('source-textarea').fill('# Alpha\n\nEdited in source.')
@@ -155,7 +158,10 @@ test('US2 opens an unopened file directly in source view', async () => {
   await expect(window.getByRole('tab', { name: /beta\.md/ })).toBeVisible()
   await expect(window.getByTestId('source-textarea')).toBeVisible()
   await expect(window.locator('.document-title')).toContainText('beta.md')
-  await expect(window.locator('[data-testid="source-textarea"]')).toHaveValue('# Beta\n\nSecond file.')
+  expect(await window.locator('[data-testid="source-textarea"]').evaluate((el) =>
+    Array.from(el.querySelectorAll('.cm-line')).map((line) => line.textContent).join('\n')
+  ))
+    .toBe('# Beta\n\nSecond file.')
 })
 
 test('US2 context-menu View source reuses the already-open formatted tab', async () => {
@@ -327,7 +333,7 @@ test('source-view save writes the exact raw bytes, never adding a trailing newli
   const row = window.getByRole('treeitem').getByText('no-newline.md')
   await row.click({ button: 'right' })
   await window.getByRole('menuitem', { name: 'View source' }).click()
-  await expect(window.getByTestId('source-textarea')).toHaveValue('No trailing newline')
+  await expect(window.getByTestId('source-textarea')).toHaveText('No trailing newline')
 
   // Edit AND save while still in source view: the disk write must be the raw
   // store bytes — neither a re-serialized editor output nor an added `\n`.
@@ -455,7 +461,7 @@ test('tab-switch mid-view leaves the other tab usable', async () => {
   // Back to the source tab: the source view is complete and intact.
   await window.getByRole('tab', { name: /alpha\.md/ }).click()
   await expect(window.getByTestId('source-view')).toBeVisible()
-  await expect(window.locator('[data-testid="source-textarea"]')).toHaveValue(/# Alpha/)
+  await expect(window.locator('[data-testid="source-textarea"]')).toHaveText(/# Alpha/)
 })
 
 test('active document in a nested folder is highlighted in the explorer (FR-6)', async () => {

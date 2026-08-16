@@ -60,6 +60,11 @@ export interface DocumentState {
   editorState: 'live' | 'evicted'
   cursorOffset: number
   scrollTop: number
+  /** Spec 031: source editing context is separate from Crepe's formatted
+   *  cursor/scroll state so tab switches restore the correct editor surface. */
+  sourceSelectionAnchor: number
+  sourceSelectionHead: number
+  sourceScrollTop: number
   lastActiveAt: number
   externalState: 'clean' | 'changedOnDisk' | 'deletedOnDisk'
   contentVersion: number
@@ -95,6 +100,9 @@ export function createEmpty(counter: number): DocumentState {
     editorState: 'live',
     cursorOffset: 0,
     scrollTop: 0,
+    sourceSelectionAnchor: 0,
+    sourceSelectionHead: 0,
+    sourceScrollTop: 0,
     lastActiveAt: Date.now(),
     externalState: 'clean',
     contentVersion: 0,
@@ -133,6 +141,9 @@ export function openFile(opened: {
     editorState: 'live',
     cursorOffset: 0,
     scrollTop: 0,
+    sourceSelectionAnchor: 0,
+    sourceSelectionHead: 0,
+    sourceScrollTop: 0,
     lastActiveAt: Date.now(),
     externalState: 'clean',
     contentVersion: 0,
@@ -169,6 +180,10 @@ export type DocumentsAction =
   | {
       type: 'CAPTURE_EDITOR_STATE'
       payload: { id: string; cursorOffset: number; scrollTop: number }
+    }
+  | {
+      type: 'CAPTURE_SOURCE_CONTEXT'
+      payload: { id: string; selectionAnchor: number; selectionHead: number; scrollTop: number }
     }
   | { type: 'RELOAD'; payload: { id: string; content: string } }
   | { type: 'UPDATE_PATH'; payload: { id: string; path: string } }
@@ -416,6 +431,26 @@ export function handleCaptureEditorState(
   }
 }
 
+export function handleCaptureSourceContext(
+  state: EditingSession,
+  payload: { id: string; selectionAnchor: number; selectionHead: number; scrollTop: number }
+): EditingSession {
+  const { id, selectionAnchor, selectionHead, scrollTop } = payload
+  return {
+    ...state,
+    documents: state.documents.map((d) =>
+      d.id === id
+        ? {
+            ...d,
+            sourceSelectionAnchor: selectionAnchor,
+            sourceSelectionHead: selectionHead,
+            sourceScrollTop: Math.max(0, scrollTop)
+          }
+        : d
+    )
+  }
+}
+
 export function handleReload(
   state: EditingSession,
   payload: { id: string; content: string }
@@ -438,6 +473,9 @@ export function handleReload(
             externalState: 'clean',
             cursorOffset: 0,
             scrollTop: 0,
+            sourceSelectionAnchor: 0,
+            sourceSelectionHead: 0,
+            sourceScrollTop: 0,
             contentVersion: d.contentVersion + 1,
             revision: (d.revision ?? 0) + 1
           }
@@ -570,6 +608,8 @@ export function documentsReducer(state: EditingSession, action: DocumentsAction)
       return handleReactivate(state, action.payload)
     case 'CAPTURE_EDITOR_STATE':
       return handleCaptureEditorState(state, action.payload)
+    case 'CAPTURE_SOURCE_CONTEXT':
+      return handleCaptureSourceContext(state, action.payload)
     case 'RELOAD':
       return handleReload(state, action.payload)
     case 'UPDATE_PATH':

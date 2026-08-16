@@ -39,6 +39,8 @@ export function useSettingsState(): {
   handleFileOpenBehaviorChange: (behavior: FileOpenBehavior) => void
   markdownOptions: MarkdownSyntaxOptions
   handleMarkdownOptionChange: (patch: Partial<MarkdownSyntaxOptions>) => void
+  visualCodeHighlighting: boolean
+  handleVisualCodeHighlightingChange: (enabled: boolean) => void
   themeChoice: ThemeChoice
   handleThemeChange: (choice: ThemeChoice) => void
   themeMode: 'light' | 'dark'
@@ -58,6 +60,7 @@ export function useSettingsState(): {
     math: getSettings().math,
     autolink: getSettings().autolink
   }))
+  const [visualCodeHighlighting, setVisualCodeHighlighting] = useState(getSettings().visualCodeHighlighting)
   const [themeChoice, setThemeChoice] = useState<ThemeChoice>(() =>
     themeChoiceFromOverride(getSettings().themeOverride)
   )
@@ -131,6 +134,12 @@ export function useSettingsState(): {
     reconfigureAll(instancePool, next)
   }, [markdownOptions])
 
+  const handleVisualCodeHighlightingChange = useCallback((enabled: boolean) => {
+    setVisualCodeHighlighting(enabled)
+    updateSettings({ visualCodeHighlighting: enabled })
+    window.api.updateSettings({ visualCodeHighlighting: enabled }).catch(() => { /* ignore */ })
+  }, [])
+
   return {
     settingsOpen, setSettingsOpen,
     editorTheme, handleEditorThemeChange,
@@ -139,6 +148,7 @@ export function useSettingsState(): {
     spellcheckLanguage, handleSpellcheckLanguageChange,
     fileOpenBehavior, handleFileOpenBehaviorChange,
     markdownOptions, handleMarkdownOptionChange,
+    visualCodeHighlighting, handleVisualCodeHighlightingChange,
     themeChoice, handleThemeChange, themeMode
   }
 }

@@ -182,7 +182,9 @@ async function openSource(name: string): Promise<void> {
 test('US3 source view shows the full file with frontmatter at the top', async () => {
   fs.writeFileSync(path.join(testFolder, 'post.md'), FRONTMATTER_FILE)
   await openSource('post.md')
-  const value = await window.getByTestId('source-textarea').inputValue()
+  const value = await window.getByTestId('source-textarea').evaluate((el) =>
+    Array.from(el.querySelectorAll('.cm-line')).map((line) => line.textContent).join('\n')
+  )
   expect(value).toBe(FRONTMATTER_FILE)
 })
 
@@ -258,7 +260,9 @@ test('US3 switching views any number of times does not alter frontmatter or body
     await expect(window.getByTestId('source-view')).toBeVisible()
   }
 
-  const value = await window.getByTestId('source-textarea').inputValue()
+  const value = await window.getByTestId('source-textarea').evaluate((el) =>
+    Array.from(el.querySelectorAll('.cm-line')).map((line) => line.textContent).join('\n')
+  )
   expect(value).toBe(FRONTMATTER_FILE)
 })
 })

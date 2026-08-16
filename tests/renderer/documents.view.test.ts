@@ -97,6 +97,24 @@ describe('documents reducer', () => {
         expect(s3.documents.find(d => d.id === bId)?.view).toBe('formatted')
       })
 
+      it('captures source selection and scroll without changing document text or dirty state', () => {
+        let state = documentsReducer(createSession(), {
+          type: 'OPEN_EXISTING',
+          payload: { value: { path: 'f.md', name: 'f.md', content: 'source', mtimeMs: 1, size: 6 } }
+        })
+        const id = state.documents[0].id
+        state = documentsReducer(state, {
+          type: 'CAPTURE_SOURCE_CONTEXT',
+          payload: { id, selectionAnchor: 2, selectionHead: 5, scrollTop: 120 }
+        })
+        const document = state.documents[0]
+        expect(document.sourceSelectionAnchor).toBe(2)
+        expect(document.sourceSelectionHead).toBe(5)
+        expect(document.sourceScrollTop).toBe(120)
+        expect(document.content).toBe('source')
+        expect(document.dirty).toBe(false)
+      })
+
       it('REFRESH_FROM_SOURCE replaces content, resets cursor/scroll, bumps version, keeps dirty', () => {
         let state = documentsReducer(createSession(), {
           type: 'OPEN_EXISTING',

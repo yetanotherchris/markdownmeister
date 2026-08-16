@@ -397,8 +397,8 @@ test('edge case: source view is immune to markdown toggles', async () => {
 
   // Switch to source view via the top-bar "View source" button.
   await window.locator('.milkdown-top-bar').getByRole('button', { name: 'View source' }).click()
-  await expect(window.locator('textarea:visible').first()).toBeVisible()
-  await expect(window.locator('textarea:visible').first()).toContainText('~~struck~~')
+  await expect(window.getByTestId('source-textarea')).toBeVisible()
+  await expect(window.getByTestId('source-textarea')).toContainText('~~struck~~')
 })
 
 test('edge case: rapid toggling settles on the final state', async () => {

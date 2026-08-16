@@ -60,6 +60,8 @@ interface SettingsDialogProps {
   /** Spec 030: the six markdown syntax options (FR-003..FR-008). */
   markdownOptions: MarkdownSyntaxOptions
   onMarkdownOptionChange: (patch: Partial<MarkdownSyntaxOptions>) => void
+  visualCodeHighlighting: boolean
+  onVisualCodeHighlightingChange: (enabled: boolean) => void
   onClose: () => void
 }
 
@@ -80,6 +82,7 @@ export default function SettingsDialog({
   spellcheckEnabled, onSpellcheckChange, spellcheckLanguage, onSpellcheckLanguageChange,
   fileOpenBehavior, onFileOpenBehaviorChange,
   markdownOptions, onMarkdownOptionChange,
+  visualCodeHighlighting, onVisualCodeHighlightingChange,
   onClose
 }: SettingsDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -190,6 +193,17 @@ export default function SettingsDialog({
               <>
                 <fieldset className="settings-fieldset">
                   <legend className="settings-legend">Spellcheck</legend>
+                  <label className="settings-switch">
+                    <input
+                      type="checkbox"
+                      className="settings-switch-input"
+                      name="visual-code-highlighting"
+                      checked={visualCodeHighlighting}
+                      onChange={(e) => onVisualCodeHighlightingChange(e.target.checked)}
+                    />
+                    <span className="settings-switch-track" aria-hidden="true" />
+                    <span className="settings-switch-text">Syntax highlight code blocks</span>
+                  </label>
                   <label className="settings-switch">
                     <input
                       type="checkbox"

@@ -5,6 +5,7 @@ import { editorViewCtx } from '@milkdown/kit/core'
 import { $prose } from '@milkdown/kit/utils'
 import { TextSelection } from '@milkdown/kit/prose/state'
 import type { EditorView } from '@milkdown/kit/prose/view'
+import { languages } from '@codemirror/language-data'
 import { applyToolbarLabels } from './toolbarLabels'
 import { planTaskBackspace } from './taskBackspace'
 import { tightListPlugins } from './tightList'
@@ -127,6 +128,7 @@ export default function CrepeHost({
           [CrepeFeature.TopBar]: true
         },
         featureConfigs: {
+          [CrepeFeature.CodeMirror]: { languages },
           [CrepeFeature.TopBar]: {
             // Spec 002: a "View source" button appended to the top bar. Crepe
             // invokes buildTopBar after composing its default groups, so the

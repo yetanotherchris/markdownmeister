@@ -62,7 +62,7 @@ describe('loadSettingsFile', () => {
       settings: { sidebarWidth: 42, themeOverride: 'dark', explorerVisible: false, editorFont: 'serif', editorTheme: 'scholarly', spellcheckEnabled: false, spellcheckLanguage: 'en-GB', fileOpenBehavior: 'new-tab' }
     }))
     expect(loadSettingsFile(file))
-      .toEqual({ sidebarWidth: 42, themeOverride: 'dark', explorerVisible: false, editorFont: 'serif', editorTheme: 'scholarly', editorColors: null, spellcheckEnabled: false, spellcheckLanguage: 'en-GB', fileOpenBehavior: 'new-tab', hardBreaks: false, strikethrough: true, tables: true, taskLists: true, math: true, autolink: true })
+      .toEqual({ sidebarWidth: 42, themeOverride: 'dark', explorerVisible: false, editorFont: 'serif', editorTheme: 'scholarly', editorColors: null, spellcheckEnabled: false, spellcheckLanguage: 'en-GB', fileOpenBehavior: 'new-tab', hardBreaks: false, strikethrough: true, tables: true, taskLists: true, math: true, autolink: true, visualCodeHighlighting: true })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
@@ -276,7 +276,8 @@ describe('loadSettingsFile', () => {
       tables: true,
       taskLists: true,
       math: true,
-      autolink: true
+      autolink: true,
+      visualCodeHighlighting: true
     })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
@@ -285,7 +286,7 @@ describe('loadSettingsFile', () => {
 describe('writeSettingsFile (shared config, spec 012 FR-002)', () => {
   it('writes a settings section that round-trips', () => {
     const file = tempSettingsFile()
-    writeSettingsFile(file, { sidebarWidth: 25, themeOverride: null, explorerVisible: false, editorFont: 'serif', editorTheme: 'rustic', editorColors: null, spellcheckEnabled: true, spellcheckLanguage: null, fileOpenBehavior: 'new-tab', hardBreaks: false, strikethrough: true, tables: true, taskLists: true, math: true, autolink: true })
+    writeSettingsFile(file, { sidebarWidth: 25, themeOverride: null, explorerVisible: false, editorFont: 'serif', editorTheme: 'rustic', editorColors: null, spellcheckEnabled: true, spellcheckLanguage: null, fileOpenBehavior: 'new-tab', hardBreaks: false, strikethrough: true, tables: true, taskLists: true, math: true, autolink: true, visualCodeHighlighting: false })
     expect(loadSettingsFile(file)).toEqual({
       sidebarWidth: 25,
       themeOverride: null,
@@ -301,7 +302,8 @@ describe('writeSettingsFile (shared config, spec 012 FR-002)', () => {
       tables: true,
       taskLists: true,
       math: true,
-      autolink: true
+      autolink: true,
+      visualCodeHighlighting: false
     })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
@@ -356,7 +358,7 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
 
     const migrated = migrateLegacySettingsFile(configPath, legacyPath)
     expect(migrated).toEqual({
-      sidebarWidth: 44, themeOverride: 'dark', explorerVisible: false, editorFont: 'sans-serif', editorTheme: 'rustic', editorColors: null, spellcheckEnabled: true, spellcheckLanguage: null, fileOpenBehavior: 'same-tab', hardBreaks: false, strikethrough: true, tables: true, taskLists: true, math: true, autolink: true
+      sidebarWidth: 44, themeOverride: 'dark', explorerVisible: false, editorFont: 'sans-serif', editorTheme: 'rustic', editorColors: null, spellcheckEnabled: true, spellcheckLanguage: null, fileOpenBehavior: 'same-tab', hardBreaks: false, strikethrough: true, tables: true, taskLists: true, math: true, autolink: true, visualCodeHighlighting: true
     })
     // The values are now in config.json (read back through the shared file).
     expect(loadSettingsFile(configPath)).toEqual(migrated)
@@ -643,5 +645,20 @@ describe('markdown syntax options (spec 030)', () => {
 
   it('validateSettingsPatch does not reject an absent markdown field', () => {
     expect(() => validateSettingsPatch({ sidebarWidth: 30 })).not.toThrow()
+  })
+})
+
+describe('visualCodeHighlighting (spec 031)', () => {
+  it('defaults to enabled and recovers from a malformed on-disk value', () => {
+    const file = tempSettingsFile(JSON.stringify({ settings: { visualCodeHighlighting: 'off' } }))
+    expect(DEFAULTS.visualCodeHighlighting).toBe(true)
+    expect(loadSettingsFile(file).visualCodeHighlighting).toBe(true)
+    fs.rmSync(path.dirname(file), { recursive: true, force: true })
+  })
+
+  it('persists a valid setting and strictly rejects a malformed IPC patch', () => {
+    expect(mergeSettingsPatch(DEFAULTS, { visualCodeHighlighting: false }).visualCodeHighlighting).toBe(false)
+    expect(() => validateSettingsPatch({ visualCodeHighlighting: false })).not.toThrow()
+    expect(() => validateSettingsPatch({ visualCodeHighlighting: 'off' })).toThrow()
   })
 })
