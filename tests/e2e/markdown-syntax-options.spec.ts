@@ -81,7 +81,9 @@ async function openMarkdownArea(): Promise<ReturnType<Page['getByTestId']>> {
   await dialog.getByRole('button', { name: 'Markdown' }).click()
   // The native checkbox is visually hidden (pill switch); wait on the visible
   // label text instead.
-  await expect(dialog.locator('.settings-switch-text', { hasText: 'Strikethrough formatting' })).toBeVisible()
+  await expect(
+    dialog.locator('.settings-switch-text', { hasText: 'Strikethrough formatting' })
+  ).toBeVisible()
   return dialog
 }
 
@@ -101,7 +103,9 @@ test('US1 the Markdown area lists six independent switches with FR-013 defaults'
   const dialog = await openMarkdownArea()
   const box = dialog
 
-  await expect(box.getByRole('checkbox', { name: /Convert single line breaks to hard breaks/ })).not.toBeChecked()
+  await expect(
+    box.getByRole('checkbox', { name: /Convert single line breaks to hard breaks/ })
+  ).not.toBeChecked()
   await expect(box.getByRole('checkbox', { name: /Strikethrough formatting/ })).toBeChecked()
   await expect(box.getByRole('checkbox', { name: /Tables formatting/ })).toBeChecked()
   await expect(box.getByRole('checkbox', { name: /Task list checkboxes/ })).toBeChecked()
@@ -155,7 +159,11 @@ test('US1 toggling task lists off renders brackets as literal list text', async 
 
 test('US1 with autolink disabled, a bare URL stays plain text on load', async () => {
   // Pre-seed the config so the document is parsed with autolink OFF.
-  fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ settings: { autolink: false } }), 'utf-8')
+  fs.writeFileSync(
+    path.join(configDir, 'config.json'),
+    JSON.stringify({ settings: { autolink: false } }),
+    'utf-8'
+  )
   await closeAppSafely(app)
   ;({ app, window } = await launchApp(configDir, testFolder))
   await openFile()
@@ -241,15 +249,50 @@ test('US4 markdown settings persist across a restart', async () => {
   await expect(window.locator('.ProseMirror:visible del')).toHaveCount(0)
 
   const reopened = await openMarkdownArea()
-  await expect(reopened.getByRole('checkbox', { name: /Strikethrough formatting/ })).not.toBeChecked()
-  await expect(reopened.getByRole('checkbox', { name: /Math and LaTeX expressions/ })).not.toBeChecked()
+  await expect(
+    reopened.getByRole('checkbox', { name: /Strikethrough formatting/ })
+  ).not.toBeChecked()
+  await expect(
+    reopened.getByRole('checkbox', { name: /Math and LaTeX expressions/ })
+  ).not.toBeChecked()
 })
 
 test('US4 a fresh install gets FR-013 defaults (all on, hard breaks off)', async () => {
   await openFile()
   const dialog = await openMarkdownArea()
   await expect(dialog.getByRole('checkbox', { name: /Strikethrough formatting/ })).toBeChecked()
-  await expect(dialog.getByRole('checkbox', { name: /Convert single line breaks to hard breaks/ })).not.toBeChecked()
+  await expect(
+    dialog.getByRole('checkbox', { name: /Convert single line breaks to hard breaks/ })
+  ).not.toBeChecked()
+})
+
+test('visual code highlighting defaults on, toggles without dirtying, and persists across restart', async () => {
+  await openFile()
+  const tab = window.getByRole('tab', { name: /syntax\.md/ })
+  const dialog = await openMarkdownArea()
+  const setting = dialog.getByRole('checkbox', { name: /Syntax highlight code blocks/ })
+
+  await expect(setting).toBeChecked()
+  await expect(window.locator('.app-container')).toHaveAttribute(
+    'data-visual-code-highlighting',
+    'on'
+  )
+  await expect(tab.locator('.tab-dirty')).toHaveCount(0)
+
+  await dialog.locator('.settings-switch', { hasText: /Syntax highlight code blocks/ }).click()
+  await expect(window.locator('.app-container')).toHaveAttribute(
+    'data-visual-code-highlighting',
+    'off'
+  )
+  await expect(tab.locator('.tab-dirty')).toHaveCount(0)
+  await expect.poll(() => persistedSetting<boolean>('visualCodeHighlighting')).toBe(false)
+
+  await closeAppSafely(app)
+  ;({ app, window } = await launchApp(configDir, testFolder))
+  await expect(window.locator('.app-container')).toHaveAttribute(
+    'data-visual-code-highlighting',
+    'off'
+  )
 })
 
 test('SC-004 disabling a syntax saves the exact raw source text', async () => {
@@ -267,8 +310,12 @@ test('SC-004 disabling a syntax saves the exact raw source text', async () => {
   await window.keyboard.press('Control+s')
 
   // The disabled syntaxes (math `$` and pipe tables) save byte-for-byte.
-  await expect.poll(() => fs.readFileSync(path.join(testFolder, 'syntax.md'), 'utf-8')).toContain('$E=mc^2$')
-  await expect.poll(() => fs.readFileSync(path.join(testFolder, 'syntax.md'), 'utf-8')).toContain('| a | b |')
+  await expect
+    .poll(() => fs.readFileSync(path.join(testFolder, 'syntax.md'), 'utf-8'))
+    .toContain('$E=mc^2$')
+  await expect
+    .poll(() => fs.readFileSync(path.join(testFolder, 'syntax.md'), 'utf-8'))
+    .toContain('| a | b |')
 })
 
 test('edge case: unclosed delimiters stay literal in both states', async () => {
@@ -366,7 +413,11 @@ test('US1 autolink enabled renders a bare URL as a link', async () => {
 test('SC-004 enabling a syntax present in the raw file does not rewrite it on save', async () => {
   // Pre-seed the config with the math syntax disabled, then enable it in the
   // dialog. The raw file still holds `$E=mc^2$`; saving must not rewrite it.
-  fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ settings: { math: false } }), 'utf-8')
+  fs.writeFileSync(
+    path.join(configDir, 'config.json'),
+    JSON.stringify({ settings: { math: false } }),
+    'utf-8'
+  )
   await closeAppSafely(app)
   ;({ app, window } = await launchApp(configDir, testFolder))
   await openFile()
@@ -385,7 +436,9 @@ test('SC-004 enabling a syntax present in the raw file does not rewrite it on sa
   await window.keyboard.type(' ')
   await window.keyboard.press('Control+s')
 
-  await expect.poll(() => fs.readFileSync(path.join(testFolder, 'syntax.md'), 'utf-8')).toContain('$E=mc^2$')
+  await expect
+    .poll(() => fs.readFileSync(path.join(testFolder, 'syntax.md'), 'utf-8'))
+    .toContain('$E=mc^2$')
 })
 
 test('edge case: source view is immune to markdown toggles', async () => {
@@ -397,8 +450,8 @@ test('edge case: source view is immune to markdown toggles', async () => {
 
   // Switch to source view via the top-bar "View source" button.
   await window.locator('.milkdown-top-bar').getByRole('button', { name: 'View source' }).click()
-  await expect(window.locator('textarea:visible').first()).toBeVisible()
-  await expect(window.locator('textarea:visible').first()).toContainText('~~struck~~')
+  await expect(window.getByTestId('source-textarea')).toBeVisible()
+  await expect(window.getByTestId('source-textarea')).toContainText('~~struck~~')
 })
 
 test('edge case: rapid toggling settles on the final state', async () => {

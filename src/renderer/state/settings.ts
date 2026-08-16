@@ -17,7 +17,8 @@ const defaults: Settings = {
   fileOpenBehavior: 'same-tab',
   // Spec 030 FR-013 (shared markdownSyntaxDefaults): hard breaks off, the five
   // syntax extensions on.
-  ...MARKDOWN_SYNTAX_DEFAULTS
+  ...MARKDOWN_SYNTAX_DEFAULTS,
+  visualCodeHighlighting: true
 }
 
 let cached: Settings = { ...defaults }

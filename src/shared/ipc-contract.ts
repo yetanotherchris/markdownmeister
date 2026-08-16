@@ -10,9 +10,7 @@ export type ErrorCode =
   | 'NO_WORKSPACE'
   | 'IO'
 
-export type Result<T> =
-  | { ok: true; value: T }
-  | { ok: false; code: ErrorCode; message: string }
+export type Result<T> = { ok: true; value: T } | { ok: false; code: ErrorCode; message: string }
 
 export type EntryKind = 'file' | 'directory'
 
@@ -107,13 +105,26 @@ export type NativeDialogRequest =
 /** The semantic outcome of a native dialog — what the renderer acts on. The
  *  renderer never receives a button index or the platform (spec 008). */
 export type NativeDialogDecision =
-  | 'save' | 'discard' | 'save-all' | 'discard-all'
-  | 'keep' | 'reload' | 'ok' | 'save-as'
-  | 'delete' | 'delete-permanent' | 'acknowledge' | 'cancel'
+  | 'save'
+  | 'discard'
+  | 'save-all'
+  | 'discard-all'
+  | 'keep'
+  | 'reload'
+  | 'ok'
+  | 'save-as'
+  | 'delete'
+  | 'delete-permanent'
+  | 'acknowledge'
+  | 'cancel'
 
 export type MenuCommand =
-  | 'open-file' | 'open-folder' | 'save' | 'save-as'
-  | 'close-tab' | 'new-file'
+  | 'open-file'
+  | 'open-folder'
+  | 'save'
+  | 'save-as'
+  | 'close-tab'
+  | 'new-file'
   | { type: 'open-recent'; path: string; kind: RecentKind }
 
 /** Spec 006: an OS-initiated open the main process has already validated and
@@ -129,7 +140,7 @@ export type OsOpenRequest =
  *  A closed union — validated in main, never arbitrary text. The theme's values
  *  (colors, typefaces) live in renderer CSS, not in the config (FR-005). */
 export type EditorThemeName =
-  | 'rustic' | 'rustic-serif' | 'monotone' | 'monotone-serif' | 'scholarly'
+  'rustic' | 'rustic-serif' | 'monotone' | 'monotone-serif' | 'scholarly'
 
 /** Spec 020: the spellchecker languages the app can select explicitly. A
  *  closed union — validated in main, never arbitrary text. More languages can
@@ -213,6 +224,9 @@ export interface Settings {
    *  markdown link syntax. Defaults to true (FR-013). A boolean — validated in
    *  main, never coerced. */
   autolink: boolean
+  /** Spec 031 FR-013: whether fenced code blocks in visual editing retain
+   *  syntax colors. This is presentation-only and defaults to enabled. */
+  visualCodeHighlighting: boolean
 }
 
 export interface DesktopApi {

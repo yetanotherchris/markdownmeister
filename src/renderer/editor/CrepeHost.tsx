@@ -5,6 +5,8 @@ import { editorViewCtx } from '@milkdown/kit/core'
 import { $prose } from '@milkdown/kit/utils'
 import { TextSelection } from '@milkdown/kit/prose/state'
 import type { EditorView } from '@milkdown/kit/prose/view'
+import { javascript } from '@codemirror/lang-javascript'
+import { LanguageDescription } from '@codemirror/language'
 import { applyToolbarLabels } from './toolbarLabels'
 import { planTaskBackspace } from './taskBackspace'
 import { tightListPlugins } from './tightList'
@@ -49,6 +51,15 @@ const VIEW_SOURCE_ICON = `
     <path stroke-linecap="round" stroke-linejoin="round" d="M14.25 9.75 16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0 0 20.25 18V6A2.25 2.25 0 0 0 18 3.75H6A2.25 2.25 0 0 0 3.75 6v12A2.25 2.25 0 0 0 6 20.25Z" />
   </svg>
 `
+
+const codeBlockLanguages = [
+  LanguageDescription.of({
+    name: 'JavaScript',
+    alias: ['js', 'javascript'],
+    extensions: ['js', 'mjs', 'cjs'],
+    load: async () => javascript()
+  })
+]
 
 export default function CrepeHost({
   defaultValue,
@@ -127,6 +138,7 @@ export default function CrepeHost({
           [CrepeFeature.TopBar]: true
         },
         featureConfigs: {
+          [CrepeFeature.CodeMirror]: { languages: codeBlockLanguages },
           [CrepeFeature.TopBar]: {
             // Spec 002: a "View source" button appended to the top bar. Crepe
             // invokes buildTopBar after composing its default groups, so the
@@ -247,10 +259,13 @@ export default function CrepeHost({
 
     return () => {
       mounted = false
-      editorRef.current?.destroy()
+      const editor = editorRef.current
       editorRef.current = null
       viewRef.current = null
       scrollElementRef.current = null
+      // Same-tab replacement unmounts an entire Milkdown editor. Releasing its
+      // resources during idle time lets the replacement editor paint first.
+      window.requestIdleCallback(() => editor?.destroy(), { timeout: 1_000 })
     }
   }, [])
 

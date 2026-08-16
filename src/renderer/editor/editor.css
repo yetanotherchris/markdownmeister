@@ -188,7 +188,7 @@
    and still round-trips to disk on save, so no content is lost. The attribute
    value is the raw comment (e.g. `<!-- note -->`), so the prefix selector
    catches every comment node and only comments. */
-.editor-host .milkdown .ProseMirror span[data-type="html"][data-value^="<!--"] {
+.editor-host .milkdown .ProseMirror span[data-type='html'][data-value^='<!--'] {
   display: none;
 }
 
@@ -254,18 +254,45 @@
   background: var(--mm-surface-secondary);
 }
 
-.source-textarea {
+.source-editor-host {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.source-editor-host .cm-editor {
   flex: 1;
   width: 100%;
-  resize: none;
   border: none;
   outline: none;
+  overflow: hidden;
+  background: var(--mm-editor-bg);
+}
+
+.source-view .cm-scroller {
+  overflow: auto;
+}
+
+.source-view .cm-content {
+  min-height: 100%;
   padding: 32px 48px;
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   font-size: 14px;
   line-height: 1.6;
-  background: var(--mm-editor-bg);
   color: var(--mm-text);
+}
+
+.source-view .cm-focused {
+  outline: 2px solid var(--mm-muted);
+  outline-offset: -2px;
+}
+
+/* Spec 031: this only changes visual-editor code token paint. The embedded
+   CodeMirror instance, source text, selection, and history stay untouched. */
+.app-container[data-visual-code-highlighting='off'] .milkdown-code-block .cm-content span {
+  color: inherit !important;
+  font-style: inherit !important;
+  font-weight: inherit !important;
 }
 
 /* outline: none is offset by a visible keyboard focus indicator (WCAG 2.4.11).

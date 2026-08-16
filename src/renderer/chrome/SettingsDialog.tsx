@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import type { EditorThemeName, SpellcheckLanguage, FileOpenBehavior } from '../../shared/ipc-contract'
+import type {
+  EditorThemeName,
+  SpellcheckLanguage,
+  FileOpenBehavior
+} from '../../shared/ipc-contract'
 import type { ThemeChoice } from '../hooks/useEffectiveTheme'
 import type { MarkdownSyntaxOptions } from '../editor/markdownSyntaxOptions'
 import { EDITOR_THEMES } from '../editor/editorThemes'
@@ -60,6 +64,8 @@ interface SettingsDialogProps {
   /** Spec 030: the six markdown syntax options (FR-003..FR-008). */
   markdownOptions: MarkdownSyntaxOptions
   onMarkdownOptionChange: (patch: Partial<MarkdownSyntaxOptions>) => void
+  visualCodeHighlighting: boolean
+  onVisualCodeHighlightingChange: (enabled: boolean) => void
   onClose: () => void
 }
 
@@ -76,10 +82,20 @@ interface SettingsDialogProps {
  * navigation/footer button is inside the focus trap.
  */
 export default function SettingsDialog({
-  editorTheme, onEditorThemeSave, theme, onThemeChange,
-  spellcheckEnabled, onSpellcheckChange, spellcheckLanguage, onSpellcheckLanguageChange,
-  fileOpenBehavior, onFileOpenBehaviorChange,
-  markdownOptions, onMarkdownOptionChange,
+  editorTheme,
+  onEditorThemeSave,
+  theme,
+  onThemeChange,
+  spellcheckEnabled,
+  onSpellcheckChange,
+  spellcheckLanguage,
+  onSpellcheckLanguageChange,
+  fileOpenBehavior,
+  onFileOpenBehaviorChange,
+  markdownOptions,
+  onMarkdownOptionChange,
+  visualCodeHighlighting,
+  onVisualCodeHighlightingChange,
   onClose
 }: SettingsDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -161,7 +177,9 @@ export default function SettingsDialog({
         data-testid="settings-dialog"
       >
         <div className="settings-dialog-header">
-          <h2 id="settings-dialog-title" className="settings-dialog-title">Settings</h2>
+          <h2 id="settings-dialog-title" className="settings-dialog-title">
+            Settings
+          </h2>
           <button
             type="button"
             className="settings-dialog-close"
@@ -177,7 +195,11 @@ export default function SettingsDialog({
               <button
                 key={entry.value}
                 type="button"
-                className={area === entry.value ? 'settings-nav-button settings-nav-active' : 'settings-nav-button'}
+                className={
+                  area === entry.value
+                    ? 'settings-nav-button settings-nav-active'
+                    : 'settings-nav-button'
+                }
                 aria-pressed={area === entry.value}
                 onClick={() => setArea(entry.value)}
               >
@@ -208,11 +230,17 @@ export default function SettingsDialog({
                       data-testid="spellcheck-language"
                       value={spellcheckLanguage ?? ''}
                       disabled={!spellcheckEnabled}
-                      onChange={(e) => onSpellcheckLanguageChange(e.target.value === '' ? null : e.target.value as SpellcheckLanguage)}
+                      onChange={(e) =>
+                        onSpellcheckLanguageChange(
+                          e.target.value === '' ? null : (e.target.value as SpellcheckLanguage)
+                        )
+                      }
                     >
                       <option value="">System default</option>
                       {SPELLCHECK_LANGUAGE_CHOICES.map((option) => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
                       ))}
                     </select>
                   </label>
@@ -225,7 +253,9 @@ export default function SettingsDialog({
                       className="settings-switch-input"
                       name="file-open-behavior"
                       checked={fileOpenBehavior === 'new-tab'}
-                      onChange={(e) => onFileOpenBehaviorChange(e.target.checked ? 'new-tab' : 'same-tab')}
+                      onChange={(e) =>
+                        onFileOpenBehaviorChange(e.target.checked ? 'new-tab' : 'same-tab')
+                      }
                     />
                     <span className="settings-switch-track" aria-hidden="true" />
                     <span className="settings-switch-text">Open files in a new tab</span>
@@ -240,12 +270,25 @@ export default function SettingsDialog({
                     <input
                       type="checkbox"
                       className="settings-switch-input"
+                      name="visual-code-highlighting"
+                      checked={visualCodeHighlighting}
+                      onChange={(e) => onVisualCodeHighlightingChange(e.target.checked)}
+                    />
+                    <span className="settings-switch-track" aria-hidden="true" />
+                    <span className="settings-switch-text">Syntax highlight code blocks</span>
+                  </label>
+                  <label className="settings-switch">
+                    <input
+                      type="checkbox"
+                      className="settings-switch-input"
                       name="markdown-hard-breaks"
                       checked={markdownOptions.hardBreaks}
                       onChange={(e) => onMarkdownOptionChange({ hardBreaks: e.target.checked })}
                     />
                     <span className="settings-switch-track" aria-hidden="true" />
-                    <span className="settings-switch-text">Convert single line breaks to hard breaks</span>
+                    <span className="settings-switch-text">
+                      Convert single line breaks to hard breaks
+                    </span>
                   </label>
                   <label className="settings-switch">
                     <input
@@ -256,7 +299,9 @@ export default function SettingsDialog({
                       onChange={(e) => onMarkdownOptionChange({ strikethrough: e.target.checked })}
                     />
                     <span className="settings-switch-track" aria-hidden="true" />
-                    <span className="settings-switch-text">Strikethrough formatting (~~text~~)</span>
+                    <span className="settings-switch-text">
+                      Strikethrough formatting (~~text~~)
+                    </span>
                   </label>
                   <label className="settings-switch">
                     <input
@@ -278,7 +323,9 @@ export default function SettingsDialog({
                       onChange={(e) => onMarkdownOptionChange({ taskLists: e.target.checked })}
                     />
                     <span className="settings-switch-track" aria-hidden="true" />
-                    <span className="settings-switch-text">Task list checkboxes (- [ ] / - [x])</span>
+                    <span className="settings-switch-text">
+                      Task list checkboxes (- [ ] / - [x])
+                    </span>
                   </label>
                   <label className="settings-switch">
                     <input
@@ -289,7 +336,9 @@ export default function SettingsDialog({
                       onChange={(e) => onMarkdownOptionChange({ math: e.target.checked })}
                     />
                     <span className="settings-switch-track" aria-hidden="true" />
-                    <span className="settings-switch-text">Math and LaTeX expressions ($...$ and $$...$$)</span>
+                    <span className="settings-switch-text">
+                      Math and LaTeX expressions ($...$ and $$...$$)
+                    </span>
                   </label>
                   <label className="settings-switch">
                     <input
@@ -300,7 +349,9 @@ export default function SettingsDialog({
                       onChange={(e) => onMarkdownOptionChange({ autolink: e.target.checked })}
                     />
                     <span className="settings-switch-track" aria-hidden="true" />
-                    <span className="settings-switch-text">Automatic link detection for URLs and emails</span>
+                    <span className="settings-switch-text">
+                      Automatic link detection for URLs and emails
+                    </span>
                   </label>
                 </fieldset>
               </>

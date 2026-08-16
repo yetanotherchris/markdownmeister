@@ -1,6 +1,12 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import type { Settings, EditorThemeName, SpellcheckLanguage, EditorColors, FileOpenBehavior } from '../shared/ipc-contract'
+import type {
+  Settings,
+  EditorThemeName,
+  SpellcheckLanguage,
+  EditorColors,
+  FileOpenBehavior
+} from '../shared/ipc-contract'
 import { RUSTIC_COLORS } from '../shared/editorThemePresets'
 import { MARKDOWN_SYNTAX_DEFAULTS } from '../shared/markdownSyntaxDefaults'
 import { atomicWrite } from './fs/atomicWrite'
@@ -37,7 +43,8 @@ export const DEFAULTS: Settings = {
   // Spec 030 FR-013 (shared markdownSyntaxDefaults): hard breaks off (strict
   // CommonMark soft breaks), the five syntax extensions on (a rich out-of-the-box
   // editing experience).
-  ...MARKDOWN_SYNTAX_DEFAULTS
+  ...MARKDOWN_SYNTAX_DEFAULTS,
+  visualCodeHighlighting: true
 }
 
 /** Read the whole shared config file, tolerantly: `{}` when missing or invalid.
@@ -53,7 +60,11 @@ export function readConfigFile(filePath: string): Record<string, unknown> {
 
 /** The closed five-name union of editor themes (spec 016 FR-001/FR-006). */
 const EDITOR_THEME_NAMES: readonly EditorThemeName[] = [
-  'rustic', 'rustic-serif', 'monotone', 'monotone-serif', 'scholarly'
+  'rustic',
+  'rustic-serif',
+  'monotone',
+  'monotone-serif',
+  'scholarly'
 ]
 
 /** The closed union of selectable spellcheck languages (spec 020). */
@@ -85,7 +96,11 @@ function isEditorColors(value: unknown): value is EditorColors | null {
   const record = value as Record<string, unknown>
   const keys = ['background', 'foreground', 'accent', 'surface', 'outline', 'code']
   for (const key of keys) {
-    if (!(key in record) || typeof record[key] !== 'string' || !HEX_COLOR.test(record[key] as string)) {
+    if (
+      !(key in record) ||
+      typeof record[key] !== 'string' ||
+      !HEX_COLOR.test(record[key] as string)
+    ) {
       return false
     }
   }
@@ -96,27 +111,48 @@ function validateSettings(raw: unknown): Settings {
   if (!raw || typeof raw !== 'object') return { ...DEFAULTS }
   const parsed = raw as Record<string, unknown>
   return {
-    sidebarWidth: typeof parsed.sidebarWidth === 'number' && Number.isFinite(parsed.sidebarWidth)
-      ? parsed.sidebarWidth : DEFAULTS.sidebarWidth,
-    themeOverride: (parsed.themeOverride === 'light' || parsed.themeOverride === 'dark' || parsed.themeOverride === null)
-      ? parsed.themeOverride : DEFAULTS.themeOverride,
-    explorerVisible: typeof parsed.explorerVisible === 'boolean' ? parsed.explorerVisible : DEFAULTS.explorerVisible,
-    editorFont: (parsed.editorFont === 'sans-serif' || parsed.editorFont === 'serif')
-      ? parsed.editorFont : DEFAULTS.editorFont,
+    sidebarWidth:
+      typeof parsed.sidebarWidth === 'number' && Number.isFinite(parsed.sidebarWidth)
+        ? parsed.sidebarWidth
+        : DEFAULTS.sidebarWidth,
+    themeOverride:
+      parsed.themeOverride === 'light' ||
+      parsed.themeOverride === 'dark' ||
+      parsed.themeOverride === null
+        ? parsed.themeOverride
+        : DEFAULTS.themeOverride,
+    explorerVisible:
+      typeof parsed.explorerVisible === 'boolean'
+        ? parsed.explorerVisible
+        : DEFAULTS.explorerVisible,
+    editorFont:
+      parsed.editorFont === 'sans-serif' || parsed.editorFont === 'serif'
+        ? parsed.editorFont
+        : DEFAULTS.editorFont,
     editorTheme: isEditorThemeName(parsed.editorTheme) ? parsed.editorTheme : DEFAULTS.editorTheme,
     editorColors: isEditorColors(parsed.editorColors) ? parsed.editorColors : null,
-    spellcheckEnabled: typeof parsed.spellcheckEnabled === 'boolean'
-      ? parsed.spellcheckEnabled : DEFAULTS.spellcheckEnabled,
-    spellcheckLanguage: parsed.spellcheckLanguage === null || isSpellcheckLanguage(parsed.spellcheckLanguage)
-      ? parsed.spellcheckLanguage : DEFAULTS.spellcheckLanguage,
+    spellcheckEnabled:
+      typeof parsed.spellcheckEnabled === 'boolean'
+        ? parsed.spellcheckEnabled
+        : DEFAULTS.spellcheckEnabled,
+    spellcheckLanguage:
+      parsed.spellcheckLanguage === null || isSpellcheckLanguage(parsed.spellcheckLanguage)
+        ? parsed.spellcheckLanguage
+        : DEFAULTS.spellcheckLanguage,
     fileOpenBehavior: isFileOpenBehavior(parsed.fileOpenBehavior)
-      ? parsed.fileOpenBehavior : DEFAULTS.fileOpenBehavior,
+      ? parsed.fileOpenBehavior
+      : DEFAULTS.fileOpenBehavior,
     hardBreaks: typeof parsed.hardBreaks === 'boolean' ? parsed.hardBreaks : DEFAULTS.hardBreaks,
-    strikethrough: typeof parsed.strikethrough === 'boolean' ? parsed.strikethrough : DEFAULTS.strikethrough,
+    strikethrough:
+      typeof parsed.strikethrough === 'boolean' ? parsed.strikethrough : DEFAULTS.strikethrough,
     tables: typeof parsed.tables === 'boolean' ? parsed.tables : DEFAULTS.tables,
     taskLists: typeof parsed.taskLists === 'boolean' ? parsed.taskLists : DEFAULTS.taskLists,
     math: typeof parsed.math === 'boolean' ? parsed.math : DEFAULTS.math,
-    autolink: typeof parsed.autolink === 'boolean' ? parsed.autolink : DEFAULTS.autolink
+    autolink: typeof parsed.autolink === 'boolean' ? parsed.autolink : DEFAULTS.autolink,
+    visualCodeHighlighting:
+      typeof parsed.visualCodeHighlighting === 'boolean'
+        ? parsed.visualCodeHighlighting
+        : DEFAULTS.visualCodeHighlighting
   }
 }
 
@@ -129,29 +165,46 @@ function validateSettings(raw: unknown): Settings {
  */
 export function mergeSettingsPatch(current: Settings, patch: Partial<Settings>): Settings {
   return {
-    sidebarWidth: typeof patch.sidebarWidth === 'number' && Number.isFinite(patch.sidebarWidth)
-      ? patch.sidebarWidth : current.sidebarWidth,
-    themeOverride: patch.themeOverride === 'light' || patch.themeOverride === 'dark' || patch.themeOverride === null
-      ? patch.themeOverride as 'light' | 'dark' | null
-      : current.themeOverride,
-    explorerVisible: typeof patch.explorerVisible === 'boolean' ? patch.explorerVisible : current.explorerVisible,
-    editorFont: patch.editorFont === 'sans-serif' || patch.editorFont === 'serif'
-      ? patch.editorFont as 'sans-serif' | 'serif'
-      : current.editorFont,
+    sidebarWidth:
+      typeof patch.sidebarWidth === 'number' && Number.isFinite(patch.sidebarWidth)
+        ? patch.sidebarWidth
+        : current.sidebarWidth,
+    themeOverride:
+      patch.themeOverride === 'light' ||
+      patch.themeOverride === 'dark' ||
+      patch.themeOverride === null
+        ? (patch.themeOverride as 'light' | 'dark' | null)
+        : current.themeOverride,
+    explorerVisible:
+      typeof patch.explorerVisible === 'boolean' ? patch.explorerVisible : current.explorerVisible,
+    editorFont:
+      patch.editorFont === 'sans-serif' || patch.editorFont === 'serif'
+        ? (patch.editorFont as 'sans-serif' | 'serif')
+        : current.editorFont,
     editorTheme: isEditorThemeName(patch.editorTheme) ? patch.editorTheme : current.editorTheme,
     editorColors: isEditorColors(patch.editorColors) ? patch.editorColors : current.editorColors,
-    spellcheckEnabled: typeof patch.spellcheckEnabled === 'boolean'
-      ? patch.spellcheckEnabled : current.spellcheckEnabled,
-    spellcheckLanguage: patch.spellcheckLanguage === null || isSpellcheckLanguage(patch.spellcheckLanguage)
-      ? patch.spellcheckLanguage : current.spellcheckLanguage,
+    spellcheckEnabled:
+      typeof patch.spellcheckEnabled === 'boolean'
+        ? patch.spellcheckEnabled
+        : current.spellcheckEnabled,
+    spellcheckLanguage:
+      patch.spellcheckLanguage === null || isSpellcheckLanguage(patch.spellcheckLanguage)
+        ? patch.spellcheckLanguage
+        : current.spellcheckLanguage,
     fileOpenBehavior: isFileOpenBehavior(patch.fileOpenBehavior)
-      ? patch.fileOpenBehavior : current.fileOpenBehavior,
+      ? patch.fileOpenBehavior
+      : current.fileOpenBehavior,
     hardBreaks: typeof patch.hardBreaks === 'boolean' ? patch.hardBreaks : current.hardBreaks,
-    strikethrough: typeof patch.strikethrough === 'boolean' ? patch.strikethrough : current.strikethrough,
+    strikethrough:
+      typeof patch.strikethrough === 'boolean' ? patch.strikethrough : current.strikethrough,
     tables: typeof patch.tables === 'boolean' ? patch.tables : current.tables,
     taskLists: typeof patch.taskLists === 'boolean' ? patch.taskLists : current.taskLists,
     math: typeof patch.math === 'boolean' ? patch.math : current.math,
-    autolink: typeof patch.autolink === 'boolean' ? patch.autolink : current.autolink
+    autolink: typeof patch.autolink === 'boolean' ? patch.autolink : current.autolink,
+    visualCodeHighlighting:
+      typeof patch.visualCodeHighlighting === 'boolean'
+        ? patch.visualCodeHighlighting
+        : current.visualCodeHighlighting
   }
 }
 
@@ -170,7 +223,9 @@ export function validateSettingsPatch(patch: unknown): void {
   }
   const record = patch as Record<string, unknown>
   if ('fileOpenBehavior' in record && !isFileOpenBehavior(record.fileOpenBehavior)) {
-    throw Object.assign(new Error('fileOpenBehavior must be "same-tab" or "new-tab"'), { code: 'IO' as const })
+    throw Object.assign(new Error('fileOpenBehavior must be "same-tab" or "new-tab"'), {
+      code: 'IO' as const
+    })
   }
   // Spec 030 FR-003..FR-008 (research R5): the six markdown syntax toggles are
   // strictly validated — a PRESENT non-boolean is rejected whole (never
@@ -178,7 +233,15 @@ export function validateSettingsPatch(patch: unknown): void {
   // deliberate tightening over the older spellcheckEnabled/explorerVisible
   // booleans: a syntax toggle is a parse-behaviour switch whose corruption
   // should never be coerced.
-  const markdownBooleans = ['hardBreaks', 'strikethrough', 'tables', 'taskLists', 'math', 'autolink'] as const
+  const markdownBooleans = [
+    'hardBreaks',
+    'strikethrough',
+    'tables',
+    'taskLists',
+    'math',
+    'autolink',
+    'visualCodeHighlighting'
+  ] as const
   for (const key of markdownBooleans) {
     if (key in record && typeof record[key] !== 'boolean') {
       throw Object.assign(new Error(`${key} must be a boolean`), { code: 'IO' as const })
@@ -213,9 +276,22 @@ export function migrateLegacySettingsFile(configPath: string, legacyPath: string
   // than dropped whole. validateSettings recovers every field individually.
   if (!legacy || typeof legacy !== 'object') return null
   const known: (keyof Settings)[] = [
-    'sidebarWidth', 'themeOverride', 'explorerVisible', 'editorFont', 'editorTheme',
-    'editorColors', 'spellcheckEnabled', 'spellcheckLanguage', 'fileOpenBehavior',
-    'hardBreaks', 'strikethrough', 'tables', 'taskLists', 'math', 'autolink'
+    'sidebarWidth',
+    'themeOverride',
+    'explorerVisible',
+    'editorFont',
+    'editorTheme',
+    'editorColors',
+    'spellcheckEnabled',
+    'spellcheckLanguage',
+    'fileOpenBehavior',
+    'hardBreaks',
+    'strikethrough',
+    'tables',
+    'taskLists',
+    'math',
+    'autolink',
+    'visualCodeHighlighting'
   ]
   if (!known.some((k) => k in legacy)) return null
   const migrated = validateSettings(legacy)
@@ -267,7 +343,10 @@ export function writeSettingsFile(filePath: string, settings: Settings): void {
  * the in-memory defaults (FR-009). Electron-free so the callers resolve the
  * path (settings.ts) and this logic is unit-testable.
  */
-export function materialiseDefaultSettings(filePath: string, explorerVisible: boolean): Settings | null {
+export function materialiseDefaultSettings(
+  filePath: string,
+  explorerVisible: boolean
+): Settings | null {
   let raw: string
   try {
     raw = fs.readFileSync(filePath, 'utf-8')

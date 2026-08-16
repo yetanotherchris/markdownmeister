@@ -42,7 +42,9 @@ describe('loadSettingsFile', () => {
   it('materialises the default preset colours for a fresh config (clarification 2026-08-09)', () => {
     // A deleted/missing config is a fresh install: its defaults must carry the
     // Rustic palette, not null, so the first settings write persists colours.
-    expect(loadSettingsFile(path.join(os.tmpdir(), 'does-not-exist.json')).editorColors).toEqual(RUSTIC_COLORS)
+    expect(loadSettingsFile(path.join(os.tmpdir(), 'does-not-exist.json')).editorColors).toEqual(
+      RUSTIC_COLORS
+    )
   })
 
   it('returns the defaults when the file is malformed', () => {
@@ -58,18 +60,47 @@ describe('loadSettingsFile', () => {
   })
 
   it('reads all persisted fields from a valid settings section', () => {
-    const file = tempSettingsFile(JSON.stringify({
-      settings: { sidebarWidth: 42, themeOverride: 'dark', explorerVisible: false, editorFont: 'serif', editorTheme: 'scholarly', spellcheckEnabled: false, spellcheckLanguage: 'en-GB', fileOpenBehavior: 'new-tab' }
-    }))
-    expect(loadSettingsFile(file))
-      .toEqual({ sidebarWidth: 42, themeOverride: 'dark', explorerVisible: false, editorFont: 'serif', editorTheme: 'scholarly', editorColors: null, spellcheckEnabled: false, spellcheckLanguage: 'en-GB', fileOpenBehavior: 'new-tab', hardBreaks: false, strikethrough: true, tables: true, taskLists: true, math: true, autolink: true })
+    const file = tempSettingsFile(
+      JSON.stringify({
+        settings: {
+          sidebarWidth: 42,
+          themeOverride: 'dark',
+          explorerVisible: false,
+          editorFont: 'serif',
+          editorTheme: 'scholarly',
+          spellcheckEnabled: false,
+          spellcheckLanguage: 'en-GB',
+          fileOpenBehavior: 'new-tab'
+        }
+      })
+    )
+    expect(loadSettingsFile(file)).toEqual({
+      sidebarWidth: 42,
+      themeOverride: 'dark',
+      explorerVisible: false,
+      editorFont: 'serif',
+      editorTheme: 'scholarly',
+      editorColors: null,
+      spellcheckEnabled: false,
+      spellcheckLanguage: 'en-GB',
+      fileOpenBehavior: 'new-tab',
+      hardBreaks: false,
+      strikethrough: true,
+      tables: true,
+      taskLists: true,
+      math: true,
+      autolink: true,
+      visualCodeHighlighting: true
+    })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
   it('defaults explorerVisible to true when the field is missing (old configs)', () => {
-    const file = tempSettingsFile(JSON.stringify({
-      settings: { sidebarWidth: 30, themeOverride: null, editorFont: 'sans-serif' }
-    }))
+    const file = tempSettingsFile(
+      JSON.stringify({
+        settings: { sidebarWidth: 30, themeOverride: null, editorFont: 'sans-serif' }
+      })
+    )
     const result = loadSettingsFile(file)
     expect(result.explorerVisible).toBe(true)
     expect(result.sidebarWidth).toBe(30)
@@ -77,17 +108,31 @@ describe('loadSettingsFile', () => {
   })
 
   it('rejects a non-boolean explorerVisible', () => {
-    const file = tempSettingsFile(JSON.stringify({
-      settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: 'yes', editorFont: 'serif' }
-    }))
+    const file = tempSettingsFile(
+      JSON.stringify({
+        settings: {
+          sidebarWidth: 30,
+          themeOverride: null,
+          explorerVisible: 'yes',
+          editorFont: 'serif'
+        }
+      })
+    )
     expect(loadSettingsFile(file).explorerVisible).toBe(true)
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
   it('defaults spellcheckEnabled to true when the field is missing (old configs)', () => {
-    const file = tempSettingsFile(JSON.stringify({
-      settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif' }
-    }))
+    const file = tempSettingsFile(
+      JSON.stringify({
+        settings: {
+          sidebarWidth: 30,
+          themeOverride: null,
+          explorerVisible: true,
+          editorFont: 'sans-serif'
+        }
+      })
+    )
     const result = loadSettingsFile(file)
     expect(result.spellcheckEnabled).toBe(true)
     expect(result.sidebarWidth).toBe(30)
@@ -95,74 +140,151 @@ describe('loadSettingsFile', () => {
   })
 
   it('reads spellcheckEnabled false from a valid settings section', () => {
-    const file = tempSettingsFile(JSON.stringify({
-      settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif', editorTheme: 'rustic', spellcheckEnabled: false }
-    }))
+    const file = tempSettingsFile(
+      JSON.stringify({
+        settings: {
+          sidebarWidth: 30,
+          themeOverride: null,
+          explorerVisible: true,
+          editorFont: 'sans-serif',
+          editorTheme: 'rustic',
+          spellcheckEnabled: false
+        }
+      })
+    )
     expect(loadSettingsFile(file).spellcheckEnabled).toBe(false)
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
   it('rejects a non-boolean spellcheckEnabled', () => {
-    const file = tempSettingsFile(JSON.stringify({
-      settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif', editorTheme: 'rustic', spellcheckEnabled: 'yes' }
-    }))
+    const file = tempSettingsFile(
+      JSON.stringify({
+        settings: {
+          sidebarWidth: 30,
+          themeOverride: null,
+          explorerVisible: true,
+          editorFont: 'sans-serif',
+          editorTheme: 'rustic',
+          spellcheckEnabled: 'yes'
+        }
+      })
+    )
     expect(loadSettingsFile(file).spellcheckEnabled).toBe(true)
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
   it('defaults spellcheckLanguage to null when the field is missing (system default)', () => {
-    const file = tempSettingsFile(JSON.stringify({
-      settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif' }
-    }))
+    const file = tempSettingsFile(
+      JSON.stringify({
+        settings: {
+          sidebarWidth: 30,
+          themeOverride: null,
+          explorerVisible: true,
+          editorFont: 'sans-serif'
+        }
+      })
+    )
     expect(loadSettingsFile(file).spellcheckLanguage).toBeNull()
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
   it('reads a valid spellcheckLanguage', () => {
-    const file = tempSettingsFile(JSON.stringify({
-      settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif', editorTheme: 'rustic', spellcheckEnabled: true, spellcheckLanguage: 'en-US' }
-    }))
+    const file = tempSettingsFile(
+      JSON.stringify({
+        settings: {
+          sidebarWidth: 30,
+          themeOverride: null,
+          explorerVisible: true,
+          editorFont: 'sans-serif',
+          editorTheme: 'rustic',
+          spellcheckEnabled: true,
+          spellcheckLanguage: 'en-US'
+        }
+      })
+    )
     expect(loadSettingsFile(file).spellcheckLanguage).toBe('en-US')
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
   it('rejects an invalid spellcheckLanguage (spec 020: closed union)', () => {
-    const file = tempSettingsFile(JSON.stringify({
-      settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif', editorTheme: 'rustic', spellcheckEnabled: true, spellcheckLanguage: 'klingon' }
-    }))
+    const file = tempSettingsFile(
+      JSON.stringify({
+        settings: {
+          sidebarWidth: 30,
+          themeOverride: null,
+          explorerVisible: true,
+          editorFont: 'sans-serif',
+          editorTheme: 'rustic',
+          spellcheckEnabled: true,
+          spellcheckLanguage: 'klingon'
+        }
+      })
+    )
     expect(loadSettingsFile(file).spellcheckLanguage).toBeNull()
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
   describe('fileOpenBehavior (spec 008)', () => {
     it('defaults fileOpenBehavior to same-tab when the field is missing (old configs)', () => {
-      const file = tempSettingsFile(JSON.stringify({
-        settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif' }
-      }))
+      const file = tempSettingsFile(
+        JSON.stringify({
+          settings: {
+            sidebarWidth: 30,
+            themeOverride: null,
+            explorerVisible: true,
+            editorFont: 'sans-serif'
+          }
+        })
+      )
       expect(loadSettingsFile(file).fileOpenBehavior).toBe('same-tab')
       fs.rmSync(path.dirname(file), { recursive: true, force: true })
     })
 
     it('reads a valid fileOpenBehavior', () => {
-      const file = tempSettingsFile(JSON.stringify({
-        settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif', fileOpenBehavior: 'new-tab' }
-      }))
+      const file = tempSettingsFile(
+        JSON.stringify({
+          settings: {
+            sidebarWidth: 30,
+            themeOverride: null,
+            explorerVisible: true,
+            editorFont: 'sans-serif',
+            fileOpenBehavior: 'new-tab'
+          }
+        })
+      )
       expect(loadSettingsFile(file).fileOpenBehavior).toBe('new-tab')
       fs.rmSync(path.dirname(file), { recursive: true, force: true })
     })
 
     it('rejects an invalid fileOpenBehavior (spec 008: closed union)', () => {
-      const file = tempSettingsFile(JSON.stringify({
-        settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif', fileOpenBehavior: 'split' }
-      }))
+      const file = tempSettingsFile(
+        JSON.stringify({
+          settings: {
+            sidebarWidth: 30,
+            themeOverride: null,
+            explorerVisible: true,
+            editorFont: 'sans-serif',
+            fileOpenBehavior: 'split'
+          }
+        })
+      )
       expect(loadSettingsFile(file).fileOpenBehavior).toBe('same-tab')
       fs.rmSync(path.dirname(file), { recursive: true, force: true })
     })
 
     it('ignores a legacy developerToolsEnabled key (removed in spec 008 clarification 2026-08-08)', () => {
-      const file = tempSettingsFile(JSON.stringify({
-        settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif', fileOpenBehavior: 'new-tab', developerToolsEnabled: true }
-      }))
+      const file = tempSettingsFile(
+        JSON.stringify({
+          settings: {
+            sidebarWidth: 30,
+            themeOverride: null,
+            explorerVisible: true,
+            editorFont: 'sans-serif',
+            fileOpenBehavior: 'new-tab',
+            developerToolsEnabled: true
+          }
+        })
+      )
       const result = loadSettingsFile(file)
       expect(result.fileOpenBehavior).toBe('new-tab')
       expect('developerToolsEnabled' in result).toBe(false)
@@ -171,25 +293,41 @@ describe('loadSettingsFile', () => {
   })
 
   it('defaults editorFont to sans-serif when the field is missing', () => {
-    const file = tempSettingsFile(JSON.stringify({
-      settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true }
-    }))
+    const file = tempSettingsFile(
+      JSON.stringify({
+        settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true }
+      })
+    )
     expect(loadSettingsFile(file).editorFont).toBe('sans-serif')
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
   it('rejects an invalid editorFont value (spec 012: closed union)', () => {
-    const file = tempSettingsFile(JSON.stringify({
-      settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'comic-sans' }
-    }))
+    const file = tempSettingsFile(
+      JSON.stringify({
+        settings: {
+          sidebarWidth: 30,
+          themeOverride: null,
+          explorerVisible: true,
+          editorFont: 'comic-sans'
+        }
+      })
+    )
     expect(loadSettingsFile(file).editorFont).toBe('sans-serif')
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
   it('defaults editorTheme to rustic when the field is missing', () => {
-    const file = tempSettingsFile(JSON.stringify({
-      settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif' }
-    }))
+    const file = tempSettingsFile(
+      JSON.stringify({
+        settings: {
+          sidebarWidth: 30,
+          themeOverride: null,
+          explorerVisible: true,
+          editorFont: 'sans-serif'
+        }
+      })
+    )
     expect(loadSettingsFile(file).editorTheme).toBe('rustic')
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
@@ -197,26 +335,46 @@ describe('loadSettingsFile', () => {
   it('accepts each of the five editorTheme values', () => {
     const themes = ['rustic', 'rustic-serif', 'monotone', 'monotone-serif', 'scholarly'] as const
     for (const theme of themes) {
-      const file = tempSettingsFile(JSON.stringify({
-        settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif', editorTheme: theme }
-      }))
+      const file = tempSettingsFile(
+        JSON.stringify({
+          settings: {
+            sidebarWidth: 30,
+            themeOverride: null,
+            explorerVisible: true,
+            editorFont: 'sans-serif',
+            editorTheme: theme
+          }
+        })
+      )
       expect(loadSettingsFile(file).editorTheme).toBe(theme)
       fs.rmSync(path.dirname(file), { recursive: true, force: true })
     }
   })
 
   it('rejects an invalid editorTheme value (spec 016: closed union)', () => {
-    const file = tempSettingsFile(JSON.stringify({
-      settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif', editorTheme: 'ocean' }
-    }))
+    const file = tempSettingsFile(
+      JSON.stringify({
+        settings: {
+          sidebarWidth: 30,
+          themeOverride: null,
+          explorerVisible: true,
+          editorFont: 'sans-serif',
+          editorTheme: 'ocean'
+        }
+      })
+    )
     expect(loadSettingsFile(file).editorTheme).toBe('rustic')
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
   describe('editorColors validation (spec 023 FR-010)', () => {
     const validColors = {
-      background: '#fdf6e3', foreground: '#1f1b16', accent: '#805610',
-      surface: '#fdf3d9', outline: '#817567', code: '#ba1a1a'
+      background: '#fdf6e3',
+      foreground: '#1f1b16',
+      accent: '#805610',
+      surface: '#fdf3d9',
+      outline: '#817567',
+      code: '#ba1a1a'
     }
 
     it('accepts null (no custom colours)', () => {
@@ -232,7 +390,9 @@ describe('loadSettingsFile', () => {
     })
 
     it('rejects a non-hex colour and falls back to null', () => {
-      const file = tempSettingsFile(JSON.stringify({ settings: { editorColors: { ...validColors, background: 'red' } } }))
+      const file = tempSettingsFile(
+        JSON.stringify({ settings: { editorColors: { ...validColors, background: 'red' } } })
+      )
       expect(loadSettingsFile(file).editorColors).toBeNull()
       fs.rmSync(path.dirname(file), { recursive: true, force: true })
     })
@@ -245,7 +405,9 @@ describe('loadSettingsFile', () => {
     })
 
     it('rejects an unknown extra key and falls back to null', () => {
-      const file = tempSettingsFile(JSON.stringify({ settings: { editorColors: { ...validColors, extra: '#000000' } } }))
+      const file = tempSettingsFile(
+        JSON.stringify({ settings: { editorColors: { ...validColors, extra: '#000000' } } })
+      )
       expect(loadSettingsFile(file).editorColors).toBeNull()
       fs.rmSync(path.dirname(file), { recursive: true, force: true })
     })
@@ -258,9 +420,16 @@ describe('loadSettingsFile', () => {
   })
 
   it('keeps recoverable fields from a partially-corrupt file', () => {
-    const file = tempSettingsFile(JSON.stringify({
-      settings: { sidebarWidth: 'wide', themeOverride: null, explorerVisible: false, editorFont: 'serif' }
-    }))
+    const file = tempSettingsFile(
+      JSON.stringify({
+        settings: {
+          sidebarWidth: 'wide',
+          themeOverride: null,
+          explorerVisible: false,
+          editorFont: 'serif'
+        }
+      })
+    )
     expect(loadSettingsFile(file)).toEqual({
       sidebarWidth: 30,
       themeOverride: null,
@@ -276,7 +445,8 @@ describe('loadSettingsFile', () => {
       tables: true,
       taskLists: true,
       math: true,
-      autolink: true
+      autolink: true,
+      visualCodeHighlighting: true
     })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
@@ -285,7 +455,24 @@ describe('loadSettingsFile', () => {
 describe('writeSettingsFile (shared config, spec 012 FR-002)', () => {
   it('writes a settings section that round-trips', () => {
     const file = tempSettingsFile()
-    writeSettingsFile(file, { sidebarWidth: 25, themeOverride: null, explorerVisible: false, editorFont: 'serif', editorTheme: 'rustic', editorColors: null, spellcheckEnabled: true, spellcheckLanguage: null, fileOpenBehavior: 'new-tab', hardBreaks: false, strikethrough: true, tables: true, taskLists: true, math: true, autolink: true })
+    writeSettingsFile(file, {
+      sidebarWidth: 25,
+      themeOverride: null,
+      explorerVisible: false,
+      editorFont: 'serif',
+      editorTheme: 'rustic',
+      editorColors: null,
+      spellcheckEnabled: true,
+      spellcheckLanguage: null,
+      fileOpenBehavior: 'new-tab',
+      hardBreaks: false,
+      strikethrough: true,
+      tables: true,
+      taskLists: true,
+      math: true,
+      autolink: true,
+      visualCodeHighlighting: false
+    })
     expect(loadSettingsFile(file)).toEqual({
       sidebarWidth: 25,
       themeOverride: null,
@@ -301,7 +488,8 @@ describe('writeSettingsFile (shared config, spec 012 FR-002)', () => {
       tables: true,
       taskLists: true,
       math: true,
-      autolink: true
+      autolink: true,
+      visualCodeHighlighting: false
     })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
@@ -317,9 +505,14 @@ describe('writeSettingsFile (shared config, spec 012 FR-002)', () => {
 
   it('preserves a pre-existing recentItems key (read-modify-write)', () => {
     const file = tempSettingsFile()
-    const recentItems: RecentItem[] = [{
-      path: '/w/notes.md', kind: 'file', name: 'notes.md', lastOpenedAt: 123
-    }]
+    const recentItems: RecentItem[] = [
+      {
+        path: '/w/notes.md',
+        kind: 'file',
+        name: 'notes.md',
+        lastOpenedAt: 123
+      }
+    ]
     fs.writeFileSync(file, JSON.stringify({ recentItems }), 'utf-8')
     writeSettingsFile(file, { ...DEFAULTS, editorFont: 'serif' })
     const whole = readConfigFile(file)
@@ -350,13 +543,34 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
   it('imports a legacy flat settings.json into config.json when no settings key exists', () => {
     const configPath = tempSettingsFile(JSON.stringify({ recentItems: [] }))
     const legacyPath = path.join(path.dirname(configPath), 'settings.json')
-    fs.writeFileSync(legacyPath, JSON.stringify({
-      sidebarWidth: 44, themeOverride: 'dark', explorerVisible: false
-    }), 'utf-8')
+    fs.writeFileSync(
+      legacyPath,
+      JSON.stringify({
+        sidebarWidth: 44,
+        themeOverride: 'dark',
+        explorerVisible: false
+      }),
+      'utf-8'
+    )
 
     const migrated = migrateLegacySettingsFile(configPath, legacyPath)
     expect(migrated).toEqual({
-      sidebarWidth: 44, themeOverride: 'dark', explorerVisible: false, editorFont: 'sans-serif', editorTheme: 'rustic', editorColors: null, spellcheckEnabled: true, spellcheckLanguage: null, fileOpenBehavior: 'same-tab', hardBreaks: false, strikethrough: true, tables: true, taskLists: true, math: true, autolink: true
+      sidebarWidth: 44,
+      themeOverride: 'dark',
+      explorerVisible: false,
+      editorFont: 'sans-serif',
+      editorTheme: 'rustic',
+      editorColors: null,
+      spellcheckEnabled: true,
+      spellcheckLanguage: null,
+      fileOpenBehavior: 'same-tab',
+      hardBreaks: false,
+      strikethrough: true,
+      tables: true,
+      taskLists: true,
+      math: true,
+      autolink: true,
+      visualCodeHighlighting: true
     })
     // The values are now in config.json (read back through the shared file).
     expect(loadSettingsFile(configPath)).toEqual(migrated)
@@ -367,11 +581,22 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
   })
 
   it('does not migrate when config.json already has a settings key', () => {
-    const configPath = tempSettingsFile(JSON.stringify({
-      settings: { sidebarWidth: 20, themeOverride: null, explorerVisible: true, editorFont: 'serif' }
-    }))
+    const configPath = tempSettingsFile(
+      JSON.stringify({
+        settings: {
+          sidebarWidth: 20,
+          themeOverride: null,
+          explorerVisible: true,
+          editorFont: 'serif'
+        }
+      })
+    )
     const legacyPath = path.join(path.dirname(configPath), 'settings.json')
-    fs.writeFileSync(legacyPath, JSON.stringify({ sidebarWidth: 44, themeOverride: 'dark', explorerVisible: false }), 'utf-8')
+    fs.writeFileSync(
+      legacyPath,
+      JSON.stringify({ sidebarWidth: 44, themeOverride: 'dark', explorerVisible: false }),
+      'utf-8'
+    )
 
     expect(migrateLegacySettingsFile(configPath, legacyPath)).toBeNull()
     expect(loadSettingsFile(configPath).sidebarWidth).toBe(20)
@@ -381,7 +606,9 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
 
   it('returns null when the legacy file is missing', () => {
     const configPath = tempSettingsFile()
-    expect(migrateLegacySettingsFile(configPath, path.join(path.dirname(configPath), 'missing.json'))).toBeNull()
+    expect(
+      migrateLegacySettingsFile(configPath, path.join(path.dirname(configPath), 'missing.json'))
+    ).toBeNull()
     expect(loadSettingsFile(configPath)).toEqual(DEFAULTS)
     fs.rmSync(path.dirname(configPath), { recursive: true, force: true })
   })
@@ -397,9 +624,16 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
   it('rejects invalid legacy editorFont values during migration', () => {
     const configPath = tempSettingsFile()
     const legacyPath = path.join(path.dirname(configPath), 'settings.json')
-    fs.writeFileSync(legacyPath, JSON.stringify({
-      sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'cursive'
-    }), 'utf-8')
+    fs.writeFileSync(
+      legacyPath,
+      JSON.stringify({
+        sidebarWidth: 30,
+        themeOverride: null,
+        explorerVisible: true,
+        editorFont: 'cursive'
+      }),
+      'utf-8'
+    )
     const migrated = migrateLegacySettingsFile(configPath, legacyPath)
     expect(migrated?.editorFont).toBe('sans-serif')
     fs.rmSync(path.dirname(configPath), { recursive: true, force: true })
@@ -408,7 +642,11 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
   it('migrates a legacy file that lacks the sidebarWidth key', () => {
     const configPath = tempSettingsFile()
     const legacyPath = path.join(path.dirname(configPath), 'settings.json')
-    fs.writeFileSync(legacyPath, JSON.stringify({ themeOverride: 'dark', explorerVisible: false }), 'utf-8')
+    fs.writeFileSync(
+      legacyPath,
+      JSON.stringify({ themeOverride: 'dark', explorerVisible: false }),
+      'utf-8'
+    )
     const migrated = migrateLegacySettingsFile(configPath, legacyPath)
     expect(migrated?.themeOverride).toBe('dark')
     expect(migrated?.explorerVisible).toBe(false)
@@ -439,9 +677,14 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
   it('migrates legacy fileOpenBehavior and ignores the removed developerToolsEnabled key (spec 008)', () => {
     const configPath = tempSettingsFile()
     const legacyPath = path.join(path.dirname(configPath), 'settings.json')
-    fs.writeFileSync(legacyPath, JSON.stringify({
-      fileOpenBehavior: 'new-tab', developerToolsEnabled: true
-    }), 'utf-8')
+    fs.writeFileSync(
+      legacyPath,
+      JSON.stringify({
+        fileOpenBehavior: 'new-tab',
+        developerToolsEnabled: true
+      }),
+      'utf-8'
+    )
     const migrated = migrateLegacySettingsFile(configPath, legacyPath)
     expect(migrated?.fileOpenBehavior).toBe('new-tab')
     expect('developerToolsEnabled' in (migrated ?? {})).toBe(false)
@@ -464,7 +707,9 @@ describe('materialiseDefaultSettings (spec 008 clarification 2026-08-09)', () =>
   })
 
   it('adds a settings section to a valid config that lacks one, preserving siblings', () => {
-    const recentItems: RecentItem[] = [{ path: '/w/a.md', kind: 'file', name: 'a.md', lastOpenedAt: 1 }]
+    const recentItems: RecentItem[] = [
+      { path: '/w/a.md', kind: 'file', name: 'a.md', lastOpenedAt: 1 }
+    ]
     const file = tempSettingsFile(JSON.stringify({ recentItems }))
     expect(materialiseDefaultSettings(file, false)).toEqual({ ...DEFAULTS, explorerVisible: false })
     expect(hasSettingsKey(file)).toBe(true)
@@ -473,7 +718,9 @@ describe('materialiseDefaultSettings (spec 008 clarification 2026-08-09)', () =>
   })
 
   it('does not touch a config that already has a settings section', () => {
-    const file = tempSettingsFile(JSON.stringify({ settings: { sidebarWidth: 42, themeOverride: 'dark' } }))
+    const file = tempSettingsFile(
+      JSON.stringify({ settings: { sidebarWidth: 42, themeOverride: 'dark' } })
+    )
     expect(materialiseDefaultSettings(file, false)).toBeNull()
     expect(loadSettingsFile(file).sidebarWidth).toBe(42)
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
@@ -509,7 +756,9 @@ describe('mergeSettingsPatch (review #27: authoritative in-memory merge)', () =>
   })
 
   it('rejects an invalid editorFont value, keeping the current one', () => {
-    expect(mergeSettingsPatch(base, { editorFont: 'comic-sans' as 'serif' }).editorFont).toBe('sans-serif')
+    expect(mergeSettingsPatch(base, { editorFont: 'comic-sans' as 'serif' }).editorFont).toBe(
+      'sans-serif'
+    )
   })
 
   it('rejects a non-finite sidebarWidth', () => {
@@ -535,7 +784,9 @@ describe('mergeSettingsPatch (review #27: authoritative in-memory merge)', () =>
   })
 
   it('rejects an invalid editorTheme value, keeping the current one', () => {
-    expect(mergeSettingsPatch(base, { editorTheme: 'ocean' as 'rustic' }).editorTheme).toBe('rustic')
+    expect(mergeSettingsPatch(base, { editorTheme: 'ocean' as 'rustic' }).editorTheme).toBe(
+      'rustic'
+    )
   })
 
   it('applies a boolean spellcheckEnabled patch', () => {
@@ -543,40 +794,76 @@ describe('mergeSettingsPatch (review #27: authoritative in-memory merge)', () =>
   })
 
   it('rejects a non-boolean spellcheckEnabled patch, keeping the current one', () => {
-    expect(mergeSettingsPatch(base, { spellcheckEnabled: 'no' as unknown as boolean }).spellcheckEnabled).toBe(true)
-    const off = mergeSettingsPatch({ ...base, spellcheckEnabled: false }, { spellcheckEnabled: 'no' as unknown as boolean })
+    expect(
+      mergeSettingsPatch(base, { spellcheckEnabled: 'no' as unknown as boolean }).spellcheckEnabled
+    ).toBe(true)
+    const off = mergeSettingsPatch(
+      { ...base, spellcheckEnabled: false },
+      { spellcheckEnabled: 'no' as unknown as boolean }
+    )
     expect(off.spellcheckEnabled).toBe(false)
   })
 
   it('applies a valid spellcheckLanguage patch and accepts null (system default)', () => {
-    expect(mergeSettingsPatch(base, { spellcheckLanguage: 'en-GB' }).spellcheckLanguage).toBe('en-GB')
-    expect(mergeSettingsPatch({ ...base, spellcheckLanguage: 'en-GB' }, { spellcheckLanguage: null }).spellcheckLanguage).toBeNull()
+    expect(mergeSettingsPatch(base, { spellcheckLanguage: 'en-GB' }).spellcheckLanguage).toBe(
+      'en-GB'
+    )
+    expect(
+      mergeSettingsPatch({ ...base, spellcheckLanguage: 'en-GB' }, { spellcheckLanguage: null })
+        .spellcheckLanguage
+    ).toBeNull()
   })
 
   it('rejects an invalid spellcheckLanguage patch, keeping the current one', () => {
-    expect(mergeSettingsPatch(base, { spellcheckLanguage: 'fr' as 'en-GB' }).spellcheckLanguage).toBeNull()
-    const gb = mergeSettingsPatch({ ...base, spellcheckLanguage: 'en-GB' }, { spellcheckLanguage: 'fr' as 'en-GB' })
+    expect(
+      mergeSettingsPatch(base, { spellcheckLanguage: 'fr' as 'en-GB' }).spellcheckLanguage
+    ).toBeNull()
+    const gb = mergeSettingsPatch(
+      { ...base, spellcheckLanguage: 'en-GB' },
+      { spellcheckLanguage: 'fr' as 'en-GB' }
+    )
     expect(gb.spellcheckLanguage).toBe('en-GB')
   })
 
   it('applies a valid fileOpenBehavior patch', () => {
-    expect(mergeSettingsPatch(base, { fileOpenBehavior: 'new-tab' }).fileOpenBehavior).toBe('new-tab')
+    expect(mergeSettingsPatch(base, { fileOpenBehavior: 'new-tab' }).fileOpenBehavior).toBe(
+      'new-tab'
+    )
   })
 
   it('rejects an invalid fileOpenBehavior patch, keeping the current one', () => {
-    expect(mergeSettingsPatch(base, { fileOpenBehavior: 'split' as 'new-tab' }).fileOpenBehavior).toBe('same-tab')
-    const nt = mergeSettingsPatch({ ...base, fileOpenBehavior: 'new-tab' }, { fileOpenBehavior: 'split' as 'new-tab' })
+    expect(
+      mergeSettingsPatch(base, { fileOpenBehavior: 'split' as 'new-tab' }).fileOpenBehavior
+    ).toBe('same-tab')
+    const nt = mergeSettingsPatch(
+      { ...base, fileOpenBehavior: 'new-tab' },
+      { fileOpenBehavior: 'split' as 'new-tab' }
+    )
     expect(nt.fileOpenBehavior).toBe('new-tab')
   })
 })
 
 describe('markdown syntax options (spec 030)', () => {
-  const MARKDOWN_FIELDS = ['hardBreaks', 'strikethrough', 'tables', 'taskLists', 'math', 'autolink'] as const
+  const MARKDOWN_FIELDS = [
+    'hardBreaks',
+    'strikethrough',
+    'tables',
+    'taskLists',
+    'math',
+    'autolink'
+  ] as const
 
   it('defaults each of the six fields per FR-013 when missing from disk', () => {
-    const file = tempSettingsFile(JSON.stringify({
-      settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif' }
-    }))
+    const file = tempSettingsFile(
+      JSON.stringify({
+        settings: {
+          sidebarWidth: 30,
+          themeOverride: null,
+          explorerVisible: true,
+          editorFont: 'sans-serif'
+        }
+      })
+    )
     const result = loadSettingsFile(file)
     expect(result.hardBreaks).toBe(false)
     expect(result.strikethrough).toBe(true)
@@ -588,12 +875,22 @@ describe('markdown syntax options (spec 030)', () => {
   })
 
   it('reads each of the six fields from a valid settings section', () => {
-    const file = tempSettingsFile(JSON.stringify({
-      settings: {
-        sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif',
-        hardBreaks: true, strikethrough: false, tables: false, taskLists: false, math: false, autolink: false
-      }
-    }))
+    const file = tempSettingsFile(
+      JSON.stringify({
+        settings: {
+          sidebarWidth: 30,
+          themeOverride: null,
+          explorerVisible: true,
+          editorFont: 'sans-serif',
+          hardBreaks: true,
+          strikethrough: false,
+          tables: false,
+          taskLists: false,
+          math: false,
+          autolink: false
+        }
+      })
+    )
     const result = loadSettingsFile(file)
     expect(result.hardBreaks).toBe(true)
     expect(result.strikethrough).toBe(false)
@@ -605,12 +902,18 @@ describe('markdown syntax options (spec 030)', () => {
   })
 
   it('rejects a non-boolean value on disk per-field (tolerant load)', () => {
-    const file = tempSettingsFile(JSON.stringify({
-      settings: {
-        sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'sans-serif',
-        strikethrough: 'yes', tables: 'no'
-      }
-    }))
+    const file = tempSettingsFile(
+      JSON.stringify({
+        settings: {
+          sidebarWidth: 30,
+          themeOverride: null,
+          explorerVisible: true,
+          editorFont: 'sans-serif',
+          strikethrough: 'yes',
+          tables: 'no'
+        }
+      })
+    )
     const result = loadSettingsFile(file)
     expect(result.strikethrough).toBe(true)
     expect(result.tables).toBe(true)
@@ -643,5 +946,22 @@ describe('markdown syntax options (spec 030)', () => {
 
   it('validateSettingsPatch does not reject an absent markdown field', () => {
     expect(() => validateSettingsPatch({ sidebarWidth: 30 })).not.toThrow()
+  })
+})
+
+describe('visualCodeHighlighting (spec 031)', () => {
+  it('defaults to enabled and recovers from a malformed on-disk value', () => {
+    const file = tempSettingsFile(JSON.stringify({ settings: { visualCodeHighlighting: 'off' } }))
+    expect(DEFAULTS.visualCodeHighlighting).toBe(true)
+    expect(loadSettingsFile(file).visualCodeHighlighting).toBe(true)
+    fs.rmSync(path.dirname(file), { recursive: true, force: true })
+  })
+
+  it('persists a valid setting and strictly rejects a malformed IPC patch', () => {
+    expect(
+      mergeSettingsPatch(DEFAULTS, { visualCodeHighlighting: false }).visualCodeHighlighting
+    ).toBe(false)
+    expect(() => validateSettingsPatch({ visualCodeHighlighting: false })).not.toThrow()
+    expect(() => validateSettingsPatch({ visualCodeHighlighting: 'off' })).toThrow()
   })
 })

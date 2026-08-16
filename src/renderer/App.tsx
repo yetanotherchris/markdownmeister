@@ -74,6 +74,8 @@ export default function App() {
     handleFileOpenBehaviorChange,
     markdownOptions,
     handleMarkdownOptionChange,
+    visualCodeHighlighting,
+    handleVisualCodeHighlightingChange,
     themeChoice,
     handleThemeChange,
     themeMode
@@ -325,6 +327,7 @@ export default function App() {
       className="app-container"
       data-editor-theme={dataEditorTheme}
       data-theme={themeMode}
+      data-visual-code-highlighting={visualCodeHighlighting ? 'on' : 'off'}
       style={editorThemeStyle}
     >
       {/* Spec 010 (2026-08-05): one header row — chrome buttons + tabs. */}
@@ -413,6 +416,7 @@ export default function App() {
                     onContentChange={sessionApi.handleContentChange}
                     onBaselineCapture={sessionApi.handleBaselineCapture}
                     onCursorState={sessionApi.handleCursorState}
+                    onSourceContext={sessionApi.handleSourceContext}
                     onRequestViewSource={source.handleShowSource}
                     onReturnToFormatted={source.handleReturnToFormatted}
                   />
@@ -439,6 +443,8 @@ export default function App() {
           onFileOpenBehaviorChange={handleFileOpenBehaviorChange}
           markdownOptions={markdownOptions}
           onMarkdownOptionChange={handleMarkdownOptionChange}
+          visualCodeHighlighting={visualCodeHighlighting}
+          onVisualCodeHighlightingChange={handleVisualCodeHighlightingChange}
           onClose={() => setSettingsOpen(false)}
         />
       )}
