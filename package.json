@@ -25,6 +25,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.main.json && tsc --noEmit -p tsconfig.preload.json && tsc --noEmit -p tsconfig.renderer.json"
   },
   "dependencies": {
+    "@codemirror/lang-javascript": "^6.2.5",
     "@codemirror/lang-markdown": "^6.5.2",
     "@codemirror/lang-yaml": "^6.1.3",
     "@codemirror/language": "^6.12.4",

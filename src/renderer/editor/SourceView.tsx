@@ -66,7 +66,6 @@ export default function SourceView({
       doc: value,
       selection: EditorSelection.single(selectionAnchor, selectionHead),
       extensions: [
-        markdown(),
         yamlFrontmatter({ content: markdown() }),
         syntaxHighlighting(defaultHighlightStyle),
         EditorView.contentAttributes.of({
