@@ -204,12 +204,7 @@
   clip-path: none;
 }
 
-.editor-host.evicted {
-  pointer-events: none;
-}
-
-/* Spec 032: Milkdown must have a layoutable host while initializing, but the
-   staged editor must neither flash nor receive input before its atomic commit. */
+.editor-host.evicted,
 .editor-host.staged {
   pointer-events: none;
 }
