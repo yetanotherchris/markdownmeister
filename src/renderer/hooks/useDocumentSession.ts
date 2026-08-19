@@ -363,7 +363,9 @@ export function useDocumentSession(opts: {
 
   const handleStagedEditorReady = useCallback(
     (incomingId: string) => {
-      const outgoing = sessionRef.current.documents.find((d) => d.pendingReplacement?.id === incomingId)
+      const outgoing = sessionRef.current.documents.find(
+        (d) => d.pendingReplacement?.id === incomingId
+      )
       if (!outgoing) {
         instancePool.remove(incomingId)
         return
@@ -378,7 +380,10 @@ export function useDocumentSession(opts: {
         })
         return
       }
-      dispatch({ type: 'COMMIT_STAGED_REPLACEMENT', payload: { outgoingId: outgoing.id, incomingId } })
+      dispatch({
+        type: 'COMMIT_STAGED_REPLACEMENT',
+        payload: { outgoingId: outgoing.id, incomingId }
+      })
       instancePool.remove(outgoing.id)
       enforcePoolCap(incomingId)
     },
