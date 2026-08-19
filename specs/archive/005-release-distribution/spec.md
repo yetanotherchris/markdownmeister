@@ -259,6 +259,7 @@ definition is published for that version.
   filter `'v[0-9]+.[0-9]+.[0-9]+'` is a GitHub Actions glob (`.` literal, `[0-9]`
   character class, `+` one-or-more). The strict `^v[0-9]+\.[0-9]+\.[0-9]+$`
   regex is enforced inside the workflow's `validate` job (FR-001).
+- **2026-08-19 — Dependency installation retries transient Electron downloads**: each build leg retries `npm ci` up to three times, waiting 20 seconds between attempts. Electron's postinstall fetches a platform binary outside npm's registry retry mechanism; retrying accommodates a transient artifact-network failure without allowing a persistent dependency-install failure to reach packaging or publication (FR-010).
 - **2026-08-04 — Asset names use the `ameditor` prefix**: the published
   installable asset names changed from `Another Markdown Editor-<v>-<os>-<arch>.<ext>`
   to `ameditor-<v>-<os>-<arch>.<ext>`, superseding the artifact names named
