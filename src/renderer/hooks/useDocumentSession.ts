@@ -24,6 +24,7 @@ export interface DocumentSessionApi {
   flushLiveContent: () => void
   handleContentChange: (id: string, content: string) => void
   handleBaselineCapture: (id: string, baseline: string) => void
+  handleStagedEditorReady: (id: string) => void
   handleCursorState: (id: string, cursorOffset: number, scrollTop: number) => void
   handleSourceContext: (
     id: string,
@@ -169,6 +170,14 @@ export function useDocumentSession(opts: {
 
   const doClose = useCallback(
     (id: string) => {
+      const outgoing = sessionRef.current.documents.find((d) => d.id === id)
+      if (outgoing?.pendingReplacement) {
+        instancePool.remove(outgoing.pendingReplacement.id)
+        dispatch({
+          type: 'CANCEL_STAGED_REPLACEMENT',
+          payload: { outgoingId: id, incomingId: outgoing.pendingReplacement.id }
+        })
+      }
       dispatch({ type: 'CLOSE', payload: { id } })
       instancePool.remove(id)
     },
@@ -326,9 +335,19 @@ export function useDocumentSession(opts: {
 
   const handleContentChange = useCallback(
     (id: string, content: string) => {
+      const outgoing = sessionRef.current.documents.find((d) => d.id === id)
+      // A source edit is store-owned and a formatted edit may arrive before its
+      // debounced dirty flag. Either must make a staged replacement unsafe.
+      if (outgoing?.pendingReplacement) {
+        instancePool.remove(outgoing.pendingReplacement.id)
+        dispatch({
+          type: 'CANCEL_STAGED_REPLACEMENT',
+          payload: { outgoingId: id, incomingId: outgoing.pendingReplacement.id }
+        })
+      }
       dispatch({ type: 'UPDATE_CONTENT', payload: { id, content } })
     },
-    [dispatch]
+    [dispatch, sessionRef]
   )
 
   // The editor's serialization right after it parses content is the reference
@@ -340,6 +359,35 @@ export function useDocumentSession(opts: {
       dispatch({ type: 'CAPTURE_BASELINE', payload: { id, baseline } })
     },
     [dispatch]
+  )
+
+  const handleStagedEditorReady = useCallback(
+    (incomingId: string) => {
+      const outgoing = sessionRef.current.documents.find(
+        (d) => d.pendingReplacement?.id === incomingId
+      )
+      if (!outgoing) {
+        instancePool.remove(incomingId)
+        return
+      }
+      // Do not trust the debounced store flag: a keystroke may have landed while
+      // the staged Milkdown instance initialized.
+      if (isDirtyLive(outgoing)) {
+        instancePool.remove(incomingId)
+        dispatch({
+          type: 'CANCEL_STAGED_REPLACEMENT',
+          payload: { outgoingId: outgoing.id, incomingId }
+        })
+        return
+      }
+      dispatch({
+        type: 'COMMIT_STAGED_REPLACEMENT',
+        payload: { outgoingId: outgoing.id, incomingId }
+      })
+      instancePool.remove(outgoing.id)
+      enforcePoolCap(incomingId)
+    },
+    [dispatch, enforcePoolCap, isDirtyLive, sessionRef]
   )
 
   const handleCursorState = useCallback(
@@ -408,10 +456,9 @@ export function useDocumentSession(opts: {
         payload: { value: file, mode: replaceActive ? 'replace' : 'new' }
       })
       if (replaceActive && active) {
-        // Spec 024 (Assumptions): a replaced tab's editor instance is handled the
-        // same way as a closed tab's — drop it from the pool explicitly instead
-        // of leaving it to linger until LRU eviction.
-        instancePool.remove(active.id)
+        // Only the latest request may replace this panel. The old staged host is
+        // unmounted by the reducer update and its pool entry is released now.
+        if (active.pendingReplacement) instancePool.remove(active.pendingReplacement.id)
       }
       enforcePoolCap(sessionRef.current.activeId)
     },
@@ -444,6 +491,7 @@ export function useDocumentSession(opts: {
     flushLiveContent,
     handleContentChange,
     handleBaselineCapture,
+    handleStagedEditorReady,
     handleCursorState,
     handleSourceContext,
     handleActivate,

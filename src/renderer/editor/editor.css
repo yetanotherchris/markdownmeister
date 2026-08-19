@@ -204,7 +204,8 @@
   clip-path: none;
 }
 
-.editor-host.evicted {
+.editor-host.evicted,
+.editor-host.staged {
   pointer-events: none;
 }
 

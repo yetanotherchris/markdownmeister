@@ -18,17 +18,17 @@ function dirty(state: EditingSession, id: string): EditingSession {
 }
 
 describe('handleOpenExisting — spec 024 replace mode', () => {
-  it('FR-001 replaces a clean active tab in place (no new tab, fresh doc)', () => {
+  it('FR-001 stages a clean active tab replacement without changing the visible document', () => {
     const s1 = openExisting(createSession(), 'a.md')
     const aId = s1.activeId
     const s2 = openExisting(s1, 'b.md', 'replace')
 
     expect(s2.documents).toHaveLength(1)
-    expect(s2.documents[0].path).toBe('b.md')
-    expect(s2.documents[0].title).toBe('b.md')
+    expect(s2.documents[0].path).toBe('a.md')
+    expect(s2.documents[0].title).toBe('a.md')
     expect(s2.documents[0].dirty).toBe(false)
-    expect(s2.activeId).not.toBe(aId)
-    expect(s2.documents[0].id).not.toBe(aId)
+    expect(s2.activeId).toBe(aId)
+    expect(s2.documents[0].pendingReplacement?.path).toBe('b.md')
   })
 
   it('FR-002 a dirty active tab opens a new tab, leaving the dirty tab', () => {
@@ -43,14 +43,14 @@ describe('handleOpenExisting — spec 024 replace mode', () => {
     expect(s2.activeId).not.toBe(aId)
   })
 
-  it('FR-009 a clean untitled active tab is replaced', () => {
+  it('FR-009 a clean untitled tab stages a replacement', () => {
     const s1 = openNew(createSession())
     const untitledId = s1.activeId!
     const s2 = openExisting(s1, 'a.md', 'replace')
 
     expect(s2.documents).toHaveLength(1)
-    expect(s2.documents[0].path).toBe('a.md')
-    expect(s2.documents[0].id).not.toBe(untitledId)
+    expect(s2.documents[0].id).toBe(untitledId)
+    expect(s2.documents[0].pendingReplacement?.path).toBe('a.md')
   })
 
   it('FR-003 an existing tab for the target path is activated, never replaced', () => {
@@ -69,19 +69,64 @@ describe('handleOpenExisting — spec 024 replace mode', () => {
     expect(s.documents[0].path).toBe('a.md')
   })
 
-  it('FR-006/FR-007 the replaced tab takes the new name/path and is a fresh clean document', () => {
+  it('commits a ready staged replacement atomically with a fresh clean document', () => {
     const s1 = openExisting(createSession(), 'a.md')
     const aId = s1.activeId!
     const s2 = openExisting(s1, 'b.md', 'replace')
 
-    const replaced = s2.documents[0]
+    const incomingId = s2.documents[0].pendingReplacement!.id
+    const s3 = documentsReducer(s2, {
+      type: 'COMMIT_STAGED_REPLACEMENT',
+      payload: { outgoingId: aId, incomingId }
+    })
+    const replaced = s3.documents[0]
     expect(replaced.path).toBe('b.md')
     expect(replaced.title).toBe('b.md')
     expect(replaced.content).toBe('# b.md')
     expect(replaced.baseline).toBe('# b.md')
     expect(replaced.dirty).toBe(false)
     // The old document identity (and its undo history) is gone.
-    expect(s2.documents.some(d => d.id === aId)).toBe(false)
+    expect(s3.documents.some(d => d.id === aId)).toBe(false)
+  })
+
+  it('cancels a staged replacement without changing the outgoing document', () => {
+    const s1 = openExisting(createSession(), 'a.md')
+    const s2 = openExisting(s1, 'b.md', 'replace')
+    const s3 = documentsReducer(s2, {
+      type: 'CANCEL_STAGED_REPLACEMENT',
+      payload: { outgoingId: s1.activeId! }
+    })
+    expect(s3.documents[0].path).toBe('a.md')
+    expect(s3.documents[0].pendingReplacement).toBeUndefined()
+  })
+
+  it('supersedes an obsolete staged replacement with the latest request', () => {
+    const s1 = openExisting(createSession(), 'a.md')
+    const s2 = openExisting(s1, 'b.md', 'replace')
+    const s3 = openExisting(s2, 'c.md', 'replace')
+    expect(s3.documents).toHaveLength(1)
+    expect(s3.documents[0].path).toBe('a.md')
+    expect(s3.documents[0].pendingReplacement?.path).toBe('c.md')
+  })
+
+  it('rejects a commit if the outgoing document became dirty while staging', () => {
+    const s1 = openExisting(createSession(), 'a.md')
+    const s2 = openExisting(s1, 'b.md', 'replace')
+    const s3 = dirty(s2, s1.activeId!)
+    const s4 = documentsReducer(s3, {
+      type: 'COMMIT_STAGED_REPLACEMENT',
+      payload: { outgoingId: s1.activeId!, incomingId: s2.documents[0].pendingReplacement!.id }
+    })
+    expect(s4.documents[0].path).toBe('a.md')
+    expect(s4.documents[0].dirty).toBe(true)
+  })
+
+  it('drops a pending replacement when its outgoing tab closes', () => {
+    const s1 = openExisting(createSession(), 'a.md')
+    const s2 = openExisting(s1, 'b.md', 'replace')
+    const s3 = documentsReducer(s2, { type: 'CLOSE', payload: { id: s1.activeId! } })
+    expect(s3.documents).toHaveLength(0)
+    expect(s3.activeId).toBeNull()
   })
 
   it('mode absent behaves as before (new tab)', () => {

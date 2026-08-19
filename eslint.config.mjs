@@ -71,6 +71,6 @@ export default tseslint.config(
     }
   },
   {
-    ignores: ['out/', 'node_modules/', 'dist/']
+    ignores: ['out/', 'node_modules/', 'dist/', 'build/', 'coverage/', '*.min.js']
   }
 )

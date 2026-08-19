@@ -35,6 +35,10 @@ export function editorMatchesContent(live: string, content: string): boolean {
 
 export interface DocumentState {
   id: string
+  /** Stable visual-slot identity. Unlike a document id it survives a staged
+   * same-tab replacement so React can retain the outgoing editor until the
+   * incoming editor is ready (spec 032). */
+  panelId: string
   path: string | null
   /** Spec 006 (research R8): the file's realpath, when main supplied one.
    *  Gives a detached file (`path: null`) a stable identity so FR-007
@@ -72,6 +76,9 @@ export interface DocumentState {
   revision?: number
   /** The editing presentation active in this tab (spec 002, data-model.md). */
   view: 'formatted' | 'source'
+  /** The next document being initialized invisibly for this panel. It is never
+   * active until COMMIT_STAGED_REPLACEMENT atomically promotes it. */
+  pendingReplacement?: DocumentState
 }
 
 export interface EditingSession {
@@ -89,6 +96,7 @@ export function createEmpty(counter: number): DocumentState {
   const id = `untitled-${counter}`
   return {
     id,
+    panelId: id,
     path: null,
     title: `Untitled-${counter}`,
     baseline: '',
@@ -129,6 +137,7 @@ export function openFile(opened: {
   const { frontmatter, body } = splitFrontmatter(opened.content)
   return {
     id,
+    panelId: id,
     path,
     canonicalPath: opened.canonicalPath,
     title: opened.name,
@@ -166,6 +175,8 @@ export type DocumentsAction =
       type: 'OPEN_NEW'
     }
   | { type: 'OPEN_EXISTING'; payload: OpenExistingPayload }
+  | { type: 'COMMIT_STAGED_REPLACEMENT'; payload: { outgoingId: string; incomingId: string } }
+  | { type: 'CANCEL_STAGED_REPLACEMENT'; payload: { outgoingId: string; incomingId?: string } }
   | { type: 'ACTIVATE'; payload: { id: string } }
   | { type: 'UPDATE_CONTENT'; payload: { id: string; content: string } }
   | { type: 'CAPTURE_BASELINE'; payload: { id: string; baseline: string } }
@@ -261,8 +272,9 @@ export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload
     if (active && !active.dirty) {
       return {
         ...state,
-        documents: state.documents.map((d) => (d.id === active.id ? doc : d)),
-        activeId: doc.id
+        documents: state.documents.map((d) =>
+          d.id === active.id ? { ...d, pendingReplacement: { ...doc, panelId: d.panelId } } : d
+        )
       }
     }
   }
@@ -270,6 +282,34 @@ export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload
     ...state,
     documents: [...state.documents, doc],
     activeId: doc.id
+  }
+}
+
+export function handleCommitStagedReplacement(
+  state: EditingSession,
+  payload: { outgoingId: string; incomingId: string }
+): EditingSession {
+  const outgoing = state.documents.find((d) => d.id === payload.outgoingId)
+  const incoming = outgoing?.pendingReplacement
+  if (!outgoing || !incoming || incoming.id !== payload.incomingId || outgoing.dirty) return state
+  return {
+    ...state,
+    documents: state.documents.map((d) => (d.id === outgoing.id ? incoming : d)),
+    activeId: state.activeId === outgoing.id ? incoming.id : state.activeId
+  }
+}
+
+export function handleCancelStagedReplacement(
+  state: EditingSession,
+  payload: { outgoingId: string; incomingId?: string }
+): EditingSession {
+  return {
+    ...state,
+    documents: state.documents.map((d) => {
+      if (d.id !== payload.outgoingId || !d.pendingReplacement) return d
+      if (payload.incomingId && d.pendingReplacement.id !== payload.incomingId) return d
+      return { ...d, pendingReplacement: undefined }
+    })
   }
 }
 
@@ -341,7 +381,13 @@ export function handleCaptureBaseline(
   const { id, baseline } = payload
   return {
     ...state,
-    documents: state.documents.map((d) => (d.id === id ? { ...d, editorBaseline: baseline } : d))
+    documents: state.documents.map((d) => {
+      if (d.id === id) return { ...d, editorBaseline: baseline }
+      if (d.pendingReplacement?.id === id) {
+        return { ...d, pendingReplacement: { ...d.pendingReplacement, editorBaseline: baseline } }
+      }
+      return d
+    })
   }
 }
 
@@ -586,6 +632,10 @@ export function documentsReducer(state: EditingSession, action: DocumentsAction)
       return handleOpenNew(state)
     case 'OPEN_EXISTING':
       return handleOpenExisting(state, action.payload)
+    case 'COMMIT_STAGED_REPLACEMENT':
+      return handleCommitStagedReplacement(state, action.payload)
+    case 'CANCEL_STAGED_REPLACEMENT':
+      return handleCancelStagedReplacement(state, action.payload)
     case 'ACTIVATE':
       return handleActivateDoc(state, action.payload.id)
     case 'UPDATE_CONTENT':
