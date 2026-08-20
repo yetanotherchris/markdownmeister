@@ -16,7 +16,7 @@ A writer browsing a folder clicks another file to open it into the clean active 
 
 **Why this priority**: Opening files into the current tab is the primary browsing gesture of the editor; every user performs it constantly, and today each open costs roughly a second of dead time.
 
-**Independent Test**: Open a clean document, open another file into the same tab, and measure the time from the open request until the incoming document is presented and interactive; verify it completes well under one second for a typical document.
+**Independent Test**: Open a clean document, open another file into the same tab, and measure the time from the open request until the incoming document is presented and interactive; verify it completes in roughly a quarter of a second for a typical document.
 
 **Acceptance Scenarios**:
 
@@ -60,7 +60,7 @@ A writer opens progressively larger documents. Open time grows in proportion to 
 - What happens when the incoming document is empty? Presentation must be immediate; no processing passes are needed and none should run.
 - What happens when the writer opens a second file while a replacement is still staging? The existing supersede-and-cancel behaviour applies unchanged; only the latest request pays any cost.
 - What happens when the outgoing document becomes dirty mid-transition? The replacement is cancelled and the writer's changes remain protected, exactly as today.
-- What happens when a tab is revisited after its editor was released (pool eviction or reload-from-source)? It remounts through the same fast path and benefits from the same reductions.
+- What happens when a tab is revisited after its editor was released to free memory, or after the document was reloaded from source? It remounts through the same fast path and benefits from the same reductions.
 
 ## Requirements *(mandatory)*
 
@@ -68,10 +68,10 @@ A writer opens progressively larger documents. Open time grows in proportion to 
 
 - **FR-001**: Opening a document into a clean active tab MUST present the incoming document ready for interaction within the time bounds defined by SC-001, without changing the staged-replacement transition model.
 - **FR-002**: A single document open MUST NOT perform more than one full interpretation pass over the incoming content when display settings have not changed since the last use of the relevant configuration.
-- **FR-003**: A single document open MUST NOT perform redundant whole-content serialization passes; bookkeeping that needs serialized text MUST reuse serialization already performed during that open.
+- **FR-003**: A single document open MUST NOT perform redundant whole-content serialization passes; at most one full serialization of the incoming content may occur per open, and no bookkeeping may require additional whole-content passes beyond it.
 - **FR-004**: Non-essential whole-document work (for example, background language checking) MUST NOT block presentation of the incoming document and MAY complete shortly after it is shown.
 - **FR-005**: All existing guarantees MUST be preserved: atomic staged commit, dirty-state cancellation and protection, source-view edit protection, fresh undo history per opened document, immediate activation of already-open files, and confirmation before discarding unsaved changes.
-- **FR-006**: The feature MUST NOT add filesystem access, IPC operations, or preload API operations, and MUST NOT alter path validation or save semantics.
+- **FR-006**: The feature MUST NOT change how documents are read from storage, the boundary through which document operations are requested, how file locations are validated, or how saving behaves.
 - **FR-007**: Reductions in per-open work MUST apply to every path that presents a document in an editor (same-tab replacement, new tab, remount after release, reload from source), since they share one presentation path.
 
 ## Success Criteria *(mandatory)*
@@ -79,7 +79,7 @@ A writer opens progressively larger documents. Open time grows in proportion to 
 ### Measurable Outcomes
 
 - **SC-001**: A same-tab open of a document up to 10,000 lines presents the incoming document ready for interaction within 250 milliseconds on reference hardware, measured at the 95th percentile across automated runs (measured from the moment the open begins, excluding the intentional double-click recognition window).
-- **SC-002**: Automated instrumentation counts exactly one full interpretation pass over the incoming content per open (today there are two).
+- **SC-002**: When display settings are unchanged, automated instrumentation counts exactly one full interpretation pass over the incoming content per open (today there are two).
 - **SC-003**: Automated instrumentation counts at most one whole-content serialization of the incoming content per open for baseline/dirty bookkeeping, while all dirty-state correctness tests continue to pass 100%.
 - **SC-004**: Opening a document ten times larger than another takes no more than twelve times as long (linear scaling within 20% overhead), measured across automated runs.
 - **SC-005**: All acceptance scenarios from the existing specifications governing tabs, gestures, and staged replacement continue to pass unchanged.

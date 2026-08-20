@@ -27,7 +27,7 @@ Spec 032 documents the total as "about one second while Milkdown initializes" (`
 
 **Rationale**:
 - With default options the swapped processor is extension-equivalent to Crepe's stock pipeline: same base (`remark-parse` + `remark-stringify` with the same stringify-options ctx), `remark-gfm` ≡ its five individual extensions (verified `node_modules/remark-gfm/lib/index.js:9,38-40`), `remark-math` ≡ math extensions, `hardBreaks:false` adds no transform (`src/renderer/editor/markdownSyntaxOptions.ts:72-123`). The code itself asserts "defaults all-on are a no-op re-parse" (`CrepeHost.tsx:233-236`).
-- Skipping also removes the mount-time whole-document undo entry created by `replaceAll` today (spec 030 research records `replaceAll` as an ordinary undoable transaction), and the suppressed-then-debounced emission it triggers.
+- Skipping also removes the mount-time whole-document undo entry created by `replaceAll` today (spec 030 research records `replaceAll` as an ordinary undoable transaction), and the debounced emission it triggers on the create path.
 
 **Correctness trap (must-handle)**: comparing against `DEFAULT_MARKDOWN_SYNTAX_OPTIONS` alone is wrong — a user who toggles a syntax off then back on produces options equal to defaults while the live pipeline is non-default. The guard must compare against per-editor applied options (module-level `WeakMap<Crepe, MarkdownSyntaxOptions>`; absence ⇒ stock defaults, true for freshly mounted editors).
 

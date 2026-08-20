@@ -18,7 +18,7 @@ Unchanged shape. Relevant existing fields:
 
 ### Instance pool entry (`src/renderer/editor/instancePool.ts`)
 
-**New field**: `baselineDoc: unknown | null` — reference identity of the ProseMirror document object at the moment `editorBaseline` was captured. Set by the baseline-capture path; cleared when the entry is evicted or destroyed. Used exclusively by the dirty fast path (contract in [contracts/open-performance.md](./contracts/open-performance.md)).
+**New field**: `baselineDoc: unknown | null` — reference identity of the ProseMirror document object at the moment `editorBaseline` was captured. Set by the baseline-capture path; cleared when the entry is evicted, destroyed, or consumed by a replacement commit. Used exclusively by the dirty fast path (contract in [contracts/open-performance.md](./contracts/open-performance.md)).
 
 ### Applied syntax options (`src/renderer/editor/markdownSyntaxRuntime.ts`)
 

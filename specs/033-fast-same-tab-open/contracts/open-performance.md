@@ -69,6 +69,7 @@ Invariants:
 
 - Counters are observability only; no user-facing behaviour may depend on them.
 - Parse counting wraps whole-document parse passes over incoming content; serialization counting distinguishes incoming-baseline from outgoing-dirty-check serializations.
+- The SC-002 single-parse assertion applies when display settings are unchanged (matching FR-002); a settings-changed open legitimately re-parses.
 
 ## C5 — Open timing measurement
 

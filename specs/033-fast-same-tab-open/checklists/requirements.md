@@ -31,5 +31,5 @@
 
 ## Notes
 
-- Validation passed on first iteration (2026-08-20). Performance targets use reasonable defaults per the specify guidance (standard desktop-app expectations); they can be revisited in `/speckit.clarify` if the user wants stricter or looser bounds.
+- Validation passed on first iteration (2026-08-20). Performance targets use reasonable defaults per the specify guidance (standard desktop-app expectations); the 250 ms target was subsequently confirmed with the user in the 2026-08-20 clarification session recorded in spec.md.
 - "Interpretation pass" and "serialization" wording was chosen to describe whole-content processing without naming frameworks or APIs.

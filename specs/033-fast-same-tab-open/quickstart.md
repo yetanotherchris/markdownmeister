@@ -40,7 +40,7 @@ npm run test -- tests/renderer
 
 - Opens a generated document into a clean active tab and measures commit→ready duration; asserts p95 within the SC-001 target across repeated runs.
 - Repeats against a 10× larger fixture and asserts near-linear scaling (SC-004).
-- Reads instrumentation counters from the page to assert exactly one full parse and at most one incoming serialization per open (SC-002/SC-003).
+- Reads instrumentation counters from the page to assert exactly one full parse when display settings are unchanged, and at most one incoming serialization per open (SC-002/SC-003).
 - Re-runs the spec 032 acceptance scenarios (visible outgoing editor throughout, atomic swap, dirty-cancel protection) unchanged (SC-005).
 
 ```pwsh
