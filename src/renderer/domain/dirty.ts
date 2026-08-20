@@ -1,10 +1,17 @@
 import type { DocumentState } from '../state/documents'
 import { markdownSame } from '../state/documents'
 import { joinFrontmatter } from './frontmatter'
+import { recordOutgoingSerialization } from '../editor/openPerformance'
 
 /** The instance-pool markdown accessor, injected so these functions stay pure
  *  and testable without the Crepe runtime (FR-003, US2). */
 export type MarkdownAccessor = (documentId: string) => string | null
+
+/** Spec 033 (contract C2): injected document-identity accessors. `getLiveDoc`
+ *  returns the editor's current ProseMirror document reference;
+ *  `getBaselineDoc` the reference recorded at baseline capture. Injected (and
+ *  optional) so the decision rules stay pure and testable without a pool. */
+export type DocRefAccessor = (documentId: string) => unknown | null
 
 /** The editor's live serialization for a document, or null when it has no
  *  mounted editor (evicted). A source-view document's text lives in the store,
@@ -20,12 +27,34 @@ export function getLiveContent(doc: DocumentState, getMarkdown: MarkdownAccessor
  *  would be meaningless). Otherwise compare the live serialization against the
  *  editor's OWN baseline — Crepe normalizes markdown, so a pristine normalizing
  *  file must not count as dirty; only drift from the baseline means the user
- *  typed (raw-bytes policy). */
-export function isDirtyLive(doc: DocumentState, getMarkdown: MarkdownAccessor): boolean {
+ *  typed (raw-bytes policy).
+ *
+ *  Spec 033 fast path (contract C2): when the live view's document object is
+ *  reference-identical to the one recorded at baseline capture, no
+ *  doc-changing transaction has occurred since capture, so the live
+ *  serialization is provably identical to what was captured — clean with zero
+ *  serializations. Reference identity is the ONLY skip condition: any
+ *  doc-changing transaction produces a new reference and falls back to the
+ *  exact comparison below, while decoration-only transactions (spellcheck
+ *  marks, selections) keep the reference and cannot false-positive. The fast
+ *  path only ever returns "clean"; it never widens dirtiness. */
+export function isDirtyLive(
+  doc: DocumentState,
+  getMarkdown: MarkdownAccessor,
+  getLiveDoc?: DocRefAccessor,
+  getBaselineDoc?: DocRefAccessor
+): boolean {
   if (doc.dirty) return true
   if (doc.view === 'source') return false
+  if (getLiveDoc && getBaselineDoc) {
+    const live = getLiveDoc(doc.id)
+    // Both references must exist: a missing baseline record means the exact
+    // comparison is the only proof available.
+    if (live !== null && live !== undefined && live === getBaselineDoc(doc.id)) return false
+  }
   const live = getLiveContent(doc, getMarkdown)
   if (live === null) return false
+  recordOutgoingSerialization()
   return !markdownSame(live, doc.editorBaseline)
 }
 

@@ -75,14 +75,21 @@ export function useDocumentSession(opts: {
 
   const getMarkdown = useCallback((id: string) => instancePool.getMarkdown(id), [])
 
+  // Spec 033 (contract C2): document-identity accessors backing the dirty
+  // fast path — reference identity proves "untouched since baseline" without
+  // serializing; every other case runs the exact comparison.
+  const getLiveDoc = useCallback((id: string) => instancePool.getLiveDoc(id), [])
+  const getBaselineDoc = useCallback((id: string) => instancePool.getBaselineDoc(id), [])
+
   const getLiveContent = useCallback(
     (doc: DocumentState): string | null => domainGetLiveContent(doc, getMarkdown),
     [getMarkdown]
   )
 
   const isDirtyLive = useCallback(
-    (doc: DocumentState): boolean => domainIsDirtyLive(doc, getMarkdown),
-    [getMarkdown]
+    (doc: DocumentState): boolean =>
+      domainIsDirtyLive(doc, getMarkdown, getLiveDoc, getBaselineDoc),
+    [getMarkdown, getLiveDoc, getBaselineDoc]
   )
 
   const getContentToSave = useCallback(
@@ -125,6 +132,11 @@ export function useDocumentSession(opts: {
               return 'failed'
             }
           }
+          // Spec 033 (contract C2): SAVE_SUCCESS moves `editorBaseline`
+          // without a remount, so a recorded document identity could prove
+          // cleanliness against the WRONG baseline. Drop it; the next mount
+          // re-records it.
+          instancePool.clearBaselineDoc(doc.id)
           dispatch({
             type: 'SAVE_SUCCESS',
             payload: { id: doc.id, path: currentPath, content, revision }
@@ -136,6 +148,7 @@ export function useDocumentSession(opts: {
       }
       const result = await window.api.saveFileDialog(doc.title, content)
       if (result.ok && result.value) {
+        instancePool.clearBaselineDoc(doc.id)
         dispatch({
           type: 'SAVE_SUCCESS',
           payload: {
