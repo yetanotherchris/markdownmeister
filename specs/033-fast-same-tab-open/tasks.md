@@ -6,8 +6,8 @@ Tests: unit tests live in `tests/renderer/` (Vitest), e2e in `tests/e2e/` (Playw
 
 ## Phase 1 — Instrumentation foundation (R5, contract C4)
 
-- [ ] **T001** Create `src/renderer/editor/openPerformance.ts`: resettable counters (`fullParses`, `fullSerializations`, `outgoingSerializations`, `openDurations[]`) with `recordParse()`, `recordIncomingSerialization()`, `recordOutgoingSerialization()`, `beginOpen()`, `endOpen()` (duration only recorded when a start is pending; latest start wins on supersede), `resetOpenPerformanceCounters()`, and a read-only `getOpenPerformanceCounters()` snapshot exposed on the renderer `window` as `__mmOpenPerformance` for e2e reads. Counters are observability only — no behaviour may branch on them.
-- [ ] **T002** Unit test `tests/renderer/openPerformance.test.ts`: counter deltas for each record call; `endOpen` without a pending start records nothing; superseded start keeps only the latest duration; `reset` clears everything including durations.
+- [x] **T001** Create `src/renderer/editor/openPerformance.ts`: resettable counters (`fullParses`, `fullSerializations`, `outgoingSerializations`, `openDurations[]`) with `recordParse()`, `recordIncomingSerialization()`, `recordOutgoingSerialization()`, `beginOpen()`, `endOpen()` (duration only recorded when a start is pending; latest start wins on supersede), `resetOpenPerformanceCounters()`, and a read-only `getOpenPerformanceCounters()` snapshot exposed on the renderer `window` as `__mmOpenPerformance` for e2e reads. Counters are observability only — no behaviour may branch on them.
+- [x] **T002** Unit test `tests/renderer/openPerformance.test.ts`: counter deltas for each record call; `endOpen` without a pending start records nothing; superseded start keeps only the latest duration; `reset` clears everything including durations.
 
 ## Phase 2 — Skip the no-op re-parse at editor creation (R1, contract C1) — SC-002
 
