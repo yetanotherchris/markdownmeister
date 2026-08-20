@@ -4,6 +4,7 @@ import type { TreeNode } from '../state/workspace'
 import { getSettings } from '../state/settings'
 import { DOUBLE_CLICK_WINDOW_MS, shouldDeferSingleClick } from '../explorer/openGesture'
 import type { FileOpenGesture } from '../explorer/openGesture'
+import { beginOpen } from '../editor/openPerformance'
 import type { DocumentSessionApi } from './useDocumentSession'
 
 /** Spec 029 (contracts/file-open-gesture.md): turn a resolved row gesture on a
@@ -41,6 +42,10 @@ export function useFileOpenGesture(opts: {
   }, [])
 
   const commitOpen = useCallback(async (node: TreeNode, explicitNew: boolean) => {
+    // Spec 033 (contract C5): the timing window opens at the open-gesture
+    // commit — readFile initiation — so the intentional double-click
+    // deferral window is excluded by construction.
+    beginOpen()
     const result = await window.api.readFile(node.id)
     if (result.ok) openFileFromExplorer(result.value, explicitNew)
   }, [openFileFromExplorer])

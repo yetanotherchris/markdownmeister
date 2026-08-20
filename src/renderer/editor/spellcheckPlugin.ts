@@ -34,6 +34,12 @@ export const spellcheckKey = new PluginKey<SpellcheckPluginState>('mm-spellcheck
 
 const RECOMPUTE_DEBOUNCE_MS = 120
 const MAX_SUGGESTIONS = 5
+/** Spec 033 (contract C3): the initial whole-document pass is deferred to idle
+ *  time with this upper bound, so no spellcheck work runs synchronously inside
+ *  editor construction or the staging window of a same-tab open. Marks arrive a
+ *  beat after presentation (sanctioned by the spec assumption) but always
+ *  within the bound under normal conditions. */
+const INITIAL_PASS_IDLE_TIMEOUT_MS = 2_000
 
 /** Nodes whose text is never spellchecked (code regions, formulas). */
 function isSkippedNode(node: PMNode): boolean {
@@ -122,6 +128,7 @@ export function spellcheckPlugin(onMenu: (menu: SpellingMenuState | null) => voi
 
     view(view) {
       let timer: ReturnType<typeof setTimeout> | null = null
+      let idleId: number | null = null
       let destroyed = false
       let lastVersion = spellcheckRuntime.version
 
@@ -133,8 +140,18 @@ export function spellcheckPlugin(onMenu: (menu: SpellingMenuState | null) => voi
         }, RECOMPUTE_DEBOUNCE_MS)
       }
 
-      // Initial pass: the whole document, right after the editor mounts.
-      schedule()
+      // Spec 033 (FR-004, contract C3): the initial whole-document pass runs at
+      // idle time instead of immediately after mount — it must never block
+      // presentation of the incoming document. jsdom (unit tests) lacks
+      // requestIdleCallback; the timeout fallback keeps the deferral semantics.
+      const hasIdleApi = typeof window.requestIdleCallback === 'function'
+      const runInitialPass = () => {
+        idleId = null
+        if (!destroyed) schedule()
+      }
+      idleId = hasIdleApi
+        ? window.requestIdleCallback(runInitialPass, { timeout: INITIAL_PASS_IDLE_TIMEOUT_MS })
+        : window.setTimeout(runInitialPass, 0)
 
       // Re-check immediately when settings/custom-words change (no doc change).
       const unsubscribeRuntime = onSpellcheckRuntimeChange(schedule)
@@ -148,6 +165,10 @@ export function spellcheckPlugin(onMenu: (menu: SpellingMenuState | null) => voi
         },
         destroy() {
           destroyed = true
+          if (idleId !== null) {
+            if (hasIdleApi) window.cancelIdleCallback(idleId)
+            else window.clearTimeout(idleId)
+          }
           unsubscribeRuntime()
           if (timer) clearTimeout(timer)
         }
