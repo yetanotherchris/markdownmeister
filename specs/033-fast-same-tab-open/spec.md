@@ -20,7 +20,7 @@ A writer browsing a folder clicks another file to open it into the clean active 
 
 **Acceptance Scenarios**:
 
-1. **Given** a clean active document, **When** the writer opens another file into the same tab, **Then** the incoming document is presented ready for interaction in well under one second.
+1. **Given** a clean active document, **When** the writer opens another file into the same tab, **Then** the incoming document is presented ready for interaction in roughly a quarter of a second or less.
 2. **Given** the incoming document has been presented, **When** the writer starts typing immediately, **Then** keystrokes land in the new document with no perceptible lag and its undo history is fresh and empty.
 3. **Given** the outgoing document stays visible during the transition, **When** the incoming document becomes ready, **Then** the swap happens atomically exactly as it does today (title, content, and editor change together).
 
@@ -78,7 +78,7 @@ A writer opens progressively larger documents. Open time grows in proportion to 
 
 ### Measurable Outcomes
 
-- **SC-001**: A same-tab open of a document up to 10,000 lines presents the incoming document ready for interaction within 500 milliseconds on reference hardware, measured at the 95th percentile across automated runs (measured from the moment the open begins, excluding the intentional double-click recognition window).
+- **SC-001**: A same-tab open of a document up to 10,000 lines presents the incoming document ready for interaction within 250 milliseconds on reference hardware, measured at the 95th percentile across automated runs (measured from the moment the open begins, excluding the intentional double-click recognition window).
 - **SC-002**: Automated instrumentation counts exactly one full interpretation pass over the incoming content per open (today there are two).
 - **SC-003**: Automated instrumentation counts at most one whole-content serialization of the incoming content per open for baseline/dirty bookkeeping, while all dirty-state correctness tests continue to pass 100%.
 - **SC-004**: Opening a document ten times larger than another takes no more than twelve times as long (linear scaling within 20% overhead), measured across automated runs.
@@ -91,3 +91,10 @@ A writer opens progressively larger documents. Open time grows in proportion to 
 - Deferring background marking (spellcheck-style underlines) until just after the document appears is acceptable under Calm, Predictable Editing; marks arriving a beat later is preferable to a slower open.
 - Performance targets assume mid-range consumer hardware with local disk storage.
 - File reading itself is not the bottleneck for typical documents and is not targeted beyond avoiding incidental repeats of work already in memory.
+
+## Clarifications
+
+### Session 2026-08-20
+
+- Q: What speed target should opening a document into the same tab actually meet for documents up to 10,000 lines? → A: 250 milliseconds (95th percentile) — chosen at the edge of "feels instant" human-perception thresholds rather than the initially assumed 500 ms.
+
