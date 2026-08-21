@@ -33,12 +33,12 @@ Tests: unit tests live in `tests/renderer/` (Vitest), e2e in `tests/e2e/` (Playw
 
 ## Phase 6 — E2E verification (SC-001..SC-005)
 
-- [ ] **T013** New `tests/e2e/open-performance.spec.ts` driving the built app:
+- [x] **T013** New `tests/e2e/open-performance.spec.ts` driving the built app:
   - SC-001: open a generated typical document (~1,000 lines) into a clean active tab repeatedly, read `openDurations` from `window.__mmOpenPerformance`, assert p95 within the 250 ms target multiplied by a documented CI tolerance (×4 when `process.env.CI` is set, ×1 locally). Per the 2026-08-21 clarification (research R7) the fixed budget applies to typical documents; very large documents are governed by SC-004's scaling law.
   - SC-004: repeat against a 10× larger fixture and assert the median ratio stays within twelve times (linear scaling within 20% overhead).
   - SC-002/SC-003: reset counters, open once with settings unchanged, assert exactly one full parse, at most one incoming serialization, zero outgoing serializations for the untouched outgoing tab.
   - SC-005: staged-transition acceptance scenarios re-run unchanged — outgoing editor stays visible until commit, atomic swap, immediate typing lands in the new document with fresh undo, dirty outgoing tab cancels the replacement and opens a new tab instead.
-- [ ] **T014** Full verification: `npm run lint`, `npm run typecheck`, `npm run check`, `npm run test`, `npm run test:e2e` all green; existing suites (`open-in-current-tab.spec.ts`, `markdown-syntax-options.spec.ts`, `spellcheck.spec.ts`, dirty/reducer unit tests) pass unchanged, proving FR-005/FR-006 preserved.
+- [x] **T014** Full verification: `npm run lint`, `npm run typecheck`, `npm run check`, `npm run test`, `npm run test:e2e` all green; existing suites (`open-in-current-tab.spec.ts`, `markdown-syntax-options.spec.ts`, `spellcheck.spec.ts`, dirty/reducer unit tests) pass unchanged, proving FR-005/FR-006 preserved.
 
 ## Dependencies
 

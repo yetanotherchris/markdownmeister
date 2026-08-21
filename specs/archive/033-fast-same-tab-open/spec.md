@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-20
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "When you open a document in the same tab, it is slow to load each time."
 
