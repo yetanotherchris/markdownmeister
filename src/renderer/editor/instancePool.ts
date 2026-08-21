@@ -13,9 +13,8 @@ interface InstanceEntry {
    *  view's doc proves no doc-changing transaction occurred, so dirty checks
    *  can return clean without serializing. Cleared when the entry is removed,
    *  and explicitly when a save moves `editorBaseline` without a remount. */
-  baselineDoc: unknown | null
+  baselineDoc: unknown
 }
-
 export class InstancePool {
   private instances = new Map<string, InstanceEntry>()
 
@@ -42,8 +41,8 @@ export class InstancePool {
     if (entry) entry.baselineDoc = docRef
   }
 
-  getBaselineDoc(documentId: string): unknown | null {
-    return this.instances.get(documentId)?.baselineDoc ?? null
+  getBaselineDoc(documentId: string): unknown {
+    return this.instances.get(documentId)?.baselineDoc
   }
 
   /** Drop the recorded identity: the fast path must never prove cleanliness
@@ -54,17 +53,17 @@ export class InstancePool {
     if (entry) entry.baselineDoc = null
   }
 
-  /** The registered editor's current ProseMirror document reference, or null
-   *  when no live entry exists. Reading identity does not serialize. */
-  getLiveDoc(documentId: string): unknown | null {
+  /** The registered editor's current ProseMirror document reference, or
+   *  undefined when no live entry exists. Reading identity does not serialize. */
+  getLiveDoc(documentId: string): unknown {
     const entry = this.instances.get(documentId)
-    if (!entry) return null
+    if (!entry) return undefined
     try {
       const view = entry.editor.editor.action((ctx) => ctx.get(editorViewCtx))
       return view.state.doc
     } catch {
       // A torn-down or not-yet-created view has no identity to compare.
-      return null
+      return undefined
     }
   }
 

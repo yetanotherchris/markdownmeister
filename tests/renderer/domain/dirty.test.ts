@@ -106,7 +106,8 @@ describe('isDirtyLive — doc-identity fast path (spec 033, contract C2)', () =>
   it('returns clean with zero serialization when the live doc is reference-identical to the recorded baseline', () => {
     const a = accessor('# Hi\n')
     const docRef = { marker: true }
-    expect(isDirtyLive(makeDoc(), a.fn, identity(docRef, docRef).getLiveDoc, identity(docRef, docRef).getBaselineDoc)).toBe(false)
+    const { getLiveDoc, getBaselineDoc } = identity(docRef, docRef)
+    expect(isDirtyLive(makeDoc(), a.fn, getLiveDoc, getBaselineDoc)).toBe(false)
     // The whole point of the fast path: the accessor was never consulted.
     expect(getOpenPerformanceCounters().outgoingSerializations).toBe(0)
   })
@@ -119,7 +120,7 @@ describe('isDirtyLive — doc-identity fast path (spec 033, contract C2)', () =>
 
   it('falls back when the baseline record is missing even though the live reference exists', () => {
     const a = accessor('# Hi\n')
-    expect(isDirtyLive(makeDoc(), a.fn, () => ({ v: 1 }), () => null)).toBe(false)
+    expect(isDirtyLive(makeDoc(), a.fn, () => ({ v: 1 }), () => undefined)).toBe(false)
     expect(getOpenPerformanceCounters().outgoingSerializations).toBe(1)
   })
 

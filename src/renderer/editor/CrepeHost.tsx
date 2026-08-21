@@ -259,10 +259,12 @@ export default function CrepeHost({
       // recorded into; both store updates land in the same React batch.
       recordIncomingSerialization()
       onReady(crepe)
-      onBaselineCapture(crepe.getMarkdown(), view.state.doc)
       // Spec 033 (contract C5): presentation complete — close the open-timing
-      // measurement opened at open-gesture commit (no-op without one).
+      // measurement opened at open-gesture commit (no-op without one). It ends
+      // AT the ready signal; the baseline serialization below is bookkeeping
+      // and must not inflate the measured open.
       endOpen()
+      onBaselineCapture(crepe.getMarkdown(), view.state.doc)
       applyInert()
       if (active) {
         applyCursorState(view)

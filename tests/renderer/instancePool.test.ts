@@ -28,7 +28,7 @@ describe('InstancePool baseline-doc identity (spec 033, contract C2)', () => {
   it('setBaselineDoc is a no-op for an unregistered document', () => {
     const pool = new InstancePool()
     expect(() => pool.setBaselineDoc('missing', { marker: 1 })).not.toThrow()
-    expect(pool.getBaselineDoc('missing')).toBeNull()
+    expect(pool.getBaselineDoc('missing')).toBeUndefined()
   })
 
   it('a fresh entry has no recorded identity', () => {
@@ -53,8 +53,8 @@ describe('InstancePool baseline-doc identity (spec 033, contract C2)', () => {
     pool.register('doc-1', stubEditor(docRef))
     pool.setBaselineDoc('doc-1', docRef)
     pool.remove('doc-1')
-    expect(pool.getBaselineDoc('doc-1')).toBeNull()
-    expect(pool.getLiveDoc('doc-1')).toBeNull()
+    expect(pool.getBaselineDoc('doc-1')).toBeUndefined()
+    expect(pool.getLiveDoc('doc-1')).toBeUndefined()
   })
 
   it('getLiveDoc reads the current document reference through the editor', () => {
@@ -64,7 +64,7 @@ describe('InstancePool baseline-doc identity (spec 033, contract C2)', () => {
     expect(pool.getLiveDoc('doc-1')).toBe(atRegister)
   })
 
-  it('getLiveDoc returns null when the editor action throws (torn-down view)', () => {
+  it('getLiveDoc returns undefined when the editor action throws (torn-down view)', () => {
     const pool = new InstancePool()
     const broken = {
       editor: {
@@ -74,6 +74,6 @@ describe('InstancePool baseline-doc identity (spec 033, contract C2)', () => {
       }
     } as unknown as Crepe
     pool.register('doc-1', broken)
-    expect(pool.getLiveDoc('doc-1')).toBeNull()
+    expect(pool.getLiveDoc('doc-1')).toBeUndefined()
   })
 })
