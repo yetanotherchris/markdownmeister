@@ -72,7 +72,7 @@ No code — creation on update and removal on uninstall are Scoop built-in behav
 **Purpose**: Repository gates and spec lifecycle.
 
 - [x] T006 Run `npm run lint`, `npm run typecheck`, `npm test`, and `npm run test:e2e`; all four must pass (e2e covers regression only — the feature itself is outside the app, per spec Assumptions)
-- [ ] T007 As part of the implementation PR, archive the spec: `git mv specs/034-start-menu-shortcut specs/archive/034-start-menu-shortcut` and set its **Status** to `Archived`
+- [x] T007 As part of the implementation PR, archive the spec: `git mv specs/034-start-menu-shortcut specs/archive/034-start-menu-shortcut` and set its **Status** to `Archived`
 
 ---
 
