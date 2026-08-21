@@ -26,11 +26,11 @@
 
 > **NOTE: Write these FIRST and confirm they FAIL before implementing**
 
-- [ ] T001 [P] [US1] Write failing shape assertions in tests/main/scoopManifest.test.ts: the committed markdownmeister.json parses, declares exactly one entry in `shortcuts`, whose target is `markdownmeister.exe` and display name is `MarkdownMeister`, with no arguments or icon element (contracts/release.md)
+- [x] T001 [P] [US1] Write failing shape assertions in tests/main/scoopManifest.test.ts: the committed markdownmeister.json parses, declares exactly one entry in `shortcuts`, whose target is `markdownmeister.exe` and display name is `MarkdownMeister`, with no arguments or icon element (contracts/release.md)
 
 ### Implementation for User Story 1
 
-- [ ] T002 [US1] Add `"shortcuts": [["markdownmeister.exe", "MarkdownMeister"]]` to markdownmeister.json so T001 passes (FR-001–FR-004)
+- [x] T002 [US1] Add `"shortcuts": [["markdownmeister.exe", "MarkdownMeister"]]` to markdownmeister.json so T001 passes (FR-001–FR-004)
 
 **Checkpoint**: `npm test` green. On a Windows machine with the bucket registered, quickstart Scenario 1 passes against the next published build.
 
@@ -60,8 +60,8 @@ No code — creation on update and removal on uninstall are Scoop built-in behav
 
 ### Implementation for User Story 3
 
-- [ ] T004 [US3] In updatescoop.ps1, after loading the manifest and before writing, throw a descriptive error if `$manifest.shortcuts` is absent (FR-007, research R3)
-- [ ] T005 [US3] Run quickstart Scenario 4 in a scratch clone: dummy `9.9.9` artifact through ./updatescoop.ps1 changes only version/url/hash and keeps `shortcuts`; deleting `shortcuts` first makes the script throw without writing
+- [x] T004 [US3] In updatescoop.ps1, after loading the manifest and before writing, throw a descriptive error if `$manifest.shortcuts` is absent (FR-007, research R3)
+- [x] T005 [US3] Run quickstart Scenario 4 in a scratch clone: dummy `9.9.9` artifact through ./updatescoop.ps1 changes only version/url/hash and keeps `shortcuts`; deleting `shortcuts` first makes the script throw without writing
 
 **Checkpoint**: Release automation cannot publish a definition that lost the declaration.
 
@@ -71,7 +71,7 @@ No code — creation on update and removal on uninstall are Scoop built-in behav
 
 **Purpose**: Repository gates and spec lifecycle.
 
-- [ ] T006 Run `npm run lint`, `npm run typecheck`, `npm test`, and `npm run test:e2e`; all four must pass (e2e covers regression only — the feature itself is outside the app, per spec Assumptions)
+- [x] T006 Run `npm run lint`, `npm run typecheck`, `npm test`, and `npm run test:e2e`; all four must pass (e2e covers regression only — the feature itself is outside the app, per spec Assumptions)
 - [ ] T007 As part of the implementation PR, archive the spec: `git mv specs/034-start-menu-shortcut specs/archive/034-start-menu-shortcut` and set its **Status** to `Archived`
 
 ---

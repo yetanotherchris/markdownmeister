@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-21
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "Can scoop setup shortcuts in Windows? so a start menu shortcut" — asked after observing that a Scoop-installed MarkdownMeister puts no entry in the Start Menu, while the Windows installer does.
 
