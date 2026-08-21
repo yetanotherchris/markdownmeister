@@ -146,12 +146,16 @@ export default function App() {
   workspaceRef.current = workspace
   const activeDoc = getActiveDocument(session)
 
-  // The live-dirty decision is bound once here (pure rule + pool accessor) so
-  // both the pool eviction and the session checks share it.
+  // The live-dirty decision is bound once here (pure rule + pool accessors) so
+  // both the pool eviction and the session checks share it — including the
+  // spec 033 document-identity fast path, so eviction scans of untouched
+  // documents do not serialize either.
   const getMarkdown = useCallback((id: string) => instancePool.getMarkdown(id), [])
+  const getLiveDoc = useCallback((id: string) => instancePool.getLiveDoc(id), [])
+  const getBaselineDoc = useCallback((id: string) => instancePool.getBaselineDoc(id), [])
   const isDirtyLive = useCallback(
-    (doc: DocumentState) => domainIsDirtyLive(doc, getMarkdown),
-    [getMarkdown]
+    (doc: DocumentState) => domainIsDirtyLive(doc, getMarkdown, getLiveDoc, getBaselineDoc),
+    [getMarkdown, getLiveDoc, getBaselineDoc]
   )
   const dialog = useDialogQueue(sessionRef)
   const pool = useEditorPool({ dispatch, sessionRef, isDirtyLive })

@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react'
 import type { TreeNode } from '../state/workspace'
 import type { FileOpenGesture } from '../explorer/openGesture'
-import { beginOpen } from '../editor/openPerformance'
+import { beginOpen, discardOpen } from '../editor/openPerformance'
 import type { DocumentSessionApi } from './useDocumentSession'
 
 /** Spec 029 as amended 2026-08-21 (clarification in the archived spec): every
@@ -32,6 +32,7 @@ export function useFileOpenGesture(opts: {
       beginOpen()
       const result = await window.api.readFile(node.id)
       if (result.ok) openFileFromExplorer(result.value, explicitNew)
+      else discardOpen()
     },
     [openFileFromExplorer]
   )

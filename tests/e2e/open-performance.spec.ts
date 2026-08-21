@@ -151,7 +151,10 @@ test('SC-004 opening a ten-times-larger document scales linearly', async () => {
 
   const median = (xs: number[]) => percentile(xs, 0.5)
   const ratio = median(large) / median(small)
-  console.log(`scaling median(large)=${median(large).toFixed(1)}ms median(small)=${median(small).toFixed(1)}ms ratio=${ratio.toFixed(2)} (≤12)`)
+  console.log(
+    `scaling median(large)=${median(large).toFixed(1)}ms ` +
+      `median(small)=${median(small).toFixed(1)}ms ratio=${ratio.toFixed(2)} (≤12)`
+  )
   // SC-004: no more than roughly ten times, bounded at twelve (20% overhead).
   // This scaling law — not SC-001's fixed budget — governs very large
   // documents, whose floor is the single mandatory construction parse (R7).
@@ -177,7 +180,34 @@ test('SC-002/SC-003 one open with unchanged settings parses once, serializes inc
   expect(counters.outgoingSerializations).toBe(0)
 })
 
-test('SC-005 staged replacement stays atomic, typing lands immediately with fresh undo, dirty tabs stay protected', async () => {
+test('SC-002 flip side: an open with CHANGED display settings legitimately re-parses', async () => {
+  await openWorkspace()
+  await openFile('small.md')
+
+  // Toggle a syntax off through the settings dialog so the next open must
+  // build the non-default pipeline (constructor parse + replaceAll re-parse).
+  await window.getByRole('button', { name: 'Open menu' }).click()
+  await window.getByRole('menuitem', { name: 'Settings…' }).click()
+  const dialog = window.getByTestId('settings-dialog')
+  await dialog.waitFor()
+  await dialog.getByRole('button', { name: 'Markdown' }).click()
+  await dialog
+    .locator('.settings-switch-text', { hasText: 'Strikethrough formatting' })
+    .waitFor()
+  await dialog.locator('.settings-switch', { hasText: 'Strikethrough formatting' }).click()
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click()
+  await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
+
+  await resetCounters()
+  await openFile('large.md')
+  const counters = await readCounters()
+  // Constructor parse + the swap path's replaceAll re-parse: two passes are
+  // CORRECT when the settings changed (contract C4 scopes single-parse to
+  // unchanged settings).
+  expect(counters.fullParses).toBe(2)
+})
+
+test('SC-005 staged replacement stays atomic, typing lands immediately, dirty tabs stay protected', async () => {
   await openWorkspace()
   await openFile('small.md')
   await expect(window.locator('.ProseMirror:visible')).toContainText('Small')

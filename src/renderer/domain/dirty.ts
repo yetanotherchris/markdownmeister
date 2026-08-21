@@ -9,9 +9,10 @@ export type MarkdownAccessor = (documentId: string) => string | null
 
 /** Spec 033 (contract C2): injected document-identity accessors. `getLiveDoc`
  *  returns the editor's current ProseMirror document reference;
- *  `getBaselineDoc` the reference recorded at baseline capture. Injected (and
- *  optional) so the decision rules stay pure and testable without a pool. */
-export type DocRefAccessor = (documentId: string) => unknown | null
+ *  `getBaselineDoc` the reference recorded at baseline capture. Both return
+ *  undefined when absent. Injected (and optional) so the decision rules stay
+ *  pure and testable without a pool. */
+export type DocRefAccessor = (documentId: string) => unknown
 
 /** The editor's live serialization for a document, or null when it has no
  *  mounted editor (evicted). A source-view document's text lives in the store,
@@ -50,7 +51,7 @@ export function isDirtyLive(
     const live = getLiveDoc(doc.id)
     // Both references must exist: a missing baseline record means the exact
     // comparison is the only proof available.
-    if (live !== null && live !== undefined && live === getBaselineDoc(doc.id)) return false
+    if (live !== undefined && live === getBaselineDoc(doc.id)) return false
   }
   const live = getLiveContent(doc, getMarkdown)
   if (live === null) return false

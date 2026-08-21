@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import type { DocumentsAction, EditingSession } from '../state/documents'
 import { editorMatchesContent } from '../state/documents'
 import { joinFrontmatter } from '../domain/frontmatter'
+import { instancePool } from '../editor/instancePool'
 import type { DocumentSessionApi } from './useDocumentSession'
 
 export interface SourceViewToggleApi {
@@ -59,6 +60,11 @@ export function useSourceViewToggle(opts: {
       // The comparison is against the BODY (`content`) — frontmatter changes
       // alone leave the body untouched, so they do not force a remount.
       if (live === null || !editorMatchesContent(live, doc.content)) {
+        // Spec 033 (contract C2): the remount rewrites `editorBaseline`, so the
+        // recorded document identity must go too — same reasoning as
+        // SAVE_SUCCESS. Defense-in-depth: a real source edit already set
+        // `dirty`, which short-circuits before the fast path.
+        instancePool.clearBaselineDoc(id)
         dispatch({
           type: 'REFRESH_FROM_SOURCE',
           payload: { id, content: joinFrontmatter(doc.frontmatter, doc.content) }

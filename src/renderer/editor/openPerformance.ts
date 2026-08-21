@@ -30,6 +30,9 @@ const counters: OpenPerformanceCounters = {
  *  supersedes the first (spec edge case: only the latest request pays). */
 let pendingOpenStart: number | null = null
 
+/** Durations are diagnostic; the cap bounds memory on very long sessions. */
+const MAX_DURATIONS = 1_000
+
 export function recordParse(): void {
   counters.fullParses++
 }
@@ -52,6 +55,16 @@ export function beginOpen(): void {
 export function endOpen(): void {
   if (pendingOpenStart === null) return
   counters.openDurations.push(performance.now() - pendingOpenStart)
+  if (counters.openDurations.length > MAX_DURATIONS) {
+    counters.openDurations.splice(0, counters.openDurations.length - MAX_DURATIONS)
+  }
+  pendingOpenStart = null
+}
+
+/** Drop a pending start without recording a duration — an open whose readFile
+ *  failed never presents an editor, so it must not poison the next mount's
+ *  measurement. */
+export function discardOpen(): void {
   pendingOpenStart = null
 }
 
