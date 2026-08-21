@@ -1,11 +1,13 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import {
   getLiveContent,
   isDirtyLive,
   getContentToSave,
   shouldFlushLive,
-  MarkdownAccessor
+  MarkdownAccessor,
+  DocRefAccessor
 } from '../../../src/renderer/domain/dirty'
+import { resetOpenPerformanceCounters, getOpenPerformanceCounters } from '../../../src/renderer/editor/openPerformance'
 import type { DocumentState } from '../../../src/renderer/state/documents'
 
 function makeDoc(patch: Partial<DocumentState> = {}): DocumentState {
@@ -85,6 +87,59 @@ describe('isDirtyLive', () => {
   it('is clean for a source-view document regardless of the editor', () => {
     const a = accessor('# Changed\n')
     expect(isDirtyLive(makeDoc({ view: 'source' }), a.fn)).toBe(false)
+  })
+})
+
+describe('isDirtyLive — doc-identity fast path (spec 033, contract C2)', () => {
+  beforeEach(() => {
+    resetOpenPerformanceCounters()
+  })
+
+  /** Identity accessors over a fixed pair of references. */
+  function identity(live: unknown, baseline: unknown): {
+    getLiveDoc: DocRefAccessor
+    getBaselineDoc: DocRefAccessor
+  } {
+    return { getLiveDoc: () => live, getBaselineDoc: () => baseline }
+  }
+
+  it('returns clean with zero serialization when the live doc is reference-identical to the recorded baseline', () => {
+    const a = accessor('# Hi\n')
+    const docRef = { marker: true }
+    expect(isDirtyLive(makeDoc(), a.fn, identity(docRef, docRef).getLiveDoc, identity(docRef, docRef).getBaselineDoc)).toBe(false)
+    // The whole point of the fast path: the accessor was never consulted.
+    expect(getOpenPerformanceCounters().outgoingSerializations).toBe(0)
+  })
+
+  it('falls back to the exact comparison when the references differ (an edit occurred)', () => {
+    const a = accessor('# edited\n')
+    expect(isDirtyLive(makeDoc(), a.fn, () => ({ v: 2 }), () => ({ v: 1 }))).toBe(true)
+    expect(getOpenPerformanceCounters().outgoingSerializations).toBe(1)
+  })
+
+  it('falls back when the baseline record is missing even though the live reference exists', () => {
+    const a = accessor('# Hi\n')
+    expect(isDirtyLive(makeDoc(), a.fn, () => ({ v: 1 }), () => null)).toBe(false)
+    expect(getOpenPerformanceCounters().outgoingSerializations).toBe(1)
+  })
+
+  it('the dirty flag still wins before the fast path can run', () => {
+    const a = accessor('# Hi\n')
+    const docRef = { marker: true }
+    expect(isDirtyLive(makeDoc({ dirty: true }), a.fn, () => docRef, () => docRef)).toBe(true)
+    expect(getOpenPerformanceCounters().outgoingSerializations).toBe(0)
+  })
+
+  it('decoration-only activity (same reference) cannot false-positive', () => {
+    const a = accessor('# Hi\n')
+    const docRef = { marker: true }
+    expect(isDirtyLive(makeDoc(), a.fn, () => docRef, () => docRef)).toBe(false)
+  })
+
+  it('absent accessors preserve the exact-comparison behaviour', () => {
+    const a = accessor('# Changed\n')
+    expect(isDirtyLive(makeDoc(), a.fn)).toBe(true)
+    expect(getOpenPerformanceCounters().outgoingSerializations).toBe(1)
   })
 })
 

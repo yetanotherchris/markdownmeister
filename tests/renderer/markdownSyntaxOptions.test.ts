@@ -5,6 +5,7 @@ import remarkStringify from 'remark-stringify'
 import { visit } from 'unist-util-visit'
 import {
   markdownSyntaxRemark,
+  markdownSyntaxOptionsEqual,
   DEFAULT_MARKDOWN_SYNTAX_OPTIONS,
   type MarkdownSyntaxOptions
 } from '../../src/renderer/editor/markdownSyntaxOptions'
@@ -50,6 +51,30 @@ const ALL_OFF: MarkdownSyntaxOptions = {
   math: false,
   autolink: false
 }
+
+describe('markdownSyntaxOptionsEqual (spec 033, contract C1)', () => {
+  it('is true for two identical option sets', () => {
+    expect(markdownSyntaxOptionsEqual(ALL_ON, { ...ALL_ON })).toBe(true)
+    expect(markdownSyntaxOptionsEqual(ALL_OFF, { ...ALL_OFF })).toBe(true)
+  })
+
+  it('is false when any single field differs', () => {
+    for (const field of Object.keys(ALL_ON) as Array<keyof MarkdownSyntaxOptions>) {
+      const flipped = { ...ALL_ON, [field]: !ALL_ON[field] }
+      expect(markdownSyntaxOptionsEqual(ALL_ON, flipped)).toBe(false)
+    }
+  })
+
+  it('the off→on round-trip trap: options equal to the defaults still compare equal — the guard must therefore track per-editor applied options, not compare against defaults alone', () => {
+    // A user who toggles a syntax off then back on produces options equal to
+    // DEFAULTS. Equality itself cannot distinguish "stock pipeline" from
+    // "swapped-with-defaults pipeline" — which is exactly why the runtime
+    // records applied options per editor (research R1 correctness trap).
+    const toggledOffThenOn: MarkdownSyntaxOptions = { ...DEFAULT_MARKDOWN_SYNTAX_OPTIONS }
+    expect(markdownSyntaxOptionsEqual(DEFAULT_MARKDOWN_SYNTAX_OPTIONS, toggledOffThenOn)).toBe(true)
+    expect(markdownSyntaxOptionsEqual(ALL_OFF, DEFAULT_MARKDOWN_SYNTAX_OPTIONS)).toBe(false)
+  })
+})
 
 describe('markdownSyntaxRemark (spec 030 options→extension matrix)', () => {
   it('strikethrough: enabled parses a delete node, disabled keeps ~~ literal', () => {

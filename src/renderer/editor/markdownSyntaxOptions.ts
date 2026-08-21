@@ -47,6 +47,25 @@ export interface MarkdownSyntaxOptions {
 /** FR-013: hard breaks off (CommonMark soft breaks), the five syntaxes on. */
 export const DEFAULT_MARKDOWN_SYNTAX_OPTIONS: MarkdownSyntaxOptions = { ...MARKDOWN_SYNTAX_DEFAULTS }
 
+/** Field-by-field equality of the six flat booleans (spec 033, contract C1).
+ *  The reconfigure skip guard compares REQUESTED options against the options
+ *  actually applied to each editor — never against the defaults alone, because
+ *  an off→on toggle round-trip produces options equal to the defaults while
+ *  the live pipeline is non-default. */
+export function markdownSyntaxOptionsEqual(
+  a: MarkdownSyntaxOptions,
+  b: MarkdownSyntaxOptions
+): boolean {
+  return (
+    a.hardBreaks === b.hardBreaks &&
+    a.strikethrough === b.strikethrough &&
+    a.tables === b.tables &&
+    a.taskLists === b.taskLists &&
+    a.math === b.math &&
+    a.autolink === b.autolink
+  )
+}
+
 /** The remark-processor `data()` buckets our composer pushes extensions into. */
 interface SyntaxData {
   micromarkExtensions?: unknown[]

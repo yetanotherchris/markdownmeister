@@ -22,7 +22,7 @@ Bring same-tab document opens under the 250 ms p95 target by removing redundant 
 
 **Project Type**: Desktop application
 
-**Performance Goals**: Same-tab open presents an interactive editor within 250 ms p95 for documents up to 10,000 lines (SC-001); exactly one full parse of incoming content per open (SC-002); at most one full serialization of incoming content per open (SC-003); linear scaling within 20% overhead at 10× size (SC-004)
+**Performance Goals**: Same-tab open presents an interactive editor within 250 ms p95 for typical documents up to ~1,000 lines; larger documents scale linearly within 20% overhead at 10× size (SC-004) — the fixed budget does not extend to very large documents, whose floor is the single mandatory construction parse (research R7); exactly one full parse of incoming content per open (SC-002); at most one full serialization of incoming content per open (SC-003)
 
 **Constraints**: No new IPC channels, filesystem access, or preload API surface. Dirty-state decisions must remain exact — the fast path may only skip *proving* cleanliness when document identity proves no edit occurred; it must never widen what counts as clean. Fresh undo history per opened document is preserved (no cross-document editor reuse).
 

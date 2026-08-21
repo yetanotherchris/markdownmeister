@@ -12,6 +12,7 @@ import { planTaskBackspace } from './taskBackspace'
 import { tightListPlugins } from './tightList'
 import { spellcheckPlugin, type SpellingMenuState } from './spellcheckPlugin'
 import { reconfigureEditor, isReconfigureSuppressed } from './markdownSyntaxRuntime'
+import { recordParse, recordIncomingSerialization, endOpen } from './openPerformance'
 import {
   markdownSyntaxInputRuleGate,
   setMarkdownSyntaxGateOptions
@@ -41,7 +42,10 @@ interface CrepeHostProps {
   restoreCursor?: CursorState
   onMarkdownUpdated: (markdown: string) => void
   onReady: (editor: Crepe) => void
-  onBaselineCapture: (markdown: string) => void
+  /** Spec 033: the second argument is the freshly mounted view's ProseMirror
+   *  document reference, recorded so dirty checks can prove "no edit since
+   *  baseline" by identity instead of re-serializing (contract C2). */
+  onBaselineCapture: (markdown: string, docRef: unknown) => void
   onCursorState: (cursor: CursorState) => void
   onRequestViewSource: () => void
 }
@@ -205,6 +209,9 @@ export default function CrepeHost({
       editorRef.current = crepe
       const view = crepe.editor.action((ctx) => ctx.get(editorViewCtx))
       viewRef.current = view
+      // Spec 033 (SC-002): the constructor parsed `defaultValue` — count the
+      // one full interpretation pass over incoming content.
+      recordParse()
       scrollElementRef.current = view.dom.closest('.editor-host') ?? view.dom.parentElement
       // Spec 020 (2026-08-07): the JS spellchecker marks misspellings itself,
       // so Chromium's native markers are switched OFF here to avoid double
@@ -245,9 +252,17 @@ export default function CrepeHost({
       // (its handler is debounced by 200 ms and no doc-changing transaction
       // fires on load), so the baseline cannot come from the first emission.
       // Reading the freshly parsed content directly is the reliable source
-      // (research.md R4, verified in Phase 5).
-      onBaselineCapture(crepe.getMarkdown())
+      // (research.md R4, verified in Phase 5). Spec 033: this stays the single
+      // full serialization of incoming content per open (research R3, SC-003),
+      // and the parsed doc reference rides along for the dirty fast path.
+      // onReady runs FIRST because it registers the pool entry the identity is
+      // recorded into; both store updates land in the same React batch.
+      recordIncomingSerialization()
       onReady(crepe)
+      onBaselineCapture(crepe.getMarkdown(), view.state.doc)
+      // Spec 033 (contract C5): presentation complete — close the open-timing
+      // measurement opened at open-gesture commit (no-op without one).
+      endOpen()
       applyInert()
       if (active) {
         applyCursorState(view)

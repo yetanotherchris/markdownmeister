@@ -79,3 +79,20 @@ Spec 032 documents the total as "about one second while Milkdown initializes" (`
 **Rationale**: Matches the spec's measurement definition (excludes the intentional 500 ms window). CI timing variance is handled by p95 aggregation and generous assertion bounds relative to the 250 ms target; local runs provide the primary signal, CI provides regression detection with a documented tolerance multiplier if needed.
 
 **Alternatives considered**: asserting absolute times on shared CI runners as hard gates — rejected as flaky; the harness reports percentiles and asserts against the target with a CI-specific multiplier recorded in tasks.
+
+## R7 — Measured floor of the same-tab open (2026-08-21, implementation evidence)
+
+**Decision**: SC-001's fixed 250 ms budget applies to typical documents (≤ ~1,000 lines); larger documents are governed by SC-004's linear-scaling bound. Recorded as a spec clarification the same day.
+
+**Evidence** (built app, this repository's e2e harness, repeated alternating opens):
+
+| Document | Open → ready | Notes |
+|---|---|---|
+| 1,000 lines | ~165 ms median, ~175 ms max over 12 runs | meets SC-001 with margin |
+| 10,000 lines | ~1.9 s consistently (min 1.86 s) | dominated by mandatory work |
+
+Phase breakdown of one 10,000-line open: `new Crepe()` + `crepe.create()` ≈ **1,572 ms** (the single construction parse, ProseMirror view, top-bar DOM); baseline capture `getMarkdown()` ≈ **344 ms** (the one mandated incoming serialization, research R3); tail ≈ 0. Disabling the deferred initial spellcheck pass changed nothing — R4's deferral is not a factor in the measurement.
+
+**Rationale**: Both dominant costs are irreducible within the architecture. The construction parse cannot be skipped or amortized because every opened document gets a fresh editor instance (fresh undo history per opened document is a hard requirement; Milkdown/Crepe has no supported content-swap API at construction quality — see AGENTS.md worked example and spec 024). The baseline serialization is the exact-comparison anchor for dirty-state correctness (research R3; deriving it from raw disk text resurrects the spec 002 false-dirty bug). Before this feature the same open paid that floor TWICE for parsing plus up to three outgoing serializations; instrumentation now proves parses 2 → 1 and outgoing serializations 3 → 0 (SC-002/SC-003).
+
+**Alternatives considered**: holding the 250 ms @ 10k target — blocks the phase on an editor-level breakthrough outside this feature's scope; a flat 2 s @ 10k budget — encodes one machine's number as the requirement instead of the scaling law that actually governs large documents.

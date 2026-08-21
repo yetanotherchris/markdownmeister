@@ -80,9 +80,10 @@ export function useWorkspaceTree(opts: {
     }
   }, [openFileFromExplorer, workspaceRef])
 
-  // Spec 029: mouse opens of files go through the gesture deferral
-  // (useFileOpenGesture); handleTreeActivate stays the keyboard (Space) path.
-  const { handleFileOpen } = useFileOpenGesture({ sessionRef, session })
+  // Spec 029 (2026-08-21 amendment): mouse opens of files go through the
+  // gesture router (useFileOpenGesture, immediate commit); handleTreeActivate
+  // stays the keyboard (Space) path.
+  const { handleFileOpen } = useFileOpenGesture({ session })
 
   const handleTreeToggle = useCallback(async (id: string, isLoaded: boolean) => {
     if (isLoaded) {

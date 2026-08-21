@@ -1,5 +1,6 @@
 import type { DocumentState } from '../state/documents'
 import type { Crepe } from '@milkdown/crepe'
+import { editorViewCtx } from '@milkdown/kit/core'
 
 const MAX_INSTANCES = 8
 
@@ -7,6 +8,12 @@ interface InstanceEntry {
   documentId: string
   editor: Crepe
   lastActiveAt: number
+  /** Spec 033 (contract C2): the ProseMirror document object reference at the
+   *  moment `editorBaseline` was captured. Reference identity with the live
+   *  view's doc proves no doc-changing transaction occurred, so dirty checks
+   *  can return clean without serializing. Cleared when the entry is removed,
+   *  and explicitly when a save moves `editorBaseline` without a remount. */
+  baselineDoc: unknown | null
 }
 
 export class InstancePool {
@@ -16,14 +23,49 @@ export class InstancePool {
     this.instances.set(documentId, {
       documentId,
       editor,
-      lastActiveAt: Date.now()
+      lastActiveAt: Date.now(),
+      baselineDoc: null
     })
   }
 
   remove(documentId: string): void {
     // The owning CrepeHost destroys the editor on unmount; this only drops the
-    // bookkeeping entry. Destroying here would double-destroy the same editor.
+    // bookkeeping entry (and with it the recorded baseline doc identity).
+    // Destroying here would double-destroy the same editor.
     this.instances.delete(documentId)
+  }
+
+  /** Record the document reference captured alongside `editorBaseline`
+   *  (spec 033). No-op when no live entry exists for the document. */
+  setBaselineDoc(documentId: string, docRef: unknown): void {
+    const entry = this.instances.get(documentId)
+    if (entry) entry.baselineDoc = docRef
+  }
+
+  getBaselineDoc(documentId: string): unknown | null {
+    return this.instances.get(documentId)?.baselineDoc ?? null
+  }
+
+  /** Drop the recorded identity: the fast path must never prove cleanliness
+   *  against a baseline that has moved (e.g. after SAVE_SUCCESS rewrites
+   *  `editorBaseline` without a remount). */
+  clearBaselineDoc(documentId: string): void {
+    const entry = this.instances.get(documentId)
+    if (entry) entry.baselineDoc = null
+  }
+
+  /** The registered editor's current ProseMirror document reference, or null
+   *  when no live entry exists. Reading identity does not serialize. */
+  getLiveDoc(documentId: string): unknown | null {
+    const entry = this.instances.get(documentId)
+    if (!entry) return null
+    try {
+      const view = entry.editor.editor.action((ctx) => ctx.get(editorViewCtx))
+      return view.state.doc
+    } catch {
+      // A torn-down or not-yet-created view has no identity to compare.
+      return null
+    }
   }
 
   getMarkdown(documentId: string): string | null {

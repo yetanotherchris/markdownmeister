@@ -19,8 +19,14 @@ import type { Ctx } from '@milkdown/kit/ctx'
 import type { EditorView } from '@milkdown/kit/prose/view'
 import type { Crepe } from '@milkdown/crepe'
 import type { InstancePool } from './instancePool'
-import { markdownSyntaxRemark, type MarkdownSyntaxOptions } from './markdownSyntaxOptions'
+import {
+  markdownSyntaxRemark,
+  markdownSyntaxOptionsEqual,
+  DEFAULT_MARKDOWN_SYNTAX_OPTIONS,
+  type MarkdownSyntaxOptions
+} from './markdownSyntaxOptions'
 import { setMarkdownSyntaxGateOptions } from './markdownSyntaxInputRules'
+import { recordParse } from './openPerformance'
 
 /**
  * Spec 030 (research R3/R6): runtime reconfiguration of every live editor's
@@ -95,7 +101,25 @@ function buildRemarkProcessor(ctx: Ctx, options: MarkdownSyntaxOptions) {
   return processor.use(markdownSyntaxRemark(options))
 }
 
-/** Reconfigure a single live editor in place (research R3). */
+/**
+ * Spec 033 (research R1, contract C1): the syntax options whose parser/
+ * serializer pipeline was actually applied to each editor. Absence means the
+ * editor was freshly constructed against Crepe's stock pipeline, i.e.
+ * effectively the defaults. Lives and dies with each editor instance
+ * (WeakMap semantics), so no explicit cleanup.
+ */
+const appliedOptions = new WeakMap<Crepe, MarkdownSyntaxOptions>()
+
+/** Reconfigure a single live editor in place (research R3).
+ *
+ *  Spec 033 skip guard (contract C1): the gate-options update always runs, but
+ *  when the requested options equal the options already applied to THIS editor,
+ *  the parser/serializer swap and the `replaceAll` re-parse are skipped — a
+ *  freshly mounted editor is always considered "at defaults", so the create
+ *  path with unchanged settings performs no second full parse and no
+ *  mount-time undoable transaction. An off→on toggle round-trip still
+ *  reapplies: the comparison is against per-editor applied options, never
+ *  bare defaults. */
 export function reconfigureEditor(
   editor: Crepe,
   options: MarkdownSyntaxOptions,
@@ -103,8 +127,12 @@ export function reconfigureEditor(
 ): void {
   const { sourceMarkdown, suppressEmission = true } = params
   // Point the input-rule gate at the same options so typing a disabled syntax
-  // never auto-formats (research R4, contract "Input-rule gate").
+  // never auto-formats (research R4, contract "Input-rule gate"). Unconditional:
+  // gating must reflect requested options even when the pipeline skip fires.
   setMarkdownSyntaxGateOptions(options)
+  if (markdownSyntaxOptionsEqual(appliedOptions.get(editor) ?? DEFAULT_MARKDOWN_SYNTAX_OPTIONS, options)) {
+    return
+  }
   // Capture BEFORE the serializer swap so a `~~x~~` still serializes to `~~x~~`.
   // `sourceMarkdown` is the raw on-disk/initial content for the CREATE path,
   // where `getMarkdown()` would already have emitted an autolink URL as
@@ -128,9 +156,11 @@ export function reconfigureEditor(
   // can race a just-mounted editor, and suppressing would swallow the first
   // real edit's emission (and thus its dirty flag).
   if (suppressEmission) suppressUntil = Date.now() + 300
+  recordParse()
   editor.editor.action(replaceAll(markdown))
 
   restoreCursor(view, cursor)
+  appliedOptions.set(editor, options)
 }
 
 /** Reconfigure every live editor in the pool (multi-tab sync, FR-010). */
