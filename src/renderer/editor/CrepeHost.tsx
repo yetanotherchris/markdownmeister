@@ -255,9 +255,11 @@ export default function CrepeHost({
       // (research.md R4, verified in Phase 5). Spec 033: this stays the single
       // full serialization of incoming content per open (research R3, SC-003),
       // and the parsed doc reference rides along for the dirty fast path.
+      // onReady runs FIRST because it registers the pool entry the identity is
+      // recorded into; both store updates land in the same React batch.
       recordIncomingSerialization()
-      onBaselineCapture(crepe.getMarkdown(), view.state.doc)
       onReady(crepe)
+      onBaselineCapture(crepe.getMarkdown(), view.state.doc)
       // Spec 033 (contract C5): presentation complete — close the open-timing
       // measurement opened at open-gesture commit (no-op without one).
       endOpen()
