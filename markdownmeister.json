@@ -3,6 +3,12 @@
   "description": "A WYSIWYG markdown editor for Windows, macOS, and Linux, built with Electron and Milkdown.",
   "version": "1.1.0",
   "license": "MIT",
+  "shortcuts": [
+    [
+      "markdownmeister.exe",
+      "MarkdownMeister"
+    ]
+  ],
   "post_install": [
     "& \"$dir\\resources\\scripts\\open-with.ps1\" -Action register -ExePath \"$dir\\markdownmeister.exe\""
   ],

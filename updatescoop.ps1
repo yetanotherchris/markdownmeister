@@ -32,6 +32,14 @@ if (-not (Test-Path -LiteralPath $manifestPath)) {
 }
 
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+
+# FR-007 (spec 034): the release rewrite must never silently drop the Start
+# Menu shortcut declaration. Fail the release loudly instead of publishing a
+# definition that lost it.
+if (-not $manifest.shortcuts) {
+    throw "Scoop manifest has no 'shortcuts' declaration; refusing to write a definition that lost the Start Menu shortcut (spec 034, FR-007)"
+}
+
 $manifest.version = $Version
 $manifest.architecture."64bit".url = $url
 $manifest.architecture."64bit".hash = $hash
