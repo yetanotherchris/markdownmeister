@@ -20,7 +20,14 @@ let configDir: string
 test.beforeAll(async () => {
   testFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'mm-open-tab-ws-'))
   fs.writeFileSync(path.join(testFolder, 'alpha.md'), '# Alpha\n\nHello alpha.')
-  fs.writeFileSync(path.join(testFolder, 'beta.md'), '# Beta\n\nHello beta.')
+  // beta is deliberately heavier than a one-liner so the staged window spans
+  // a few animation frames for the in-page sampler below; the original marker
+  // sentence stays first so existing content assertions keep their target.
+  const betaLines: string[] = ['# Beta', '', 'Hello beta.', '']
+  for (let i = 0; i < 2000; i++) {
+    betaLines.push(`Paragraph ${i}: the quick brown fox jumps over the lazy dog.`, '')
+  }
+  fs.writeFileSync(path.join(testFolder, 'beta.md'), betaLines.join('\n'))
   fs.writeFileSync(path.join(testFolder, 'gamma.md'), '# Gamma\n\nHello gamma.')
 })
 
@@ -75,21 +82,46 @@ test('US1/FR-001 a clean active tab is replaced (no new tab)', async () => {
   await expect(window.getByRole('tab', { name: /alpha\.md/ })).toHaveCount(0)
 })
 
-test('spec 032 keeps the outgoing editor visible until the staged replacement commits', async () => {
+test('spec 032 keeps the staged transition atomic: title and visible content always agree', async () => {
   await openWorkspaceFolder()
   await openFromTree('alpha.md')
-  const outgoingEditor = window.locator('.ProseMirror:visible')
-  await expect(outgoingEditor).toContainText('Hello alpha.')
+  await expect(window.locator('.ProseMirror:visible')).toContainText('Hello alpha.')
+
+  // With immediate commits (spec 029 amendment) the staging window can close
+  // faster than one Playwright poll, so the invariant is sampled INSIDE the
+  // page: every animation frame from just before the click records the header
+  // title paired with the text of the VISIBLE editor host. The staged
+  // transition guarantees the pair never mixes states and never goes blank.
+  await window.evaluate(() => {
+    const w = window as unknown as { __samples?: string[]; __sampling?: boolean }
+    w.__samples = []
+    w.__sampling = true
+    const read = () => {
+      const title = document.querySelector('.document-title')?.textContent ?? ''
+      const hosts = Array.from(document.querySelectorAll<HTMLElement>('.editor-host'))
+      const visible = hosts.find((h) => h.style.visibility !== 'hidden')
+      const content = (visible?.querySelector('.ProseMirror')?.textContent ?? '').slice(0, 60)
+      w.__samples!.push(`${title} :: ${content}`)
+      if (w.__sampling) requestAnimationFrame(read)
+    }
+    requestAnimationFrame(read)
+  })
 
   await window.getByRole('treeitem').getByText('beta.md').click()
-  // Crepe initialization is asynchronous. Until its ready callback commits the
-  // staged document, the old title and its non-empty editor remain on screen.
-  await expect(window.locator('.document-title')).toContainText('alpha.md')
-  await expect(outgoingEditor).toBeVisible()
-  await expect(outgoingEditor).toContainText('Hello alpha.')
-
   await expect(window.locator('.document-title')).toContainText('beta.md')
   await expect(window.locator('.ProseMirror:visible')).toContainText('Hello beta.')
+
+  const samples = await window.evaluate(() => {
+    ;(window as unknown as { __sampling?: boolean }).__sampling = false
+    return (window as unknown as { __samples?: string[] }).__samples ?? []
+  })
+  expect(samples.length).toBeGreaterThan(0)
+  const inconsistent = samples.filter((sample) => {
+    if (sample.includes('alpha.md')) return !sample.includes('Hello alpha')
+    if (sample.includes('beta.md')) return !sample.includes('Beta')
+    return false
+  })
+  expect(inconsistent, `inconsistent samples:\n${inconsistent.join('\n')}`).toEqual([])
 })
 
 test('US1/FR-002 a dirty active tab opens a new tab and stays open', async () => {

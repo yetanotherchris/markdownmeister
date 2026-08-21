@@ -180,15 +180,41 @@ test('SC-002/SC-003 one open with unchanged settings parses once, serializes inc
 test('SC-005 staged replacement stays atomic, typing lands immediately with fresh undo, dirty tabs stay protected', async () => {
   await openWorkspace()
   await openFile('small.md')
-  const outgoingEditor = window.locator('.ProseMirror:visible')
-  await expect(outgoingEditor).toContainText('Small')
+  await expect(window.locator('.ProseMirror:visible')).toContainText('Small')
 
-  // Until the staged editor commits, the outgoing title and content remain.
+  // With immediate commits the staging window can close faster than one
+  // Playwright poll, so the atomicity invariant is sampled inside the page:
+  // every frame pairs the header title with the VISIBLE editor's text, and no
+  // sample may mix the outgoing and incoming documents (or go blank).
+  await window.evaluate(() => {
+    const w = window as unknown as { __samples?: string[]; __sampling?: boolean }
+    w.__samples = []
+    w.__sampling = true
+    const read = () => {
+      const title = document.querySelector('.document-title')?.textContent ?? ''
+      const hosts = Array.from(document.querySelectorAll<HTMLElement>('.editor-host'))
+      const visible = hosts.find((h) => h.style.visibility !== 'hidden')
+      const content = (visible?.querySelector('.ProseMirror')?.textContent ?? '').slice(0, 60)
+      w.__samples!.push(`${title} :: ${content}`)
+      if (w.__sampling) requestAnimationFrame(read)
+    }
+    requestAnimationFrame(read)
+  })
+
   await window.getByRole('treeitem').getByText('large.md').click()
-  await expect(window.locator('.document-title')).toContainText('small.md')
-  await expect(outgoingEditor).toContainText('Small')
   await expect(window.locator('.document-title')).toContainText('large.md')
   await expect(window.locator('.ProseMirror:visible')).toContainText('Large')
+
+  const samples = await window.evaluate(() => {
+    ;(window as unknown as { __sampling?: boolean }).__sampling = false
+    return (window as unknown as { __samples?: string[] }).__samples ?? []
+  })
+  const inconsistent = samples.filter((sample) => {
+    if (sample.includes('small.md')) return !sample.includes('Small')
+    if (sample.includes('large.md')) return !sample.includes('Large')
+    return false
+  })
+  expect(inconsistent, `inconsistent samples:\n${inconsistent.join('\n')}`).toEqual([])
 
   // Keystrokes land in the new document immediately; undo history is fresh —
   // undoing the typed text must not resurrect the previous document.

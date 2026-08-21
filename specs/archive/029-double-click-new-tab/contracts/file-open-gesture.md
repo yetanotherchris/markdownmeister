@@ -33,25 +33,17 @@ onClick={(e) => {
 
 | Gesture | Setting | Active-tab state | Action |
 |---------|---------|------------------|--------|
-| `double-click` | either | any | cancel pending open for this file; `openFileFromExplorer(file, true)` (FR-001/005) |
-| `single-click` | `new-tab` | any | `openFileFromExplorer(file)` now (US2, FR-007) |
-| `single-click` | `same-tab` | no active tab | `openFileFromExplorer(file)` now (FR-008 — nothing to replace, deferral unnecessary) |
-| `single-click` | `same-tab` | active dirty | `openFileFromExplorer(file)` now (FR-009 — a dirty tab already forces a new tab, deferral unnecessary) |
-| `single-click` | `same-tab` | file already open | `openFileFromExplorer(file)` now (dedupe activates the existing tab, deferral unnecessary) |
-| `single-click` | `same-tab` | clean active, file not open | defer `openFileFromExplorer(file)` by `DOUBLE_CLICK_WINDOW_MS` (FR-003 — replacement is exactly the harm the deferral prevents) |
+| `double-click` | either | any | `openFileFromExplorer(file, true)` (FR-001/005); the reducer's already-open dedupe lands it on the tab the first click just presented (2026-08-21 amendment) |
+| `single-click` | either | any | `openFileFromExplorer(file)` now — the deferral window was removed on 2026-08-21; replacement vs new-tab is decided by the existing open gate |
 
 `openFileFromExplorer` keeps its existing behaviour: already-open → activate (FR-005);
 same-tab + clean active → replace; dirty/no active → new tab (FR-009).
 
-The deferral exists ONLY to prevent a single click that would REPLACE a clean active
-tab from committing before a double-click on the same file can be recognised. When a
-single click cannot replace (no active tab, dirty active, already-open, new-tab
-preference), a double-click on the same file produces the same tab result anyway, so
-the click opens immediately.
-
-A deferred commit is cancelled by a double-click on the same file, and never clobbers
-a tab the user opened or switched to during the window: if the active tab changed
-since the click, the commit opens a new tab instead (spec Edge Cases).
+Historical note: before the 2026-08-21 amendment a single-click that would replace
+a clean active tab was deferred by `DOUBLE_CLICK_WINDOW_MS` (500 ms) so a
+double-click could cancel it. The deferral was removed because, once spec 033 made
+mounts fast, it was the entire perceived cost of a same-tab open; the double-click's
+explicit-new request now dedupes onto the tab the first click opened instead.
 
 ## Entry points
 
@@ -61,28 +53,14 @@ since the click, the commit opens a new tab instead (spec Edge Cases).
 | Explorer double-click on a file row | yes | FR-001 |
 | Explorer double-click on a directory | no | `node.toggle()`, never opens (FR-006) |
 | Keyboard Space on a file (activate) | no | `handleTreeActivate` unchanged, immediate |
-| Context menu **Open**, File > Open, Recent Items | no | `openFileFromExplorer` via their existing paths — no deferral |
+| Context menu **Open**, File > Open, Recent Items | no | `openFileFromExplorer` via their existing paths |
 | Middle-click on a file row | no | existing `onOpenNewTab` (spec 024) unchanged |
-
-## Timing guarantees
-
-- `DOUBLE_CLICK_WINDOW_MS === 500` (OS double-click time). The browser sets
-  `e.detail === 2` on the second click of a recognised double-click within that
-  window, so the deferred single-click open (scheduled for 500 ms) always fires
-  after a real double-click has had its chance to cancel it (FR-003).
-- Only single-clicks that would REPLACE a clean active tab are deferred; all other
-  single-clicks open immediately, so single-click browsing is unaffected except in
-  the exact replace case FR-003 protects.
-- Two deliberate single-clicks on different files within the window each keep their
-  own pending timer (pending-opens map keyed by path). A deferred commit checks the
-  active tab at fire time: if it changed during the window, it opens a new tab
-  rather than replacing a tab the user moved to (spec Edge Cases).
 
 ## Verification
 
-- Unit (`tests/renderer/openGesture.test.ts`): the three-way decision table —
-  double-click always new, single-click new-tab-mode immediate, single-click
-  same-tab-mode deferred — plus window constant.
+- Unit (`tests/renderer/openGesture.test.ts`): the pure routing helpers
+  (`isOpenableFile`); the deferral decision was removed with the 2026-08-21
+  amendment.
 - e2e (`tests/e2e/double-click-new-tab.spec.ts`): acceptance scenarios for US1
   (clean/dirty/untitled/no-tab/already-open), US2 (new-tab mode, no change), US3
   (directory toggle, no tab), and FR-007 (single-click unchanged).
