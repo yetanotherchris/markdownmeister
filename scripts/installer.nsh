@@ -12,6 +12,12 @@
 ; enumerates. Folders register under `Directory`. Every class registered is
 ; recorded in an app-owned state key so uninstall removes exactly what was
 ; added, even if the user's default changed in between.
+;
+; Spec 035 (D5): the folder verb gets its own display label, "Open in
+; ${PRODUCT_NAME}", mirroring the platform's "Open in Terminal" convention,
+; while file verbs keep "Open with ${PRODUCT_NAME}". Both derive from the one
+; product name; the verb KEY stays the product name so the uninstall removal
+; keys written by earlier versions still resolve.
 
 !ifndef PRODUCT_NAME
   !define PRODUCT_NAME "MarkdownMeister"
@@ -22,14 +28,16 @@
 
 ; FR-015: one product display name feeds every native action label.
 !define MM_VERB_NAME "${PRODUCT_NAME}"
-!define MM_VERB_DISPLAY "Open with ${PRODUCT_NAME}"
+!define MM_VERB_DISPLAY_FILE "Open with ${PRODUCT_NAME}"
+!define MM_VERB_DISPLAY_FOLDER "Open in ${PRODUCT_NAME}"
 !define MM_STATE_KEY "Software\MarkdownMeister\OsOpenState"
 
 ; Register the verb under an arbitrary class (a ProgID, `*`, or `Directory`) and
 ; record the class for uninstall. `${CLASS}` may be a literal or a register
-; (e.g. `$1`) holding the class name at runtime.
-!macro MM_RegisterVerbClass CLASS
-  WriteRegStr HKCU "Software\Classes\${CLASS}\shell\${MM_VERB_NAME}" "" "${MM_VERB_DISPLAY}"
+; (e.g. `$1`) holding the class name at runtime; `${DISPLAY}` selects the
+; file or folder label.
+!macro MM_RegisterVerbClass CLASS DISPLAY
+  WriteRegStr HKCU "Software\Classes\${CLASS}\shell\${MM_VERB_NAME}" "" "${DISPLAY}"
   WriteRegStr HKCU "Software\Classes\${CLASS}\shell\${MM_VERB_NAME}" "Icon" "$INSTDIR\${APP_EXECUTABLE_FILENAME}"
   WriteRegStr HKCU "Software\Classes\${CLASS}\shell\${MM_VERB_NAME}\command" "" '"$INSTDIR\${APP_EXECUTABLE_FILENAME}" "%1"'
   WriteRegDWord HKCU "${MM_STATE_KEY}" "${CLASS}" 1
@@ -47,7 +55,7 @@
   ReadRegStr $1 HKCR "${EXT}" ""
   IfErrors 0 MM_PROGID_OK_${EXT}
   ; No ProgID resolves anywhere: register under `*`.
-  !insertmacro MM_RegisterVerbClass `*`
+  !insertmacro MM_RegisterVerbClass `*` "${MM_VERB_DISPLAY_FILE}"
   Goto MM_FILE_DONE_${EXT}
   MM_PROGID_OK_${EXT}:
   ; Use the resolved ProgID when its per-user class already exists (safe) or
@@ -61,10 +69,10 @@
   Goto MM_REG_UNDER_STAR_${EXT}
   MM_REG_UNDER_DEAD_${EXT}:
   MM_REG_UNDER_PROGID_${EXT}:
-  !insertmacro MM_RegisterVerbClass `$1`
+  !insertmacro MM_RegisterVerbClass `$1` "${MM_VERB_DISPLAY_FILE}"
   Goto MM_FILE_DONE_${EXT}
   MM_REG_UNDER_STAR_${EXT}:
-  !insertmacro MM_RegisterVerbClass `*`
+  !insertmacro MM_RegisterVerbClass `*` "${MM_VERB_DISPLAY_FILE}"
   MM_FILE_DONE_${EXT}:
 !macroend
 
@@ -98,7 +106,8 @@
 !macro customInstall
   !insertmacro MM_RegisterFileVerb ".md"
   !insertmacro MM_RegisterFileVerb ".markdown"
-  !insertmacro MM_RegisterVerbClass "Directory"
+  ; Spec 035: the folder action carries the folder label (D5).
+  !insertmacro MM_RegisterVerbClass "Directory" "${MM_VERB_DISPLAY_FOLDER}"
   ; Refresh Explorer so the verbs appear without a shell restart.
   System::Call 'shell32::SHChangeNotify(i, i, i, i) v (0x08000000, 0, 0, 0)'
 !macroend
