@@ -8,7 +8,8 @@ import {
   resolveXdgDataHome,
   ensureFolderAction,
   removeFolderAction,
-  folderActionLocations
+  folderActionLocations,
+  findAppImageIcon
 } from '../../src/main/linuxDesktopEntry'
 
 let dataHome: string
@@ -105,6 +106,43 @@ describe('renderDesktopEntry', () => {
   it('escapes backslashes and literal percent signs in the Exec argument', () => {
     const content = renderDesktopEntry('/we\\ird%path/app.AppImage')
     expect(content).toContain('Exec="/we\\\\ird%%path/app.AppImage" %f\n')
+  })
+})
+
+describe('findAppImageIcon', () => {
+  it('prefers the .DirIcon at the mount root', () => {
+    fs.writeFileSync(path.join(dataHome, '.DirIcon'), PNG_BYTES)
+    expect(findAppImageIcon(dataHome)).toBe(path.join(dataHome, '.DirIcon'))
+  })
+
+  it('falls back to a root-level icon file named for the app', () => {
+    fs.writeFileSync(path.join(dataHome, 'markdownmeister.png'), PNG_BYTES)
+    expect(findAppImageIcon(dataHome)).toBe(
+      path.join(dataHome, 'markdownmeister.png')
+    )
+  })
+
+  it('finds the icon inside a usr/share/icons hicolor tree', () => {
+    const hicolorIcon = path.join(
+      dataHome,
+      'usr',
+      'share',
+      'icons',
+      'hicolor',
+      '512x512',
+      'apps',
+      'markdownmeister.png'
+    )
+    fs.mkdirSync(path.dirname(hicolorIcon), { recursive: true })
+    fs.writeFileSync(hicolorIcon, PNG_BYTES)
+    expect(findAppImageIcon(dataHome)).toBe(hicolorIcon)
+  })
+
+  it('returns null when nothing PNG-shaped exists', () => {
+    expect(findAppImageIcon(dataHome)).toBeNull()
+    const notPng = path.join(dataHome, '.DirIcon')
+    fs.writeFileSync(notPng, '<svg/>')
+    expect(findAppImageIcon(dataHome)).toBeNull()
   })
 })
 

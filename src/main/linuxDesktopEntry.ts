@@ -22,6 +22,8 @@ import { atomicWrite } from './fs/atomicWrite'
 
 export const PRODUCT_NAME = 'MarkdownMeister'
 export const DESKTOP_ENTRY_FILE_NAME = 'markdownmeister.desktop'
+/** CLI flag removing the folder action (contracts/registration.md). */
+export const REMOVE_FOLDER_ACTION_FLAG = '--remove-folder-action'
 const ICON_FILE_NAME = 'markdownmeister.png'
 const ICON_THEME_SIZE = '256x256'
 /** The only mime type this feature associates: "is a folder", nothing more. */
@@ -99,6 +101,29 @@ export function renderDesktopEntry(
   ]
   if (options?.iconName) lines.push(`Icon=${options.iconName}`)
   return lines.join('\n') + '\n'
+}
+
+/**
+ * Find a usable icon inside an AppImage mount root (the AppDir). The AppImage
+ * runtime guarantees `.DirIcon`; the other candidates cover electron-builder
+ * layouts. Returns null when nothing PNG-shaped is found — the entry is then
+ * written without an `Icon` key rather than half-installed.
+ */
+export function findAppImageIcon(mountRoot: string): string | null {
+  const iconBaseName = DESKTOP_ENTRY_FILE_NAME.replace(/\.desktop$/, '.png')
+  const candidates = [
+    path.join(mountRoot, '.DirIcon'),
+    path.join(mountRoot, iconBaseName)
+  ]
+  const hicolorApps = path.join(mountRoot, 'usr', 'share', 'icons', 'hicolor')
+  try {
+    for (const size of fs.readdirSync(hicolorApps)) {
+      candidates.push(path.join(hicolorApps, size, 'apps', iconBaseName))
+    }
+  } catch {
+    // No hicolor tree in this layout — the ordered candidates still apply.
+  }
+  return candidates.find(isPng) ?? null
 }
 
 export type EnsureFolderActionResult =

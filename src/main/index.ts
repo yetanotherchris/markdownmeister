@@ -11,6 +11,15 @@ import { resolveLaunchBounds, trackWindowState, flushWindowState } from './windo
 import { reconcileExplorerClosedWithoutWorkspace } from './workspaceExplorerState'
 import { legacyConfigPath, universalConfigPath, migrateConfigFile } from './configPath'
 import { initOsOpenHost, setOsOpenWindow, clearOsOpenWindow } from './osOpenHost'
+import {
+  findAppImageIcon,
+  ensureFolderAction,
+  folderActionLocations,
+  removeFolderAction,
+  resolveXdgDataHome,
+  REMOVE_FOLDER_ACTION_FLAG,
+  PRODUCT_NAME
+} from './linuxDesktopEntry'
 import * as os from 'os'
 import { pathToFileURL } from 'url'
 
@@ -104,7 +113,27 @@ function createWindow(): void {
   setOsOpenWindow(mainWindow)
 }
 
+// Spec 035 (research D4): when running as an AppImage on Linux, keep the
+// user-level folder-action desktop entry in sync with the AppImage's current
+// path. Best-effort and silent (constitution IV) — a failure only logs, and on
+// every other platform this is a no-op.
+function ensureLinuxFolderAction(): void {
+  if (process.platform !== 'linux' || !process.env.APPIMAGE) return
+  const dataHome = resolveXdgDataHome(process.env)
+  if (!dataHome) return
+  const mountRoot = process.env.APPDIR ?? path.dirname(app.getPath('exe'))
+  const outcome = ensureFolderAction({
+    locations: folderActionLocations(dataHome),
+    appImagePath: process.env.APPIMAGE,
+    iconSource: findAppImageIcon(mountRoot)
+  })
+  if (!outcome.ok) {
+    console.warn(`[folder-action] could not update the desktop entry: ${outcome.message}`)
+  }
+}
+
 function bootApp(): void {
+  ensureLinuxFolderAction()
   // Spec 022 FR-004: move an existing config from the legacy appData location
   // to the universal ~/.config location BEFORE anything reads it. Skipped under
   // the MM_CONFIG_DIR test seam (tests must never move the developer's real
@@ -151,6 +180,27 @@ function bootApp(): void {
   // window loads, so the first paint already honours it.
   applySpellcheckSetting(loadSettings().spellcheckEnabled, loadSettings().spellcheckLanguage)
   createWindow()
+}
+
+// Spec 035 (contracts/registration.md): `--remove-folder-action` removes the
+// Linux folder-action files and exits BEFORE the single-instance lock request —
+// the contract requires it to work without the lock. Absent files are success,
+// and the outcome is always one line with exit 0.
+if (process.argv.includes(REMOVE_FOLDER_ACTION_FLAG)) {
+  try {
+    const dataHome = resolveXdgDataHome(process.env)
+    const outcome = dataHome
+      ? removeFolderAction(folderActionLocations(dataHome))
+      : { removedEntry: false, removedIcon: false }
+    console.log(
+      outcome.removedEntry || outcome.removedIcon
+        ? `Removed the ${PRODUCT_NAME} folder action.`
+        : `No ${PRODUCT_NAME} folder action was found.`
+    )
+  } catch (e: unknown) {
+    console.log(`Could not remove the ${PRODUCT_NAME} folder action.`)
+  }
+  app.exit(0)
 }
 
 // Spec 006 (research R7): single-instance lock + OS-open listeners, BEFORE
