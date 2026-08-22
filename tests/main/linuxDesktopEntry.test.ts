@@ -34,9 +34,7 @@ function writeIconSource(dir: string): string {
 
 describe('resolveXdgDataHome', () => {
   it('prefers an absolute XDG_DATA_HOME', () => {
-    expect(
-      resolveXdgDataHome({ XDG_DATA_HOME: '/xdg/data', HOME: '/home/user' })
-    ).toBe('/xdg/data')
+    expect(resolveXdgDataHome({ XDG_DATA_HOME: '/xdg/data', HOME: '/home/user' })).toBe('/xdg/data')
   })
 
   it('falls back to $HOME/.local/share', () => {
@@ -46,9 +44,9 @@ describe('resolveXdgDataHome', () => {
   })
 
   it('ignores a relative XDG_DATA_HOME and uses the home fallback', () => {
-    expect(
-      resolveXdgDataHome({ XDG_DATA_HOME: 'relative/data', HOME: '/home/user' })
-    ).toBe(path.join('/home/user', '.local', 'share'))
+    expect(resolveXdgDataHome({ XDG_DATA_HOME: 'relative/data', HOME: '/home/user' })).toBe(
+      path.join('/home/user', '.local', 'share')
+    )
   })
 
   it('returns null when neither XDG_DATA_HOME nor HOME resolves', () => {
@@ -60,9 +58,7 @@ describe('resolveXdgDataHome', () => {
 describe('folderActionLocations', () => {
   it('derives the applications entry and hicolor icon paths from the data home', () => {
     const locations = folderActionLocations(dataHome)
-    expect(locations.entryFile).toBe(
-      path.join(dataHome, 'applications', 'markdownmeister.desktop')
-    )
+    expect(locations.entryFile).toBe(path.join(dataHome, 'applications', 'markdownmeister.desktop'))
     expect(locations.iconFile).toBe(
       path.join(dataHome, 'icons', 'hicolor', '256x256', 'apps', 'markdownmeister.png')
     )
@@ -92,22 +88,62 @@ describe('renderDesktopEntry', () => {
     ['/home/user/my apps/MarkdownMeister.AppImage'],
     ['/home/user/üser/我的笔记.AppImage'],
     ['/tmp/.mount_0001/markdown meister (beta).AppImage']
-  ])('keeps hostile paths intact through quoting: %s', appImagePath => {
+  ])('keeps hostile paths intact through quoting: %s', (appImagePath) => {
     const content = renderDesktopEntry(appImagePath)
-    expect(content).toContain(`Exec="${appImagePath}" %f\n`)
     expect(content).toContain(`TryExec=${appImagePath}\n`)
+    expect(parseExecPath(content)).toBe(appImagePath)
+    expect(parseTryExecPath(content)).toBe(appImagePath)
   })
 
-  it('escapes double quotes in the quoted Exec argument per the desktop-entry spec', () => {
+  it('escapes double quotes through both escape layers per the desktop-entry spec', () => {
     const content = renderDesktopEntry('/op"t/app.AppImage')
-    expect(content).toContain('Exec="/op\\"t/app.AppImage" %f\n')
+    expect(content).toContain('Exec="/op\\\\"t/app.AppImage" %f\n')
   })
 
-  it('escapes backslashes and literal percent signs in the Exec argument', () => {
+  it('escapes backslashes and literal percent signs through both escape layers', () => {
     const content = renderDesktopEntry('/we\\ird%path/app.AppImage')
-    expect(content).toContain('Exec="/we\\\\ird%%path/app.AppImage" %f\n')
+    expect(content).toContain('Exec="/we\\\\\\\\ird%%path/app.AppImage" %f\n')
+  })
+
+  it('rejects an empty application image path', () => {
+    const outcome = ensureFolderAction({
+      locations: folderActionLocations(dataHome),
+      appImagePath: ''
+    })
+    expect(outcome.ok).toBe(false)
   })
 })
+
+/**
+ * Inverse of the module's two-layer Exec encoding (file-layer string escapes,
+ * then the Exec-layer quoted argument with `%%` field-code escapes), proving
+ * hostile paths survive a write → strict-parse round trip.
+ */
+function unescapeBackslashes(input: string): string {
+  let out = ''
+  for (let i = 0; i < input.length; i++) {
+    if (input[i] === '\\' && i + 1 < input.length) {
+      out += input[i + 1]
+      i++
+    } else {
+      out += input[i]
+    }
+  }
+  return out
+}
+
+function parseExecPath(content: string): string {
+  const line = content.split('\n').find((candidate) => candidate.startsWith('Exec=')) ?? ''
+  const quoted = unescapeBackslashes(line.slice('Exec='.length))
+  const match = quoted.match(/^"(.*)" %f$/)
+  if (!match) throw new Error(`Unparseable Exec line: ${line}`)
+  return unescapeBackslashes(match[1]).replace(/%%/g, '%')
+}
+
+function parseTryExecPath(content: string): string {
+  const line = content.split('\n').find((candidate) => candidate.startsWith('TryExec=')) ?? ''
+  return unescapeBackslashes(line.slice('TryExec='.length))
+}
 
 describe('findAppImageIcon', () => {
   it('prefers the .DirIcon at the mount root', () => {
@@ -117,9 +153,7 @@ describe('findAppImageIcon', () => {
 
   it('falls back to a root-level icon file named for the app', () => {
     fs.writeFileSync(path.join(dataHome, 'markdownmeister.png'), PNG_BYTES)
-    expect(findAppImageIcon(dataHome)).toBe(
-      path.join(dataHome, 'markdownmeister.png')
-    )
+    expect(findAppImageIcon(dataHome)).toBe(path.join(dataHome, 'markdownmeister.png'))
   })
 
   it('finds the icon inside a usr/share/icons hicolor tree', () => {
@@ -136,6 +170,34 @@ describe('findAppImageIcon', () => {
     fs.mkdirSync(path.dirname(hicolorIcon), { recursive: true })
     fs.writeFileSync(hicolorIcon, PNG_BYTES)
     expect(findAppImageIcon(dataHome)).toBe(hicolorIcon)
+  })
+
+  it('prefers larger hicolor sizes regardless of directory order', () => {
+    const small = path.join(
+      dataHome,
+      'usr',
+      'share',
+      'icons',
+      'hicolor',
+      '16x16',
+      'apps',
+      'markdownmeister.png'
+    )
+    const large = path.join(
+      dataHome,
+      'usr',
+      'share',
+      'icons',
+      'hicolor',
+      '512x512',
+      'apps',
+      'markdownmeister.png'
+    )
+    fs.mkdirSync(path.dirname(small), { recursive: true })
+    fs.mkdirSync(path.dirname(large), { recursive: true })
+    fs.writeFileSync(small, PNG_BYTES)
+    fs.writeFileSync(large, PNG_BYTES)
+    expect(findAppImageIcon(dataHome)).toBe(large)
   })
 
   it('returns null when nothing PNG-shaped exists', () => {
@@ -165,7 +227,30 @@ describe('ensureFolderAction', () => {
     )
     expect(entry).toContain('Exec="/opt/apps/MarkdownMeister.AppImage" %f\n')
     expect(entry).toContain('Icon=markdownmeister\n')
-    expect(fs.readFileSync(path.join(dataHome, 'icons', 'hicolor', '256x256', 'apps', 'markdownmeister.png'))).toEqual(PNG_BYTES)
+    const installedIcon = fs.readFileSync(
+      path.join(dataHome, 'icons', 'hicolor', '256x256', 'apps', 'markdownmeister.png')
+    )
+    expect(installedIcon).toEqual(PNG_BYTES)
+  })
+
+  it('does not recopy an identical icon on a later launch', () => {
+    const iconSource = writeIconSource(dataHome)
+    const locations = folderActionLocations(dataHome)
+    ensureFolderAction({
+      locations,
+      appImagePath: '/opt/apps/MarkdownMeister.AppImage',
+      iconSource
+    })
+    const before = fs.statSync(locations.iconFile).mtimeMs
+
+    const second = ensureFolderAction({
+      locations,
+      appImagePath: '/opt/apps/MarkdownMeister.AppImage',
+      iconSource
+    })
+
+    expect(second.ok && second.iconInstalled).toBe(true)
+    expect(fs.statSync(locations.iconFile).mtimeMs).toBe(before)
   })
 
   it('is idempotent when nothing changed', () => {
@@ -214,7 +299,10 @@ describe('ensureFolderAction', () => {
     expect(outcome.ok).toBe(true)
     if (!outcome.ok) return
     expect(outcome.iconInstalled).toBe(false)
-    const entry = fs.readFileSync(path.join(dataHome, 'applications', 'markdownmeister.desktop'), 'utf-8')
+    const entry = fs.readFileSync(
+      path.join(dataHome, 'applications', 'markdownmeister.desktop'),
+      'utf-8'
+    )
     expect(entry).not.toContain('Icon=')
   })
 
@@ -231,6 +319,38 @@ describe('ensureFolderAction', () => {
     expect(outcome.ok).toBe(true)
     if (!outcome.ok) return
     expect(outcome.iconInstalled).toBe(false)
+  })
+
+  it('treats a directory as a missing icon source rather than failing', () => {
+    const outcome = ensureFolderAction({
+      locations: folderActionLocations(dataHome),
+      appImagePath: '/opt/apps/MarkdownMeister.AppImage',
+      iconSource: dataHome
+    })
+
+    expect(outcome.ok).toBe(true)
+    if (!outcome.ok) return
+    expect(outcome.iconInstalled).toBe(false)
+    expect(fs.existsSync(path.join(dataHome, 'icons'))).toBe(false)
+  })
+
+  it('rewrites without the Icon key when the icon source disappears, tolerating the stale file', () => {
+    const locations = folderActionLocations(dataHome)
+    ensureFolderAction({
+      locations,
+      appImagePath: '/opt/apps/MarkdownMeister.AppImage',
+      iconSource: writeIconSource(dataHome)
+    })
+
+    const second = ensureFolderAction({
+      locations,
+      appImagePath: '/opt/apps/MarkdownMeister.AppImage'
+    })
+
+    expect(second.ok && second.iconInstalled).toBe(false)
+    expect(fs.readFileSync(locations.entryFile, 'utf-8')).not.toContain('Icon=')
+    // The orphaned hicolor PNG is tolerated: nothing references or displays it.
+    expect(fs.existsSync(locations.iconFile)).toBe(true)
   })
 
   it('fails soft when the applications directory cannot be created', () => {

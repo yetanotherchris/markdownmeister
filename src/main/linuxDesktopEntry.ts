@@ -22,9 +22,9 @@ import { atomicWrite } from './fs/atomicWrite'
 
 export const PRODUCT_NAME = 'MarkdownMeister'
 export const DESKTOP_ENTRY_FILE_NAME = 'markdownmeister.desktop'
+const ICON_BASE_NAME = DESKTOP_ENTRY_FILE_NAME.replace(/\.desktop$/, '.png')
 /** CLI flag removing the folder action (contracts/registration.md). */
 export const REMOVE_FOLDER_ACTION_FLAG = '--remove-folder-action'
-const ICON_FILE_NAME = 'markdownmeister.png'
 const ICON_THEME_SIZE = '256x256'
 /** The only mime type this feature associates: "is a folder", nothing more. */
 const FOLDER_MIME_TYPE = 'inode/directory;'
@@ -43,10 +43,7 @@ export interface FolderActionLocations {
  * is ignored rather than guessed at. Returns null when no usable home exists
  * (the caller treats that as "no folder action possible" and moves on).
  */
-export function resolveXdgDataHome(env: {
-  XDG_DATA_HOME?: string
-  HOME?: string
-}): string | null {
+export function resolveXdgDataHome(env: { XDG_DATA_HOME?: string; HOME?: string }): string | null {
   const xdgDataHome = env.XDG_DATA_HOME?.trim()
   if (xdgDataHome && path.isAbsolute(xdgDataHome)) return xdgDataHome
   const home = env.HOME?.trim()
@@ -59,41 +56,30 @@ export function folderActionLocations(dataHome: string): FolderActionLocations {
   return {
     dataHome,
     entryFile: path.join(dataHome, 'applications', DESKTOP_ENTRY_FILE_NAME),
-    iconFile: path.join(
-      dataHome,
-      'icons',
-      'hicolor',
-      ICON_THEME_SIZE,
-      'apps',
-      ICON_FILE_NAME
-    )
+    iconFile: path.join(dataHome, 'icons', 'hicolor', ICON_THEME_SIZE, 'apps', ICON_BASE_NAME)
   }
 }
 
 /**
- * Quote one Exec argument per the desktop-entry spec: a double-quoted
- * argument where `\` and `"` are escaped, plus the field-code escape for a
- * literal `%` (`%%`). Keeps spaces, quotes, backslashes, and non-Latin
- * characters byte-exact through a write → parse round trip.
+ * Encode one Exec argument for writing to a desktop-entry file. The spec
+ * applies two escape layers, read in reverse: the file layer treats the value
+ * as a string where a literal `\` is written `\\`, and the Exec layer takes a
+ * double-quoted argument where `\` and `"` are escaped and a literal `%` is
+ * written `%%` so field codes never fire. Writing fileEncode(execEncode(path))
+ * makes a strict parser decode back exactly the chosen path.
  */
-function quoteExecArgument(argument: string): string {
-  const escaped = argument
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/%/g, '%%')
-  return `"${escaped}"`
+function encodeExecArgument(argument: string): string {
+  const quoted = `"${argument.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/%/g, '%%')}"`
+  return quoted.replace(/\\/g, '\\\\')
 }
 
 /** Render the desktop entry. `iconName` is omitted when no icon was installed. */
-export function renderDesktopEntry(
-  appImagePath: string,
-  options?: { iconName?: string }
-): string {
+export function renderDesktopEntry(appImagePath: string, options?: { iconName?: string }): string {
   const lines = [
     '[Desktop Entry]',
     'Type=Application',
     `Name=${PRODUCT_NAME}`,
-    `Exec=${quoteExecArgument(appImagePath)} %f`,
+    `Exec=${encodeExecArgument(appImagePath)} %f`,
     // TryExec is a plain string value (no field codes): the raw path makes
     // launchers hide the entry when the AppImage is gone.
     `TryExec=${appImagePath.replace(/\\/g, '\\\\')}`,
@@ -110,15 +96,20 @@ export function renderDesktopEntry(
  * written without an `Icon` key rather than half-installed.
  */
 export function findAppImageIcon(mountRoot: string): string | null {
-  const iconBaseName = DESKTOP_ENTRY_FILE_NAME.replace(/\.desktop$/, '.png')
-  const candidates = [
-    path.join(mountRoot, '.DirIcon'),
-    path.join(mountRoot, iconBaseName)
-  ]
+  const candidates = [path.join(mountRoot, '.DirIcon'), path.join(mountRoot, ICON_BASE_NAME)]
   const hicolorApps = path.join(mountRoot, 'usr', 'share', 'icons', 'hicolor')
   try {
-    for (const size of fs.readdirSync(hicolorApps)) {
-      candidates.push(path.join(hicolorApps, size, 'apps', iconBaseName))
+    // Deterministic preference: the declared theme size first, then larger
+    // sizes before smaller ones — readdir order must not pick a 16x16 over a
+    // 512x512 icon.
+    const byPreferredSize = (a: string, b: string): number => {
+      if (a === ICON_THEME_SIZE) return -1
+      if (b === ICON_THEME_SIZE) return 1
+      return widthOf(b) - widthOf(a)
+    }
+    const sizes = fs.readdirSync(hicolorApps).sort(byPreferredSize)
+    for (const size of sizes) {
+      candidates.push(path.join(hicolorApps, size, 'apps', ICON_BASE_NAME))
     }
   } catch {
     // No hicolor tree in this layout — the ordered candidates still apply.
@@ -126,9 +117,13 @@ export function findAppImageIcon(mountRoot: string): string | null {
   return candidates.find(isPng) ?? null
 }
 
+/** Leading pixel width of an icon-theme size directory name like `512x512`. */
+function widthOf(sizeDirectoryName: string): number {
+  return Number.parseInt(sizeDirectoryName, 10) || 0
+}
+
 export type EnsureFolderActionResult =
-  | { ok: true; changed: boolean; iconInstalled: boolean }
-  | { ok: false; message: string }
+  { ok: true; changed: boolean; iconInstalled: boolean } | { ok: false; message: string }
 
 /**
  * Idempotently write the desktop entry (and, when `iconSource` is a readable
@@ -143,22 +138,16 @@ export function ensureFolderAction(input: {
 }): EnsureFolderActionResult {
   const { locations, appImagePath, iconSource } = input
 
-  let iconName: string | undefined
-  let iconInstalled = false
-  if (iconSource && isPng(iconSource)) {
-    try {
-      fs.mkdirSync(path.dirname(locations.iconFile), { recursive: true })
-      fs.copyFileSync(iconSource, locations.iconFile)
-      iconName = ICON_FILE_NAME.replace(/\.png$/, '')
-      iconInstalled = true
-    } catch {
-      // Icon installation is best-effort only; the entry still works without it.
-      iconName = undefined
-      iconInstalled = false
-    }
+  if (!appImagePath) {
+    return { ok: false, message: 'No application image path was provided.' }
   }
 
-  const content = renderDesktopEntry(appImagePath, { iconName })
+  const iconName = ICON_BASE_NAME.replace(/\.png$/, '')
+  const iconInstalled = iconSource ? installIcon(iconSource, locations.iconFile) : false
+
+  const content = renderDesktopEntry(appImagePath, {
+    iconName: iconInstalled ? iconName : undefined
+  })
   try {
     const existing = readIfPresent(locations.entryFile)
     if (existing !== content) {
@@ -167,7 +156,26 @@ export function ensureFolderAction(input: {
     }
     return { ok: true, changed: existing !== content, iconInstalled }
   } catch (e: unknown) {
-    return { ok: false, message: describe(e) }
+    return { ok: false, message: errorText(e) }
+  }
+}
+
+/**
+ * Copy a validated PNG source into the hicolor destination unless identical
+ * bytes are already there (launches must not churn the file's mtime). Returns
+ * whether an icon is installed at the destination afterwards; any failure is
+ * best-effort and simply leaves the entry without its Icon key.
+ */
+function installIcon(iconSource: string, iconFile: string): boolean {
+  try {
+    if (!isPng(iconSource)) return false
+    if (!readBytesIfPresent(iconFile)?.equals(fs.readFileSync(iconSource))) {
+      fs.mkdirSync(path.dirname(iconFile), { recursive: true })
+      fs.copyFileSync(iconSource, iconFile)
+    }
+    return true
+  } catch {
+    return false
   }
 }
 
@@ -180,9 +188,7 @@ export interface RemoveFolderActionResult {
  * Delete the entry and icon files (contract: absent files are success). Never
  * touches `mimeapps.list` or anything else in the applications directory.
  */
-export function removeFolderAction(
-  locations: FolderActionLocations
-): RemoveFolderActionResult {
+export function removeFolderAction(locations: FolderActionLocations): RemoveFolderActionResult {
   return {
     removedEntry: deleteIfPresent(locations.entryFile),
     removedIcon: deleteIfPresent(locations.iconFile)
@@ -193,6 +199,16 @@ export function removeFolderAction(
 function readIfPresent(filePath: string): string | null {
   try {
     return fs.readFileSync(filePath, 'utf-8')
+  } catch (e: unknown) {
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null
+    throw e
+  }
+}
+
+/** Read a file's raw bytes, or null when it does not exist (any other error throws). */
+function readBytesIfPresent(filePath: string): Buffer | null {
+  try {
+    return fs.readFileSync(filePath)
   } catch (e: unknown) {
     if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null
     throw e
@@ -228,6 +244,6 @@ function isPng(filePath: string): boolean {
   return header.equals(PNG_SIGNATURE)
 }
 
-function describe(e: unknown): string {
+function errorText(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
 }
