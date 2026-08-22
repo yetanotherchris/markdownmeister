@@ -197,7 +197,7 @@ if (process.argv.includes(REMOVE_FOLDER_ACTION_FLAG)) {
         ? `Removed the ${PRODUCT_NAME} folder action.`
         : `No ${PRODUCT_NAME} folder action was found.`
     )
-  } catch (e: unknown) {
+  } catch {
     console.log(`Could not remove the ${PRODUCT_NAME} folder action.`)
   }
   app.exit(0)
