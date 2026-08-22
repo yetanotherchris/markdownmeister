@@ -65,8 +65,8 @@
 
 **Purpose**: Repository gates and spec lifecycle.
 
-- [ ] T008 Run `npm run lint`, `npm run typecheck`, `npm test`, and `npm run test:e2e`; all four must pass (e2e covers regression only — no renderer changes, per spec Assumptions)
-- [ ] T009 As part of the implementation PR, archive the spec: `git mv specs/035-folder-context-menu specs/archive/035-folder-context-menu` and set its **Status** to `Archived`
+- [x] T008 Run `npm run lint`, `npm run typecheck`, `npm test`, and `npm run test:e2e`; all four must pass (e2e covers regression only — no renderer changes, per spec Assumptions)
+- [x] T009 As part of the implementation PR, archive the spec: `git mv specs/035-folder-context-menu specs/archive/035-folder-context-menu` and set its **Status** to `Archived`
 - [ ] T010 Run the manual verification matrix in quickstart.md against built artifacts (Windows NSIS install/uninstall, Scoop install/uninstall, macOS hand-off routes, Linux AppImage ensure/open/remove/move/delete) and record outcomes; automated gates in T008 do not substitute for this (spec Assumptions)
 
 ---

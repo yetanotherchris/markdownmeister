@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-21
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "I want to create a new spec, which adds a new Windows Explorer option that mimics the 'Open in Terminal' or 'Open with Code' functionality, so folders can be opened in markdownmeister using this right click/context menu option. If Mac OS supports this, or Linux, then those too. Uninstalling should also ensure it removes these options from the context menu, and also removes 'open with' too"
 
