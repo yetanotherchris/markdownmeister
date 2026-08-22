@@ -1,4 +1,4 @@
-# Feature Specification: Project Website
+# Feature Specification: GitHub Pages Site
 
 **Feature Branch**: `040-github-pages-site`
 
@@ -23,7 +23,7 @@ A person who has never heard of MarkdownMeister visits the project's GitHub Page
 1. **Given** the published site URL, **When** a visitor loads the page, **Then** they see a header containing the product name, a download button, a GitHub icon linking to `https://github.com/yetanotherchris/markdownmeister`, and the current released version.
 2. **Given** the download button, **When** activated by any visitor on any platform, **Then** it opens the repository's latest-release location, where the current installers are listed.
 3. **Given** the page body, **When** a visitor scrolls past the header, **Then** a large application screenshot forms the dominant hero region, followed by a bulleted list of the product's features.
-4. **Given** a new version is released to the repository, **When** a visitor loads the page afterwards, **Then** the displayed version reflects that latest release without any manual edit to the page.
+4. **Given** a new version is released to the repository, **When** a visitor loads the page afterwards and the release lookup succeeds, **Then** the displayed version reflects that release without any manual edit to the page; if the lookup cannot complete, **Then** the deploy-time version is shown instead with no error.
 
 ---
 
@@ -83,7 +83,7 @@ The site lives as static sources inside the repository (under `docs/site`), and 
 - **FR-007**: Styling MUST use Tailwind CSS utility classes (user-mandated) within a deliberately minimal palette: white-anchored light presentation and a neutral equivalent dark presentation selected by the visitor's system appearance preference, matching the restraint of the product itself; no decorative animation.
 - **FR-008**: The page MUST be responsive across phone through desktop widths and MUST follow semantic HTML practices: one top-level heading, descriptive alt text for the screenshot, keyboard-operable links and button, visible focus indicators.
 - **FR-009**: The page MUST NOT load third-party analytics, tracking, advertising scripts, or external fonts; external requests are limited to the release-metadata lookup and assets served with the page itself.
-- **FR-010**: All navigation targets (download, repository) MUST open as standard same-tab navigations unless explicitly marked otherwise; nothing on the page performs actions beyond navigation and the version lookup.
+- **FR-010**: All navigation targets (download, repository) MUST open as standard same-tab navigations; nothing on the page performs actions beyond navigation and the version lookup.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -98,7 +98,7 @@ The site lives as static sources inside the repository (under `docs/site`), and 
 ### Measurable Outcomes
 
 - **SC-001**: After 100% of merges touching `docs/site`, the live page reflects those changes with zero manual publishing steps, and failed deployments are visible in repository checks while the prior page keeps serving.
-- **SC-002**: In 100% of post-release checks, the version displayed equals the repository's latest published release version.
+- **SC-002**: In 100% of post-release checks where the view-time release lookup succeeds, the version displayed equals the repository's latest published release version; in 100% of checks where the lookup fails, the page displays its deploy-time version with no error shown.
 - **SC-003**: In 100% of tested combinations of light/dark appearance and phone/tablet/desktop widths, all required elements render correctly with no overlap, clipping, or unreadable contrast.
 - **SC-004**: Network inspection shows zero third-party tracking/analytics/advertising/font requests across 100% of page loads.
 - **SC-005**: Every required element from FR-002/FR-004/FR-005/FR-006 is present and functional on the first public deployment (verified once against the checklist).
