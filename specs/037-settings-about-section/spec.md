@@ -63,7 +63,7 @@ The repository URL behaves like a link: activating it opens the repository in th
 - **FR-006**: The revision identifier MUST be user-selectable and copyable in full.
 - **FR-007**: Version and revision values MUST come from build-time metadata embedded in the application; when such metadata is absent (development runs), the area MUST show an explicit development-build placeholder instead of incorrect values.
 - **FR-008**: The About area MUST contain no adjustable settings; its presence MUST NOT change the staged-save behaviour, validation, or layout behaviour of the other areas, and closing the dialog after viewing it MUST never prompt about unsaved changes.
-- **FR-009**: All displayed values MUST be consistent with what the release artifacts report for the same build — a user comparing the About panel against the published release must never find a contradiction.
+- **FR-009**: All displayed values MUST be consistent with the published release for the same build: the version matches the release's published version, and the revision identifier matches the source revision that release's tag identifies — a user comparing the About panel against the release must never find a contradiction.
 
 ### Key Entities *(include if feature involves data)*
 

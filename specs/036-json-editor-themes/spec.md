@@ -46,7 +46,7 @@ Each theme file contains two colour sets inside it: one for light appearance and
 
 ### User Story 3 - Customising a theme means editing its file (Priority: P1)
 
-The colour pickers and custom-colour controls disappear from the settings dialog. A user who wants different colours edits the theme file directly — changing tokens under the light or dark node — and sees the result the next time themes are read. Nothing about the previous version's customisation is lost in the move: anyone whose stored configuration contained hand-picked colours finds them preserved as a selectable theme file automatically created on first run after upgrading.
+The settings dialog's display-only Custom state disappears, and the configuration-file colour customisation introduced by spec 023 is withdrawn: theme files become the single way to define or change an editor theme's appearance. A user who wants different colours edits a theme file directly — changing tokens under the light or dark node — and sees the result the next time themes are read. Nothing about the previous version's customisation is lost in the move: anyone whose stored configuration contained hand-picked colours finds them preserved as a selectable theme file automatically created on first run after upgrading.
 
 **Why this priority**: This completes "move the json out": files become the single source of truth for theme appearance. Removing the parallel mechanism keeps one mental model, and migration protects existing users from silent loss of their customisation.
 
@@ -54,7 +54,7 @@ The colour pickers and custom-colour controls disappear from the settings dialog
 
 **Acceptance Scenarios**:
 
-1. **Given** the settings dialog's theme area after this change, **When** the user inspects it, **Then** there are no per-token colour pickers, no custom-colour controls, and no way to alter a theme's colours from within the dialog — only theme selection.
+1. **Given** the settings dialog's theme area after this change, **When** the user inspects it, **Then** there is no way to alter a theme's colours from within the dialog: the area offers selection among discovered themes only, with no Custom entry and no custom-colour state.
 2. **Given** a valid theme file with edited colour values, **When** the user reopens settings (no application restart), **Then** the theme offered and applied reflects the edited values.
 3. **Given** a pre-upgrade configuration storing colours that match no default theme (a customised theme), **When** the new version runs for the first time, **Then** a theme file containing those exact colours is created automatically and appears as a selectable theme, in both appearances, looking identical to what the user had before.
 4. **Given** a pre-upgrade configuration storing a default preset, **When** the new version runs for the first time, **Then** no extra migration file is created beyond the defaults and the stored selection resolves to the corresponding file.
@@ -112,15 +112,15 @@ Theme files are inputs the application does not control, so a broken one — inv
 
 ### Functional Requirements
 
-- **FR-001**: The application MUST store editor theme definitions as one file per theme inside a `themes` folder within the application's configuration directory; no theme definitions MAY remain embedded in the application for runtime use.
+- **FR-001**: The application MUST store editor theme definitions as one file per theme inside a `themes` folder within the application's configuration directory; no discoverable or selectable theme MAY be defined anywhere else. One exception exists: a single built-in emergency appearance (equivalent to today's default theme), never listed or selectable, used ONLY as the fail-safe required when no valid theme resolves (FR-013).
 - **FR-002**: On first run after install or upgrade, the five default themes MUST exist as files named `rustic.json`, `rustic-serif.json`, `scholarly.json`, `monotone.json`, `monotone-serif.json`, preserving today's names, typeface choices, and rendered colours.
 - **FR-003**: Each theme file MUST contain two colour sets keyed by appearance — one for light and one for dark — and each set MUST contain all six curated colour tokens used by the editor today; both sets are mandatory; a file missing either is invalid.
 - **FR-004**: When resolving a theme's colours, the application MUST apply the set matching the current effective application appearance, and MUST re-resolve when the appearance changes so switching light/dark updates the editor immediately without restart or re-selection.
 - **FR-005**: The application MUST discover every valid theme file directly inside the `themes` folder and offer each, identified by its file name (without extension), in the settings dialog's theme area alongside the others, in a stable order.
 - **FR-006**: Selecting a theme MUST persist across restarts; the stored selection MUST reference the theme by name such that a file with that name being present again restores the selection.
 - **FR-007**: Missing default theme files MUST be restored (recreated with shipped content) at startup; files that exist — default or user-created — MUST NEVER be overwritten or rewritten by the application during discovery, selection, or upgrade.
-- **FR-008**: The settings dialog MUST NOT offer per-colour customisation controls; editing a theme's colours MUST be possible only by editing its file.
-- **FR-009**: On first run after upgrading from the previous version, a stored configuration containing colours that match no default theme MUST be migrated into an automatically created theme file holding those exact colours in both appearance sets; a stored default-preset selection MUST resolve to the corresponding file with no duplicate migration artifacts.
+- **FR-008**: The settings dialog's theme area MUST offer only selection among discovered themes; editing a theme's colours MUST be possible only by editing its file. The configuration-file custom-colour mechanism and the display-only Custom state introduced by spec 023 MUST be withdrawn.
+- **FR-009**: On first run after upgrading from the previous version, matching stored configuration against default themes MUST consider both colours and the stored typeface choice (mirroring spec 023's detection), because some default pairs share identical palettes and differ only by typeface. A stored configuration whose combination matches no default theme MUST be migrated into an automatically created theme file holding those exact colours in both appearance sets AND the stored typeface choice; a stored default-preset selection MUST resolve to the file for its exact colours-and-typeface combination, with no duplicate migration artifacts.
 - **FR-010**: Theme files MUST be validated before use; a file that fails validation (syntactically invalid, structurally incomplete, wrong types, invalid colour values) MUST be excluded from discovery, MUST NOT affect any other theme or the application's stability, and its rejection MUST be indicated quietly (never modally).
 - **FR-011**: Discovery MUST consider only regular files lying directly inside the `themes` folder; links or indirections pointing outside the configuration directory MUST NOT be followed, and nothing outside that folder MAY be read as a theme. All reading and validation MUST happen in the trusted part of the application.
 - **FR-012**: The theme list MUST be refreshed when the settings dialog opens and at application startup, so file edits take effect no later than reopening settings, without requiring a restart.
@@ -144,7 +144,7 @@ Theme files are inputs the application does not control, so a broken one — inv
 - **SC-002**: In 100% of appearance-switch tests across all default themes, the editor's colours follow the switch immediately (under one second, no restart): Monotone visibly changes, static defaults visibly stay.
 - **SC-003**: A theme colour change made by editing a file is reflected in the applied editor after at most: save file + reopen settings. Zero restarts required in 100% of tested edits.
 - **SC-004**: In 100% of adversarial-file tests (malformed JSON, missing node, missing/invalid tokens, symlinks out of the config directory, binary junk), the application starts, valid themes work, invalid ones are excluded, and no modal error appears.
-- **SC-005**: In 100% of upgrade-migration tests, pre-upgrade customised colours are available post-upgrade as a selectable theme with byte-identical rendered colours, and pre-upgrade default selections map to their files with no duplicates created.
+- **SC-005**: In 100% of upgrade-migration tests, pre-upgrade customised colours are available post-upgrade as a selectable theme whose stored colour values are identical to the pre-upgrade configuration, and pre-upgrade default selections map to their exact colours-and-typeface files with no duplicates created.
 - **SC-006**: In 100% of deletion/fallback tests, deleting the selected theme results in a repaired default selection with zero error dialogs and zero data loss.
 
 ## Clarifications
@@ -152,12 +152,12 @@ Theme files are inputs the application does not control, so a broken one — inv
 ### 2026-08-22 (during specification)
 
 - **File structure (user direction)**: Every theme file carries explicit light and dark nodes, each holding that variant's colours. This generalises the previous special case (only Monotone followed appearance) to all themes; defaults that previously looked static ship with identical light and dark sets so their rendered behaviour is unchanged.
-- **Scope confirmed — user-extensible**: Users may add themes by adding files and customise themes only by editing files. The in-dialog colour pickers (spec 023) are withdrawn; there is no second customisation path.
+- **Scope confirmed — user-extensible**: Users may add themes by adding files and customise themes only by editing files. Spec 023's customisation mechanism (hand-edited configuration colours surfaced as a display-only Custom state in the dialog) is withdrawn; there is no second customisation path.
 - **Roster confirmed**: The five existing theme names are kept (`rustic`, `rustic-serif`, `scholarly`, `monotone`, `monotone-serif`). Names like `default-dark` / `academic` were illustrative examples of the one-file-per-name convention, not a rename mandate.
 
 ## Assumptions
 
-- **Naming**: A theme's identity and display name derive from its file name minus extension. There is no separate name property inside the file; renaming a theme means renaming its file.
+- **Naming**: A theme's identity and display name derive from its file name minus extension. There is no separate name property inside the file; renaming a theme means renaming its file. Settings render the stem verbatim (`rustic-serif`), which intentionally replaces today's title-case labels ("Rustic Serif"); if humanised rendering is wanted, it can be added at planning time without changing this contract.
 - **Unknown properties**: Extra unknown keys in a theme file are ignored rather than rejected, allowing forward-compatible additions.
 - **Refresh timing**: Discovery happens at startup and when the settings dialog opens. No live file watching is required; a file saved mid-dialog is picked up on the next open. (Live watching could be added later without changing this contract.)
 - **Ordering**: Themes are listed alphabetically by name; the five defaults therefore appear in alphabetical position among user themes, not grouped separately.

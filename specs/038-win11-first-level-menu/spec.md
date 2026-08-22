@@ -56,6 +56,7 @@ Users who install through the Windows installer, portable zip, or Scoop see no c
 1. **Given** an NSIS-installer, zip, or Scoop installation on Windows 11, **When** the user right-clicks a folder, **Then** the classic "Open in MarkdownMeister" entry remains available (via "Show more options", per spec 035) and functions.
 2. **Given** both a Store installation and a classic-channel installation on one machine, **When** the user right-clicks a folder, **Then** both placements work independently and neither interferes with the other.
 3. **Given** a machine where only the Store build is installed, **When** the user consults the registry-based registration, **Then** nothing from the installer/Scoop scripts is present — each channel registers only itself.
+4. **Given** Store and installer builds installed side by side on Windows 11, **When** the user opens "Show more options", **Then** any identically labelled classic entries coexist, each works independently, and uninstalling either build removes exactly its own.
 
 ---
 
@@ -114,18 +115,18 @@ The component that powers the first-level entry runs inside Explorer's process. 
 - **FR-005**: The first-level entry MUST work when the application is closed (cold launch into the folder) and when it is already running (routing to the running instance), matching spec 035's FR-003/FR-004 semantics.
 - **FR-006**: The entry label MUST derive from the single product display name ("Open in MarkdownMeister") and carry the application icon, consistent with spec 035 FR-011; no differently spelled variants may exist anywhere.
 - **FR-007**: Non-Store channels (NSIS installer, portable zip, Scoop) MUST continue to register the classic-menu entry per specs 006/035, completely unchanged; these channels MUST NOT receive the native shell-extension component or any new registration.
-- **FR-008**: When more than one distribution channel is installed on one machine, each channel's entries MUST work independently, and removing one channel MUST remove only that channel's registrations.
-- **FR-009**: Uninstalling the Store build MUST remove the first-level entry completely, leaving no dead entries in any Explorer view, and MUST NOT affect other applications' entries — the same standard spec 035 FR-008 sets for the classic channels.
+- **FR-008**: When more than one distribution channel is installed on one machine, each channel's entries MUST work independently, and removing one channel MUST remove only that channel's registrations. Where both channels register identically labelled classic entries (the Store build on a system without the modern menu alongside an installer install), both entries may coexist under the classic menu; each MUST work, and neither may break the other.
+- **FR-009**: Uninstalling the Store build MUST remove the first-level entry completely, leaving no dead entries in any Explorer view, and MUST NOT affect other applications' entries — the same standard spec 035 FR-008/FR-009 set for the classic channels.
 - **FR-010**: Updates delivered through the Store MUST leave the first-level entry present, correctly labelled, and launching the updated version.
 - **FR-011**: Failures of the shell-extension component MUST be contained: a faulting, missing, or corrupted component MUST NEVER crash, hang, or degrade Explorer or any other application's context-menu entries; the worst permitted outcome is the MarkdownMeister entry being absent until repair or reinstall.
 - **FR-012**: The shell-extension component MUST do nothing beyond handing the chosen folder to the application: no filesystem browsing, no reading of folder contents, and no persistence of observed paths. All path validation remains inside the trusted application process, preserving Principle II.
-- **FR-013**: On Windows versions or configurations where the modern first-level menu is unavailable, a Store installation MUST still offer folder opening through the classic mechanism so the capability exists on every platform the channel supports.
+- **FR-013**: On Windows versions or configurations where the modern first-level menu is unavailable, a Store installation MUST still offer folder opening through the classic mechanism so the capability exists on every platform the channel supports. That mechanism is the same registry-based registration used by the installer channels (specs 006/035): the Store package MUST register its own classic verb where needed, without touching registrations owned by other channels.
 
 ### Key Entities *(include if feature involves data)*
 
 - **Store package**: The MSIX-distributed build carrying trusted package identity obtained from Microsoft's own signing; the only artefact through which the modern-menu integration ships.
 - **Shell-extension component**: The native in-process module Explorer loads to present the first-level entry; strictly a hand-off relay between the shell and the application.
-- **First-level folder action**: The modern-menu presentation of "Open in MarkdownMeISTER" for folders, distinct from — but behaviourally identical to — the classic registry verb.
+- **First-level folder action**: The modern-menu presentation of "Open in MarkdownMeister" for folders, distinct from — but behaviourally identical to — the classic registry verb.
 - **Channel isolation**: The principle that each distribution channel owns exactly its own registrations and cleanup, with no cross-channel interference.
 - **Hand-off payload**: The folder path transferred from shell to application; untrusted until validated by the application like any externally supplied path.
 
@@ -135,7 +136,7 @@ The component that powers the first-level entry runs inside Explorer's process. 
 
 - **SC-001**: In 100% of tests on up-to-date Windows 11 systems, a Store installation presents "Open in MarkdownMeister" in the initially shown folder context menu — zero tests require "Show more options".
 - **SC-002**: In 100% of behavioural-parity tests across cold start, running instance, dirty-tab, and adversarial-path scenarios, the first-level entry and the classic entry produce identical outcomes.
-- **SC-003**: In 100% of regression tests, installer, zip, and Scoop channels exhibit byte-for-byte the same registration behaviour as immediately before this feature.
+- **SC-003**: In 100% of regression tests, the installer, zip, and Scoop channels produce registration artifacts unchanged byte-for-byte from immediately before this feature.
 - **SC-004**: In 100% of uninstall tests, no MarkdownMeister first-level entry remains after Store removal (verified after an Explorer restart), and other applications' entries are unaffected.
 - **SC-005**: Across all injected-fault tests (missing files, corrupted component, exceptions during query/invocation), Explorer exhibits zero crashes or hangs attributable to the component.
 - **SC-006**: In 100% of Store-update tests, the entry survives the update and launches the post-update version.
