@@ -267,6 +267,7 @@ AGENTS.md                         This file
   - After addressing findings on an implementation PR, re-run `npm run lint`,
     `npm run typecheck`, `npm run test`, and `npm run test:e2e`; the PR is not
     ready to merge until all four are green.
+- **Never merge a pull request yourself.** When every requirement above is satisfied, post a short readiness summary (reviews addressed, gates green) and stop: the user merges the PR — in GitHub's UI, or by an explicit instruction in that session to merge that specific PR. Running `gh pr merge` (or any equivalent command) without that explicit per-PR instruction is a workflow violation, even when all reviews are addressed and every gate is green. This applies equally to implementation, documentation, and specification PRs.
 - **Archive the spec as part of the implementation PR.** When a spec's feature
   is fully implemented and its PR is opened, move the spec directory from
   `specs/<n>-<name>/` to `specs/archive/<n>-<name>/` in the same change (use
