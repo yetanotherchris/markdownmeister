@@ -35,9 +35,15 @@ files:
 # which has no installer to do it. It is shipped into the packaged app's
 # `resources/` (Scoop reaches it at `<dir>\resources\scripts\open-with.ps1`);
 # the Windows installer has its own NSIS registration and ignores it.
+#
+# Spec 039: the 512x512 product PNG ships alongside it so the main process can
+# hand the BrowserWindow its icon at runtime (src/main/index.ts resolves
+# ../../resources/icon.png relative to out/main, in dev and when packaged).
 extraResources:
   - from: scripts/open-with.ps1
     to: scripts/open-with.ps1
+  - from: resources/icon.png
+    to: icon.png
 
 # Every asset name carries product-version-os-arch (FR-005). The os token is
 # literal per platform so names read windows/macos/linux rather than electron-
@@ -45,6 +51,10 @@ extraResources:
 # token is the short prefix `markdownmeister` (spec 019).
 win:
   artifactName: markdownmeister-${version}-windows-${arch}.${ext}
+  # Spec 039: embedded into the exe (taskbar/title bar, Scoop shortcuts,
+  # installer.nsh verb icons) and defaulted into the NSIS installer/uninstaller
+  # UI. Validated: app-builder-lib requires a >=256 entry, which the ICO has.
+  icon: resources/icon.ico
   target:
     - target: nsis
       arch: [x64]
@@ -59,6 +69,9 @@ nsis:
 
 mac:
   artifactName: markdownmeister-${version}-macos-${arch}.${ext}
+  # Spec 039: bundled as Contents/Resources/icon.icns with CFBundleIconFile
+  # pointed at it, driving Dock/Finder/Applications/Cmd-Tab (research D1).
+  icon: resources/icon.icns
   target:
     - target: dmg
       arch: [x64, arm64]
@@ -88,6 +101,11 @@ linux:
   # resolves to "x86_64" for Linux, but the release contract names every asset
   # with os-arch tokens (linux-x64.AppImage, contracts/release.md §2).
   artifactName: markdownmeister-${version}-linux-x64.${ext}
+  # Spec 039: directory form - the whole NxN.png ladder is staged into the
+  # AppImage's usr/share/icons/hicolor/<size>/apps/ tree, and the largest is
+  # symlinked to .DirIcon + markdownmeister.png at the mount root, which are
+  # exactly the candidates src/main/linuxDesktopEntry.ts searches (research D2).
+  icon: resources/icons
   target:
     - target: AppImage
       arch: [x64]
