@@ -22,7 +22,7 @@
 
 - [ ] 4.1 `tests/main/iconAssets.test.ts` (NEW): pure-TS structural parsing of committed binaries — PNG IHDR ladder (exists, width/height, colour type 6), master.png exactly 1024×1024 RGBA; ICO header reserved=0/type=1/count=7, entries 16–256 with sane offsets/sizes and 256 encoded as dimension byte 0; ICNS magic/total-length/file-size match, chunks exactly ic07/ic08/ic09/ic10 with consistent lengths (FR-001, FR-002, FR-007; research D6)
 - [ ] 4.2 `tests/main/linuxDesktopEntry.test.ts` (EXTEND): icon-found install path against the electron-builder AppImage layout from research D2 (hicolor ladder + root icon + `.DirIcon`)
-- [ ] 4.3 `tests/e2e/product-icon.spec.ts` (NEW): main window exposes a non-null icon with sane dimensions via `getIcon()` through `electronApp.evaluate`
+- [ ] 4.3 `tests/e2e/product-icon.spec.ts`: DROPPED — `BrowserWindow.getIcon()` does not exist in Electron 43 (verified against electron.d.ts); window-icon rendering stays manual per quickstart.md (research D7)
 - [ ] 4.4 Append new/edited test files to the `format:check` list in package.json
 - [ ] 4.5 Commit `test(039)`
 

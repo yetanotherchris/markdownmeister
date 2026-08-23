@@ -138,7 +138,13 @@ is also what the unit tests assert: structure, not byte identity.
 - **Desktop entry**: extend the existing suite with the electron-builder
   AppImage layout from D2 as the fixture, proving the icon-found install path
   end-to-end against the real packaging output shape.
-- **E2E**: assert the main window exposes a non-null icon with sane dimensions
-  via `BrowserWindow.getIcon()` inside `electronApp.evaluate`. Honest caveat:
-  `getIcon()` reflects the window-icon option (D3), not the shell/taskbar
-  rendering, which remains manual verification (quickstart.md).
+- **E2E (attempted, dropped)**: the planned assertion — `BrowserWindow.getIcon()`
+  through `electronApp.evaluate` returning a non-null icon size — does not
+  exist in this Electron version: `node_modules/electron/electron.d.ts` has no
+  `getIcon` on `BrowserWindow` (only `setIcon` on other classes), so the guard
+  in the draft spec always returned null. Dropped rather than asserted-vacuously.
+  The window icon wiring is instead exercised by every e2e launch (the option
+  is passed at construction) and visually by quickstart.md; an alternative like
+  `app.getFileIcon(process.execPath)` was rejected because under test the exe
+  is Electron's own binary, so it would return the framework icon and prove
+  nothing about our wiring.

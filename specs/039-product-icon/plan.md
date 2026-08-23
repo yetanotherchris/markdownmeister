@@ -16,7 +16,7 @@ Every installation currently shows Electron's default framework icon on every su
 
 **Storage**: Repository-tracked assets (`assets/icon/`, `resources/`) + one extraResources mapping so the runtime window icon exists inside packaged apps
 
-**Testing**: Vitest unit tests (binary structure parsing; AppImage-layout desktop-entry install path); Playwright e2e window-icon assertion; manual visual checklist per [quickstart.md](quickstart.md)
+**Testing**: Vitest unit tests (binary structure parsing; AppImage-layout desktop-entry install path); manual visual checklist per [quickstart.md](quickstart.md). The planned e2e window-icon assertion was dropped: `BrowserWindow.getIcon()` does not exist in Electron 43 (research D7)
 
 **Target Platform**: Windows 10/11 (NSIS installer + portable zip + Scoop), macOS 13+ (DMG/zip), Linux XDG desktops (AppImage)
 
@@ -63,7 +63,6 @@ src/main/index.ts            # EDIT: BrowserWindow icon option on win32/linux
 package.json                 # EDIT: append new files to format:check list
 tests/main/iconAssets.test.ts        # NEW: PNG ladder / ICO / ICNS structural parsing
 tests/main/linuxDesktopEntry.test.ts # EDIT: icon-found install path against the real AppImage layout
-tests/e2e/product-icon.spec.ts       # NEW: window icon non-null with sane dimensions
 ```
 
 **Structure Decision**: No new modules — the wiring is two declarative config surfaces plus one constructor option. Binary parsing lives only in tests; production code stays asset-agnostic.
