@@ -1,7 +1,10 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import type { EditorColors } from '../../shared/ipc-contract'
-import { DEFAULT_EDITOR_THEME_FILES, DEFAULT_EDITOR_THEME_STEMS } from '../../shared/editorThemeTokens'
+import {
+  DEFAULT_EDITOR_THEME_FILES,
+  DEFAULT_EDITOR_THEME_STEMS
+} from '../../shared/editorThemeTokens'
 import { atomicWrite } from '../fs/atomicWrite'
 import { MAX_THEME_FILE_BYTES, parseThemeFile, themeStemOf } from './validate'
 
@@ -62,10 +65,12 @@ function byName(a: { name: string }, b: { name: string }): number {
  *  entry per lowercased stem as the winner, and report every later duplicate
  *  as a loser. Pure so the rule is testable on case-insensitive filesystems,
  *  where both files cannot exist at once. */
-export function resolveCaseCollisions(candidates: {
-  fileName: string
-  stem: string
-}[]): { winners: { fileName: string; stem: string }[]; losers: string[] } {
+export function resolveCaseCollisions(
+  candidates: {
+    fileName: string
+    stem: string
+  }[]
+): { winners: { fileName: string; stem: string }[]; losers: string[] } {
   const winners: { fileName: string; stem: string }[] = []
   const losers: string[] = []
   const seen = new Map<string, { fileName: string; stem: string }>()

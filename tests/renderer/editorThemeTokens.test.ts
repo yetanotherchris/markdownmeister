@@ -142,7 +142,7 @@ describe('reserved names and emergency appearance', () => {
     expect(MIGRATED_CUSTOM_THEME_FILE).toBe('migrated-custom.json')
   })
 
-  it('falls back to today\'s default theme name and appearance (FR-001 exception)', () => {
+  it("falls back to today's default theme name and appearance (FR-001 exception)", () => {
     expect(DEFAULT_EDITOR_THEME_NAME).toBe('rustic')
     expect(EMERGENCY_EDITOR_THEME).toEqual({
       typeface: SANS_TYPEFACE,

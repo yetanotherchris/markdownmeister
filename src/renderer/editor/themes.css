@@ -39,8 +39,10 @@
   --crepe-color-hover: #f9ecdf;
   --crepe-color-selected: #ede0d4;
   --crepe-color-inline-area: #e4d8cc;
-  --crepe-font-default: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
-  --crepe-font-title: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --crepe-font-default:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --crepe-font-title:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
 }
 
 .app-container[data-editor-theme='rustic-serif'] .milkdown {
@@ -72,8 +74,16 @@
    serif themes. */
 .app-container[data-editor-theme='rustic-serif'] .milkdown .milkdown-top-bar,
 .app-container[data-editor-theme='monotone-serif'] .milkdown .milkdown-top-bar {
-  --crepe-font-default: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --crepe-font-default:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Noto Sans',
+    sans-serif;
 }
 
 .app-container[data-editor-theme='scholarly'] .milkdown {
@@ -129,8 +139,10 @@
   --crepe-color-hover: #e6e6e6;
   --crepe-color-selected: #cccccc;
   --crepe-color-inline-area: #e0e0e0;
-  --crepe-font-default: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
-  --crepe-font-title: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --crepe-font-default:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --crepe-font-title:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
 }
 
 /* Monotone, dark: white on black. */
@@ -152,12 +164,15 @@
   --crepe-color-hover: #262626;
   --crepe-color-selected: #333333;
   --crepe-color-inline-area: #1f1f1f;
-  --crepe-font-default: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
-  --crepe-font-title: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --crepe-font-default:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --crepe-font-title:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
 }
 
 /* Monotone Serif — identical two-tone schemes, Georgia serif body/headings
- * (FR-011, US4: same colors as Monotone, serif typeface). */.app-container[data-editor-theme='monotone-serif'][data-theme='light'] .milkdown {
+ * (FR-011, US4: same colors as Monotone, serif typeface). */
+.app-container[data-editor-theme='monotone-serif'][data-theme='light'] .milkdown {
   --crepe-color-background: #ffffff;
   --crepe-color-on-background: #000000;
   --crepe-color-surface: #ffffff;
@@ -227,13 +242,39 @@
   --crepe-color-primary: var(--mm-theme-accent, #805610);
   --crepe-color-inline-code: var(--mm-theme-code, #ba1a1a);
   --crepe-color-error: var(--mm-theme-code, #ba1a1a);
-  --crepe-font-default: var(--mm-theme-font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif);
-  --crepe-font-title: var(--mm-theme-font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif);
+  --crepe-font-default: var(
+    --mm-theme-font,
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Noto Sans',
+    sans-serif
+  );
+  --crepe-font-title: var(
+    --mm-theme-font,
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Noto Sans',
+    sans-serif
+  );
 }
 
 /* A user-created serif theme keeps the toolbar readable, exactly like the
  * serif presets above: the top bar re-declares the Inter stack. */
 .app-container[data-editor-theme][data-editor-serif='true'] .milkdown .milkdown-top-bar {
-  --crepe-font-default: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --crepe-font-default:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Noto Sans',
+    sans-serif;
 }

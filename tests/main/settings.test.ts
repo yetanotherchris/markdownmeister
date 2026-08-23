@@ -106,7 +106,7 @@ describe('loadSettingsFile', () => {
         settings: {
           sidebarWidth: 30,
           themeOverride: null,
-          explorerVisible: 'yes',
+          explorerVisible: 'yes'
         }
       })
     )
@@ -120,7 +120,7 @@ describe('loadSettingsFile', () => {
         settings: {
           sidebarWidth: 30,
           themeOverride: null,
-          explorerVisible: true,
+          explorerVisible: true
         }
       })
     )
@@ -168,7 +168,7 @@ describe('loadSettingsFile', () => {
         settings: {
           sidebarWidth: 30,
           themeOverride: null,
-          explorerVisible: true,
+          explorerVisible: true
         }
       })
     )
@@ -217,7 +217,7 @@ describe('loadSettingsFile', () => {
           settings: {
             sidebarWidth: 30,
             themeOverride: null,
-            explorerVisible: true,
+            explorerVisible: true
           }
         })
       )
@@ -296,7 +296,7 @@ describe('loadSettingsFile', () => {
         settings: {
           sidebarWidth: 30,
           themeOverride: null,
-          explorerVisible: true,
+          explorerVisible: true
         }
       })
     )
@@ -353,7 +353,7 @@ describe('loadSettingsFile', () => {
         settings: {
           sidebarWidth: 'wide',
           themeOverride: null,
-          explorerVisible: false,
+          explorerVisible: false
         }
       })
     )
@@ -505,7 +505,7 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
         settings: {
           sidebarWidth: 20,
           themeOverride: null,
-          explorerVisible: true,
+          explorerVisible: true
         }
       })
     )
@@ -686,9 +686,7 @@ describe('mergeSettingsPatch (review #27: authoritative in-memory merge)', () =>
 
   it('applies a valid editorTheme patch (any well-formed stem, spec 036)', () => {
     expect(mergeSettingsPatch(base, { editorTheme: 'monotone' }).editorTheme).toBe('monotone')
-    expect(mergeSettingsPatch(base, { editorTheme: 'my-midnight' }).editorTheme).toBe(
-      'my-midnight'
-    )
+    expect(mergeSettingsPatch(base, { editorTheme: 'my-midnight' }).editorTheme).toBe('my-midnight')
   })
 
   it('rejects an invalid editorTheme patch, keeping the current one', () => {
@@ -766,7 +764,7 @@ describe('markdown syntax options (spec 030)', () => {
         settings: {
           sidebarWidth: 30,
           themeOverride: null,
-          explorerVisible: true,
+          explorerVisible: true
         }
       })
     )

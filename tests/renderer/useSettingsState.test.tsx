@@ -41,16 +41,18 @@ function stubApi(): void {
 
 // jsdom has no matchMedia; `useEffectiveTheme` reads it (spec 013). A no-op
 // stub returning `matches: false` (light) is enough for the hook tests.
-window.matchMedia = window.matchMedia ?? (() => ({
-  matches: false,
-  media: '(prefers-color-scheme: dark)',
-  onchange: null,
-  addEventListener: () => {},
-  removeEventListener: () => {},
-  addListener: () => {},
-  removeListener: () => {},
-  dispatchEvent: () => false
-})) as unknown as typeof window.matchMedia
+window.matchMedia =
+  window.matchMedia ??
+  ((() => ({
+    matches: false,
+    media: '(prefers-color-scheme: dark)',
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false
+  })) as unknown as typeof window.matchMedia)
 
 let root: Root | null = null
 
@@ -119,7 +121,8 @@ describe('useSettingsState (spec 016)', () => {
     })
     expect(read().spellcheckEnabled).toBe(false)
     expect(getSettings().spellcheckEnabled).toBe(false)
-    const calls = (globalThis as unknown as { __apiCalls: { spellcheckEnabled?: boolean }[] }).__apiCalls
+    const calls = (globalThis as unknown as { __apiCalls: { spellcheckEnabled?: boolean }[] })
+      .__apiCalls
     expect(calls).toEqual([{ spellcheckEnabled: false }])
   })
 
@@ -142,7 +145,9 @@ describe('useSettingsState (spec 016)', () => {
     })
     expect(read().spellcheckLanguage).toBe('en-US')
     expect(getSettings().spellcheckLanguage).toBe('en-US')
-    const calls = (globalThis as unknown as { __apiCalls: { spellcheckLanguage?: SpellcheckLanguage | null }[] }).__apiCalls
+    const calls = (
+      globalThis as unknown as { __apiCalls: { spellcheckLanguage?: SpellcheckLanguage | null }[] }
+    ).__apiCalls
     expect(calls).toEqual([{ spellcheckLanguage: 'en-US' }])
   })
 
@@ -176,7 +181,9 @@ describe('useSettingsState (spec 016)', () => {
     })
     expect(read().fileOpenBehavior).toBe('new-tab')
     expect(getSettings().fileOpenBehavior).toBe('new-tab')
-    const calls = (globalThis as unknown as { __apiCalls: { fileOpenBehavior?: FileOpenBehavior }[] }).__apiCalls
+    const calls = (
+      globalThis as unknown as { __apiCalls: { fileOpenBehavior?: FileOpenBehavior }[] }
+    ).__apiCalls
     expect(calls).toEqual([{ fileOpenBehavior: 'new-tab' }])
   })
 
@@ -187,10 +194,22 @@ describe('useSettingsState (spec 016)', () => {
   })
 
   it('seeds the six markdown options from the cache with FR-013 defaults', () => {
-    updateSettings({ hardBreaks: false, strikethrough: true, tables: true, taskLists: true, math: true, autolink: true })
+    updateSettings({
+      hardBreaks: false,
+      strikethrough: true,
+      tables: true,
+      taskLists: true,
+      math: true,
+      autolink: true
+    })
     const { read } = renderHook()
     expect(read().markdownOptions).toEqual({
-      hardBreaks: false, strikethrough: true, tables: true, taskLists: true, math: true, autolink: true
+      hardBreaks: false,
+      strikethrough: true,
+      tables: true,
+      taskLists: true,
+      math: true,
+      autolink: true
     })
   })
 
@@ -201,11 +220,19 @@ describe('useSettingsState (spec 016)', () => {
     })
     expect(read().markdownOptions.strikethrough).toBe(false)
     expect(getSettings().strikethrough).toBe(false)
-    const calls = (globalThis as unknown as { __apiCalls: { strikethrough?: boolean }[] }).__apiCalls
+    const calls = (globalThis as unknown as { __apiCalls: { strikethrough?: boolean }[] })
+      .__apiCalls
     // The handler persists the FULL six-field snapshot, not just the patch.
-    expect(calls).toEqual([{
-      hardBreaks: false, strikethrough: false, tables: true, taskLists: true, math: true, autolink: true
-    }])
+    expect(calls).toEqual([
+      {
+        hardBreaks: false,
+        strikethrough: false,
+        tables: true,
+        taskLists: true,
+        math: true,
+        autolink: true
+      }
+    ])
   })
 })
 

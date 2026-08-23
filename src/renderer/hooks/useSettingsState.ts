@@ -1,19 +1,13 @@
 import { useCallback, useState } from 'react'
 import { updateSettings, getSettings } from '../state/settings'
-import type {
-  SpellcheckLanguage,
-  FileOpenBehavior
-} from '../../shared/ipc-contract'
+import type { SpellcheckLanguage, FileOpenBehavior } from '../../shared/ipc-contract'
 import {
   useEffectiveTheme,
   themeChoiceFromOverride,
   themeOverrideFromChoice
 } from './useEffectiveTheme'
 import type { ThemeChoice } from './useEffectiveTheme'
-import {
-  getEditorThemes,
-  loadEditorThemesFromMain
-} from '../state/editorThemes'
+import { getEditorThemes, loadEditorThemesFromMain } from '../state/editorThemes'
 import type { EditorThemeDefinition } from '../../shared/ipc-contract'
 import { instancePool } from '../editor/instancePool'
 import { reconfigureAll } from '../editor/markdownSyntaxRuntime'

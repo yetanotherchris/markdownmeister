@@ -32,10 +32,7 @@ export async function loadEditorThemesFromMain(): Promise<void> {
 }
 
 /** Pure (FR-004): the palette matching the effective appearance. */
-export function paletteForMode(
-  theme: EditorThemeDefinition,
-  mode: 'light' | 'dark'
-): EditorColors {
+export function paletteForMode(theme: EditorThemeDefinition, mode: 'light' | 'dark'): EditorColors {
   return mode === 'dark' ? theme.dark : theme.light
 }
 
@@ -62,5 +59,9 @@ export function resolveEditorAppearance(
       typeface: EMERGENCY_EDITOR_THEME.typeface
     }
   }
-  return { definitionName: definition.name, palette: paletteForMode(definition, mode), typeface: definition.typeface }
+  return {
+    definitionName: definition.name,
+    palette: paletteForMode(definition, mode),
+    typeface: definition.typeface
+  }
 }
