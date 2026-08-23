@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-22
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "I want the themes to be in a separate json file (move the json out, into these). there should be a folder in the config directory called 'themes' and each theme name in this folder, e.g. 'default-dark.json' and 'academic.json'. The JSON should have a dark and light JSON node, in the file. Each as the colours for each dark and light theme."
 
