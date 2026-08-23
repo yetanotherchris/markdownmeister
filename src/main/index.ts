@@ -13,6 +13,7 @@ import { ensureThemesDirectory, seedMissingDefaultThemes } from './themes/store'
 import { migrateLegacyCustomTheme } from './themes/migration'
 import { resolveLaunchBounds, trackWindowState, flushWindowState } from './windowState'
 import { reconcileExplorerClosedWithoutWorkspace } from './workspaceExplorerState'
+import { windowIconPath } from './windowIcon'
 import { legacyConfigPath, universalConfigPath, migrateConfigFile } from './configPath'
 import { initOsOpenHost, setOsOpenWindow, clearOsOpenWindow } from './osOpenHost'
 import {
@@ -48,6 +49,12 @@ function createWindow(): void {
     width: bounds.width,
     height: bounds.height,
     show: false,
+    icon: windowIconPath({
+      platform: process.platform,
+      isPackaged: app.isPackaged,
+      resourcesPath: process.resourcesPath,
+      mainDir: __dirname
+    }),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

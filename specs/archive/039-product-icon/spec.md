@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-22
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "I want the editor to have an icon. It will need gemini nano banana or grok to produce this. It should be the correct type e.g. PNG and correct dimensions for an icon."
 
