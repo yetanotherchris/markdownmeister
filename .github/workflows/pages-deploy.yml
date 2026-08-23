@@ -1,0 +1,56 @@
+name: Deploy site to GitHub Pages
+
+# Publishes docs/site on merges to main. The repo's docs/ root holds project
+# documentation, so branch-based "/docs" Pages is not an option (spec 040 D1).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/site/**'
+      - '.github/workflows/pages-deploy.yml'
+
+permissions:
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy docs/site
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Compute deploy version
+        id: version
+        run: |
+          VERSION="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          if [ -z "$VERSION" ]; then
+            VERSION="$(npm pkg get version | tr -d '"')"
+          fi
+          echo "version=${VERSION#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Stamp deploy version into the page
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          sed -i "s/__MM_DEPLOY_VERSION__/${VERSION}/g" docs/site/index.html
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
