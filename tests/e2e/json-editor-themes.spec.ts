@@ -122,9 +122,9 @@ test('US1 a fresh start seeds exactly the five default theme files', async () =>
   // Unedited defaults keep their exact pre-036 derived tones (plan D5, review
   // finding 2026-08-23): the derived-tone layer must not override the preset
   // blocks' hand-tuned values with coarser six-token mappings.
-  await expect.poll(canvasTokenNamed('--crepe-color-surface-low')).toBe('#fcefce')
-  await expect.poll(canvasTokenNamed('--crepe-color-on-surface')).toBe('#201b13')
-  await expect.poll(canvasTokenNamed('--crepe-color-on-surface-variant')).toBe('#4f4539')
+  await expect.poll(() => canvasTokenNamed('--crepe-color-surface-low')).toBe('#fcefce')
+  await expect.poll(() => canvasTokenNamed('--crepe-color-on-surface')).toBe('#201b13')
+  await expect.poll(() => canvasTokenNamed('--crepe-color-on-surface-variant')).toBe('#4f4539')
 })
 
 test('US1 selecting a theme persists across a relaunch with the same configDir', async () => {
