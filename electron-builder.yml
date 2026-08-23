@@ -36,9 +36,11 @@ files:
 # `resources/` (Scoop reaches it at `<dir>\resources\scripts\open-with.ps1`);
 # the Windows installer has its own NSIS registration and ignores it.
 #
-# Spec 039: the 512x512 product PNG ships alongside it so the main process can
-# hand the BrowserWindow its icon at runtime (src/main/index.ts resolves
-# ../../resources/icon.png relative to out/main, in dev and when packaged).
+# Spec 039: the 512x512 product PNG ships alongside them so the main process
+# can hand the BrowserWindow its icon at runtime. When packaged, this mapping's
+# destination (<resources>/icon.png) is what src/main/index.ts resolves via
+# process.resourcesPath (src/main/windowIcon.ts); in dev it resolves the
+# dev-tree resources/icon.png relative to out/main.
 extraResources:
   - from: scripts/open-with.ps1
     to: scripts/open-with.ps1
