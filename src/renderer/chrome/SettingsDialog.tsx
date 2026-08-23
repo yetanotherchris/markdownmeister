@@ -358,11 +358,7 @@ export default function SettingsDialog({
                   </label>
                 </fieldset>
               </>
-            ) : area === 'about' ? (
-              // Spec 037 FR-008: purely read-only rows — no staged state here,
-              // so the Save button's draftEditorTheme commit is untouched.
-              <AboutArea />
-            ) : (
+            ) : area === 'theme' ? (
               <>
                 <fieldset className="settings-fieldset">
                   <legend className="settings-legend">Theme</legend>
@@ -412,6 +408,12 @@ export default function SettingsDialog({
                   )}
                 </fieldset>
               </>
+            ) : (
+              // Spec 037 FR-008: purely read-only rows — no staged state here,
+              // so the Save button's draftEditorTheme commit is untouched.
+              // Terminal fallback so the branch chain mirrors SETTINGS_AREAS
+              // nav order: General → Theme → Markdown → About (standards §4).
+              <AboutArea />
             )}
           </div>
         </div>

@@ -2,6 +2,9 @@ import { test, expect, ElectronApplication, Page } from '@playwright/test'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
+// The electron-free policy module (research R3) is importable anywhere; the
+// suites share its constant instead of re-declaring the URL independently.
+import { REPOSITORY_URL } from '../../src/main/buildInfo'
 import { closeAppSafely, launchApp, messageBoxCallCount, openSettingsDialog } from './launch'
 
 /**
@@ -12,8 +15,6 @@ import { closeAppSafely, launchApp, messageBoxCallCount, openSettingsDialog } fr
  * close (FR-008), and the development placeholder forced through the
  * unpackaged MM_BUILD_COMMIT seam (FR-007, research R4).
  */
-
-const REPOSITORY_URL = 'https://github.com/yetanotherchris/markdownmeister'
 
 let app: ElectronApplication
 let window: Page

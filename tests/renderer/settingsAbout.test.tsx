@@ -1,6 +1,9 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+// Shared constant from the electron-free policy module (research R3) instead
+// of a suite-local redeclaration that could silently drift.
+import { REPOSITORY_URL } from '../../src/main/buildInfo'
 import SettingsDialog, { SETTINGS_AREAS } from '../../src/renderer/chrome/SettingsDialog'
 import type { BuildInfo, MarkdownSyntaxOptions } from '../../src/shared/ipc-contract'
 
@@ -10,8 +13,6 @@ import type { BuildInfo, MarkdownSyntaxOptions } from '../../src/shared/ipc-cont
  * can neither stage anything nor disturb the editor-theme draft the dialog
  * already manages (statelessness both ways).
  */
-
-const REPOSITORY_URL = 'https://github.com/yetanotherchris/markdownmeister'
 
 let currentBuildInfo: BuildInfo
 

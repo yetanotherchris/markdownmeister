@@ -14,8 +14,9 @@ export const REPOSITORY_URL = 'https://github.com/yetanotherchris/markdownmeiste
 
 // Replaced textually by electron-vite's `define` at build time
 // (electron.vite.config.ts main.define): JSON.stringify(resolvedRevision),
-// i.e. a JSON string literal or the literal `null`. Absent under vitest.
-declare const __BUILD_COMMIT__: string | null
+// i.e. a JSON string literal or the literal `null`. Absent (undefined) under
+// vitest, which embeddedRevision()'s typeof guard degrades to `null`.
+declare const __BUILD_COMMIT__: string | null | undefined
 
 /**
  * Build-time policy (research R2): an explicit MM_BUILD_COMMIT wins verbatim,
