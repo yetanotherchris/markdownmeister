@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-22
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "currently the 'open in markdownmeister' for a folder only appears for 'show more options' context menu in windows 11. I want it to be in the initial context menu items"
 
@@ -149,6 +149,10 @@ The component that powers the first-level entry runs inside Explorer's process. 
 - **Spec 005 untouched**: Direct-download channels remain unsigned; this feature adds a signed *channel* rather than amending the no-signing decision. SmartScreen reputation for the existing channels is unchanged.
 - **The native component is unavoidable**: every route to the first-level menu runs a shell-extension component inside Explorer; signing solves trust/identity only. Its containment requirements are therefore first-class (US5, FR-011).
 - **Scope**: The folder action only. File (.md/.markdown) actions stay classic-menu-only (spec 006); promoting them can be a follow-up if wanted.
+
+### 2026-08-23 (implementation phase)
+
+- **FR-013 deferral (scope reduction — maintainer sign-off REQUIRED)**: FR-013's in-package classic-mechanism fallback was NOT implemented in this phase. Research R5 found no manifest-only route: MSIX forbids install-time script hooks, and manifest-declared classic verbs attach only to file types with no Directory equivalent. The fallback is deferred to a follow-up that delivers it via a sparse companion package owning its own classic verb registration and cleanup (tracked as unchecked T014 in tasks.md; deviation recorded in plan.md Complexity Tracking 1). **Explicit maintainer sign-off on this deferral is REQUIRED before FR-013 may be considered satisfied**; until then this archived spec contains an unmet MUST and must not be treated as fully delivered on Windows versions without the modern menu.
 
 ## Assumptions
 

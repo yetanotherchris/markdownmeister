@@ -1,0 +1,6 @@
+LIBRARY MarkdownMeisterShellExtension
+; PRIVATE keeps the exports out of any import library — this DLL is loaded by
+; Explorer via COM activation, never linked against.
+EXPORTS
+  DllGetClassObject   PRIVATE
+  DllCanUnloadNow     PRIVATE

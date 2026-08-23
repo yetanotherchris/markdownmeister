@@ -71,6 +71,27 @@ export default tseslint.config(
     }
   },
   {
+    // electron-builder lifecycle hooks must be CommonJS modules (resolved via
+    // require by packager.js); Node globals are their entire surface.
+    files: ['scripts/**/*.cjs'],
+    languageOptions: {
+      globals: {
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+        process: 'readonly',
+        console: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly'
+      }
+    },
+    rules: {
+      'no-restricted-imports': 'off',
+      'no-restricted-globals': 'off',
+      '@typescript-eslint/no-require-imports': 'off'
+    }
+  },
+  {
     ignores: ['out/', 'node_modules/', 'dist/', 'build/', 'coverage/', '*.min.js']
   }
 )
