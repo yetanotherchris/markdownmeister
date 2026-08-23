@@ -13,6 +13,11 @@ import {
 } from './useEffectiveTheme'
 import type { ThemeChoice } from './useEffectiveTheme'
 import { presetFontFor, presetColorsFor } from '../../shared/editorThemePresets'
+import {
+  getEditorThemes,
+  loadEditorThemesFromMain
+} from '../state/editorThemes'
+import type { EditorThemeDefinition } from '../../shared/ipc-contract'
 import { instancePool } from '../editor/instancePool'
 import { reconfigureAll } from '../editor/markdownSyntaxRuntime'
 import type { MarkdownSyntaxOptions } from '../editor/markdownSyntaxOptions'
@@ -32,8 +37,12 @@ import type { MarkdownSyntaxOptions } from '../editor/markdownSyntaxOptions'
 export function useSettingsState(): {
   settingsOpen: boolean
   setSettingsOpen: (open: boolean) => void
-  editorTheme: EditorThemeName
+  /** Spec 036: the stored theme name (a theme-file stem). */
+  editorTheme: string
   handleEditorThemeChange: (theme: EditorThemeName) => void
+  /** Spec 036: the discovered editor theme files, refreshed on demand. */
+  editorThemes: EditorThemeDefinition[]
+  refreshEditorThemes: () => Promise<void>
   editorFont: 'serif' | 'sans-serif'
   editorColors: import('../../shared/ipc-contract').EditorColors | null
   spellcheckEnabled: boolean
@@ -51,7 +60,16 @@ export function useSettingsState(): {
   themeMode: 'light' | 'dark'
 } {
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [editorTheme, setEditorTheme] = useState<EditorThemeName>(getSettings().editorTheme)
+  const [editorTheme, setEditorTheme] = useState<string>(getSettings().editorTheme)
+  // Spec 036: the delivered theme definitions (preloaded by main.tsx); the
+  // settings dialog refreshes them on every open (FR-012).
+  const [editorThemes, setEditorThemes] = useState<EditorThemeDefinition[]>(
+    getEditorThemes().themes
+  )
+  const refreshEditorThemes = useCallback(async () => {
+    await loadEditorThemesFromMain()
+    setEditorThemes(getEditorThemes().themes)
+  }, [])
   const [editorFont, setEditorFont] = useState<'serif' | 'sans-serif'>(getSettings().editorFont)
   const [editorColors, setEditorColors] = useState<EditorColors | null>(getSettings().editorColors)
   const [spellcheckEnabled, setSpellcheckEnabled] = useState<boolean>(
@@ -180,6 +198,8 @@ export function useSettingsState(): {
     setSettingsOpen,
     editorTheme,
     handleEditorThemeChange,
+    editorThemes,
+    refreshEditorThemes,
     editorFont,
     editorColors,
     spellcheckEnabled,

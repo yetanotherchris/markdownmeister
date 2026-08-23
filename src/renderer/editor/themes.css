@@ -228,3 +228,40 @@
   --crepe-font-default: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
 }
+
+/*
+ * Spec 036: the FILE-DRIVEN theme layer. App.tsx resolves the stored theme
+ * name against the discovered definitions and feeds the six curated colour
+ * tokens + typeface of the effective appearance in as `--mm-theme-*` inline
+ * variables. This block maps them onto Crepe's variables with exactly the
+ * mapping the spec-023 custom block used (research E2). It MUST stay after
+ * the preset blocks above: equal specificity, so source order makes the
+ * delivered file values win — which for unedited defaults are identical to
+ * the base values, keeping rendering unchanged, while edits to any theme
+ * file override the mapped properties.
+ *
+ * The var() fallbacks ARE the FR-001 emergency appearance (today's default:
+ * the rustic palette + Inter), used when nothing resolves (the container
+ * then carries data-editor-theme="default", which no preset block matches).
+ */
+.app-container[data-editor-theme] .milkdown {
+  --crepe-color-background: var(--mm-theme-background, #fdf6e3);
+  --crepe-color-on-background: var(--mm-theme-foreground, #1f1b16);
+  --crepe-color-surface: var(--mm-theme-surface, #fdf3d9);
+  --crepe-color-surface-low: var(--mm-theme-surface, #fdf3d9);
+  --crepe-color-on-surface: var(--mm-theme-foreground, #1f1b16);
+  --crepe-color-on-surface-variant: var(--mm-theme-outline, #817567);
+  --crepe-color-outline: var(--mm-theme-outline, #817567);
+  --crepe-color-primary: var(--mm-theme-accent, #805610);
+  --crepe-color-inline-code: var(--mm-theme-code, #ba1a1a);
+  --crepe-color-error: var(--mm-theme-code, #ba1a1a);
+  --crepe-font-default: var(--mm-theme-font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif);
+  --crepe-font-title: var(--mm-theme-font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif);
+}
+
+/* A user-created serif theme keeps the toolbar readable, exactly like the
+ * serif presets above: the top bar re-declares the Inter stack. */
+.app-container[data-editor-theme][data-editor-serif='true'] .milkdown .milkdown-top-bar {
+  --crepe-font-default: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+}

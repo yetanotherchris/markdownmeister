@@ -38,6 +38,9 @@ import './chrome/chrome.css'
 import './editor/editor.css'
 import './editor/themes.css'
 import { resolveEditorTheme, fontStackFor } from '../shared/editorThemePresets'
+import type { EditorThemeName } from '../shared/ipc-contract'
+import { resolveEditorAppearance } from './state/editorThemes'
+import { isSerifTypeface } from '../shared/editorThemeTokens'
 
 const initialSession: EditingSession = {
   documents: [],
@@ -64,6 +67,8 @@ export default function App() {
     setSettingsOpen,
     editorTheme,
     handleEditorThemeChange,
+    editorThemes,
+    refreshEditorThemes,
     editorFont,
     editorColors,
     spellcheckEnabled,
@@ -85,8 +90,10 @@ export default function App() {
   // or Custom when the stored colours + font match no preset. The container's
   // data-editor-theme carries the preset name (driving themes.css) or 'custom';
   // a custom theme applies its six colour tokens + font stack inline.
+  // Transitional (spec 036 T009 removes this block): the stored value is now a
+  // theme-file name, so the legacy detection is fed it under its historical type.
   const resolvedEditorTheme = resolveEditorTheme({
-    editorTheme,
+    editorTheme: editorTheme as EditorThemeName,
     editorFont,
     editorColors
   })
@@ -104,6 +111,23 @@ export default function App() {
           '--mm-custom-font': fontStackFor(editorFont)
         } as React.CSSProperties)
       : undefined
+
+  // Spec 036: the file-driven theme layer. The stored name resolves against
+  // the discovered definitions; the matching appearance set feeds inline
+  // `--mm-theme-*` variables that themes.css maps onto Crepe's tokens (the
+  // generic layer wins over the retained default blocks by source order).
+  // An unresolved name renders today's default appearance and main repairs
+  // the stored selection (contracts/preload.md) — never an error.
+  const resolvedAppearance = resolveEditorAppearance(editorTheme, themeMode, editorThemes)
+  const fileThemeVars = {
+    '--mm-theme-background': resolvedAppearance.palette.background,
+    '--mm-theme-foreground': resolvedAppearance.palette.foreground,
+    '--mm-theme-accent': resolvedAppearance.palette.accent,
+    '--mm-theme-surface': resolvedAppearance.palette.surface,
+    '--mm-theme-outline': resolvedAppearance.palette.outline,
+    '--mm-theme-code': resolvedAppearance.palette.code,
+    '--mm-theme-font': resolvedAppearance.typeface
+  } as React.CSSProperties
 
   // Spec 020 (JS spellchecker): keep the shared runtime in sync with the
   // persisted settings, and load the user dictionary once on startup.
@@ -331,8 +355,9 @@ export default function App() {
       className="app-container"
       data-editor-theme={dataEditorTheme}
       data-theme={themeMode}
+      data-editor-serif={isSerifTypeface(resolvedAppearance.typeface) ? 'true' : 'false'}
       data-visual-code-highlighting={visualCodeHighlighting ? 'on' : 'off'}
-      style={editorThemeStyle}
+      style={{ ...editorThemeStyle, ...fileThemeVars }}
     >
       {/* Spec 010 (2026-08-05): one header row — chrome buttons + tabs. */}
       <div className="header-bar">
