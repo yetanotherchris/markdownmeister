@@ -1,0 +1,61 @@
+<!--
+Spec 038: manifest Extensions fragment injected by electron-builder's
+appx.customExtensionsPath into the generated AppxManifest.xml (inside
+<Application><Extensions>). Evidence for every declaration:
+specs/038-win11-first-level-menu/research.md R1/R2/R4.
+
+XML namespace prefixes are declared locally on these elements because the
+generated root <Package> does not predeclare them; that is valid XML and
+schema-neutral. The `desktop:` prefix used by ExecutionAlias IS predeclared on
+the generated root.
+
+Identity values (Identity Name/Publisher) are NOT set here — they come from
+the appx block in electron-builder.yml (placeholders until Partner Center
+assigns them; see docs/store-release.md).
+-->
+<com:Extension
+    xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
+    Category="windows.comServer">
+  <com:ComServer>
+    <com:SurrogateServer DisplayName="MarkdownMeister folder command handler">
+      <!-- CLSID must equal CLSID_OpenInMarkdownMeisterCommand in
+           native/shell-extension/src/ExplorerCommand.h. Path is relative to
+           the package root; electron-builder maps the app to `app\`. -->
+      <com:Class
+          Id="b86b8d21-9a47-4f7e-a2c5-3e1d9c6f08ab"
+          Path="app\resources\shell-extension\MarkdownMeisterShellExtension.dll"
+          ThreadingModel="STA" />
+    </com:SurrogateServer>
+  </com:ComServer>
+</com:Extension>
+<desktop4:Extension
+    xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
+    xmlns:desktop5="http://schemas.microsoft.com/appx/manifest/desktop/windows10/5"
+    Category="windows.fileExplorerContextMenus">
+  <desktop4:FileExplorerContextMenus>
+    <!-- Directory items ONLY (spec FR-002 scope: the folder action; file
+         actions stay classic-menu-only per spec 038 Clarifications).
+         desktop5:ItemType is REQUIRED here: the desktop4 schema restricts
+         @Type to "*" or ".<extension>" patterns, so folder types validate
+         only in the desktop5 revision (verified against vendor makeappx
+         during this phase; same shape as microsoft/terminal's Store manifest,
+         research R1). -->
+    <desktop5:ItemType Type="Directory">
+      <!-- Verb Id is schema-restricted to alphanumerics (no dots); the
+           display string comes from GetTitle, not this Id. -->
+      <desktop5:Verb Id="OpenInMarkdownMeister" Clsid="b86b8d21-9a47-4f7e-a2c5-3e1d9c6f08ab" />
+    </desktop5:ItemType>
+  </desktop4:FileExplorerContextMenus>
+</desktop4:Extension>
+<uap3:Extension
+    xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+    Category="windows.appExecutionAlias"
+    Executable="app\MarkdownMeister.exe"
+    EntryPoint="Windows.FullTrustApplication">
+  <uap3:AppExecutionAlias>
+    <!-- The hand-off launcher (contracts/handoff.md): materialises as
+         %LOCALAPPDATA%\Microsoft\WindowsApps\markdownmeister.exe. Must stay in
+         sync with executableName / kAliasFileName in ExplorerCommand.cpp. -->
+    <desktop:ExecutionAlias Alias="markdownmeister.exe" />
+  </uap3:AppExecutionAlias>
+</uap3:Extension>

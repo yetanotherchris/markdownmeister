@@ -57,6 +57,36 @@ win:
 nsis:
   include: scripts/installer.nsh
 
+# Spec 038: inject the built shell-extension DLL into win-unpacked before
+# packaging targets run. Silent no-op when native/shell-extension has not been
+# built, so NSIS/zip release artifacts stay byte-identical (SC-003).
+afterPack: scripts/copy-shell-extension.cjs
+
+# Spec 038 (FR-001/FR-002): Microsoft Store channel configuration. The appx
+# TARGET is intentionally NOT added to win.target above — Store packages are
+# built explicitly via `npx electron-builder --win appx --publish never`
+# (.github/workflows/build-store.yml), leaving every existing build unchanged.
+# IDENTITY PLACEHOLDERS: replace identityName and publisher with the exact
+# values Partner Center assigns when reserving the product name (docs/
+# store-release.md). Submission fails validation while they are placeholders.
+appx:
+  # Partner Center → Product setup → Package/Identity name (individual
+  # accounts: e.g. "12345YourName.MarkdownMeister"). Placeholder below.
+  identityName: ReplaceWithPartnerCenterIdentity.MarkdownMeister
+  # Partner Center → Product setup → Publisher (format "CN=<GUID>").
+  publisher: CN=00000000-0000-0000-0000-000000000000
+  publisherDisplayName: MarkdownMeister
+  displayName: MarkdownMeister
+  applicationId: MarkdownMeister
+  # Windows 10 2004 floor so the modern shell-extension declarations are
+  # schema-valid everywhere the package installs; tested ceiling matches the
+  # SDK electron-builder vendors its makeappx from (research R4).
+  minVersion: 10.0.19041.0
+  maxVersionTested: 10.0.26100.0
+  # The alias + packaged-COM + windows.fileExplorerContextMenus declarations,
+  # spliced into the generated AppxManifest.xml (packaging/appx/extensions.xml).
+  customExtensionsPath: packaging/appx/extensions.xml
+
 mac:
   artifactName: markdownmeister-${version}-macos-${arch}.${ext}
   target:
