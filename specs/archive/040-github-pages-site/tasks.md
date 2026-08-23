@@ -62,7 +62,7 @@
 - [x] T007 [US1/US3] Create tests/main/siteContract.test.ts (node env project): h1 text; download href exact; GitHub link href exact; favicon link present; hero img alt non-empty; `#version` span present + `meta[name="deploy-version"]` present; inline script contains the releases/latest endpoint and a timeout mechanism; audit that index.html loads no external resources and styles.css contains no absolute URLs (api.github.com fetch exempted as the sole permitted request); workflow file triggers on push to main with both paths entries, required permissions, concurrency group github-pages, upload path docs/site. Assertions robust to formatting.
 - [x] T008 Add tests/main/siteContract.test.ts to package.json format:check list (site html/css/svg stay excluded from prettier checks).
 - [x] T009 Run gates until green, in order: npm install (once) → npm run lint → npm run typecheck → npm test → npm run check → npx prettier --check tests/main/siteContract.test.ts → last npm run test:e2e (retry contention failures up to 3×; proves the application suite passes untouched).
-- [ ] T010 As part of the implementation PR, archive the spec: `git mv specs/040-github-pages-site specs/archive/040-github-pages-site` and set its **Status** to `Archived`.
+- [x] T010 As part of the implementation PR, archive the spec: `git mv specs/040-github-pages-site specs/archive/040-github-pages-site` and set its **Status** to `Archived`.
 - [ ] T011 Manual (post-merge): run the quickstart visual matrix under light/dark × phone/tablet/desktop, and complete the deployment checklist's screenshot swap before treating the site as public-facing (FR-005).
 
 ---
