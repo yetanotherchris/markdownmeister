@@ -85,14 +85,12 @@ function computedToken(rules: Rule[], env: Env, property: string, vars: ThemeVar
   return (vars[reference[1]] ?? reference[2]).replace(/\s+/g, ' ').trim()
 }
 
-const TOKEN_KEYS = ['background', 'foreground', 'accent', 'surface', 'outline', 'code'] as const
-
 /** The inline `--mm-theme-*` variables App.tsx would feed for a theme file in
  *  a given appearance (plus optional edits a user made to the file). */
 function fileVars(
   stem: string,
   mode: 'light' | 'dark',
-  overrides: Partial<Record<(typeof TOKEN_KEYS)[number], string>> = {}
+  overrides: Partial<Record<keyof EditorColors, string>> = {}
 ): ThemeVars {
   const file = DEFAULT_EDITOR_THEME_FILES[stem]
   if (!file) throw new Error(`no embedded default for ${stem}`)
