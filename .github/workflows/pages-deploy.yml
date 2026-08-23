@@ -2,6 +2,11 @@ name: Deploy site to GitHub Pages
 
 # Publishes docs/site on merges to main. The repo's docs/ root holds project
 # documentation, so branch-based "/docs" Pages is not an option (spec 040 D1).
+#
+# Every action below is pinned to a full commit SHA (repo precedent from
+# build-release.yml): this job holds pages:write + id-token:write, so a moved
+# or compromised mutable tag would mean arbitrary code on a runner with
+# Pages-deployment rights.
 on:
   push:
     branches: [main]
@@ -10,6 +15,7 @@ on:
       - '.github/workflows/pages-deploy.yml'
 
 permissions:
+  contents: read
   pages: write
   id-token: write
 
@@ -30,7 +36,7 @@ jobs:
       # no tags) made that command dead code and silently forced the
       # package.json fallback on every run.
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # actions/checkout v7.0.1
         with:
           fetch-depth: 0
           fetch-tags: true
@@ -42,7 +48,17 @@ jobs:
           if [ -z "$VERSION" ]; then
             VERSION="$(npm pkg get version | tr -d '"')"
           fi
-          echo "version=${VERSION#v}" >> "$GITHUB_OUTPUT"
+          # Repository-controlled string: reject anything that could terminate
+          # the sed program early or smuggle extra GITHUB_OUTPUT fields.
+          if ! [[ "$VERSION" =~ ^[0-9A-Za-z][0-9A-Za-z.+-]*$ ]]; then
+            echo "::error::Refusing unsafe version string: ${VERSION}"
+            exit 1
+          fi
+          {
+            echo "version<<MM_VERSION_EOF"
+            echo "${VERSION#v}"
+            echo "MM_VERSION_EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Stamp deploy version into the page
         env:
@@ -50,14 +66,19 @@ jobs:
         run: |
           sed -i "s/__MM_DEPLOY_VERSION__/${VERSION}/g" docs/site/index.html
 
+      # enablement: true lets the very first run enable GitHub Pages itself;
+      # without it configure-pages fails until Pages is switched on by hand
+      # under Settings → Pages → Source: GitHub Actions.
       - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # actions/configure-pages v5.0.0
+        with:
+          enablement: true
 
       - name: Upload site artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # actions/upload-pages-artifact v3.0.1
         with:
           path: docs/site
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # actions/deploy-pages v4.0.5
