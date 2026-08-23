@@ -22,7 +22,7 @@
 
 ## Phase 2: Native shell-extension component (US5 containment, FR-002/FR-006/FR-012)
 
-- [x] T002 [US5] Create native/shell-extension/: src/dllmain.cpp (WRL module glue), src/ExplorerCommand.h/.cpp (IExplorerCommand implementation — title "Open in MarkdownMeister", icon from packaged exe, SEH-guarded methods, Invoke launches alias detached with quoted folder arg, no UI/no waits/no persistence) and CMakeLists.txt (MSVC x64 shared library). Commit `feat(038)`.
+- [x] T002 [US5] Create native/shell-extension/: src/dllmain.cpp (hand-rolled COM class-factory glue — no WRL; the WRL approach was abandoned during implementation), src/ExplorerCommand.h/.cpp (IExplorerCommand implementation — title "Open in MarkdownMeister", icon from packaged exe, SEH-guarded methods, Invoke launches alias detached with quoted folder arg, no UI/no waits/no persistence) and CMakeLists.txt (MSVC x64 shared library). Commit `feat(038)`.
 - [x] T003 [P] [chore] Create scripts/build-shell-extension.ps1: detect VS 2022 MSVC via vswhere, detect Windows SDK, locate cmake (VS-bundled or PATH), configure+build into native/shell-extension/out/, print clear requirement message and exit non-zero when tooling absent. Commit `feat(038)`.
 
 ## Phase 3: Packaging and manifest declarations (FR-001/FR-002/FR-007)
@@ -37,15 +37,16 @@
 
 ## Phase 5: Workflow, docs, e2e (FR-001, deliverables 6–7)
 
-- [x] T008 [US1] Create .github/workflows/build-store.yml: workflow_dispatch, windows-latest, npm ci with retry, build shell extension, npm run build, unsigned appx packaging, upload msixupload artifact. build-release.yml untouched. Commit `feat(038)`.
+- [x] T008 [US1] Create .github/workflows/build-store.yml: workflow_dispatch, windows-latest, npm ci with retry, build shell extension, npm run build, unsigned appx packaging, upload .appx artifact. build-release.yml untouched. Commit `feat(038)`.
 - [x] T009 [P] [docs] Create docs/store-release.md: Partner Center identity values, submission steps from the built artifact, US5 fault-injection procedure reference. Commit `docs(038)`.
 - [x] T010 [US2] Create tests/e2e/store-handoff.spec.ts: spawn the built binary (electron.exe out/main/index.js <folder>) cold with production single-instance settings and assert the workspace opens via CDP; running-instance routing via a real spawned secondary sharing the primary's profile; missing-folder cold launch fails closed with quiet footer note and unchanged session. Commit `test(038)`.
 
 ## Phase 6: Gates and lifecycle
 
 - [x] T011 Run gates in order until green: `npm run lint`; `npm run typecheck`; `npm test`; `npm run check`; append new src/test files to package.json format:check list and run `npx prettier --check` on them; LAST `npm run test:e2e` (retry apparent contention failures up to 3 times).
-- [ ] T012 Archive: `git mv specs/038-win11-first-level-menu specs/archive/038-win11-first-level-menu`, set **Status** to Archived in spec.md, commit `docs(specs)`.
+- [x] T012 Archive: `git mv specs/038-win11-first-level-menu specs/archive/038-win11-first-level-menu`, set **Status** to Archived in spec.md, commit `docs(specs)`.
 - [ ] T013 Manual follow-ups (NOT automatable here): Partner Center identity + submission per docs/store-release.md; run quickstart.md US1–US5 matrices against real artifacts including fault injection; record evidence separately. Never claim Explorer behaviour not observed.
+- [ ] T014 FR-013 follow-up (deferred from this phase; maintainer sign-off on the deferral is REQUIRED — see spec.md Clarifications 2026-08-23 and plan.md Complexity Tracking 1): deliver the classic-mechanism folder fallback for Store installs as a sparse companion package registered at first run. A sparse package alone cannot declare a classic Directory verb (same manifest schema restriction), so the verb registration must be executed by the app at first run and owned/cleaned by the Store channel's own footprint, namespaced so US3 scenario 3 (channel isolation) still holds.
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Branch**: `phase-38-win11-first-level-menu` | **Date**: 2026-08-23 | **Spec**: [spec.md](spec.md)
 
-**Input**: Feature specification from `/specs/038-win11-first-level-menu/spec.md`
+**Input**: Feature specification from `/specs/archive/038-win11-first-level-menu/spec.md`
 
 ## Summary
 
@@ -10,7 +10,7 @@ The "Open in MarkdownMeister" folder action exists today only as a classic regis
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.8 strict (Electron 43 main); C++ (Windows SDK `shobjidl_core.h`, WRL for COM boilerplate) built with CMake + MSVC v143; PowerShell 7 build script; YAML manifests.
+**Language/Version**: TypeScript 5.8 strict (Electron 43 main); C++ (Windows SDK `shobjidl_core.h`, hand-rolled COM — the WRL boilerplate approach was abandoned during implementation in favour of auditable SEH-framed classes) built with CMake + MSVC v143; PowerShell 7 build script; YAML manifests.
 
 **Primary Dependencies**: None new at runtime. One new devDependency (`fast-xml-parser`) used only by unit tests to prove manifest well-formedness — justified because Node has no built-in XML parser and hand-rolled regex checks cannot honestly claim well-formedness. The native component depends only on the Windows SDK that ships with VS 2022.
 
@@ -45,7 +45,7 @@ All gates pass except where noted in Complexity Tracking.
 ### Documentation (this feature)
 
 ```text
-specs/038-win11-first-level-menu/
+specs/archive/038-win11-first-level-menu/
 ├── plan.md              # This file
 ├── research.md          # D1–D6 decisions with primary-source evidence
 ├── contracts/
@@ -60,7 +60,7 @@ specs/038-win11-first-level-menu/
 native/shell-extension/            # NEW: minimal in-proc COM DLL implementing IExplorerCommand
 ├── CMakeLists.txt                 # MSVC x64 shared library target
 ├── src/
-│   ├── dllmain.cpp                # Module glue: DllGetClassObject/DllCanUnloadNow via WRL
+│   ├── dllmain.cpp                # Module glue: hand-rolled class factory, DllGetClassObject/DllCanUnloadNow
 │   ├── ExplorerCommand.h          # Class declaration + CLSID
 │   └── ExplorerCommand.cpp        # SEH-guarded title/icon/state/invoke implementation
 scripts/

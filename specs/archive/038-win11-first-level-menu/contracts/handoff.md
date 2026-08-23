@@ -10,9 +10,9 @@ The shell extension performs exactly one action in `IExplorerCommand::Invoke`:
 launch(detached): "<aliasDir>\markdownmeister.exe" "<chosen folder path>"
 ```
 
-- `<aliasDir>` is `%LOCALAPPDATA%\Microsoft\WindowsApps` (where MSIX materialises execution aliases). If that file does not exist, a fallback launch of bare `markdownmeister.exe` via `ShellExecuteExW` is attempted once.
-- The path is passed as ONE quoted argument, verbatim from the shell. No normalisation, no validation, no persistence, no reads of the target (FR-012).
-- The launched process is never waited on; failure to launch returns E_FAIL and Explorer continues unaffected.
+- `<aliasDir>` is `%LOCALAPPDATA%\Microsoft\WindowsApps` (where MSIX materialises execution aliases). If that file does not exist, a fallback launch of the PACKAGED launcher (resolved from the component's own DLL location — never a bare-name PATH/App Paths lookup) is attempted once via `ShellExecuteExW` with `SEE_MASK_NOASYNC | SEE_MASK_FLAG_NO_UI`, so even this fault path cannot surface a shell error dialog inside Explorer.
+- The path is passed as ONE quoted argument, verbatim from the shell (trailing backslashes doubled per standard argv rules, so drive roots survive parsing). No normalisation, no validation, no persistence, no reads of the target (FR-012).
+- The launched process is never waited on. Failure to launch is silent: `Invoke` still returns S_OK and Explorer continues unaffected; the worst outcome is that nothing opens (FR-011).
 
 ## Receiving side guarantees (unchanged code)
 
@@ -31,7 +31,7 @@ The COM DLL MUST NOT: enumerate or browse any filesystem location other than res
 
 ## Containment (FR-011)
 
-Every exported function and COM method is wrapped in an SEH frame that converts any fault into a silent failure HRESULT. Worst permitted outcome: the MarkdownMeister entry does not appear / does nothing. Explorer must never crash, hang, or lose other entries due to this component.
+Every exported function and COM method capable of faulting is wrapped in an SEH frame that converts any fault into a silent failure HRESULT (the only exceptions are the trivial reference-count accessors and the no-op LockServer/DllMain bodies, whose code has no realistic fault surface). Worst permitted outcome: the MarkdownMeister entry does not appear / does nothing. Explorer must never crash, hang, or lose other entries due to this component.
 
 ## Manifest declarations owned by this feature
 
@@ -39,7 +39,7 @@ Every exported function and COM method is wrapped in an SEH frame that converts 
 |-------------|---------|
 | `uap3:Extension Category="windows.appExecutionAlias"` → `desktop:ExecutionAlias Alias="markdownmeister.exe"` | The hand-off launcher exists at a stable per-user path |
 | `com:Extension Category="windows.comServer"` → `com:SurrogateServer` + `com:Class Id=<CLSID> Path="app\resources\shell-extension\MarkdownMeisterShellExtension.dll" ThreadingModel="STA"` | Packaged COM registration of the handler class |
-| `desktop4:Extension Category="windows.fileExplorerContextMenus"` → `desktop4:ItemType Type="Directory"` → `desktop4:Verb Id="MarkdownMeister.OpenFolder" Clsid=<CLSID>` | First-level modern-menu placement for Directory items only |
+| `desktop4:Extension Category="windows.fileExplorerContextMenus"` → `desktop5:ItemType Type="Directory"` → `desktop5:Verb Id="OpenInMarkdownMeister" Clsid=<CLSID>` | First-level modern-menu placement for Directory items only |
 
 Uninstall/update/removal of these registrations is owned by Windows package lifecycle: removing the package removes all three atomically (FR-009); an update re-registers them against the updated version (FR-010). No other channel writes any of them; no Store-channel code writes HKCU verbs (channel isolation, US3).
 
