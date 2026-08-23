@@ -42,27 +42,37 @@ public:
 
   IFACEMETHODIMP CreateInstance(IUnknown *outer, REFIID riid, void **out_object) override {
     if (!out_object) return E_POINTER;
-    __try {
-      *out_object = nullptr;
-      if (outer) return CLASS_E_NOAGGREGATION;
-
-      auto command = new (std::nothrow) OpenInMarkdownMeisterCommand();
-      if (!command) return E_OUTOFMEMORY;
-
-      const HRESULT hr = command->QueryInterface(riid, out_object);
-      // QI took its own reference; drop ours from construction.
-      command->Release();
-      if (FAILED(hr)) *out_object = nullptr;
-      return hr;
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
-      return E_FAIL;
-    }
+    if (outer) return CLASS_E_NOAGGREGATION;
+    return CreateInstanceSeh(riid, out_object);
   }
 
   IFACEMETHODIMP LockServer(BOOL) override { return S_OK; }
 
 private:
   ~CommandFactory() = default;
+
+  // SEH boundary: the frame below must stay free of anything that can unwind,
+  // so the implementation (which allocates) lives one call away.
+  static HRESULT __stdcall CreateInstanceSeh(REFIID riid, void **out_object) {
+    __try {
+      return CreateInstanceImpl(riid, out_object);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+      *out_object = nullptr;
+      return E_FAIL;
+    }
+  }
+
+  static HRESULT CreateInstanceImpl(REFIID riid, void **out_object) {
+    *out_object = nullptr;
+    auto command = new (std::nothrow) OpenInMarkdownMeisterCommand();
+    if (!command) return E_OUTOFMEMORY;
+
+    const HRESULT hr = command->QueryInterface(riid, out_object);
+    // QI took its own reference; drop ours from construction.
+    command->Release();
+    if (FAILED(hr)) *out_object = nullptr;
+    return hr;
+  }
 
   ULONG ref_count_;
 };
@@ -71,6 +81,9 @@ CommandFactory g_factory; // one per module, shared by all activations
 
 } // namespace
 
+// Exports are declared by combaseapi.h; the definitions below match those
+// declarations and the .def file performs the actual exporting (a dllexport
+// here would clash with the header's linkage).
 extern "C" {
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
@@ -80,6 +93,8 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
   return TRUE;
 }
 
+// The two entry points a packaged-COM in-proc server needs (registration
+// itself lives in the manifest, so there is deliberately no DllRegisterServer).
 HRESULT WINAPI DllGetClassObject(REFCLSID clsid, REFIID riid, void **out_object) {
   if (!out_object) return E_POINTER;
   __try {

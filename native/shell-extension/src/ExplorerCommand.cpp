@@ -5,6 +5,7 @@
 
 #include <windows.h>
 #include <objbase.h>
+#include <shellapi.h>
 #include <shlobj_core.h>
 #include <iterator>
 
@@ -65,8 +66,8 @@ bool ResolvePackagedLauncher(wchar_t *launcher, size_t capacity) {
   }
 
   const int written =
-      _snwprintf_s(launcher, capacity, _TRUNCATE, L"%.*s\\" kAliasFileName,
-                   static_cast<int>(cursor - dll_path), dll_path);
+      _snwprintf_s(launcher, capacity, _TRUNCATE, L"%.*s\\%s",
+                   static_cast<int>(cursor - dll_path), dll_path, kAliasFileName);
   return written > 0;
 }
 
@@ -112,7 +113,7 @@ void LaunchAlias(const wchar_t *folder_path) {
     return;
   SHELLEXECUTEINFOW execute{};
   execute.cbSize = sizeof(execute);
-  execute.fMask = SEE_MASK_NOASYNC | SEE_MASK_FLAG_DONTWAIT;
+  execute.fMask = SEE_MASK_NOASYNC; // never block Explorer on DDE/activation
   execute.lpVerb = L"open";
   execute.lpFile = kAliasFileName;
   execute.lpParameters = parameters;

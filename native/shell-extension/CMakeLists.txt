@@ -13,6 +13,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_library(MarkdownMeisterShellExtension SHARED
   src/ExplorerCommand.cpp
   src/dllmain.cpp
+  src/MarkdownMeisterShellExtension.def
 )
 
 target_compile_definitions(MarkdownMeisterShellExtension PRIVATE
