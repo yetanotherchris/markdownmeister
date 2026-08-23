@@ -70,8 +70,12 @@ async function spawnWithTarget(
 
   const endpoint = await new Promise<string>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('no CDP endpoint announced')), 20_000)
+    let stderrText = ''
     child.stderr?.on('data', (chunk: Buffer) => {
-      const match = /DevTools listening on (ws:\/\/\S+)/.exec(chunk.toString())
+      // Accumulate across chunks: the announced line can split mid-token at
+      // any pipe boundary, so per-chunk matching would miss it.
+      stderrText += chunk.toString()
+      const match = /DevTools listening on (ws:\/\/\S+)/.exec(stderrText)
       if (match) {
         clearTimeout(timer)
         resolve(match[1])
@@ -84,15 +88,29 @@ async function spawnWithTarget(
   })
 
   const browser = await chromium.connectOverCDP(endpoint)
+  // connectOverCDP can land after the window exists but before navigation
+  // commits, leaving the ALREADY-TRACKED renderer reporting about:blank — and
+  // the `page` event fires only for targets added after connection, so
+  // waiting on the event alone would deadlock. Poll pages() instead: a
+  // deterministic wait that resolves under every attach timing.
+  const context = browser.contexts()[0]
+  let poll: ReturnType<typeof setInterval> | undefined
   const page = await new Promise<Page>((resolve, reject) => {
-    const context = browser.contexts()[0]
-    const existing = context.pages()[0]
-    if (existing && existing.url() !== 'about:blank') return resolve(existing)
-    const timer = setTimeout(() => reject(new Error('no renderer page')), 15_000)
-    context.on('page', (p) => {
+    if (!context) {
+      reject(new Error('CDP endpoint connected but reported no browser context'))
+      return
+    }
+    const timer = setTimeout(() => {
+      clearInterval(poll)
+      reject(new Error('no renderer page'))
+    }, 15_000)
+    poll = setInterval(() => {
+      const existing = context.pages().find((candidate) => candidate.url() !== 'about:blank')
+      if (!existing) return
       clearTimeout(timer)
-      resolve(p)
-    })
+      clearInterval(poll)
+      resolve(existing)
+    }, 100)
   })
   await page.waitForLoadState('domcontentloaded')
   return { browser, page }
@@ -205,7 +223,6 @@ test('FR-005 running instance: a second argv invocation routes to the first', as
 
 test('FR-004 parity: cold launch of a missing folder fails closed and quiet', async () => {
   const workspace = makeDir('mm-store-miss-')
-  fs.writeFileSync(path.join(workspace, 'keep.md'), '# Keep')
   const configDir = makeDir('mm-store-miss-cfg-')
   const userDataDir = makeDir('mm-store-miss-ud-')
 
@@ -215,9 +232,11 @@ test('FR-004 parity: cold launch of a missing folder fails closed and quiet', as
     configDir
   )
 
-  // No native dialog is involved in a failed open: main sends a scrubbed
+  // No native dialog is involved in a failed open: main sends the scrubbed
   // message and the renderer shows the quiet footer note (FR-011 parity).
-  await expect(page.getByTestId('footer-note')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByTestId('footer-note')).toContainText('no longer available', {
+    timeout: 20_000
+  })
   await expect(page.getByRole('tab')).toHaveCount(0)
   await expect(page.getByTestId('footer-document')).toContainText('No document open')
   await browser.close().catch(() => {})
