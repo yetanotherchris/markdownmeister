@@ -3,9 +3,11 @@
 // (MSIX windows.fileExplorerContextMenus -> Directory).
 //
 // Containment contract (spec US5 / FR-011): this module runs inside
-// Explorer.exe. Every COM method body sits inside an SEH boundary frame; any
-// fault degrades to a failure HRESULT (entry absent / inert), never a crash,
-// hang, dialog, wait, or background thread.
+// Explorer.exe. Every exported function and COM method capable of faulting
+// sits inside an SEH boundary frame (the only exceptions are the trivial
+// reference-count accessors and no-op LockServer/DllMain bodies); any fault
+// degrades to a failure HRESULT (entry absent / inert), never a crash, hang,
+// dialog, wait, or background thread.
 //
 // Hand-off contract (spec FR-012): Invoke launches the app's execution alias
 // with the chosen folder as its sole argument and does nothing else — no

@@ -33,11 +33,12 @@ public:
     }
   }
 
-  IFACEMETHODIMP_(ULONG) AddRef() override { return ++ref_count_; }
+  IFACEMETHODIMP_(ULONG) AddRef() override { return InterlockedIncrement(&ref_count_); }
 
   IFACEMETHODIMP_(ULONG) Release() override {
-    // The factory is a process-lifetime singleton; never actually destroyed.
-    return ++ref_count_;
+    // Balanced IUnknown bookkeeping; the object itself is never destroyed
+    // (process-lifetime singleton) and DllCanUnloadNow always reports S_FALSE.
+    return InterlockedDecrement(&ref_count_);
   }
 
   IFACEMETHODIMP CreateInstance(IUnknown *outer, REFIID riid, void **out_object) override {
@@ -86,10 +87,12 @@ CommandFactory g_factory; // one per module, shared by all activations
 // here would clash with the header's linkage).
 extern "C" {
 
-BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
+BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID) {
   // No thread attach/detach work on purpose: the fewer OS callbacks this
-  // module participates in, the less can go wrong inside Explorer.
-  if (reason == DLL_PROCESS_ATTACH) DisableThreadLibraryCalls(GetModuleHandleW(nullptr));
+  // module participates in, the less can go wrong inside Explorer. The call
+  // must receive THIS module's own handle — GetModuleHandleW(nullptr) would
+  // return the host EXE and silently suppress nothing for us.
+  if (reason == DLL_PROCESS_ATTACH) DisableThreadLibraryCalls(instance);
   return TRUE;
 }
 
@@ -109,6 +112,9 @@ HRESULT WINAPI DllCanUnloadNow(void) {
   // Always S_FALSE: the factory singleton keeps an outstanding reference, so
   // the loader never unloads us while Explorer runs — the only safe choice
   // for a component that must never crash its host mid-call.
+  // The SEH frame exists for uniformity, not protection: every exported entry
+  // point in this module is framed by rule (see file header), so a fault here
+  // collapses to the same contained answer instead of escaping the export.
   __try {
     return S_FALSE;
   } __except (EXCEPTION_EXECUTE_HANDLER) {

@@ -71,6 +71,25 @@ bool ResolvePackagedLauncher(wchar_t *launcher, size_t capacity) {
   return written > 0;
 }
 
+// Standard Windows argv rules: wrap the argument in quotes and DOUBLE any
+// trailing backslashes, because backslashes directly preceding a closing
+// quote parse as escapes — a drive root arriving as "C:\" would otherwise be
+// received as `C:"`. SIGDN_FILESYSPATH returns drive roots with the separator.
+bool QuoteArgument(const wchar_t *text, wchar_t *out, size_t capacity) {
+  const size_t length = wcslen(text);
+  size_t trailing = 0;
+  while (trailing < length && text[length - 1 - trailing] == L'\\') ++trailing;
+  if (length + trailing + 3 > capacity) return false;
+  size_t at = 0;
+  out[at++] = L'"';
+  wcscpy_s(out + at, capacity - at, text);
+  at += length;
+  for (size_t i = 0; i < trailing; ++i) out[at++] = L'\\';
+  out[at++] = L'"';
+  out[at] = L'\0';
+  return true;
+}
+
 // Detached launch of the execution alias with the quoted folder as its only
 // argument (contracts/handoff.md). Never waits on the child, never shows UI,
 // never surfaces launch failure beyond a silent no-op.
@@ -85,16 +104,23 @@ void LaunchAlias(const wchar_t *folder_path) {
   CoTaskMemFree(local_app);
   if (alias_written <= 0) return;
 
+  wchar_t alias_argument[MAX_PATH * 2];
+  wchar_t folder_argument[MAX_PATH * 2 + 2];
+  if (!QuoteArgument(alias_path, alias_argument, std::size(alias_argument))) return;
+  if (!QuoteArgument(folder_path, folder_argument, std::size(folder_argument))) return;
+
   wchar_t command_line[MAX_PATH * 4];
   if (_snwprintf_s(command_line, static_cast<DWORD>(std::size(command_line)), _TRUNCATE,
-                   L"\"%s\" \"%s\"", alias_path, folder_path) <= 0)
+                   L"%s %s", alias_argument, folder_argument) <= 0)
     return;
 
   STARTUPINFOW startup{};
   startup.cb = sizeof(startup);
   PROCESS_INFORMATION process{};
   // The alias materialises only while the package is registered; when absent
-  // fall back once to ShellExecuteEx resolution (PATH / App Paths).
+  // fall back once to ShellExecuteEx on the packaged launcher resolved from
+  // this DLL's own location — never a bare-name lookup through PATH /
+  // App Paths, which a same-user process could subvert to receive the folder.
   const bool alias_exists = GetFileAttributesW(alias_path) != INVALID_FILE_ATTRIBUTES;
   const BOOL launched =
       alias_exists
@@ -107,16 +133,17 @@ void LaunchAlias(const wchar_t *folder_path) {
     return;
   }
 
-  wchar_t parameters[MAX_PATH * 2];
-  if (_snwprintf_s(parameters, static_cast<DWORD>(std::size(parameters)), _TRUNCATE, L"\"%s\"",
-                   folder_path) <= 0)
-    return;
+  wchar_t packaged_launcher[MAX_PATH * 2];
+  if (!ResolvePackagedLauncher(packaged_launcher, std::size(packaged_launcher))) return;
   SHELLEXECUTEINFOW execute{};
   execute.cbSize = sizeof(execute);
-  execute.fMask = SEE_MASK_NOASYNC; // never block Explorer on DDE/activation
+  // SEE_MASK_NOASYNC: never block Explorer on DDE/activation. Together with
+  // SEE_MASK_FLAG_NO_UI the missing-launcher fault path stays a silent no-op —
+  // no "Windows cannot find" dialog may surface inside Explorer (FR-011).
+  execute.fMask = SEE_MASK_NOASYNC | SEE_MASK_FLAG_NO_UI;
   execute.lpVerb = L"open";
-  execute.lpFile = kAliasFileName;
-  execute.lpParameters = parameters;
+  execute.lpFile = packaged_launcher;
+  execute.lpParameters = folder_argument;
   execute.nShow = SW_SHOWNORMAL;
   ShellExecuteExW(&execute);
 }
@@ -166,10 +193,14 @@ IFACEMETHODIMP OpenInMarkdownMeisterCommand::QueryInterface(REFIID riid, void **
   }
 }
 
-IFACEMETHODIMP_(ULONG) OpenInMarkdownMeisterCommand::AddRef() { return ++ref_count_; }
+// Packaged-COM surrogate activation can marshal calls from multiple
+// apartments, so the refcount is maintained with interlocked operations.
+IFACEMETHODIMP_(ULONG) OpenInMarkdownMeisterCommand::AddRef() {
+  return InterlockedIncrement(&ref_count_);
+}
 
 IFACEMETHODIMP_(ULONG) OpenInMarkdownMeisterCommand::Release() {
-  const ULONG remaining = --ref_count_;
+  const ULONG remaining = InterlockedDecrement(&ref_count_);
   if (remaining == 0) delete this;
   return remaining;
 }
