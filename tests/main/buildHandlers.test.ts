@@ -122,10 +122,9 @@ describe('registerBuildHandlers (spec 037 contracts/preload.md)', () => {
     const info = handlerFor('build:getInfo')(eventFor(window, true), { sneaky: true }) as {
       ok: boolean
     }
-    const opened = (await handlerFor('build:openRepository')(
-      eventFor(window, true),
-      { sneaky: true }
-    )) as { ok: boolean }
+    const opened = (await handlerFor('build:openRepository')(eventFor(window, true), {
+      sneaky: true
+    })) as { ok: boolean }
     expect(info.ok).toBe(true)
     expect(opened.ok).toBe(true)
     expect(mocks.openExternal).toHaveBeenCalledTimes(1)

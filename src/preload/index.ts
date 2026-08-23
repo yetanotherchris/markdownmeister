@@ -125,7 +125,8 @@ const api: DesktopApi = {
   },
 
   onOsOpenFailed: (cb: (message: string) => void): (() => void) => {
-    const handler = (_e: Electron.IpcRendererEvent, payload: { message: string }) => cb(payload.message)
+    const handler = (_e: Electron.IpcRendererEvent, payload: { message: string }) =>
+      cb(payload.message)
     ipcRenderer.on('os:openFailed', handler)
     return () => ipcRenderer.removeListener('os:openFailed', handler)
   },

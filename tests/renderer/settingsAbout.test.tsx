@@ -24,7 +24,11 @@ function stubApi(): void {
 const writeText = vi.fn<(text: string) => Promise<void>>()
 
 beforeEach(() => {
-  currentBuildInfo = { version: '9.9.9', revision: 'abc123def4567890', repositoryUrl: REPOSITORY_URL }
+  currentBuildInfo = {
+    version: '9.9.9',
+    revision: 'abc123def4567890',
+    repositoryUrl: REPOSITORY_URL
+  }
   stubApi()
   writeText.mockReset()
   Object.defineProperty(navigator, 'clipboard', {
@@ -113,8 +117,8 @@ describe('SETTINGS_AREAS registration order (spec 008 FR-002, spec 037 Assumptio
 
   it('renders an About navigation entry after the Markdown entry', () => {
     renderDialog()
-    const entries = Array.from(container.querySelectorAll('.settings-nav-button')).map(
-      (b) => b.textContent?.trim()
+    const entries = Array.from(container.querySelectorAll('.settings-nav-button')).map((b) =>
+      b.textContent?.trim()
     )
     expect(entries).toEqual(['General', 'Theme', 'Markdown', 'About'])
   })
