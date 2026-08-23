@@ -22,7 +22,11 @@ const ELECTRON_BINARY = path.join(
   'node_modules',
   'electron',
   'dist',
-  process.platform === 'win32' ? 'electron.exe' : process.platform === 'darwin' ? 'Electron.app/Contents/MacOS/Electron' : 'electron'
+  process.platform === 'win32'
+    ? 'electron.exe'
+    : process.platform === 'darwin'
+      ? 'Electron.app/Contents/MacOS/Electron'
+      : 'electron'
 )
 
 let spawned: ChildProcess[] = []
@@ -148,22 +152,19 @@ test('FR-005 running instance: a second argv invocation routes to the first', as
       MM_SINGLE_INSTANCE: '1'
     }))
     await openFolder(window)
-    await expect(window.getByTestId('footer-workspace')).toContainText(
-      path.basename(workspaceA)
-    )
+    await expect(window.getByTestId('footer-workspace')).toContainText(path.basename(workspaceA))
 
     await spawnWithTarget(workspaceB, userDataDir, configDir)
 
     // The spawned process must have forwarded its argv and exited; the FIRST
     // process switches workspaces exactly as with the classic verb.
-    await expect(window.getByTestId('footer-workspace')).toContainText(
-      path.basename(workspaceB),
-      { timeout: 20_000 }
-    )
+    await expect(window.getByTestId('footer-workspace')).toContainText(path.basename(workspaceB), {
+      timeout: 20_000
+    })
     await app.close().catch(() => {})
-  } catch {
+  } catch (error) {
     await closeAppSafely(app)
-    throw
+    throw error
   }
 })
 

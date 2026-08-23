@@ -135,8 +135,9 @@ describe('store manifest extensions fragment', () => {
     expect(verbs[0].attrs['@_Clsid']).toBe(EXPECTED_CLSID)
 
     // No classic-menu or file-type declarations leak in from this channel.
-    expect(findAll(manifest, 'uap:Extension').map((node) => node.attrs['@_Category']))
-      .not.toContain('windows.fileTypeAssociation')
+    expect(
+      findAll(manifest, 'uap:Extension').map((node) => node.attrs['@_Category'])
+    ).not.toContain('windows.fileTypeAssociation')
   })
 
   it('declares the markdownmeister.exe execution alias matching the launcher binary', () => {

@@ -23,7 +23,10 @@ const ALIAS_PATH = path.join(
 )
 
 function createTempDir(): string {
-  const dir = path.join(os.tmpdir(), `mm-storehandoff-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+  const dir = path.join(
+    os.tmpdir(),
+    `mm-storehandoff-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  )
   fs.mkdirSync(dir, { recursive: true })
   return dir
 }
@@ -43,7 +46,10 @@ describe('alias vs classic verb argv parity', () => {
 
   it('extracts the identical target from both invocation shapes', () => {
     // Classic verb: "<installed exe>" "%1"
-    const verbArgv = [path.join('C:', 'Program Files', 'MarkdownMeister', 'markdownmeister.exe'), folder]
+    const verbArgv = [
+      path.join('C:', 'Program Files', 'MarkdownMeister', 'markdownmeister.exe'),
+      folder
+    ]
     // Alias invocation: the WindowsApps alias shim plus the same argument.
     const aliasArgv = [ALIAS_PATH, folder]
     expect(extractTargetFromArgv(verbArgv)).toBe(folder)
