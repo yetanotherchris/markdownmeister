@@ -229,6 +229,16 @@ export interface Settings {
   visualCodeHighlighting: boolean
 }
 
+/** Spec 037: the build identity shown in the About area. All three values are
+ *  composed in main; `revision` is `null` when the running build carries no
+ *  embedded revision metadata (development runs show a placeholder instead of
+ *  a fabricated value — FR-007). */
+export interface BuildInfo {
+  version: string
+  revision: string | null
+  repositoryUrl: string
+}
+
 export interface DesktopApi {
   /** The platform the app runs on (`process.platform`, exposed read-only so the
    *  sandboxed renderer can adapt labels — spec 015 FR-003). */
@@ -303,4 +313,11 @@ export interface DesktopApi {
   /** Spec 020 (JS spellchecker): teach the JS checker a word so it is never
    *  flagged again. Returns the updated word list. */
   addSpellcheckWord(word: string): Promise<Result<string[]>>
+  /** Spec 037 US1: the read-only build identity for the About area (version,
+   *  revision, repository URL — contracts/preload.md). */
+  getBuildInfo(): Promise<Result<BuildInfo>>
+  /** Spec 037 US2: hand the repository URL to the OS default browser as an
+   *  external hand-off. Takes no arguments; the URL lives only in main and
+   *  the application window never navigates (FR-004). */
+  openRepositoryUrl(): Promise<Result<null>>
 }
