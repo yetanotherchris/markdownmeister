@@ -134,7 +134,9 @@ describe('Windows multi-resolution icon (resources/icon.ico)', () => {
       expect(entry.dataBytes).toBeGreaterThan(0)
       expect(entry.dataOffset + entry.dataBytes).toBeLessThanOrEqual(bytes.length)
       expect(bytes.toString('ascii', entry.dataOffset + 1, entry.dataOffset + 4)).toBe('PNG')
-      const ihdr = parsePngIhdr(bytes.subarray(entry.dataOffset, entry.dataOffset + entry.dataBytes))
+      const ihdr = parsePngIhdr(
+        bytes.subarray(entry.dataOffset, entry.dataOffset + entry.dataBytes)
+      )
       expect(ihdr.width).toBe(entry.declaredWidth)
       expect(ihdr.height).toBe(entry.declaredWidth)
       expect(ihdr.colourType).toBe(6)
