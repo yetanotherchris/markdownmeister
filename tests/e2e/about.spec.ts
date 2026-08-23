@@ -134,14 +134,17 @@ test('FR-008 viewing About and closing the dialog never prompts about unsaved ch
   await window.getByRole('button', { name: 'Close settings' }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
 
-  // Quitting right after must go straight through the close flow: no native
-  // confirmation may appear (the shared stub would answer "cancel", keeping
-  // the window alive and failing the wait below if one had been raised).
+  // No native box was raised merely by viewing and closing the area.
+  expect(await messageBoxCallCount(app)).toBe(0)
+
+  // Quitting straight after must also go through unattended: the shared stub
+  // answers every native box with its safe "cancel" choice, so if ANY quit
+  // confirmation appeared the close would be prevented and this wait would
+  // time out. Its success therefore proves the quit was prompt-free.
   await app.evaluate(({ BrowserWindow }) => {
     BrowserWindow.getAllWindows()[0].close()
   })
   await app.waitForEvent('close', { timeout: 8000 })
-  expect(await messageBoxCallCount(app)).toBe(0)
 })
 
 test('FR-007 an unpackaged run forced into development mode shows the honest placeholder', async () => {
