@@ -32,6 +32,33 @@ function writeIconSource(dir: string): string {
   return iconSource
 }
 
+/**
+ * Stage layout electron-builder actually produces inside an AppImage
+ * (spec 039 research D2, node_modules/app-builder-lib/.../appLauncher.js):
+ * every configured icon size lands in usr/share/icons/hicolor/<s>x<s>/apps/,
+ * and the largest is linked to <root>/markdownmeister.png and <root>/.DirIcon.
+ * Real files stand in for the symlinks — Windows CI cannot create symlinks
+ * unprivileged, and the finder resolves both identically.
+ */
+function writeElectronBuilderAppImageLayout(mountRoot: string, sizes: number[]): void {
+  for (const size of sizes) {
+    const iconFile = path.join(
+      mountRoot,
+      'usr',
+      'share',
+      'icons',
+      'hicolor',
+      `${size}x${size}`,
+      'apps',
+      'markdownmeister.png'
+    )
+    fs.mkdirSync(path.dirname(iconFile), { recursive: true })
+    fs.writeFileSync(iconFile, PNG_BYTES)
+  }
+  fs.writeFileSync(path.join(mountRoot, 'markdownmeister.png'), PNG_BYTES)
+  fs.writeFileSync(path.join(mountRoot, '.DirIcon'), PNG_BYTES)
+}
+
 describe('resolveXdgDataHome', () => {
   it('prefers an absolute XDG_DATA_HOME', () => {
     expect(resolveXdgDataHome({ XDG_DATA_HOME: '/xdg/data', HOME: '/home/user' })).toBe('/xdg/data')
@@ -206,9 +233,56 @@ describe('findAppImageIcon', () => {
     fs.writeFileSync(notPng, '<svg/>')
     expect(findAppImageIcon(dataHome)).toBeNull()
   })
+
+  it('finds an icon in the full electron-builder AppImage layout (spec 039 research D2)', () => {
+    writeElectronBuilderAppImageLayout(dataHome, [16, 24, 32, 48, 64, 128, 256, 512])
+    // .DirIcon is the first candidate by design, so the full layout resolves to it.
+    expect(findAppImageIcon(dataHome)).toBe(path.join(dataHome, '.DirIcon'))
+  })
+
+  it('prefers the declared theme size over other sizes when only the hicolor tree exists', () => {
+    const hicolor = path.join(dataHome, 'usr', 'share', 'icons', 'hicolor')
+    for (const size of [16, 64, 256, 512]) {
+      const iconFile = path.join(hicolor, `${size}x${size}`, 'apps', 'markdownmeister.png')
+      fs.mkdirSync(path.dirname(iconFile), { recursive: true })
+      fs.writeFileSync(iconFile, PNG_BYTES)
+    }
+    expect(findAppImageIcon(dataHome)).toBe(
+      path.join(hicolor, '256x256', 'apps', 'markdownmeister.png')
+    )
+  })
 })
 
 describe('ensureFolderAction', () => {
+  it('installs the icon found inside a real electron-builder AppImage layout', () => {
+    // The exact wiring of src/main/index.ts: findAppImageIcon(APPDIR) feeds
+    // ensureFolderAction, which must land the icon in the hicolor theme slot
+    // and reference it by name from the desktop entry.
+    writeElectronBuilderAppImageLayout(dataHome, [16, 24, 32, 48, 64, 128, 256, 512])
+    const iconSource = findAppImageIcon(dataHome)
+    expect(iconSource).not.toBeNull()
+
+    const outcome = ensureFolderAction({
+      locations: folderActionLocations(dataHome),
+      appImagePath: '/opt/apps/MarkdownMeister.AppImage',
+      iconSource
+    })
+
+    expect(outcome.ok).toBe(true)
+    if (!outcome.ok) return
+    expect(outcome.iconInstalled).toBe(true)
+    const entry = fs.readFileSync(
+      path.join(dataHome, 'applications', 'markdownmeister.desktop'),
+      'utf-8'
+    )
+    expect(entry).toContain('Icon=markdownmeister\n')
+    expect(
+      fs.readFileSync(
+        path.join(dataHome, 'icons', 'hicolor', '256x256', 'apps', 'markdownmeister.png')
+      )
+    ).toEqual(PNG_BYTES)
+  })
+
   it('writes the entry and icon into a redirected data home', () => {
     const iconSource = writeIconSource(dataHome)
 
