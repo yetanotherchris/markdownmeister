@@ -14,14 +14,19 @@ import { ctx, ok, err, sanitizeError, isAuthorizedRenderer } from './context'
  * never dialogs (constitution IV).
  */
 
-/** Pure FR-013 rule: the repair target when the stored selection matches no
- *  discovered theme, or null when it resolves and nothing must be written. */
+/** Pure FR-013 rule: null when the stored selection resolves verbatim; the
+ *  delivered stem when only its CASE differs — normalised once here so the
+ *  renderer's exact-name resolution agrees with main's and a case-collision
+ *  winner cannot re-repair the same setting on every read (review finding
+ *  2026-08-23); otherwise the default theme. */
 export function unresolvedSelectionRepair(
   themes: { name: string }[],
   storedSelection: string
 ): string | null {
   if (themes.some((theme) => theme.name === storedSelection)) return null
-  return DEFAULT_EDITOR_THEME_NAME
+  const folded = storedSelection.toLowerCase()
+  const caseMatch = themes.find((theme) => theme.name.toLowerCase() === folded)
+  return caseMatch ? caseMatch.name : DEFAULT_EDITOR_THEME_NAME
 }
 
 function resolveEditorThemes(): EditorThemesList {
@@ -30,7 +35,10 @@ function resolveEditorThemes(): EditorThemesList {
   const outcome = listThemes(dir)
   const storedSelection = loadSettings().editorTheme
   const repaired = unresolvedSelectionRepair(outcome.themes, storedSelection)
-  if (repaired !== null) {
+  // An identical repair target means nothing changed: rewriting would arm a
+  // pointless debounced settings write on every startup preload and dialog
+  // open (review finding 2026-08-23).
+  if (repaired !== null && repaired !== storedSelection) {
     updateSettings({ editorTheme: repaired })
   }
   return { themes: outcome.themes, invalidNames: outcome.invalidNames }

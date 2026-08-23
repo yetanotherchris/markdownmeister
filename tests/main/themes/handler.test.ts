@@ -29,7 +29,12 @@ describe('unresolvedSelectionRepair', () => {
     expect(unresolvedSelectionRepair([], '')).toBe('rustic')
   })
 
-  it('is case-sensitive on purpose (discovery already collapsed case collisions)', () => {
+  it('normalises a case-only mismatch to the delivered stem (review 2026-08-23)', () => {
+    // A case-collision winner keeps its original-case stem; folding the
+    // comparison means the stored selection resolves to that stem instead of
+    // being rewritten to the default on every read while still failing the
+    // renderer's exact-name resolution.
     expect(unresolvedSelectionRepair(THEMES, 'Rustic')).toBe('rustic')
+    expect(unresolvedSelectionRepair([{ name: 'RUSTIC' }], 'rustic')).toBe('RUSTIC')
   })
 })
