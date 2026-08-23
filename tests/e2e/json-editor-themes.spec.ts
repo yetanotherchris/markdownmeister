@@ -154,11 +154,11 @@ test('US3 editing a token in a theme file applies on the next settings open (SC-
   // Fixing the file restores the theme (US5 S4).
   edited.light.background = '#fdf6e3'
   fs.writeFileSync(rusticPath, JSON.stringify(edited, null, 2), 'utf-8')
-  await dialog.getByRole('button', { name: 'Close' }).click()
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click()
   const reopened = await openSettingsDialog(window)
   await openThemeArea(window)
   await expect.poll(canvasToken).toBe('#fdf6e3')
-  await reopened.getByRole('button', { name: 'Close' }).click()
+  await reopened.getByRole('button', { name: 'Close', exact: true }).click()
 })
 
 test('US4 a well-formed added file appears at the next dialog open and can be selected', async () => {
@@ -203,7 +203,7 @@ test('US4/FR-013 deleting the selected theme falls back silently and repairs the
     .not.toBe('unresolved')
   expect(await messageBoxCallCount(app)).toBe(0)
 
-  await dialog.getByRole('button', { name: 'Close' }).click()
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click()
   await expect.poll(persistedEditorTheme).toBe('rustic')
 
   // The repair survives a restart (no dangling reference).
@@ -242,7 +242,7 @@ test('US5 malformed files are ignored quietly while valid themes keep working', 
     // All five defaults remain available and selectable (FR-010).
     await expect(dialog.getByRole('radio', { name: 'rustic', exact: true })).toBeVisible()
     await expect(await messageBoxCallCount(app)).toBe(0)
-    await dialog.getByRole('button', { name: 'Close' }).click()
+    await dialog.getByRole('button', { name: 'Close', exact: true }).click()
   } finally {
     fs.rmSync(outsideDir, { recursive: true, force: true })
   }
