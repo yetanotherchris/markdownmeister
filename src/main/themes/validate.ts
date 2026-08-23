@@ -1,4 +1,4 @@
-import type { EditorColors } from '../../../shared/ipc-contract'
+import type { EditorColors } from '../../shared/ipc-contract'
 
 /**
  * Spec 036 (data-model §Validation rules): pure parsing/validation of one
@@ -35,14 +35,22 @@ const COLOR_TOKEN_KEYS: readonly (keyof EditorColors)[] = [
   'code'
 ]
 
-const CONTROL_CHARS = /[\u0000-\u001F\u007F]/
+/** True when `text` contains ASCII control characters — never legitimate in
+ *  a theme name or css font-family string. */
+function hasControlCharacters(text: string): boolean {
+  for (const character of text) {
+    const code = character.codePointAt(0) ?? 0
+    if (code < 0x20 || code === 0x7f) return true
+  }
+  return false
+}
 
 /** A valid stored/discovered theme name: bounded printable text, never a path
  *  fragment (plan Complexity Tracking #2). */
 export function isValidEditorThemeName(name: string): boolean {
   if (name.length === 0 || name.length > MAX_THEME_NAME_LENGTH) return false
   if (name.includes('/') || name.includes('\\')) return false
-  return !CONTROL_CHARS.test(name)
+  return !hasControlCharacters(name)
 }
 
 /** The theme stem of a directory entry name, or null when the entry is
@@ -80,7 +88,7 @@ export function parseThemeFile(text: string): ParsedThemeFileResult {
   if (typeof typeface !== 'string' || typeface.length === 0 || typeface.length > 512) {
     return { ok: false }
   }
-  if (CONTROL_CHARS.test(typeface)) return { ok: false }
+  if (hasControlCharacters(typeface)) return { ok: false }
   if (!isHexPalette(record.light) || !isHexPalette(record.dark)) return { ok: false }
   return { ok: true, theme: { typeface, light: record.light, dark: record.dark } }
 }

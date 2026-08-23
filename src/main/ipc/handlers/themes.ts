@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
 import type { EditorThemesList, Result } from '../../../shared/ipc-contract'
 import { DEFAULT_EDITOR_THEME_NAME } from '../../../shared/editorThemeTokens'
-import { ensureThemesDirectory, listThemes, DiscoveredTheme } from '../../themes/store'
+import { ensureThemesDirectory, listThemes } from '../../themes/store'
 import { themesDir } from '../../themes/path'
 import { loadSettings, updateSettings } from '../../settings'
 import { ctx, ok, err, sanitizeError, isAuthorizedRenderer } from './context'

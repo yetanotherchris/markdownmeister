@@ -68,7 +68,6 @@ export default function App() {
     editorTheme,
     handleEditorThemeChange,
     editorThemes,
-    refreshEditorThemes,
     editorFont,
     editorColors,
     spellcheckEnabled,
