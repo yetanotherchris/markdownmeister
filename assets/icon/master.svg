@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- MarkdownMeister product mark. Canonical editable artwork source; the
+       raster set under resources/ is generated from this geometry by
+       scripts/generate-icon-master.ps1. Keep both in sync. -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="87" x2="0" y2="937" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#26314E"/>
+      <stop offset="1" stop-color="#131A2B"/>
+    </linearGradient>
+  </defs>
+  <rect x="87" y="87" width="850" height="850" rx="230" fill="url(#tile)"/>
+  <polyline
+    points="302,722 302,343 512,589 722,343 722,722"
+    fill="none"
+    stroke="#F9FAFC"
+    stroke-width="80"
+    stroke-linecap="round"
+    stroke-linejoin="round"/>
+</svg>
