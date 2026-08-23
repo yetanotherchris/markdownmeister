@@ -111,3 +111,4 @@
 - Commit after each task; keep structural and behavioural changes separate (Tidy First)
 - T011 contention retries: rerun a failing gate up to 3 times before treating the failure as real
 - Implementation note (2026-08-23): the `BuildInfo` interface landed in T001's commit rather than T002's so every commit typechecks standalone; T002 and T004 also shared one commit because the contract additions and the preload implementations must land atomically to keep the surface consistent (both recorded in the PR description)
+- Review fix (2026-08-23): T009 had appended only the newly created files to `scripts.format:check`, leaving this feature's five edited files out — an undocumented deviation. The list now also carries electron.vite.config.ts, src/preload/index.ts, src/shared/ipc-contract.ts, src/renderer/chrome/SettingsDialog.tsx and src/renderer/chrome/settings.css.
