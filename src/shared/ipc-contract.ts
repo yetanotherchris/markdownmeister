@@ -136,12 +136,6 @@ export type OsOpenRequest =
   | { kind: 'folder'; info: WorkspaceInfo }
   | { kind: 'failed'; message: string }
 
-/** The five named visual styles for the formatted WYSIWYG canvas (spec 016).
- *  A closed union — validated in main, never arbitrary text. The theme's values
- *  (colors, typefaces) live in renderer CSS, not in the config (FR-005). */
-export type EditorThemeName =
-  'rustic' | 'rustic-serif' | 'monotone' | 'monotone-serif' | 'scholarly'
-
 /** Spec 020: the spellchecker languages the app can select explicitly. A
  *  closed union — validated in main, never arbitrary text. More languages can
  *  be added here later (the mechanism is identical). */
@@ -190,23 +184,15 @@ export interface Settings {
    *  Defaults to true — a fresh install shows the explorer; once the user
    *  toggles it, the choice persists across restarts. */
   explorerVisible: boolean
-  /** The editor font-family choice (spec 012 FR-003/FR-004). Defaults to
-   *  'sans-serif'. A closed union — validated in main, never arbitrary text.
-   *  Spec 023 FR-008: ACTIVE — it drives the typeface for a custom editor theme
-   *  and is written to the preset's font when a preset is selected (FR-005). */
-  editorFont: 'sans-serif' | 'serif'
   /** The selected editor theme (spec 036 FR-006): the NAME of the selected
    *  theme file — its stem — resolved against discovered themes at read time.
    *  Defaults to 'rustic'. Validated in main as a bounded printable string
    *  with no path separators; an unresolved name falls back silently to the
-   *  default theme and is repaired (FR-013). */
+   *  default theme and is repaired (FR-013). Colours and typeface come from
+   *  that file via `themes:list` (FR-001/FR-003): the spec-023 config
+   *  customisation (`editorColors`/`editorFont`) was withdrawn (FR-008) and
+   *  startup migration converts stored custom colours into a theme file. */
   editorTheme: string
-  /** Spec 023: the six editor colour tokens in effect. A preset selection
-   *  materialises the preset's exact colours here (clarified 2026-08-09), so
-   *  the field is only `null` for configs written before that change or by
-   *  hand. A closed six-key record of `#rrggbb` hex strings, validated in main
-   *  (FR-010). */
-  editorColors: EditorColors | null
   /** Spec 020 FR-006/FR-009: whether the native spellchecker is enabled.
    *  Defaults to true. A closed type — validated in main as a boolean, never
    *  arbitrary text. Persisted via the same settings store as the rest. */

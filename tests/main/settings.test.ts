@@ -14,7 +14,6 @@ import {
   DEFAULTS
 } from '../../src/main/settingsFile'
 import type { RecentItem } from '../../src/shared/ipc-contract'
-import { RUSTIC_COLORS } from '../../src/shared/editorThemePresets'
 
 function tempDir(): string {
   return path.join(os.tmpdir(), `mm-settings-${Date.now()}-${Math.random().toString(36).slice(2)}`)
@@ -35,16 +34,13 @@ describe('loadSettingsFile', () => {
     const result = loadSettingsFile(path.join(os.tmpdir(), 'does-not-exist.json'))
     expect(result).toEqual(DEFAULTS)
     expect(result.explorerVisible).toBe(true)
-    expect(result.editorFont).toBe('sans-serif')
     expect(result.editorTheme).toBe('rustic')
   })
 
-  it('materialises the default preset colours for a fresh config (clarification 2026-08-09)', () => {
-    // A deleted/missing config is a fresh install: its defaults must carry the
-    // Rustic palette, not null, so the first settings write persists colours.
-    expect(loadSettingsFile(path.join(os.tmpdir(), 'does-not-exist.json')).editorColors).toEqual(
-      RUSTIC_COLORS
-    )
+  it('carries no legacy editorColors/editorFont fields (withdrawn by spec 036)', () => {
+    const result = loadSettingsFile(path.join(os.tmpdir(), 'does-not-exist.json'))
+    expect('editorColors' in result).toBe(false)
+    expect('editorFont' in result).toBe(false)
   })
 
   it('returns the defaults when the file is malformed', () => {
@@ -66,7 +62,6 @@ describe('loadSettingsFile', () => {
           sidebarWidth: 42,
           themeOverride: 'dark',
           explorerVisible: false,
-          editorFont: 'serif',
           editorTheme: 'scholarly',
           spellcheckEnabled: false,
           spellcheckLanguage: 'en-GB',
@@ -78,9 +73,7 @@ describe('loadSettingsFile', () => {
       sidebarWidth: 42,
       themeOverride: 'dark',
       explorerVisible: false,
-      editorFont: 'serif',
       editorTheme: 'scholarly',
-      editorColors: null,
       spellcheckEnabled: false,
       spellcheckLanguage: 'en-GB',
       fileOpenBehavior: 'new-tab',
@@ -98,7 +91,7 @@ describe('loadSettingsFile', () => {
   it('defaults explorerVisible to true when the field is missing (old configs)', () => {
     const file = tempSettingsFile(
       JSON.stringify({
-        settings: { sidebarWidth: 30, themeOverride: null, editorFont: 'sans-serif' }
+        settings: { sidebarWidth: 30, themeOverride: null }
       })
     )
     const result = loadSettingsFile(file)
@@ -114,7 +107,6 @@ describe('loadSettingsFile', () => {
           sidebarWidth: 30,
           themeOverride: null,
           explorerVisible: 'yes',
-          editorFont: 'serif'
         }
       })
     )
@@ -129,7 +121,6 @@ describe('loadSettingsFile', () => {
           sidebarWidth: 30,
           themeOverride: null,
           explorerVisible: true,
-          editorFont: 'sans-serif'
         }
       })
     )
@@ -146,7 +137,6 @@ describe('loadSettingsFile', () => {
           sidebarWidth: 30,
           themeOverride: null,
           explorerVisible: true,
-          editorFont: 'sans-serif',
           editorTheme: 'rustic',
           spellcheckEnabled: false
         }
@@ -163,7 +153,6 @@ describe('loadSettingsFile', () => {
           sidebarWidth: 30,
           themeOverride: null,
           explorerVisible: true,
-          editorFont: 'sans-serif',
           editorTheme: 'rustic',
           spellcheckEnabled: 'yes'
         }
@@ -180,7 +169,6 @@ describe('loadSettingsFile', () => {
           sidebarWidth: 30,
           themeOverride: null,
           explorerVisible: true,
-          editorFont: 'sans-serif'
         }
       })
     )
@@ -195,7 +183,6 @@ describe('loadSettingsFile', () => {
           sidebarWidth: 30,
           themeOverride: null,
           explorerVisible: true,
-          editorFont: 'sans-serif',
           editorTheme: 'rustic',
           spellcheckEnabled: true,
           spellcheckLanguage: 'en-US'
@@ -213,7 +200,6 @@ describe('loadSettingsFile', () => {
           sidebarWidth: 30,
           themeOverride: null,
           explorerVisible: true,
-          editorFont: 'sans-serif',
           editorTheme: 'rustic',
           spellcheckEnabled: true,
           spellcheckLanguage: 'klingon'
@@ -232,7 +218,6 @@ describe('loadSettingsFile', () => {
             sidebarWidth: 30,
             themeOverride: null,
             explorerVisible: true,
-            editorFont: 'sans-serif'
           }
         })
       )
@@ -247,7 +232,6 @@ describe('loadSettingsFile', () => {
             sidebarWidth: 30,
             themeOverride: null,
             explorerVisible: true,
-            editorFont: 'sans-serif',
             fileOpenBehavior: 'new-tab'
           }
         })
@@ -263,7 +247,6 @@ describe('loadSettingsFile', () => {
             sidebarWidth: 30,
             themeOverride: null,
             explorerVisible: true,
-            editorFont: 'sans-serif',
             fileOpenBehavior: 'split'
           }
         })
@@ -279,7 +262,6 @@ describe('loadSettingsFile', () => {
             sidebarWidth: 30,
             themeOverride: null,
             explorerVisible: true,
-            editorFont: 'sans-serif',
             fileOpenBehavior: 'new-tab',
             developerToolsEnabled: true
           }
@@ -292,17 +274,7 @@ describe('loadSettingsFile', () => {
     })
   })
 
-  it('defaults editorFont to sans-serif when the field is missing', () => {
-    const file = tempSettingsFile(
-      JSON.stringify({
-        settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true }
-      })
-    )
-    expect(loadSettingsFile(file).editorFont).toBe('sans-serif')
-    fs.rmSync(path.dirname(file), { recursive: true, force: true })
-  })
-
-  it('rejects an invalid editorFont value (spec 012: closed union)', () => {
+  it('ignores a legacy editorFont value on disk (withdrawn by spec 036)', () => {
     const file = tempSettingsFile(
       JSON.stringify({
         settings: {
@@ -313,7 +285,8 @@ describe('loadSettingsFile', () => {
         }
       })
     )
-    expect(loadSettingsFile(file).editorFont).toBe('sans-serif')
+    const result = loadSettingsFile(file)
+    expect('editorFont' in result).toBe(false)
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
@@ -324,7 +297,6 @@ describe('loadSettingsFile', () => {
           sidebarWidth: 30,
           themeOverride: null,
           explorerVisible: true,
-          editorFont: 'sans-serif'
         }
       })
     )
@@ -341,7 +313,6 @@ describe('loadSettingsFile', () => {
             sidebarWidth: 30,
             themeOverride: null,
             explorerVisible: true,
-            editorFont: 'sans-serif',
             editorTheme: theme
           }
         })
@@ -367,7 +338,6 @@ describe('loadSettingsFile', () => {
             sidebarWidth: 30,
             themeOverride: null,
             explorerVisible: true,
-            editorFont: 'sans-serif',
             editorTheme: bad
           }
         })
@@ -377,58 +347,6 @@ describe('loadSettingsFile', () => {
     }
   })
 
-  describe('editorColors validation (spec 023 FR-010)', () => {
-    const validColors = {
-      background: '#fdf6e3',
-      foreground: '#1f1b16',
-      accent: '#805610',
-      surface: '#fdf3d9',
-      outline: '#817567',
-      code: '#ba1a1a'
-    }
-
-    it('accepts null (no custom colours)', () => {
-      const file = tempSettingsFile(JSON.stringify({ settings: { editorColors: null } }))
-      expect(loadSettingsFile(file).editorColors).toBeNull()
-      fs.rmSync(path.dirname(file), { recursive: true, force: true })
-    })
-
-    it('accepts a valid six-key hex record', () => {
-      const file = tempSettingsFile(JSON.stringify({ settings: { editorColors: validColors } }))
-      expect(loadSettingsFile(file).editorColors).toEqual(validColors)
-      fs.rmSync(path.dirname(file), { recursive: true, force: true })
-    })
-
-    it('rejects a non-hex colour and falls back to null', () => {
-      const file = tempSettingsFile(
-        JSON.stringify({ settings: { editorColors: { ...validColors, background: 'red' } } })
-      )
-      expect(loadSettingsFile(file).editorColors).toBeNull()
-      fs.rmSync(path.dirname(file), { recursive: true, force: true })
-    })
-
-    it('rejects a missing key and falls back to null', () => {
-      const { background: _background, ...rest } = validColors
-      const file = tempSettingsFile(JSON.stringify({ settings: { editorColors: rest } }))
-      expect(loadSettingsFile(file).editorColors).toBeNull()
-      fs.rmSync(path.dirname(file), { recursive: true, force: true })
-    })
-
-    it('rejects an unknown extra key and falls back to null', () => {
-      const file = tempSettingsFile(
-        JSON.stringify({ settings: { editorColors: { ...validColors, extra: '#000000' } } })
-      )
-      expect(loadSettingsFile(file).editorColors).toBeNull()
-      fs.rmSync(path.dirname(file), { recursive: true, force: true })
-    })
-
-    it('rejects a non-object and falls back to null', () => {
-      const file = tempSettingsFile(JSON.stringify({ settings: { editorColors: '#fdf6e3' } }))
-      expect(loadSettingsFile(file).editorColors).toBeNull()
-      fs.rmSync(path.dirname(file), { recursive: true, force: true })
-    })
-  })
-
   it('keeps recoverable fields from a partially-corrupt file', () => {
     const file = tempSettingsFile(
       JSON.stringify({
@@ -436,7 +354,6 @@ describe('loadSettingsFile', () => {
           sidebarWidth: 'wide',
           themeOverride: null,
           explorerVisible: false,
-          editorFont: 'serif'
         }
       })
     )
@@ -444,9 +361,7 @@ describe('loadSettingsFile', () => {
       sidebarWidth: 30,
       themeOverride: null,
       explorerVisible: false,
-      editorFont: 'serif',
       editorTheme: 'rustic',
-      editorColors: null,
       spellcheckEnabled: true,
       spellcheckLanguage: null,
       fileOpenBehavior: 'same-tab',
@@ -469,9 +384,7 @@ describe('writeSettingsFile (shared config, spec 012 FR-002)', () => {
       sidebarWidth: 25,
       themeOverride: null,
       explorerVisible: false,
-      editorFont: 'serif',
       editorTheme: 'rustic',
-      editorColors: null,
       spellcheckEnabled: true,
       spellcheckLanguage: null,
       fileOpenBehavior: 'new-tab',
@@ -487,9 +400,7 @@ describe('writeSettingsFile (shared config, spec 012 FR-002)', () => {
       sidebarWidth: 25,
       themeOverride: null,
       explorerVisible: false,
-      editorFont: 'serif',
       editorTheme: 'rustic',
-      editorColors: null,
       spellcheckEnabled: true,
       spellcheckLanguage: null,
       fileOpenBehavior: 'new-tab',
@@ -504,12 +415,12 @@ describe('writeSettingsFile (shared config, spec 012 FR-002)', () => {
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
-  it('persists the materialised default palette, not null, on a fresh write (clarification 2026-08-09)', () => {
+  it('persists no legacy palette on a fresh write (spec 036: colours live in theme files)', () => {
     const file = tempSettingsFile()
     writeSettingsFile(file, DEFAULTS)
-    expect(loadSettingsFile(file).editorColors).toEqual(RUSTIC_COLORS)
     const written = JSON.parse(fs.readFileSync(file, 'utf-8'))
-    expect(written.settings.editorColors).not.toBeNull()
+    expect('editorColors' in written.settings).toBe(false)
+    expect('editorFont' in written.settings).toBe(false)
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
@@ -524,17 +435,17 @@ describe('writeSettingsFile (shared config, spec 012 FR-002)', () => {
       }
     ]
     fs.writeFileSync(file, JSON.stringify({ recentItems }), 'utf-8')
-    writeSettingsFile(file, { ...DEFAULTS, editorFont: 'serif' })
+    writeSettingsFile(file, { ...DEFAULTS, fileOpenBehavior: 'new-tab' })
     const whole = readConfigFile(file)
     expect(whole.recentItems).toEqual(recentItems)
-    expect(loadSettingsFile(file).editorFont).toBe('serif')
+    expect(loadSettingsFile(file).fileOpenBehavior).toBe('new-tab')
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
   it('writes a valid config over a malformed one without throwing', () => {
     const file = tempSettingsFile('{ not json')
-    writeSettingsFile(file, { ...DEFAULTS, editorFont: 'serif' })
-    expect(loadSettingsFile(file).editorFont).toBe('serif')
+    writeSettingsFile(file, { ...DEFAULTS, fileOpenBehavior: 'new-tab' })
+    expect(loadSettingsFile(file).fileOpenBehavior).toBe('new-tab')
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 })
@@ -568,9 +479,7 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
       sidebarWidth: 44,
       themeOverride: 'dark',
       explorerVisible: false,
-      editorFont: 'sans-serif',
       editorTheme: 'rustic',
-      editorColors: null,
       spellcheckEnabled: true,
       spellcheckLanguage: null,
       fileOpenBehavior: 'same-tab',
@@ -597,7 +506,6 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
           sidebarWidth: 20,
           themeOverride: null,
           explorerVisible: true,
-          editorFont: 'serif'
         }
       })
     )
@@ -610,7 +518,6 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
 
     expect(migrateLegacySettingsFile(configPath, legacyPath)).toBeNull()
     expect(loadSettingsFile(configPath).sidebarWidth).toBe(20)
-    expect(loadSettingsFile(configPath).editorFont).toBe('serif')
     fs.rmSync(path.dirname(configPath), { recursive: true, force: true })
   })
 
@@ -631,7 +538,7 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
     fs.rmSync(path.dirname(configPath), { recursive: true, force: true })
   })
 
-  it('rejects invalid legacy editorFont values during migration', () => {
+  it('drops a legacy editorFont key during migration (withdrawn by spec 036)', () => {
     const configPath = tempSettingsFile()
     const legacyPath = path.join(path.dirname(configPath), 'settings.json')
     fs.writeFileSync(
@@ -645,7 +552,7 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
       'utf-8'
     )
     const migrated = migrateLegacySettingsFile(configPath, legacyPath)
-    expect(migrated?.editorFont).toBe('sans-serif')
+    expect('editorFont' in (migrated ?? {})).toBe(false)
     fs.rmSync(path.dirname(configPath), { recursive: true, force: true })
   })
 
@@ -712,7 +619,6 @@ describe('materialiseDefaultSettings (spec 008 clarification 2026-08-09)', () =>
     )
     expect(materialiseDefaultSettings(file, false)).toEqual({ ...DEFAULTS, explorerVisible: false })
     expect(loadSettingsFile(file)).toEqual({ ...DEFAULTS, explorerVisible: false })
-    expect(loadSettingsFile(file).editorColors).toEqual(RUSTIC_COLORS)
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
@@ -759,17 +665,7 @@ describe('materialiseDefaultSettings (spec 008 clarification 2026-08-09)', () =>
 })
 
 describe('mergeSettingsPatch (review #27: authoritative in-memory merge)', () => {
-  const base: typeof DEFAULTS = { ...DEFAULTS, editorFont: 'sans-serif' }
-
-  it('applies a valid editorFont patch', () => {
-    expect(mergeSettingsPatch(base, { editorFont: 'serif' }).editorFont).toBe('serif')
-  })
-
-  it('rejects an invalid editorFont value, keeping the current one', () => {
-    expect(mergeSettingsPatch(base, { editorFont: 'comic-sans' as 'serif' }).editorFont).toBe(
-      'sans-serif'
-    )
-  })
+  const base: typeof DEFAULTS = { ...DEFAULTS }
 
   it('rejects a non-finite sidebarWidth', () => {
     expect(mergeSettingsPatch(base, { sidebarWidth: NaN }).sidebarWidth).toBe(30)
@@ -777,7 +673,7 @@ describe('mergeSettingsPatch (review #27: authoritative in-memory merge)', () =>
   })
 
   it('keeps un-patched fields unchanged', () => {
-    const result = mergeSettingsPatch(base, { editorFont: 'serif' })
+    const result = mergeSettingsPatch(base, { spellcheckEnabled: false })
     expect(result.sidebarWidth).toBe(30)
     expect(result.explorerVisible).toBe(true)
   })
@@ -871,7 +767,6 @@ describe('markdown syntax options (spec 030)', () => {
           sidebarWidth: 30,
           themeOverride: null,
           explorerVisible: true,
-          editorFont: 'sans-serif'
         }
       })
     )
@@ -892,7 +787,6 @@ describe('markdown syntax options (spec 030)', () => {
           sidebarWidth: 30,
           themeOverride: null,
           explorerVisible: true,
-          editorFont: 'sans-serif',
           hardBreaks: true,
           strikethrough: false,
           tables: false,
@@ -919,7 +813,6 @@ describe('markdown syntax options (spec 030)', () => {
           sidebarWidth: 30,
           themeOverride: null,
           explorerVisible: true,
-          editorFont: 'sans-serif',
           strikethrough: 'yes',
           tables: 'no'
         }

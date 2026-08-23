@@ -1,12 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import type {
-  Settings,
-  SpellcheckLanguage,
-  EditorColors,
-  FileOpenBehavior
-} from '../shared/ipc-contract'
-import { RUSTIC_COLORS } from '../shared/editorThemePresets'
+import type { Settings, SpellcheckLanguage, FileOpenBehavior } from '../shared/ipc-contract'
 import { MARKDOWN_SYNTAX_DEFAULTS } from '../shared/markdownSyntaxDefaults'
 import { isValidEditorThemeName } from './themes/validate'
 import { atomicWrite } from './fs/atomicWrite'
@@ -31,12 +25,9 @@ export const DEFAULTS: Settings = {
   sidebarWidth: 30,
   themeOverride: null,
   explorerVisible: true,
-  editorFont: 'sans-serif',
+  // Spec 036: the selection is a theme FILE name; its colours and typeface
+  // live in <configDir>/themes/<name>.json (FR-001/FR-003), not in the config.
   editorTheme: 'rustic',
-  // Spec 008 clarification 2026-08-09: presets are materialised in the config,
-  // not stored as null. A fresh config's first write must therefore persist the
-  // default preset's (rustic) exact colours, so the default carries them.
-  editorColors: RUSTIC_COLORS,
   spellcheckEnabled: true,
   spellcheckLanguage: null,
   fileOpenBehavior: 'same-tab',
@@ -72,27 +63,9 @@ function isFileOpenBehavior(value: unknown): value is FileOpenBehavior {
   return typeof value === 'string' && (FILE_OPEN_BEHAVIORS as readonly string[]).includes(value)
 }
 
-/** Spec 023 FR-010: a valid `EditorColors` is either `null` or a closed
- *  six-key record whose values are all `#rrggbb` hex strings. Anything else is
- *  rejected whole (falls back to the preset's colours). */
-const HEX_COLOR = /^#[0-9a-fA-F]{6}$/
-
-function isEditorColors(value: unknown): value is EditorColors | null {
-  if (value === null) return true
-  if (!value || typeof value !== 'object') return false
-  const record = value as Record<string, unknown>
-  const keys = ['background', 'foreground', 'accent', 'surface', 'outline', 'code']
-  for (const key of keys) {
-    if (
-      !(key in record) ||
-      typeof record[key] !== 'string' ||
-      !HEX_COLOR.test(record[key] as string)
-    ) {
-      return false
-    }
-  }
-  return Object.keys(record).length === keys.length
-}
+/** Spec 023 FR-010 (withdrawn by spec 036): the old closed six-key colour
+ *  validation lived here. Theme palettes are now validated per FILE in
+ *  themes/validate.ts; legacy config colours are read raw by the migration. */
 
 function validateSettings(raw: unknown): Settings {
   if (!raw || typeof raw !== 'object') return { ...DEFAULTS }
@@ -112,15 +85,10 @@ function validateSettings(raw: unknown): Settings {
       typeof parsed.explorerVisible === 'boolean'
         ? parsed.explorerVisible
         : DEFAULTS.explorerVisible,
-    editorFont:
-      parsed.editorFont === 'sans-serif' || parsed.editorFont === 'serif'
-        ? parsed.editorFont
-        : DEFAULTS.editorFont,
     editorTheme:
       typeof parsed.editorTheme === 'string' && isValidEditorThemeName(parsed.editorTheme)
         ? parsed.editorTheme
         : DEFAULTS.editorTheme,
-    editorColors: isEditorColors(parsed.editorColors) ? parsed.editorColors : null,
     spellcheckEnabled:
       typeof parsed.spellcheckEnabled === 'boolean'
         ? parsed.spellcheckEnabled
@@ -167,15 +135,10 @@ export function mergeSettingsPatch(current: Settings, patch: Partial<Settings>):
         : current.themeOverride,
     explorerVisible:
       typeof patch.explorerVisible === 'boolean' ? patch.explorerVisible : current.explorerVisible,
-    editorFont:
-      patch.editorFont === 'sans-serif' || patch.editorFont === 'serif'
-        ? (patch.editorFont as 'sans-serif' | 'serif')
-        : current.editorFont,
     editorTheme:
       typeof patch.editorTheme === 'string' && isValidEditorThemeName(patch.editorTheme)
         ? patch.editorTheme
         : current.editorTheme,
-    editorColors: isEditorColors(patch.editorColors) ? patch.editorColors : current.editorColors,
     spellcheckEnabled:
       typeof patch.spellcheckEnabled === 'boolean'
         ? patch.spellcheckEnabled
@@ -282,9 +245,7 @@ export function migrateLegacySettingsFile(configPath: string, legacyPath: string
     'sidebarWidth',
     'themeOverride',
     'explorerVisible',
-    'editorFont',
     'editorTheme',
-    'editorColors',
     'spellcheckEnabled',
     'spellcheckLanguage',
     'fileOpenBehavior',

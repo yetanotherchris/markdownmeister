@@ -120,7 +120,7 @@ function persistSelectionAndStripLegacy(configPath: string, themeName: string): 
     current.settings && typeof current.settings === 'object'
       ? (current.settings as Record<string, unknown>)
       : {}
-  const nextSettings = { ...rawSettings, editorTheme: themeName }
+  const nextSettings: Record<string, unknown> = { ...rawSettings, editorTheme: themeName }
   delete nextSettings.editorColors
   delete nextSettings.editorFont
   const updated = { ...current, settings: nextSettings }

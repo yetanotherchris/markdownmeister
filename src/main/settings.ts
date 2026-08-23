@@ -63,8 +63,8 @@ export function loadSettings(): Settings {
 }
 
 /** Validate a renderer-supplied patch field by field against the current
- *  settings (review #27: `editorFont` is a closed union — never arbitrary
- *  text). Returns the merged Settings. */
+ *  settings (review #27; spec 036: `editorTheme` must be a well-formed theme
+ *  name — never arbitrary text). Returns the merged Settings. */
 function validateAndMerge(patch: Partial<Settings>): Settings {
   return mergeSettingsPatch(loadSettings(), patch)
 }
