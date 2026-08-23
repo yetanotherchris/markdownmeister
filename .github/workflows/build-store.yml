@@ -1,0 +1,84 @@
+name: Build Microsoft Store package
+
+# Spec 038 (FR-001): builds the unsigned MSIX (Store signing happens during
+# certification, so no certificate is needed here — electron-builder logs
+# "Windows Store only build"). Dispatched MANUALLY because the resulting
+# package is submitted to Partner Center by a human, never published
+# automatically. This workflow is independent of build-release.yml and must
+# not change it.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-store:
+    runs-on: windows-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # actions/checkout v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # actions/setup-node v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      # Same retry posture as build-release.yml: Electron's postinstall
+      # downloads a platform binary outside npm's retry coverage.
+      - name: Install dependencies
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            if npm ci; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "npm ci failed; retrying Electron download in 20 seconds (attempt $attempt of 3)."
+              sleep 20
+            fi
+          done
+          echo "::error::npm ci failed after 3 attempts."
+          exit 1
+
+      # windows-latest ships Visual Studio 2022 (MSVC v143) and the Windows 11
+      # SDK that native/shell-extension requires (scripts/build-shell-extension.ps1
+      # fails loudly when either is missing).
+      - name: Build shell extension
+        shell: pwsh
+        run: ./scripts/build-shell-extension.ps1
+
+      - name: Build app
+        run: npm run build
+
+      # Unsigned on purpose (research R4). Optional repository variables/
+      # secrets STORE_IDENTITY_NAME and STORE_PUBLISHER inject the real
+      # Partner Center identity WITHOUT editing electron-builder.yml; when
+      # unset, the committed placeholders are used and the artifact is a
+      # verification build only (docs/store-release.md).
+      - name: Package (unsigned MSIX for Store)
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          STORE_IDENTITY_NAME: ${{ vars.STORE_IDENTITY_NAME }}
+          STORE_PUBLISHER: ${{ vars.STORE_PUBLISHER }}
+        shell: pwsh
+        run: |
+          $args = @('--win', 'appx', '--x64', '--publish', 'never')
+          if ($env:STORE_IDENTITY_NAME) { $args += "-c.appx.identityName=$env:STORE_IDENTITY_NAME" }
+          if ($env:STORE_PUBLISHER) { $args += "-c.appx.publisher=$env:STORE_PUBLISHER" }
+          npx electron-builder @args
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # actions/upload-artifact v7.0.1
+        with:
+          name: artifacts-windows-x64-store
+          path: |
+            dist/markdownmeister-*.appx
+            dist/markdownmeister-*.msix
+            dist/markdownmeister-*.msixupload
+          if-no-files-found: error
