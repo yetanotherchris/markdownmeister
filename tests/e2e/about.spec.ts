@@ -98,14 +98,18 @@ test('US1/FR-002 the displayed version equals the running application version', 
   await expect(window.getByTestId('settings-about-version')).toHaveText(runtimeVersion)
 })
 
-test('US1 the repository URL and a full revision identifier are both shown', async () => {
+test('US1 the repository URL and a revision identifier are both shown', async () => {
   await openAboutArea()
 
   await expect(window.getByTestId('settings-about-repository')).toHaveText(REPOSITORY_URL)
-  // The built app embeds the source revision; it must be a full hash, not the
-  // placeholder and not an abbreviation (FR-005, Assumptions: full identifier).
+  // MM_BUILD_COMMIT is accepted verbatim (research R2/R4) — any non-blank
+  // string can surface here, so the assertion must not assume a 40-hex SHA.
+  // Assert only that an honest identifier rendered: non-empty, non-placeholder,
+  // and unpadded (tests review 2026-08-23).
   const revision = await window.getByTestId('settings-about-revision').textContent()
-  expect(revision).toMatch(/^[0-9a-f]{40}$/)
+  expect(revision).toBeTruthy()
+  expect(revision?.trim()).toBe(revision)
+  expect(revision).not.toBe('development build')
 })
 
 test('US2/FR-004 activating the repository URL hands the exact URL to the OS exactly once', async () => {
@@ -162,4 +166,18 @@ test('FR-007 an unpackaged run forced into development mode shows the honest pla
   await expect(window.getByTestId('settings-about-revision')).toHaveText('development build')
   await expect(window.getByTestId('settings-about-copy')).toHaveCount(0)
   await expect(window.getByTestId('settings-about-repository')).toHaveText(REPOSITORY_URL)
+})
+
+test('US1/FR-007 an odd revision override displays verbatim through the unpackaged seam', async () => {
+  await closeAppSafely(app)
+
+  // research R2/R4: the override is taken verbatim — a tag, short SHA, or
+  // branch name must display exactly as provided, not only 40-hex hashes
+  // (tests review 2026-08-23).
+  ;({ app, window } = await launchApp(configDir, testFolder, undefined, {
+    MM_BUILD_COMMIT: 'v1.2.3-rc.1+odd'
+  }))
+  await openAboutArea()
+
+  await expect(window.getByTestId('settings-about-revision')).toHaveText('v1.2.3-rc.1+odd')
 })
