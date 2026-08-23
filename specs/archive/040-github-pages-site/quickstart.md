@@ -51,7 +51,7 @@ npm run lint
 npm run typecheck
 npm run test          # includes tests/main/siteContract.test.ts:
                       #   required elements present (h1, download href exact, repo link exact,
-                      #   favicon, alt text, version span + deploy-version meta)
+                      #   favicon, alt text, feature bullets, version span + deploy-version meta)
                       #   inline script performs the releases/latest lookup with a timeout
                       #   audit: no externally loaded resources besides api.github.com fetch
                       #   workflow: push→main paths filter, permissions, concurrency, upload path

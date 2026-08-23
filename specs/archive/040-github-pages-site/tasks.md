@@ -22,7 +22,7 @@
 
 ### Implementation for User Story 2
 
-- [x] T001 [P] [US2] Create docs/site/tailwind.input.css (`@import "tailwindcss"; @source "./index.html";`), compile docs/site/styles.css via `npx @tailwindcss/cli@4 -i tailwind.input.css -o styles.css --minify`, and author docs/site/index.html: semantic single-page structure (one `h1` "MarkdownMeister", header/main/footer), Tailwind utility classes only, white-anchored light palette + neutral dark via default `prefers-color-scheme` behaviour, generous whitespace, no decorative animation beyond hover/focus transitions, visible focus indicators, responsive phone→desktop. Zero external resources (no CDN scripts/webfonts/analytics); favicon wired to assets/icon.png.
+- [x] T001 [P] [US2] Create docs/site/tailwind.input.css (`@import "tailwindcss"; @source "./index.html";`), compile docs/site/styles.css with the pinned CLI using the canonical regeneration procedure (docs/site/README.md), and author docs/site/index.html: semantic single-page structure (one `h1` "MarkdownMeister", header/main/footer), Tailwind utility classes only, white-anchored light palette + neutral dark via default `prefers-color-scheme` behaviour, generous whitespace, no decorative animation beyond hover/focus transitions, visible focus indicators, responsive phone→desktop. Zero external resources (no CDN scripts/webfonts/analytics); favicon wired to assets/icon.png.
 
 **Checkpoint**: Page served locally reads as restrained white-on-light / dark-on-dark per system appearance at 320–1280 px.
 
@@ -49,7 +49,7 @@
 
 ### Implementation for User Story 3
 
-- [x] T006 [US3] Create .github/workflows/pages-deploy.yml: push to main filtered to [`docs/site/**`, `.github/workflows/pages-deploy.yml`]; permissions pages:write + id-token:write; concurrency group github-pages; checkout → compute VERSION (`git describe --tags --abbrev=0` falling back to `npm pkg get version`, leading v stripped) → sed-substitute `__MM_DEPLOY_VERSION__` in index.html meta+span → configure-pages → upload-pages-artifact path docs/site → deploy-pages. Do not modify build-release.yml.
+- [x] T006 [US3] Create .github/workflows/pages-deploy.yml: push to main filtered to [`docs/site/**`, `.github/workflows/pages-deploy.yml`]; least-privilege permissions (contents:read + pages:write + id-token:write); concurrency group github-pages; full-history checkout → compute VERSION (`git describe --tags --abbrev=0` over fetched tags, falling back to `npm pkg get version`, validated, leading v stripped) → sed-substitute `__MM_DEPLOY_VERSION__` in index.html meta+span → configure-pages → upload-pages-artifact path docs/site → deploy-pages; actions pinned to commit SHAs (build-release.yml precedent). Do not modify build-release.yml.
 
 **Checkpoint**: Workflow YAML lints by inspection against the contract test assertions below.
 
@@ -59,7 +59,7 @@
 
 **Purpose**: Lock the contract; prove the app suite is untouched.
 
-- [x] T007 [US1/US3] Create tests/main/siteContract.test.ts (node env project): h1 text; download href exact; GitHub link href exact; favicon link present; hero img alt non-empty; `#version` span present + `meta[name="deploy-version"]` present; inline script contains the releases/latest endpoint and a timeout mechanism; audit that index.html loads no external resources and styles.css contains no absolute URLs (api.github.com fetch exempted as the sole permitted request); workflow file triggers on push to main with both paths entries, required permissions, concurrency group github-pages, upload path docs/site. Assertions robust to formatting.
+- [x] T007 [US1/US3] Create tests/main/siteContract.test.ts (node env project): h1 text; download href exact; GitHub link href exact; favicon link present; hero img alt non-empty; feature bullet list follows the Features heading (FR-004); `#version` span present + `meta[name="deploy-version"]` present; inline script contains the releases/latest endpoint and a timeout mechanism; audit that index.html loads no external resources (incl. scheme-relative URLs, srcset, iframes, inline styles) and styles.css contains no external url()/imports (api.github.com fetch exempted as the sole permitted request); workflow file triggers on push to main with both paths entries, exact permissions, concurrency group github-pages, SHA-pinned actions, upload path docs/site. Assertions robust to formatting.
 - [x] T008 Add tests/main/siteContract.test.ts to package.json format:check list (site html/css/svg stay excluded from prettier checks).
 - [x] T009 Run gates until green, in order: npm install (once) → npm run lint → npm run typecheck → npm test → npm run check → npx prettier --check tests/main/siteContract.test.ts → last npm run test:e2e (retry contention failures up to 3×; proves the application suite passes untouched).
 - [x] T010 As part of the implementation PR, archive the spec: `git mv specs/040-github-pages-site specs/archive/040-github-pages-site` and set its **Status** to `Archived`.
