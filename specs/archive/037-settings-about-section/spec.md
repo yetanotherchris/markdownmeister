@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-22
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "the settings menu needs an about section, with the version and the url of the repo, and a hash"
 

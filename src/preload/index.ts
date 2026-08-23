@@ -17,6 +17,7 @@ import type {
   NativeDialogRequest,
   NativeDialogDecision,
   RecentItem,
+  BuildInfo,
   ErrorCode
 } from '../shared/ipc-contract'
 
@@ -124,7 +125,8 @@ const api: DesktopApi = {
   },
 
   onOsOpenFailed: (cb: (message: string) => void): (() => void) => {
-    const handler = (_e: Electron.IpcRendererEvent, payload: { message: string }) => cb(payload.message)
+    const handler = (_e: Electron.IpcRendererEvent, payload: { message: string }) =>
+      cb(payload.message)
     ipcRenderer.on('os:openFailed', handler)
     return () => ipcRenderer.removeListener('os:openFailed', handler)
   },
@@ -150,7 +152,10 @@ const api: DesktopApi = {
   clearRecentItems: () => invokeResult<null>('recent:clear'),
   requestQuit: () => invokeResult<null>('app:requestQuit'),
   getSpellcheckWords: () => invokeResult<string[]>('spellcheck:getWords'),
-  addSpellcheckWord: (word: string) => invokeResult<string[]>('spellcheck:addWord', { word })
+  addSpellcheckWord: (word: string) => invokeResult<string[]>('spellcheck:addWord', { word }),
+
+  getBuildInfo: () => invokeResult<BuildInfo>('build:getInfo'),
+  openRepositoryUrl: () => invokeResult<null>('build:openRepository')
 }
 
 contextBridge.exposeInMainWorld('api', api)
