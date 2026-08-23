@@ -2,13 +2,13 @@ import * as fs from 'fs'
 import * as path from 'path'
 import type {
   Settings,
-  EditorThemeName,
   SpellcheckLanguage,
   EditorColors,
   FileOpenBehavior
 } from '../shared/ipc-contract'
 import { RUSTIC_COLORS } from '../shared/editorThemePresets'
 import { MARKDOWN_SYNTAX_DEFAULTS } from '../shared/markdownSyntaxDefaults'
+import { isValidEditorThemeName } from './themes/validate'
 import { atomicWrite } from './fs/atomicWrite'
 
 /**
@@ -58,24 +58,11 @@ export function readConfigFile(filePath: string): Record<string, unknown> {
   }
 }
 
-/** The closed five-name union of editor themes (spec 016 FR-001/FR-006). */
-const EDITOR_THEME_NAMES: readonly EditorThemeName[] = [
-  'rustic',
-  'rustic-serif',
-  'monotone',
-  'monotone-serif',
-  'scholarly'
-]
-
 /** The closed union of selectable spellcheck languages (spec 020). */
 const SPELLCHECK_LANGUAGES: readonly SpellcheckLanguage[] = ['en-GB', 'en-US']
 
 /** The closed two-value union of explorer file-opening behavior (spec 008). */
 const FILE_OPEN_BEHAVIORS: readonly FileOpenBehavior[] = ['same-tab', 'new-tab']
-
-function isEditorThemeName(value: unknown): value is EditorThemeName {
-  return typeof value === 'string' && (EDITOR_THEME_NAMES as readonly string[]).includes(value)
-}
 
 function isSpellcheckLanguage(value: unknown): value is SpellcheckLanguage {
   return typeof value === 'string' && (SPELLCHECK_LANGUAGES as readonly string[]).includes(value)
@@ -129,7 +116,10 @@ function validateSettings(raw: unknown): Settings {
       parsed.editorFont === 'sans-serif' || parsed.editorFont === 'serif'
         ? parsed.editorFont
         : DEFAULTS.editorFont,
-    editorTheme: isEditorThemeName(parsed.editorTheme) ? parsed.editorTheme : DEFAULTS.editorTheme,
+    editorTheme:
+      typeof parsed.editorTheme === 'string' && isValidEditorThemeName(parsed.editorTheme)
+        ? parsed.editorTheme
+        : DEFAULTS.editorTheme,
     editorColors: isEditorColors(parsed.editorColors) ? parsed.editorColors : null,
     spellcheckEnabled:
       typeof parsed.spellcheckEnabled === 'boolean'
@@ -181,7 +171,10 @@ export function mergeSettingsPatch(current: Settings, patch: Partial<Settings>):
       patch.editorFont === 'sans-serif' || patch.editorFont === 'serif'
         ? (patch.editorFont as 'sans-serif' | 'serif')
         : current.editorFont,
-    editorTheme: isEditorThemeName(patch.editorTheme) ? patch.editorTheme : current.editorTheme,
+    editorTheme:
+      typeof patch.editorTheme === 'string' && isValidEditorThemeName(patch.editorTheme)
+        ? patch.editorTheme
+        : current.editorTheme,
     editorColors: isEditorColors(patch.editorColors) ? patch.editorColors : current.editorColors,
     spellcheckEnabled:
       typeof patch.spellcheckEnabled === 'boolean'
@@ -226,6 +219,16 @@ export function validateSettingsPatch(patch: unknown): void {
     throw Object.assign(new Error('fileOpenBehavior must be "same-tab" or "new-tab"'), {
       code: 'IO' as const
     })
+  }
+  // Spec 036: a PRESENT editorTheme must be a valid theme name (bounded
+  // printable text, no path separators) — malformed IPC input is rejected
+  // before the tolerant merge, never coerced into the settings store.
+  if ('editorTheme' in record) {
+    if (typeof record.editorTheme !== 'string' || !isValidEditorThemeName(record.editorTheme)) {
+      throw Object.assign(new Error('editorTheme must be a valid theme name'), {
+        code: 'IO' as const
+      })
+    }
   }
   // Spec 030 FR-003..FR-008 (research R5): the six markdown syntax toggles are
   // strictly validated — a PRESENT non-boolean is rejected whole (never

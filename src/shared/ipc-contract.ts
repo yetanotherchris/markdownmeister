@@ -147,9 +147,9 @@ export type EditorThemeName =
  *  be added here later (the mechanism is identical). */
 export type SpellcheckLanguage = 'en-GB' | 'en-US'
 
-/** Spec 023: the six curated editor colour tokens a custom theme stores, mapped
- *  to Crepe's `--crepe-color-*` variables (contracts/editor-theme.md). A closed
- *  record of `#rrggbb` hex strings — validated in main (FR-010). */
+/** Spec 023: the six curated editor colour tokens a theme palette stores,
+ *  mapped to Crepe's `--crepe-color-*` variables (contracts/editor-theme.md).
+ *  A closed record of `#rrggbb` hex strings — validated in main. */
 export interface EditorColors {
   background: string
   foreground: string
@@ -157,6 +157,23 @@ export interface EditorColors {
   surface: string
   outline: string
   code: string
+}
+
+/** Spec 036: one discovered theme file, delivered to the renderer by
+ *  `themes:list`. The name is the file stem and doubles as the display label;
+ *  both palettes are mandatory and pre-validated in main. */
+export interface EditorThemeDefinition {
+  name: string
+  typeface: string
+  light: EditorColors
+  dark: EditorColors
+}
+
+/** Spec 036 (`themes:list` payload): every valid theme plus the quiet
+ *  indication of rejected files (never surfaced modally — FR-010). */
+export interface EditorThemesList {
+  themes: EditorThemeDefinition[]
+  invalidNames: string[]
 }
 
 /** Spec 008: how an explorer-originated file open places the document (FR-008,
@@ -178,11 +195,12 @@ export interface Settings {
    *  Spec 023 FR-008: ACTIVE — it drives the typeface for a custom editor theme
    *  and is written to the preset's font when a preset is selected (FR-005). */
   editorFont: 'sans-serif' | 'serif'
-  /** The selected editor theme (spec 016 FR-001/FR-002). Defaults to
-   *  'rustic'. A closed union — validated in main, never arbitrary text. When
-   *  `editorColors` is set, the effective theme is detected from the values
-   *  instead (spec 023 FR-003/004/007). */
-  editorTheme: EditorThemeName
+  /** The selected editor theme (spec 036 FR-006): the NAME of the selected
+   *  theme file — its stem — resolved against discovered themes at read time.
+   *  Defaults to 'rustic'. Validated in main as a bounded printable string
+   *  with no path separators; an unresolved name falls back silently to the
+   *  default theme and is repaired (FR-013). */
+  editorTheme: string
   /** Spec 023: the six editor colour tokens in effect. A preset selection
    *  materialises the preset's exact colours here (clarified 2026-08-09), so
    *  the field is only `null` for configs written before that change or by
@@ -265,6 +283,10 @@ export interface DesktopApi {
   revealEntry(relativePath: string, kind: EntryKind): Promise<Result<null>>
   getSettings(): Promise<Result<Settings>>
   updateSettings(patch: Partial<Settings>): Promise<Result<Settings>>
+  /** Spec 036: the discovered editor theme files (contracts/preload.md).
+   *  Read fresh from the themes folder on every call; also silently repairs a
+   *  stored selection whose file no longer resolves (FR-013). */
+  getEditorThemes(): Promise<Result<EditorThemesList>>
   onWorkspaceChanged(cb: (e: WatchEvent) => void): () => void
   onDocumentChanged(cb: (e: DocumentChangeEvent) => void): () => void
   onMenuCommand(cb: (c: MenuCommand) => void): () => void

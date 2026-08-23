@@ -332,7 +332,7 @@ describe('loadSettingsFile', () => {
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 
-  it('accepts each of the five editorTheme values', () => {
+  it('still accepts each of the five default editorTheme names', () => {
     const themes = ['rustic', 'rustic-serif', 'monotone', 'monotone-serif', 'scholarly'] as const
     for (const theme of themes) {
       const file = tempSettingsFile(
@@ -351,20 +351,30 @@ describe('loadSettingsFile', () => {
     }
   })
 
-  it('rejects an invalid editorTheme value (spec 016: closed union)', () => {
+  it('accepts any well-formed theme-file stem (spec 036: names are file stems)', () => {
     const file = tempSettingsFile(
-      JSON.stringify({
-        settings: {
-          sidebarWidth: 30,
-          themeOverride: null,
-          explorerVisible: true,
-          editorFont: 'sans-serif',
-          editorTheme: 'ocean'
-        }
-      })
+      JSON.stringify({ settings: { sidebarWidth: 30, editorTheme: 'my-midnight_v2' } })
     )
-    expect(loadSettingsFile(file).editorTheme).toBe('rustic')
+    expect(loadSettingsFile(file).editorTheme).toBe('my-midnight_v2')
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
+  })
+
+  it('rejects an invalid editorTheme value (spec 036: bounded name, no path separators)', () => {
+    for (const bad of ['../evil', 'a\\b', 'a\nb', '', 'x'.repeat(101)]) {
+      const file = tempSettingsFile(
+        JSON.stringify({
+          settings: {
+            sidebarWidth: 30,
+            themeOverride: null,
+            explorerVisible: true,
+            editorFont: 'sans-serif',
+            editorTheme: bad
+          }
+        })
+      )
+      expect(loadSettingsFile(file).editorTheme).toBe('rustic')
+      fs.rmSync(path.dirname(file), { recursive: true, force: true })
+    }
   })
 
   describe('editorColors validation (spec 023 FR-010)', () => {
@@ -778,15 +788,16 @@ describe('mergeSettingsPatch (review #27: authoritative in-memory merge)', () =>
     expect(mergeSettingsPatch(base, { themeOverride: 'sepia' as 'dark' }).themeOverride).toBe(null)
   })
 
-  it('applies a valid editorTheme patch', () => {
+  it('applies a valid editorTheme patch (any well-formed stem, spec 036)', () => {
     expect(mergeSettingsPatch(base, { editorTheme: 'monotone' }).editorTheme).toBe('monotone')
-    expect(mergeSettingsPatch(base, { editorTheme: 'scholarly' }).editorTheme).toBe('scholarly')
+    expect(mergeSettingsPatch(base, { editorTheme: 'my-midnight' }).editorTheme).toBe(
+      'my-midnight'
+    )
   })
 
-  it('rejects an invalid editorTheme value, keeping the current one', () => {
-    expect(mergeSettingsPatch(base, { editorTheme: 'ocean' as 'rustic' }).editorTheme).toBe(
-      'rustic'
-    )
+  it('rejects an invalid editorTheme patch, keeping the current one', () => {
+    expect(mergeSettingsPatch(base, { editorTheme: '../evil' }).editorTheme).toBe('rustic')
+    expect(mergeSettingsPatch(base, { editorTheme: 'x'.repeat(101) }).editorTheme).toBe('rustic')
   })
 
   it('applies a boolean spellcheckEnabled patch', () => {
@@ -946,6 +957,12 @@ describe('markdown syntax options (spec 030)', () => {
 
   it('validateSettingsPatch does not reject an absent markdown field', () => {
     expect(() => validateSettingsPatch({ sidebarWidth: 30 })).not.toThrow()
+  })
+
+  it('validateSettingsPatch strictly rejects a PRESENT malformed editorTheme (spec 036)', () => {
+    expect(() => validateSettingsPatch({ editorTheme: 'midnight' })).not.toThrow()
+    expect(() => validateSettingsPatch({ editorTheme: '../evil' })).toThrow()
+    expect(() => validateSettingsPatch({ editorTheme: 7 })).toThrow()
   })
 })
 

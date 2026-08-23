@@ -5,6 +5,7 @@ import { registerFileHandlers } from './handlers/files'
 import { registerWorkspaceHandlers } from './handlers/workspace'
 import { registerDialogHandlers } from './handlers/dialogs'
 import { registerSettingsHandlers } from './handlers/settings'
+import { registerThemesHandlers } from './handlers/themes'
 import { registerRecentHandlers } from './handlers/recent'
 import { registerSpellcheckHandlers } from './handlers/spellcheck'
 
@@ -31,6 +32,7 @@ export function registerIpcHandlers(window: BrowserWindow, approvedRendererUrl: 
     'dialog:show',
     'settings:get',
     'settings:update',
+    'themes:list',
     'recent:list',
     'recent:clear',
     'recent:openFile',
@@ -48,6 +50,7 @@ export function registerIpcHandlers(window: BrowserWindow, approvedRendererUrl: 
   registerWorkspaceHandlers(window, ctx)
   registerDialogHandlers(window, ctx)
   registerSettingsHandlers(window, ctx)
+  registerThemesHandlers(window, ctx)
   registerRecentHandlers(window, ctx)
   registerSpellcheckHandlers(window, ctx)
 }
