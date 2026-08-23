@@ -34,6 +34,15 @@ if (process.env.MM_USER_DATA_DIR) {
 
 let mainWindow: BrowserWindow | null = null
 
+// Spec 039 (research D3): win32/Linux take the running-window/taskbar icon
+// from this explicit option; macOS inherits the bundle icns instead. Resolves
+// to <repo>/resources/icon.png in dev and <install>/resources/icon.png when
+// packaged (the extraResources mapping ships it; both are out/main/../..).
+function windowIconPath(): string | undefined {
+  if (process.platform === 'darwin') return undefined
+  return path.join(__dirname, '../../resources/icon.png')
+}
+
 function createWindow(): void {
   // Spec 011 FR-001/FR-005: restore the saved position/size (clamped to the
   // available displays) and re-apply a maximized window.
@@ -44,6 +53,7 @@ function createWindow(): void {
     width: bounds.width,
     height: bounds.height,
     show: false,
+    icon: windowIconPath(),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
