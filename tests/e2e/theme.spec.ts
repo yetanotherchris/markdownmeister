@@ -154,7 +154,7 @@ test('FR-010 the default Rustic canvas keeps its palette in dark mode; Monotone 
   await expect.poll(editorBackground).toBe('rgb(253, 246, 227)') // canvas stays warm
 
   // Monotone follows the app theme: dark → white text on a black canvas.
-  await dialog.getByRole('radio', { name: 'Monotone', exact: true }).check()
+  await dialog.getByRole('radio', { name: 'monotone', exact: true }).check()
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
   await expect.poll(editorBackground).toBe('rgb(0, 0, 0)')

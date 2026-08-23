@@ -5,7 +5,10 @@
  * rules in App.css keep the Inter default; these selectors are more specific so
  * they win regardless of source order (research R1).
  *
- * The theme's values live HERE in the code — never in the config (FR-005).
+ * The theme's identity, six curated colour tokens, and typeface live in its
+ * FILE (spec 036) — never in the config (FR-005). These preset blocks remain
+ * as the defaults' base layer for the derived tones the file schema cannot
+ * express; see the file-driven layers at the bottom of this sheet.
  *
  * Rustic (the default, FR-002/FR-007/US3) is the warm cream `#fdf6e3` canvas
  * with Inter sans body, headings in the same family, monospace inline code
@@ -20,6 +23,30 @@
  * its existing app-theme styling (FR-013). The dark-mode canvas override in
  * App.css was removed: the theme owns the canvas (research R5).
  */
+
+/*
+ * Spec 036: the FILE-DRIVEN theme layers, split in two by precedence
+ * (review finding 2026-08-23 — a single layer was neither specificity-safe
+ * nor pixel-identical; plan D5 records the revision):
+ *
+ * 1. DERIVED TONES (below, FIRST). Maps the delivered tokens onto Crepe's
+ *    coarser derived tones. It sits BEFORE the preset blocks at equal-or-
+ *    lower specificity, so the presets' hand-tuned values always win for the
+ *    five default names and unedited defaults stay pixel-identical to the
+ *    previous version (rustic keeps surface-low #fcefce, on-surface #201b13,
+ *    on-surface-variant #4f4539, and so on). Themes WITHOUT a preset block —
+ *    user-created files and the FR-001 emergency appearance — take these
+ *    mappings from here.
+ *
+ * The var() fallbacks ARE the emergency appearance (today's default: the full
+ * rustic palette + Inter), used when nothing resolves (the container then
+ * carries data-editor-theme="default", which no preset block matches).
+ */
+.app-container[data-editor-theme] .milkdown {
+  --crepe-color-surface-low: var(--mm-theme-surface, #fcefce);
+  --crepe-color-on-surface: var(--mm-theme-foreground, #201b13);
+  --crepe-color-on-surface-variant: var(--mm-theme-outline, #4f4539);
+}
 
 .app-container[data-editor-theme='rustic'] .milkdown {
   --crepe-color-background: #fdf6e3;
@@ -39,8 +66,10 @@
   --crepe-color-hover: #f9ecdf;
   --crepe-color-selected: #ede0d4;
   --crepe-color-inline-area: #e4d8cc;
-  --crepe-font-default: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
-  --crepe-font-title: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --crepe-font-default:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --crepe-font-title:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
 }
 
 .app-container[data-editor-theme='rustic-serif'] .milkdown {
@@ -72,8 +101,16 @@
    serif themes. */
 .app-container[data-editor-theme='rustic-serif'] .milkdown .milkdown-top-bar,
 .app-container[data-editor-theme='monotone-serif'] .milkdown .milkdown-top-bar {
-  --crepe-font-default: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --crepe-font-default:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Noto Sans',
+    sans-serif;
 }
 
 .app-container[data-editor-theme='scholarly'] .milkdown {
@@ -129,8 +166,10 @@
   --crepe-color-hover: #e6e6e6;
   --crepe-color-selected: #cccccc;
   --crepe-color-inline-area: #e0e0e0;
-  --crepe-font-default: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
-  --crepe-font-title: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --crepe-font-default:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --crepe-font-title:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
 }
 
 /* Monotone, dark: white on black. */
@@ -152,12 +191,15 @@
   --crepe-color-hover: #262626;
   --crepe-color-selected: #333333;
   --crepe-color-inline-area: #1f1f1f;
-  --crepe-font-default: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
-  --crepe-font-title: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --crepe-font-default:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --crepe-font-title:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
 }
 
 /* Monotone Serif — identical two-tone schemes, Georgia serif body/headings
- * (FR-011, US4: same colors as Monotone, serif typeface). */.app-container[data-editor-theme='monotone-serif'][data-theme='light'] .milkdown {
+ * (FR-011, US4: same colors as Monotone, serif typeface). */
+.app-container[data-editor-theme='monotone-serif'][data-theme='light'] .milkdown {
   --crepe-color-background: #ffffff;
   --crepe-color-on-background: #000000;
   --crepe-color-surface: #ffffff;
@@ -201,30 +243,57 @@
   --crepe-font-title: Georgia, 'Times New Roman', 'Noto Serif', serif;
 }
 
-/* Spec 023 (FR-001/FR-008): the CUSTOM theme. There is no preset block for it —
- * App.tsx carries the stored six colour tokens and the font stack as
- * `--mm-custom-*` custom properties on the container, and this block maps them
- * onto Crepe's tokens at the same specificity as the presets (so the custom
- * values win over Crepe's `.milkdown` defaults). */
-.app-container[data-editor-theme='custom'] .milkdown {
-  --crepe-color-background: var(--mm-custom-background, #fdf6e3);
-  --crepe-color-on-background: var(--mm-custom-foreground, #1f1b16);
-  --crepe-color-surface: var(--mm-custom-surface, #fdf3d9);
-  --crepe-color-surface-low: var(--mm-custom-surface, #fdf3d9);
-  --crepe-color-on-surface: var(--mm-custom-foreground, #201b13);
-  --crepe-color-on-surface-variant: var(--mm-custom-outline, #4f4539);
-  --crepe-color-outline: var(--mm-custom-outline, #817567);
-  --crepe-color-primary: var(--mm-custom-accent, #805610);
-  --crepe-color-inline-code: var(--mm-custom-code, #ba1a1a);
-  --crepe-color-error: var(--mm-custom-code, #ba1a1a);
-  --crepe-font-default: var(--mm-custom-font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif);
-  --crepe-font-title: var(--mm-custom-font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif);
+/*
+ * 2. CURATED TOKENS (LAST). The six colours + typeface of the resolved FILE
+ *    drive their direct Crepe counterparts for EVERY discovered theme —
+ *    monotone included. The selector is qualified with `[data-theme]` so it
+ *    TIES with the monotone preset blocks at (0,4,0) and wins by source
+ *    order; without that qualifier those blocks would outrank the file values
+ *    and editing monotone.json would have no effect. For unedited defaults
+ *    the file values equal these blocks' own declarations, so winning changes
+ *    nothing visually (plan D5).
+ */
+.app-container[data-editor-theme][data-theme] .milkdown {
+  --crepe-color-background: var(--mm-theme-background, #fdf6e3);
+  --crepe-color-on-background: var(--mm-theme-foreground, #1f1b16);
+  --crepe-color-surface: var(--mm-theme-surface, #fdf3d9);
+  --crepe-color-outline: var(--mm-theme-outline, #817567);
+  --crepe-color-primary: var(--mm-theme-accent, #805610);
+  --crepe-color-inline-code: var(--mm-theme-code, #ba1a1a);
+  --crepe-color-error: var(--mm-theme-code, #ba1a1a);
+  --crepe-font-default: var(
+    --mm-theme-font,
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Noto Sans',
+    sans-serif
+  );
+  --crepe-font-title: var(
+    --mm-theme-font,
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Noto Sans',
+    sans-serif
+  );
 }
 
-/* A custom serif theme keeps the toolbar readable: like the serif presets, the
-   top bar (editor chrome) re-uses the sans-serif Inter stack regardless of the
-   custom body typeface. */
-.app-container[data-editor-theme='custom'] .milkdown .milkdown-top-bar {
-  --crepe-font-default: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+/* A user-created serif theme keeps the toolbar readable, exactly like the
+ * serif presets above: the top bar re-declares the Inter stack. */
+.app-container[data-editor-theme][data-editor-serif='true'] .milkdown .milkdown-top-bar {
+  --crepe-font-default:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Noto Sans',
+    sans-serif;
 }

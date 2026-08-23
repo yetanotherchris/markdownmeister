@@ -3,22 +3,21 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { useSettingsState } from '../../src/renderer/hooks/useSettingsState'
 import { getSettings, updateSettings } from '../../src/renderer/state/settings'
-import type { EditorThemeName, SpellcheckLanguage, FileOpenBehavior } from '../../src/shared/ipc-contract'
+import type { SpellcheckLanguage, FileOpenBehavior } from '../../src/shared/ipc-contract'
 import type { ThemeChoice } from '../../src/renderer/hooks/useEffectiveTheme'
 
 /**
- * Spec 016: `useSettingsState` seeds `editorTheme` from the persisted cache and
- * `handleEditorThemeChange` persists + applies a committed theme (the dialog
- * stages locally and calls this on Save). The hook's IPC calls are stubbed via
- * `window.api` (the preload surface is out of scope for unit tests — the e2e
- * suite covers the real IPC).
+ * Spec 016/036: `useSettingsState` seeds `editorTheme` (a theme-file name)
+ * from the persisted cache and `handleEditorThemeChange` persists the committed
+ * name — nothing else, since colours/typeface come from the theme file. The
+ * hook's IPC calls are stubbed via `window.api` (the preload surface is out of
+ * scope for unit tests — the e2e suite covers the real IPC).
  */
 
 // Minimal stub of the DesktopApi call the hook makes. The preload surface
 // types `window.api` globally (src/renderer/types.d.ts); tests replace it.
 interface StubPatch {
-  editorTheme?: EditorThemeName
-  editorColors?: import('../../src/shared/ipc-contract').EditorColors | null
+  editorTheme?: string
   spellcheckEnabled?: boolean
   spellcheckLanguage?: SpellcheckLanguage | null
   fileOpenBehavior?: FileOpenBehavior
@@ -42,16 +41,18 @@ function stubApi(): void {
 
 // jsdom has no matchMedia; `useEffectiveTheme` reads it (spec 013). A no-op
 // stub returning `matches: false` (light) is enough for the hook tests.
-window.matchMedia = window.matchMedia ?? (() => ({
-  matches: false,
-  media: '(prefers-color-scheme: dark)',
-  onchange: null,
-  addEventListener: () => {},
-  removeEventListener: () => {},
-  addListener: () => {},
-  removeListener: () => {},
-  dispatchEvent: () => false
-})) as unknown as typeof window.matchMedia
+window.matchMedia =
+  window.matchMedia ??
+  ((() => ({
+    matches: false,
+    media: '(prefers-color-scheme: dark)',
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false
+  })) as unknown as typeof window.matchMedia)
 
 let root: Root | null = null
 
@@ -85,29 +86,26 @@ describe('useSettingsState (spec 016)', () => {
     expect(read().editorTheme).toBe('monotone-serif')
   })
 
-  it('handleEditorThemeChange updates local state, the cache, and the IPC', () => {
+  it('handleEditorThemeChange updates local state, the cache, and the IPC with the name only', () => {
     const { read } = renderHook()
     act(() => {
       read().handleEditorThemeChange('scholarly')
     })
     expect(read().editorTheme).toBe('scholarly')
     expect(getSettings().editorTheme).toBe('scholarly')
-    // Spec 023 (clarified 2026-08-09): selecting a preset materialises its
-    // exact colours (not null) and writes the preset's font into editorFont.
-    expect(getSettings().editorColors).toEqual({
-      background: '#ffffff', foreground: '#1a1a1a', accent: '#00b0e9',
-      surface: '#f7f7f7', outline: '#8a8a8a', code: '#b50000'
+    // Spec 036 FR-008: colours and typeface come from the theme FILE — the
+    // handler persists nothing besides the name (no editorColors/editorFont).
+    const calls = (globalThis as unknown as { __apiCalls: StubPatch[] }).__apiCalls
+    expect(calls).toEqual([{ editorTheme: 'scholarly' }])
+  })
+
+  it('handleEditorThemeChange accepts any well-formed theme-file stem', () => {
+    const { read } = renderHook()
+    act(() => {
+      read().handleEditorThemeChange('my-midnight_v2')
     })
-    expect(getSettings().editorFont).toBe('sans-serif')
-    const calls = (globalThis as unknown as { __apiCalls: { editorTheme?: EditorThemeName }[] }).__apiCalls
-    expect(calls).toEqual([{
-      editorTheme: 'scholarly',
-      editorColors: {
-        background: '#ffffff', foreground: '#1a1a1a', accent: '#00b0e9',
-        surface: '#f7f7f7', outline: '#8a8a8a', code: '#b50000'
-      },
-      editorFont: 'sans-serif'
-    }])
+    expect(read().editorTheme).toBe('my-midnight_v2')
+    expect(getSettings().editorTheme).toBe('my-midnight_v2')
   })
 
   it('exposes the persisted spellcheckEnabled as the committed value', () => {
@@ -123,7 +121,8 @@ describe('useSettingsState (spec 016)', () => {
     })
     expect(read().spellcheckEnabled).toBe(false)
     expect(getSettings().spellcheckEnabled).toBe(false)
-    const calls = (globalThis as unknown as { __apiCalls: { spellcheckEnabled?: boolean }[] }).__apiCalls
+    const calls = (globalThis as unknown as { __apiCalls: { spellcheckEnabled?: boolean }[] })
+      .__apiCalls
     expect(calls).toEqual([{ spellcheckEnabled: false }])
   })
 
@@ -146,7 +145,9 @@ describe('useSettingsState (spec 016)', () => {
     })
     expect(read().spellcheckLanguage).toBe('en-US')
     expect(getSettings().spellcheckLanguage).toBe('en-US')
-    const calls = (globalThis as unknown as { __apiCalls: { spellcheckLanguage?: SpellcheckLanguage | null }[] }).__apiCalls
+    const calls = (
+      globalThis as unknown as { __apiCalls: { spellcheckLanguage?: SpellcheckLanguage | null }[] }
+    ).__apiCalls
     expect(calls).toEqual([{ spellcheckLanguage: 'en-US' }])
   })
 
@@ -162,7 +163,7 @@ describe('useSettingsState (spec 016)', () => {
   })
 
   it('seeds the editor theme default from a fresh cache', () => {
-    updateSettings({ editorTheme: 'rustic' as EditorThemeName })
+    updateSettings({ editorTheme: 'rustic' })
     const { read } = renderHook()
     expect(read().editorTheme).toBe('rustic')
   })
@@ -180,7 +181,9 @@ describe('useSettingsState (spec 016)', () => {
     })
     expect(read().fileOpenBehavior).toBe('new-tab')
     expect(getSettings().fileOpenBehavior).toBe('new-tab')
-    const calls = (globalThis as unknown as { __apiCalls: { fileOpenBehavior?: FileOpenBehavior }[] }).__apiCalls
+    const calls = (
+      globalThis as unknown as { __apiCalls: { fileOpenBehavior?: FileOpenBehavior }[] }
+    ).__apiCalls
     expect(calls).toEqual([{ fileOpenBehavior: 'new-tab' }])
   })
 
@@ -191,10 +194,22 @@ describe('useSettingsState (spec 016)', () => {
   })
 
   it('seeds the six markdown options from the cache with FR-013 defaults', () => {
-    updateSettings({ hardBreaks: false, strikethrough: true, tables: true, taskLists: true, math: true, autolink: true })
+    updateSettings({
+      hardBreaks: false,
+      strikethrough: true,
+      tables: true,
+      taskLists: true,
+      math: true,
+      autolink: true
+    })
     const { read } = renderHook()
     expect(read().markdownOptions).toEqual({
-      hardBreaks: false, strikethrough: true, tables: true, taskLists: true, math: true, autolink: true
+      hardBreaks: false,
+      strikethrough: true,
+      tables: true,
+      taskLists: true,
+      math: true,
+      autolink: true
     })
   })
 
@@ -205,11 +220,19 @@ describe('useSettingsState (spec 016)', () => {
     })
     expect(read().markdownOptions.strikethrough).toBe(false)
     expect(getSettings().strikethrough).toBe(false)
-    const calls = (globalThis as unknown as { __apiCalls: { strikethrough?: boolean }[] }).__apiCalls
+    const calls = (globalThis as unknown as { __apiCalls: { strikethrough?: boolean }[] })
+      .__apiCalls
     // The handler persists the FULL six-field snapshot, not just the patch.
-    expect(calls).toEqual([{
-      hardBreaks: false, strikethrough: false, tables: true, taskLists: true, math: true, autolink: true
-    }])
+    expect(calls).toEqual([
+      {
+        hardBreaks: false,
+        strikethrough: false,
+        tables: true,
+        taskLists: true,
+        math: true,
+        autolink: true
+      }
+    ])
   })
 })
 
