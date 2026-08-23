@@ -109,3 +109,19 @@ export function flushSettings(): void {
     }
   }
 }
+
+/** Spec 036 (review finding 2026-08-23): the themes migration repairs
+ *  `editorTheme` through a surgical raw-config edit (plan D9) that this module
+ *  cannot see. A snapshot cached BEFORE such a write arms a debounced write
+ *  that would later restore the pre-migration selection over the repaired one.
+ *  Adopting the repaired name keeps the authoritative cache honest and re-arms
+ *  any pending write with the corrected snapshot. A no-op before a cache
+ *  exists — the first load then reads the already-repaired file. */
+export function adoptRepairedEditorTheme(themeName: string): void {
+  if (!currentSettings || currentSettings.editorTheme === themeName) return
+  currentSettings = { ...currentSettings, editorTheme: themeName }
+  if (writeTimer) {
+    clearTimeout(writeTimer)
+    saveSettings(currentSettings)
+  }
+}

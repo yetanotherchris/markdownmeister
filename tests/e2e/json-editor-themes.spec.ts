@@ -293,6 +293,48 @@ test('US3/FR-009 legacy custom-colour config migrates into migrated-custom.json'
   ])
 })
 
+test('US3/FR-009 a real legacy config (explorerVisible set) migrates and the repair survives startup', async () => {
+  // Regression (review finding 2026-08-23): the explorer reconcile runs an
+  // updateSettings at startup, seeding the settings cache and arming the
+  // debounced write BEFORE the migration repaired the selection — the pending
+  // write then restored the pre-migration name ~500 ms into the run. Real
+  // spec-023 configs always carry explorerVisible: true, so the reconcile
+  // acted on every real upgrade; earlier fixtures omitted it and missed this.
+  await closeAppSafely(app)
+  const scholarlyColors = {
+    background: '#ffffff',
+    foreground: '#1a1a1a',
+    accent: '#00b0e9',
+    surface: '#f7f7f7',
+    outline: '#8a8a8a',
+    code: '#b50000'
+  }
+  seededConfigSettings({
+    sidebarWidth: 280,
+    explorerVisible: true,
+    editorTheme: 'rustic',
+    editorFont: 'sans-serif',
+    editorColors: scholarlyColors
+  })
+  ;({ app, window } = await launchApp(configDir, testFolder))
+  await openFile(window, 'alpha.md')
+
+  // Past the 500 ms debounced-write window armed during startup: the old
+  // ordering reverted the migration's repair right inside this window, and
+  // since the reverted name ('rustic') resolves, no FR-013 repair ever fixed
+  // it again.
+  await expect.poll(persistedEditorTheme, { timeout: 10_000 }).toBe('scholarly')
+  await window.waitForTimeout(1_500)
+  await openFile(window, 'alpha.md')
+  expect(await persistedEditorTheme()).toBe('scholarly')
+
+  // The repair also survives a restart.
+  await closeAppSafely(app)
+  ;({ app, window } = await launchApp(configDir, testFolder))
+  await openFile(window, 'alpha.md')
+  await expect(window.locator('.app-container')).toHaveAttribute('data-editor-theme', 'scholarly')
+})
+
 test('US2 monotone switches palettes live on an appearance toggle; a static default does not', async () => {
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)

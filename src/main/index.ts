@@ -3,7 +3,7 @@ import * as path from 'path'
 import { registerIpcHandlers } from './ipc/register'
 import { createApplicationMenu } from './menu'
 import { registerShortcuts } from './shortcuts'
-import { loadSettings, flushSettings } from './settings'
+import { loadSettings, flushSettings, adoptRepairedEditorTheme } from './settings'
 import { applyThemeOverride } from './theme'
 import { applySpellcheckSetting } from './spellcheck'
 import { registerSpellcheckContextMenu } from './contextMenu'
@@ -139,14 +139,21 @@ function ensureLinuxFolderAction(): void {
 // Spec 036 FR-002/FR-007/FR-009: ensure the themes folder exists with the
 // five default files (creating ONLY what is missing — an existing file is
 // never rewritten) and run the legacy spec-023 custom-colour migration. Must
-// run before the first loadSettings() so a repaired selection is what the
-// renderer preloads. Best-effort and quiet (constitution IV).
+// run before ANY other config reader or writer so a repaired selection is what
+// every later settings read observes (see bootApp; review finding 2026-08-23).
+// Best-effort and quiet (constitution IV).
 function initThemes(): void {
   try {
     const dir = themesDir()
     ensureThemesDirectory(dir)
     seedMissingDefaultThemes(dir)
-    migrateLegacyCustomTheme(recentItemsConfigPath(), dir)
+    const outcome = migrateLegacyCustomTheme(recentItemsConfigPath(), dir)
+    // The migration repairs `editorTheme` with a surgical raw-config edit that
+    // bypasses the settings cache. If any code loaded settings before this
+    // point, a debounced write armed from that stale snapshot would restore
+    // the pre-migration selection over the repair — adopt the repaired name so
+    // the pending write persists it instead (review finding 2026-08-23).
+    if (outcome.repairedThemeName !== null) adoptRepairedEditorTheme(outcome.repairedThemeName)
   } catch {
     console.warn('[themes] could not initialise the themes folder')
   }
@@ -186,13 +193,19 @@ function bootApp(): void {
       }
     }
   }
+  // Spec 036 (review finding 2026-08-23): theme seeding + legacy migration
+  // MUST run before ANY other config reader or writer — including the explorer
+  // reconcile below. Its updateSettings seeds main's authoritative settings
+  // cache with the pre-migration `editorTheme` and arms the 500 ms debounced
+  // disk write; running first means that snapshot is built AFTER the migration
+  // repaired the selection, so the pending write persists the repair instead
+  // of reverting it. (Real spec-023 configs always carry explorerVisible,
+  // which is why only fixtures omitting it ever passed.)
+  initThemes()
   // Spec 011 FR-013: with no folder open the explorer is closed and that
   // closed state is persisted. Runs before the window is created so the config
   // is already honest when the renderer loads it.
   reconcileExplorerClosedWithoutWorkspace()
-  // Spec 036: themes folder seeding + legacy migration precede any settings
-  // read (see initThemes).
-  initThemes()
   // Spec 013: resolve the persisted theme override onto nativeTheme BEFORE the
   // window is created, so the native chrome (macOS window frame, native
   // scrollbars/context menus) reflects the choice from the start. The renderer's
