@@ -19,7 +19,8 @@ const workflow = fs
 
 const REPO_URL = 'https://github.com/yetanotherchris/markdownmeister'
 const RELEASES_URL = `${REPO_URL}/releases/latest`
-const RELEASE_API_URL = 'https://api.github.com/repos/yetanotherchris/markdownmeister/releases/latest'
+const RELEASE_API_URL =
+  'https://api.github.com/repos/yetanotherchris/markdownmeister/releases/latest'
 
 function tagsOf(html: string, tagName: string): string[] {
   return html.match(new RegExp(`<${tagName}\\b[^>]*>`, 'gi')) ?? []
@@ -48,7 +49,9 @@ describe('site contract: index.html required elements', () => {
   })
 
   it('points a download control at the repository latest-release location with same-tab navigation', () => {
-    const downloadTags = tagsOf(indexHtml, 'a').filter((tag) => attrValue(tag, 'href') === RELEASES_URL)
+    const downloadTags = tagsOf(indexHtml, 'a').filter(
+      (tag) => attrValue(tag, 'href') === RELEASES_URL
+    )
     expect(downloadTags.length).toBeGreaterThanOrEqual(1)
     for (const tag of downloadTags) expect(attrValue(tag, 'target')).toBeUndefined()
   })
@@ -63,12 +66,13 @@ describe('site contract: index.html required elements', () => {
   })
 
   it('uses the spec-039 product icon as header mark and favicon', () => {
-    const iconImgs = tagsOf(indexHtml, 'img').filter((tag) => (attrValue(tag, 'src') ?? '').includes('icon.png'))
+    const iconImgs = tagsOf(indexHtml, 'img').filter((tag) =>
+      (attrValue(tag, 'src') ?? '').includes('icon.png')
+    )
     expect(iconImgs.length).toBeGreaterThanOrEqual(1)
     const favicon = tagsOf(indexHtml, 'link').some(
       (tag) =>
-        attrValue(tag, 'rel') === 'icon' &&
-        /assets\/icon\.png/i.test(attrValue(tag, 'href') ?? '')
+        attrValue(tag, 'rel') === 'icon' && /assets\/icon\.png/i.test(attrValue(tag, 'href') ?? '')
     )
     expect(favicon).toBe(true)
   })
@@ -82,7 +86,9 @@ describe('site contract: index.html required elements', () => {
   })
 
   it('shows a deploy-time version without JavaScript in both meta and visible span', () => {
-    const metaTag = tagsOf(indexHtml, 'meta').find((tag) => attrValue(tag, 'name') === 'deploy-version')
+    const metaTag = tagsOf(indexHtml, 'meta').find(
+      (tag) => attrValue(tag, 'name') === 'deploy-version'
+    )
     expect(metaTag).toBeDefined()
     const metaContent = metaTag === undefined ? undefined : attrValue(metaTag, 'content')
     expect(metaContent).toBeTruthy()
@@ -143,7 +149,7 @@ describe('site contract: zero external resources', () => {
 describe('site contract: Pages deployment workflow', () => {
   it('deploys on pushes to main restricted to site sources and the workflow itself', () => {
     expect(workflow).toContain('push:')
-    expect(workflow).toContain("branches: [main]")
+    expect(workflow).toContain('branches: [main]')
     expect(workflow).toContain("'docs/site/**'")
     expect(workflow).toContain("'.github/workflows/pages-deploy.yml'")
     expect(workflow).not.toContain('pull_request')
