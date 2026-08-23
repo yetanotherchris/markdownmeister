@@ -156,6 +156,33 @@ describe('the About area (spec 037 US1)', () => {
     expect(buttons().some((b) => b.textContent?.trim() === 'Copy')).toBe(false)
   })
 
+  it('keeps the repository link usable when getBuildInfo resolves a failure (review 2026-08-23)', async () => {
+    window.api = {
+      getBuildInfo: () =>
+        Promise.resolve({ ok: false, code: 'IO', message: 'Unauthorized renderer' })
+    } as unknown as typeof window.api
+    renderDialog()
+    await clickButton('About')
+
+    // The link is a constant needing no fetched data — it must stay usable;
+    // only the version/revision rows degrade, showing no fabricated values.
+    const link = container.querySelector<HTMLButtonElement>('.settings-about-link')
+    expect(link?.textContent?.trim()).toBe(REPOSITORY_URL)
+    expect(container.querySelectorAll('.settings-about-value')).toHaveLength(0)
+  })
+
+  it('keeps the repository link usable when getBuildInfo rejects outright (review 2026-08-23)', async () => {
+    window.api = {
+      getBuildInfo: () => Promise.reject(new Error('no handler registered'))
+    } as unknown as typeof window.api
+    renderDialog()
+    await clickButton('About')
+
+    const link = container.querySelector<HTMLButtonElement>('.settings-about-link')
+    expect(link?.textContent?.trim()).toBe(REPOSITORY_URL)
+    expect(container.querySelectorAll('.settings-about-value')).toHaveLength(0)
+  })
+
   it('copies the full untruncated revision to the clipboard (US2/FR-006)', async () => {
     writeText.mockResolvedValue(undefined)
     renderDialog()
