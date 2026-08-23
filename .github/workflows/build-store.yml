@@ -1,11 +1,11 @@
 name: Build Microsoft Store package
 
-# Spec 038 (FR-001): builds the unsigned MSIX (Store signing happens during
-# certification, so no certificate is needed here — electron-builder logs
-# "Windows Store only build"). Dispatched MANUALLY because the resulting
-# package is submitted to Partner Center by a human, never published
-# automatically. This workflow is independent of build-release.yml and must
-# not change it.
+# Spec 038 (FR-001): builds the unsigned .appx (MSIX family; Store signing
+# happens during certification, so no certificate is needed here —
+# electron-builder logs "Windows Store only build"). Dispatched MANUALLY
+# because the resulting package is submitted to Partner Center by a human,
+# never published automatically. This workflow is independent of
+# build-release.yml and must not change it.
 on:
   workflow_dispatch:
 
@@ -68,17 +68,14 @@ jobs:
           STORE_PUBLISHER: ${{ vars.STORE_PUBLISHER }}
         shell: pwsh
         run: |
-          $args = @('--win', 'appx', '--x64', '--publish', 'never')
-          if ($env:STORE_IDENTITY_NAME) { $args += "-c.appx.identityName=$env:STORE_IDENTITY_NAME" }
-          if ($env:STORE_PUBLISHER) { $args += "-c.appx.publisher=$env:STORE_PUBLISHER" }
-          npx electron-builder @args
+          $builderArgs = @('--win', 'appx', '--x64', '--publish', 'never')
+          if ($env:STORE_IDENTITY_NAME) { $builderArgs += "-c.appx.identityName=$env:STORE_IDENTITY_NAME" }
+          if ($env:STORE_PUBLISHER) { $builderArgs += "-c.appx.publisher=$env:STORE_PUBLISHER" }
+          npx electron-builder @builderArgs
 
       - name: Upload artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # actions/upload-artifact v7.0.1
         with:
           name: artifacts-windows-x64-store
-          path: |
-            dist/markdownmeister-*.appx
-            dist/markdownmeister-*.msix
-            dist/markdownmeister-*.msixupload
+          path: dist/markdownmeister-*.appx
           if-no-files-found: error

@@ -56,14 +56,18 @@ $cmakeCandidates = @(
   (Join-Path $vsPath 'Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe'),
   (Get-Command cmake.exe -ErrorAction SilentlyContinue)?.Source
 ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) }
-$cmakeCandidates = @($cmakeCandidates)
 if (-not $cmakeCandidates) {
   Fail 'CMake was not found (neither the Visual Studio-bundled copy nor one on PATH).'
   exit 1
 }
-$cmake = $cmakeCandidates[0]
+# Re-wrap in @() before indexing: a single pipeline result assigns as a bare
+# string, whose [0] would yield its first CHARACTER rather than the path.
+$cmake = @($cmakeCandidates)[0]
 
 # --- confirm a Windows 11 SDK is installed -----------------------------------
+# The regex matches SDK folders 10.0.22621.* and newer (build numbers starting
+# 222xx-229xx, plus every later series up to 99xxx); older Windows 11 SDKs
+# such as 10.0.22000 do not meet the documented minimum.
 $sdkRoots = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Include' -Directory `
   -ErrorAction SilentlyContinue |
   Where-Object { $_.Name -match '^10\.0\.2(2[2-9]|[3-9][0-9])[0-9]{2}\.' }

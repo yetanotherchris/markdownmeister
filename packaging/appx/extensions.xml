@@ -2,7 +2,7 @@
 Spec 038: manifest Extensions fragment injected by electron-builder's
 appx.customExtensionsPath into the generated AppxManifest.xml (inside
 <Application><Extensions>). Evidence for every declaration:
-specs/038-win11-first-level-menu/research.md R1/R2/R4.
+specs/archive/038-win11-first-level-menu/research.md R1/R2/R4.
 
 XML namespace prefixes are declared locally on these elements because the
 generated root <Package> does not predeclare them; that is valid XML and
@@ -50,7 +50,7 @@ assigns them; see docs/store-release.md).
 <uap3:Extension
     xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
     Category="windows.appExecutionAlias"
-    Executable="app\MarkdownMeister.exe"
+    Executable="app\markdownmeister.exe"
     EntryPoint="Windows.FullTrustApplication">
   <uap3:AppExecutionAlias>
     <!-- The hand-off launcher (contracts/handoff.md): materialises as
