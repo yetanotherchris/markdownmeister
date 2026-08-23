@@ -39,6 +39,9 @@ interface SettingsDialogProps {
   /** Spec 036 FR-005: the discovered editor theme files, refreshed every time
    *  the dialog opens; labels are the file stems verbatim. */
   editorThemes: EditorThemeDefinition[]
+  /** Spec 036 FR-010: rejected theme file names, surfaced as a quiet
+   *  (non-modal) note so their exclusion is indicated without blocking. */
+  invalidThemeFileNames: string[]
   /** The committed selection (a theme-file stem) for seeding the draft. */
   editorTheme: string
   /** Spec 036 FR-012: called on every mount so file edits take effect at the
@@ -86,6 +89,7 @@ interface SettingsDialogProps {
  */
 export default function SettingsDialog({
   editorThemes,
+  invalidThemeFileNames,
   editorTheme,
   onRefreshEditorThemes,
   onEditorThemeSave,
@@ -107,13 +111,24 @@ export default function SettingsDialog({
   // Spec 008 FR-005: each mount starts on General, regardless of the area a
   // prior instance closed on. Fresh state because the dialog unmounts on close.
   const [area, setArea] = useState<SettingsArea>('general')
+  /** The committed name when it is present in `themes`, else null (nothing
+   *  staged — spec 016: Save only commits a staged theme). */
+  const stageableTheme = (themes: EditorThemeDefinition[]): string | null =>
+    themes.some((entry) => entry.name === editorTheme) ? editorTheme : null
   // Spec 016: the staged editor-theme selection, seeded from the committed
   // name. Not applied on click — only the Save button commits it (US1 S4).
   // Spec 036: the draft is a theme-file stem; when the committed selection
   // matches no discovered theme the dialog starts with nothing staged.
-  const [draftEditorTheme, setDraftEditorTheme] = useState<string | null>(
-    editorThemes.some((theme) => theme.name === editorTheme) ? editorTheme : null
+  const draftTouchedRef = useRef(false)
+  const [draftEditorTheme, setDraftEditorTheme] = useState<string | null>(() =>
+    stageableTheme(editorThemes)
   )
+  // The mount refresh (below) replaces the preloaded list; re-seed from it so
+  // the dialog never shows nothing staged (and Save silently no-ops) just
+  // because the initial cache predates discovery (review finding 2026-08-23).
+  // An explicit user pick is never overwritten.
+  const latestThemesRef = useRef(editorThemes)
+  latestThemesRef.current = editorThemes
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
   // The element that had focus when the dialog opened; focus returns to it on
@@ -133,8 +148,16 @@ export default function SettingsDialog({
   // Spec 036 FR-012: every mount re-reads the themes folder, so a file added,
   // edited, or deleted since the last open is reflected without a restart.
   useEffect(() => {
-    void onRefreshEditorThemes()
-  }, [onRefreshEditorThemes])
+    let cancelled = false
+    void onRefreshEditorThemes().then(() => {
+      if (!cancelled && !draftTouchedRef.current) {
+        setDraftEditorTheme(stageableTheme(latestThemesRef.current))
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [onRefreshEditorThemes, editorTheme])
 
   // Focus trap: Tab and Shift+Tab cycle within the dialog (FR-007). Spec 008:
   // the trap covers enabled buttons, checkbox/switch inputs, radio inputs, and
@@ -392,11 +415,19 @@ export default function SettingsDialog({
                         name="editor-theme"
                         value={option.name}
                         checked={draftEditorTheme === option.name}
-                        onChange={() => setDraftEditorTheme(option.name)}
+                        onChange={() => {
+                          draftTouchedRef.current = true
+                          setDraftEditorTheme(option.name)
+                        }}
                       />
                       <span>{option.name}</span>
                     </label>
                   ))}
+                  {invalidThemeFileNames.length > 0 && (
+                    <p className="settings-theme-invalid-note">
+                      Unreadable theme files ignored: {invalidThemeFileNames.join(', ')}
+                    </p>
+                  )}
                 </fieldset>
               </>
             )}

@@ -148,6 +148,14 @@
   background: var(--mm-surface);
 }
 
+/* Spec 036 FR-010: the quiet indication that some theme files were rejected —
+   muted, non-modal, naming the files so the user can repair them. */
+.settings-theme-invalid-note {
+  margin: 4px 8px 0;
+  font-size: 12px;
+  color: var(--mm-text-secondary);
+}
+
 .settings-select-label {
   display: flex;
   align-items: center;

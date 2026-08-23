@@ -33,6 +33,8 @@ export function useSettingsState(): {
   handleEditorThemeChange: (theme: string) => void
   /** Spec 036: the discovered editor theme files, refreshed on demand. */
   editorThemes: EditorThemeDefinition[]
+  /** Spec 036 FR-010: rejected theme file names, for the quiet indication. */
+  invalidThemeFileNames: string[]
   refreshEditorThemes: () => Promise<void>
   spellcheckEnabled: boolean
   handleSpellcheckChange: (enabled: boolean) => void
@@ -55,9 +57,15 @@ export function useSettingsState(): {
   const [editorThemes, setEditorThemes] = useState<EditorThemeDefinition[]>(
     getEditorThemes().themes
   )
+  // Spec 036 FR-010: the rejected file names ride along with the same payload
+  // and refresh cycle; the dialog renders them as a quiet, non-modal note.
+  const [invalidThemeFileNames, setInvalidThemeFileNames] = useState<string[]>(
+    getEditorThemes().invalidNames
+  )
   const refreshEditorThemes = useCallback(async () => {
     await loadEditorThemesFromMain()
     setEditorThemes(getEditorThemes().themes)
+    setInvalidThemeFileNames(getEditorThemes().invalidNames)
   }, [])
   const [spellcheckEnabled, setSpellcheckEnabled] = useState<boolean>(
     getSettings().spellcheckEnabled
@@ -175,6 +183,7 @@ export function useSettingsState(): {
     editorTheme,
     handleEditorThemeChange,
     editorThemes,
+    invalidThemeFileNames,
     refreshEditorThemes,
     spellcheckEnabled,
     handleSpellcheckChange,

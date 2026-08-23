@@ -275,6 +275,12 @@ test('US5 malformed files are ignored quietly while valid themes keep working', 
     }
     // All five defaults remain available and selectable (FR-010).
     await expect(dialog.getByRole('radio', { name: 'rustic', exact: true })).toBeVisible()
+    // FR-010: the rejections are still indicated — quietly, non-modally.
+    const note = dialog.locator('.settings-theme-invalid-note')
+    await expect(note).toBeVisible()
+    for (const rejected of ['broken.json', 'half.json', 'badcolor.json']) {
+      await expect(note).toContainText(rejected)
+    }
     await expect(await messageBoxCallCount(app)).toBe(0)
     await dialog.getByRole('button', { name: 'Close', exact: true }).click()
   } finally {

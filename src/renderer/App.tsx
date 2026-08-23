@@ -66,6 +66,7 @@ export default function App() {
     editorTheme,
     handleEditorThemeChange,
     editorThemes,
+    invalidThemeFileNames,
     refreshEditorThemes,
     spellcheckEnabled,
     handleSpellcheckChange,
@@ -437,6 +438,7 @@ export default function App() {
           theme={themeChoice}
           onThemeChange={handleThemeChange}
           editorThemes={editorThemes}
+          invalidThemeFileNames={invalidThemeFileNames}
           editorTheme={editorTheme}
           onRefreshEditorThemes={refreshEditorThemes}
           onEditorThemeSave={handleEditorThemeChange}
