@@ -3,8 +3,11 @@
 #
 # The canonical editable artwork is assets/icon/master.svg. This script renders
 # the identical geometry (tile gradient, rounded corners, "M" stroke skeleton)
-# into the committed raster masters and every derived platform asset, so the
-# whole set regenerates deterministically from one entrypoint:
+# into the committed raster masters and every derived platform asset from one
+# entrypoint. Re-runs reproduce STRUCTURALLY equivalent output - identical
+# dimensions, colour types, ICO directory shape, ICNS chunk layout - not
+# byte-identical PNGs, because GDI+ encoder output is not byte-stable
+# (docs/icon-provenance.md, research D6):
 #
 #   pwsh -File scripts/generate-icon-master.ps1 [-RepoRoot <path>]
 #
@@ -78,22 +81,37 @@ function New-MasterBitmap {
         $radius = [math]::Round($Size * $TileRadiusRatio)
         $tilePath = New-RoundedRectPath -X $inset -Y $inset -W $tileW -H $tileW -R $radius
 
-        $gradient = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
-            ([System.Drawing.PointF]::new(0, $inset)),
-            ([System.Drawing.PointF]::new(0, $inset + $tileW)),
-            $TileTopColor,
-            $TileBottomColor
-        )
-        $g.FillPath($gradient, $tilePath)
+        try {
+            $gradient = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
+                ([System.Drawing.PointF]::new(0, $inset)),
+                ([System.Drawing.PointF]::new(0, $inset + $tileW)),
+                $TileTopColor,
+                $TileBottomColor
+            )
+            try {
+                $g.FillPath($gradient, $tilePath)
+            }
+            finally {
+                $gradient.Dispose()
+            }
+        }
+        finally {
+            $tilePath.Dispose()
+        }
 
         [System.Drawing.PointF[]]$points = $MarkPoints | ForEach-Object {
             [System.Drawing.PointF]::new($_.X * $Size, $_.Y * $Size)
         }
         $pen = New-Object System.Drawing.Pen($MarkColor, ($Size * $StrokeWidthRatio))
-        $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
-        $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
-        $pen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
-        $g.DrawLines($pen, $points)
+        try {
+            $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+            $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
+            $pen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
+            $g.DrawLines($pen, $points)
+        }
+        finally {
+            $pen.Dispose()
+        }
         return $bmp
     }
     finally {
@@ -103,7 +121,8 @@ function New-MasterBitmap {
 
 function Resize-Master {
     param([System.Drawing.Bitmap]$Master, [int]$TargetSize)
-    $resized = New-Object System.Drawing.Bitmap($TargetSize, $TargetSize, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+    $pixelFormat = [System.Drawing.Imaging.PixelFormat]::Format32bppArgb
+    $resized = New-Object System.Drawing.Bitmap($TargetSize, $TargetSize, $pixelFormat)
     $g = [System.Drawing.Graphics]::FromImage($resized)
     try {
         $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
@@ -216,7 +235,8 @@ try {
         }
     }
 
-    Copy-Item -LiteralPath (Join-Path $iconsDir '512x512.png') -Destination (Join-Path $RepoRoot 'resources\icon.png') -Force
+    $ladder512 = Join-Path $iconsDir '512x512.png'
+    Copy-Item -LiteralPath $ladder512 -Destination (Join-Path $RepoRoot 'resources\icon.png') -Force
     Write-Host '  wrote resources\icon.png'
 
     Write-Ico -Path (Join-Path $RepoRoot 'resources\icon.ico') -PngBytesBySize $pngBytes
