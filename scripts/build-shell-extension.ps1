@@ -56,6 +56,7 @@ $cmakeCandidates = @(
   (Join-Path $vsPath 'Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe'),
   (Get-Command cmake.exe -ErrorAction SilentlyContinue)?.Source
 ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) }
+$cmakeCandidates = @($cmakeCandidates)
 if (-not $cmakeCandidates) {
   Fail 'CMake was not found (neither the Visual Studio-bundled copy nor one on PATH).'
   exit 1
@@ -77,7 +78,9 @@ $sourceDir = Join-Path $PSScriptRoot '..\native\shell-extension'
 $buildDir = Join-Path $sourceDir "out\$Arch"
 New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
 
-& $cmake -S $sourceDir -B $buildDir -G 'Visual Studio 17 2022' -A $Arch
+# No explicit -G: let CMake pick the installed Visual Studio generator (works
+# for VS 2022 and newer), only pinning the target architecture.
+& $cmake -S $sourceDir -B $buildDir -A $Arch
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 & $cmake --build $buildDir --config $Configuration
