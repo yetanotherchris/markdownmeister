@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MarkdownMeister — a calm WYSIWYG markdown editor</title>
+    <meta
+      name="description"
+      content="A desktop WYSIWYG markdown editor for Windows, macOS and Linux. Free, open source, plain markdown files."
+    />
+    <!-- Deploy-time version; the Pages workflow substitutes the token before upload. -->
+    <meta name="deploy-version" content="__MM_DEPLOY_VERSION__" />
+    <link rel="icon" type="image/png" href="assets/icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body
+    class="flex min-h-screen flex-col bg-white font-sans text-neutral-800 antialiased dark:bg-neutral-950 dark:text-neutral-200"
+  >
+    <header class="border-b border-neutral-100 py-2 dark:border-neutral-800">
+      <div class="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-2 sm:px-6">
+        <div class="flex items-center gap-3">
+          <img src="assets/icon.png" alt="MarkdownMeister app icon" width="32" height="32" class="h-8 w-8" />
+          <h1 class="text-xl font-semibold tracking-tight text-neutral-900 dark:text-white">MarkdownMeister</h1>
+        </div>
+        <p class="text-sm text-neutral-500 dark:text-neutral-400">
+          Version <span id="version">__MM_DEPLOY_VERSION__</span>
+        </p>
+        <div class="ml-auto flex items-center gap-3 sm:gap-4">
+          <a
+            href="https://github.com/yetanotherchris/markdownmeister/releases/latest"
+            class="inline-flex items-center rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-300 dark:focus-visible:outline-white"
+          >
+            Download
+          </a>
+          <a
+            href="https://github.com/yetanotherchris/markdownmeister"
+            aria-label="MarkdownMeister on GitHub"
+            class="text-neutral-500 transition-colors hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:text-neutral-400 dark:hover:text-white dark:focus-visible:outline-white"
+          >
+            <svg viewBox="0 0 16 16" width="24" height="24" fill="currentColor" aria-hidden="true">
+              <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+              />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto w-full max-w-6xl flex-1 px-4 sm:px-6">
+      <figure class="py-10 sm:py-14">
+        <!-- Placeholder artwork is 1440×900; set width/height to the real screenshot's intrinsic size on swap. -->
+        <img
+          src="assets/screenshot-placeholder.svg"
+          alt="The MarkdownMeister application window showing the folder explorer beside the WYSIWYG editor (placeholder artwork)"
+          width="1440"
+          height="900"
+          class="w-full rounded-lg border border-neutral-200 shadow-sm dark:border-neutral-800"
+        />
+      </figure>
+
+      <section class="max-w-3xl pb-14 sm:pb-20">
+        <h2 class="mb-6 text-2xl font-semibold tracking-tight text-neutral-900 dark:text-white">Features</h2>
+        <ul class="list-disc space-y-3 pl-5 marker:text-neutral-400 dark:marker:text-neutral-600">
+          <li>WYSIWYG markdown editing powered by Milkdown, with a source view when you want it.</li>
+          <li>Folder explorer with tabbed documents — open a folder and browse, rename, move or delete its files.</li>
+          <li>Opens folders straight from your file manager: right-click on Windows, Dock drop on macOS, Open With on Linux.</li>
+          <li>Light and dark appearance that follows your system.</li>
+          <li>Plain markdown files on disk — your notes stay yours.</li>
+          <li>Install without building from source: Homebrew on macOS/Linux, Scoop on Windows.</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="border-t border-neutral-100 py-6 dark:border-neutral-800">
+      <div class="mx-auto w-full max-w-6xl px-4 text-sm text-neutral-500 sm:px-6 dark:text-neutral-400">
+        MarkdownMeister is free and open source under the
+        <a
+          href="https://github.com/yetanotherchris/markdownmeister/blob/main/LICENSE"
+          class="underline underline-offset-2 transition-colors hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:hover:text-white dark:focus-visible:outline-white"
+          >MIT license</a
+        >.
+      </div>
+    </footer>
+
+    <!-- Refresh the displayed version from the repository's release metadata.
+         Success-only and time-boxed so visitors never wait on it (spec 040 FR-003). -->
+    <script>
+      (function () {
+        var endpoint = 'https://api.github.com/repos/yetanotherchris/markdownmeister/releases/latest'
+        var target = document.getElementById('version')
+        if (!target) return
+        var controller = new AbortController()
+        var timer = setTimeout(function () {
+          controller.abort()
+        }, 4000)
+        fetch(endpoint, { headers: { Accept: 'application/vnd.github+json' }, signal: controller.signal })
+          .then(function (response) {
+            return response.ok ? response.json() : null
+          })
+          .then(function (release) {
+            if (!release || typeof release.tag_name !== 'string') return
+            var version = release.tag_name.replace(/^v/, '')
+            if (/^\d/.test(version)) target.textContent = version
+          })
+          .catch(function () {})
+          .finally(function () {
+            clearTimeout(timer)
+          })
+      })()
+    </script>
+  </body>
+</html>
