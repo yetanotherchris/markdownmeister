@@ -50,7 +50,14 @@ async function spawnWithTarget(
   userDataDir: string,
   configDir: string
 ): Promise<SpawnedApp> {
-  const args = ['--headless', '--remote-debugging-port=0', 'out/main/index.js']
+  const args = [
+    '--headless',
+    '--remote-debugging-port=0',
+    // Same platform flags launch.ts applies to every suite; without
+    // --no-sandbox the binary cannot start on Linux CI runners.
+    ...(process.platform === 'linux' ? (['--no-sandbox', '--disable-gpu'] as const) : []),
+    'out/main/index.js'
+  ]
   if (target) args.push(target)
   const child = spawn(ELECTRON_BINARY, args, {
     cwd: REPO_ROOT,
@@ -125,17 +132,26 @@ async function spawnForwardingInstance(
   userDataDir: string,
   configDir: string
 ): Promise<void> {
-  const child = spawn(ELECTRON_BINARY, ['--headless', 'out/main/index.js', target], {
-    cwd: REPO_ROOT,
-    detached: false,
-    stdio: 'ignore',
-    env: {
-      ...process.env,
-      MM_USER_DATA_DIR: userDataDir,
-      MM_CONFIG_DIR: configDir,
-      MM_SINGLE_INSTANCE: '1'
+  const child = spawn(
+    ELECTRON_BINARY,
+    [
+      '--headless',
+      ...(process.platform === 'linux' ? (['--no-sandbox', '--disable-gpu'] as const) : []),
+      'out/main/index.js',
+      target
+    ],
+    {
+      cwd: REPO_ROOT,
+      detached: false,
+      stdio: 'ignore',
+      env: {
+        ...process.env,
+        MM_USER_DATA_DIR: userDataDir,
+        MM_CONFIG_DIR: configDir,
+        MM_SINGLE_INSTANCE: '1'
+      }
     }
-  })
+  )
   spawned.push(child)
   await new Promise<void>((resolve) => {
     const timer = setTimeout(resolve, 10_000)
