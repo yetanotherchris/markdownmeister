@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-22
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "currently the 'open in markdownmeister' for a folder only appears for 'show more options' context menu in windows 11. I want it to be in the initial context menu items"
 
