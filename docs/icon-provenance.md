@@ -15,9 +15,10 @@ light "M" drawn as one continuous polyline stroke with round caps and joins.
 - **Mark**: five-point polyline `(0.295,0.705) (0.295,0.335) (0.500,0.575)
   (0.705,0.335) (0.705,0.705)` in `#F9FAFC`, stroke width 7.8% of the canvas —
   an "M" whose two valleys keep it legible when rasterised at 16×16.
-- **Backgrounds**: tested against both light and dark taskbar/Dock surfaces;
-  the dark tile holds contrast on light chrome and the light stroke stays
-  legible on dark chrome. Transparency is true alpha throughout.
+- **Backgrounds**: designed for light *and* dark chrome — the dark tile is
+  chosen to hold contrast on light surfaces and the light stroke to stay
+  legible on dark ones. Render verification on real OS surfaces is manual
+  (quickstart.md checklist); transparency is true alpha throughout.
 
 The canonical editable source is `assets/icon/master.svg`; every raster asset
 is generated from the same geometry constants (mirrored in the generator

@@ -152,8 +152,10 @@ is also what the unit tests assert: structure, not byte identity.
 - **E2E (attempted, dropped)**: the planned assertion — `BrowserWindow.getIcon()`
   through `electronApp.evaluate` returning a non-null icon size — does not
   exist in this Electron version: `node_modules/electron/electron.d.ts` has no
-  `getIcon` on `BrowserWindow` (only `setIcon` on other classes), so the guard
-  in the draft spec always returned null. Dropped rather than asserted-vacuously.
+  `getIcon` getter on any class (zero matches). `BrowserWindow.setIcon(icon)`
+  does exist (win32/linux, inherited from `BaseWindow`), but with no getter
+  there is nothing to assert the option through `electronApp.evaluate`, so the
+  draft guard always returned null. Dropped rather than asserted-vacuously.
   The window icon wiring is instead exercised by every e2e launch (the option
   is passed at construction) and visually by quickstart.md; an alternative like
   `app.getFileIcon(process.execPath)` was rejected because under test the exe
