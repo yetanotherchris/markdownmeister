@@ -7,6 +7,7 @@ import type {
 import type { ThemeChoice } from '../hooks/useEffectiveTheme'
 import type { MarkdownSyntaxOptions } from '../editor/markdownSyntaxOptions'
 import { EDITOR_THEMES } from '../editor/editorThemes'
+import AboutArea from './AboutArea'
 import './settings.css'
 
 /** Spec 013: the theme choices; `'system'` maps to the persisted override
@@ -27,13 +28,15 @@ export const SPELLCHECK_LANGUAGE_CHOICES: { value: SpellcheckLanguage; label: st
 
 /** Spec 008 FR-002: the settings areas shown in the sidebar navigation. Each
  *  mount starts with `general` selected (FR-005). Spec 030 FR-001 adds a
- *  `Markdown` area. */
-export type SettingsArea = 'general' | 'theme' | 'markdown'
+ *  `Markdown` area. Spec 037 adds a read-only `about` area, last per the
+ *  spec's placement assumption. */
+export type SettingsArea = 'general' | 'theme' | 'markdown' | 'about'
 
 export const SETTINGS_AREAS: { value: SettingsArea; label: string }[] = [
   { value: 'general', label: 'General' },
   { value: 'theme', label: 'Theme' },
-  { value: 'markdown', label: 'Markdown' }
+  { value: 'markdown', label: 'Markdown' },
+  { value: 'about', label: 'About' }
 ]
 
 interface SettingsDialogProps {
@@ -355,6 +358,10 @@ export default function SettingsDialog({
                   </label>
                 </fieldset>
               </>
+            ) : area === 'about' ? (
+              // Spec 037 FR-008: purely read-only rows — no staged state here,
+              // so the Save button's draftEditorTheme commit is untouched.
+              <AboutArea />
             ) : (
               <>
                 <fieldset className="settings-fieldset">
