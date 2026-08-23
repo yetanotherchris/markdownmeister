@@ -127,7 +127,7 @@ test('US1 selecting a theme persists across a relaunch with the same configDir',
   ;({ app, window } = await launchApp(configDir, testFolder))
   await openFile(window, 'alpha.md')
   await expect(window.locator('.app-container')).toHaveAttribute('data-editor-theme', 'scholarly')
-  await expect.poll(canvasToken()).toBe('#ffffff')
+  await expect.poll(canvasToken).toBe('#ffffff')
 
   // The dialog still shows it staged (FR-006).
   const reopened = await openSettingsDialog(window)
@@ -137,7 +137,7 @@ test('US1 selecting a theme persists across a relaunch with the same configDir',
 
 test('US3 editing a token in a theme file applies on the next settings open (SC-003)', async () => {
   await openFile(window, 'alpha.md')
-  await expect.poll(canvasToken()).toBe('#fdf6e3')
+  await expect.poll(canvasToken).toBe('#fdf6e3')
 
   // External edit, no restart.
   const rusticPath = path.join(THEMES_DIR(), 'rustic.json')
@@ -149,7 +149,7 @@ test('US3 editing a token in a theme file applies on the next settings open (SC-
   const dialog = await openSettingsDialog(window)
   await openThemeArea(window)
   await expect(dialog.getByRole('radio', { name: 'rustic', exact: true })).toBeChecked()
-  await expect.poll(canvasToken()).toBe('#ff0000')
+  await expect.poll(canvasToken).toBe('#ff0000')
 
   // Fixing the file restores the theme (US5 S4).
   edited.light.background = '#fdf6e3'
@@ -157,7 +157,7 @@ test('US3 editing a token in a theme file applies on the next settings open (SC-
   await dialog.getByRole('button', { name: 'Close' }).click()
   const reopened = await openSettingsDialog(window)
   await openThemeArea(window)
-  await expect.poll(canvasToken()).toBe('#fdf6e3')
+  await expect.poll(canvasToken).toBe('#fdf6e3')
   await reopened.getByRole('button', { name: 'Close' }).click()
 })
 
@@ -171,7 +171,7 @@ test('US4 a well-formed added file appears at the next dialog open and can be se
   await dialog.getByRole('button', { name: 'Save' }).click()
 
   await expect(window.locator('.app-container')).toHaveAttribute('data-editor-theme', 'midnight')
-  await expect.poll(canvasToken()).toBe('#101010')
+  await expect.poll(canvasToken).toBe('#101010')
   await expect.poll(persistedEditorTheme).toBe('midnight')
 })
 
@@ -278,10 +278,10 @@ test('US3/FR-009 legacy custom-colour config migrates into migrated-custom.json'
     'data-editor-theme',
     'migrated-custom'
   )
-  await expect.poll(canvasToken()).toBe('#2b2b2b')
+  await expect.poll(canvasToken).toBe('#2b2b2b')
   await window.emulateMedia({ colorScheme: 'dark' })
   await expect(window.locator('.app-container')).toHaveAttribute('data-theme', 'dark')
-  await expect.poll(canvasToken()).toBe('#2b2b2b')
+  await expect.poll(canvasToken).toBe('#2b2b2b')
   await window.emulateMedia({ colorScheme: 'light' })
 
   const dialog = await openSettingsDialog(window)
@@ -301,26 +301,26 @@ test('US2 monotone switches palettes live on an appearance toggle; a static defa
   await dialog.getByRole('radio', { name: 'monotone', exact: true }).check()
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(window.locator('.app-container')).toHaveAttribute('data-theme', 'light')
-  await expect.poll(canvasToken()).toBe('#ffffff')
+  await expect.poll(canvasToken).toBe('#ffffff')
 
   await window.emulateMedia({ colorScheme: 'dark' })
   await expect(window.locator('.app-container')).toHaveAttribute('data-theme', 'dark', {
     timeout: 5000
   })
-  await expect.poll(canvasToken()).toBe('#000000')
+  await expect.poll(canvasToken).toBe('#000000')
   await window.emulateMedia({ colorScheme: 'light' })
-  await expect.poll(canvasToken()).toBe('#ffffff')
+  await expect.poll(canvasToken).toBe('#ffffff')
 
   // A static default ships identical sets: switching changes nothing (S3).
   const dialog2 = await openSettingsDialog(window)
   await openThemeArea(window)
   await dialog2.getByRole('radio', { name: 'rustic', exact: true }).check()
   await dialog2.getByRole('button', { name: 'Save' }).click()
-  await expect.poll(canvasToken()).toBe('#fdf6e3')
+  await expect.poll(canvasToken).toBe('#fdf6e3')
   await window.emulateMedia({ colorScheme: 'dark' })
   await expect(window.locator('.app-container')).toHaveAttribute('data-theme', 'dark', {
     timeout: 5000
   })
-  await expect.poll(canvasToken()).toBe('#fdf6e3')
+  await expect.poll(canvasToken).toBe('#fdf6e3')
   await window.emulateMedia({ colorScheme: 'light' })
 })

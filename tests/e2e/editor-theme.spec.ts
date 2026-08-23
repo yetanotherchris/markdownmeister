@@ -2,7 +2,14 @@ import { test, expect, ElectronApplication, Page } from '@playwright/test'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { closeAppSafely, launchApp, openSettingsDialog, openFile, stubMessageBox, openThemeArea } from './launch'
+import {
+  closeAppSafely,
+  launchApp,
+  openSettingsDialog,
+  openFile,
+  stubMessageBox,
+  openThemeArea
+} from './launch'
 
 /**
  * Spec 016 editor-theme suite (contracts/renderer.md §E2e): the five named
@@ -40,12 +47,6 @@ test.afterEach(async () => {
 test.afterAll(async () => {
   fs.rmSync(testFolder, { recursive: true, force: true })
 })
-
-/** The Rustic palette's six canonical colours (spec 023, contract). */
-const RUSTIC_PALETTE = {
-  background: '#fdf6e3', foreground: '#1f1b16', accent: '#805610',
-  surface: '#fdf3d9', outline: '#817567', code: '#ba1a1a'
-}
 
 /** The canvas background (the theme's `--crepe-color-background` token). */
 async function canvasBackground(): Promise<string> {
@@ -291,7 +292,7 @@ test('FR-014 changing the editor theme leaves document content, dirty state, and
   // Switch themes repeatedly via Save.
   for (const theme of ['rustic-serif', 'monotone', 'scholarly'] as const) {
     const dialog = await openSettingsDialog(window)
-  await openThemeArea(window)
+    await openThemeArea(window)
     await dialog.getByRole('radio', { name: theme, exact: true }).check()
     await dialog.getByRole('button', { name: 'Save' }).click()
     await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
@@ -315,14 +316,13 @@ test('FR-006 a missing config opens with the default Rustic theme and a change w
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect.poll(persistedEditorTheme).toBe('rustic-serif')
 
-  // The written config is valid JSON and still carries recentItems.
+  // The written config is valid JSON and still carries recentItems. Spec 036:
+  // no palette is materialised — colours live in the theme files.
   const configPath = path.join(configDir, 'config.json')
   const parsed = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
   expect(parsed.settings.editorTheme).toBe('rustic-serif')
   expect(parsed.recentItems).toBeDefined()
-  // A fresh config's first write materialises the default preset's colours
-  // (spec 008 clarification 2026-08-09): never `null`.
-  expect(parsed.settings.editorColors).toEqual(RUSTIC_PALETTE)
+  expect('editorColors' in parsed.settings).toBe(false)
 })
 
 test('FR-006 a malformed config still opens with the default Rustic theme', async () => {
@@ -353,8 +353,8 @@ test('a fresh launch materialises the default settings section (spec 008 clarifi
     })
     .toBeTruthy()
   const parsed = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
-  // The default preset's exact palette is persisted, never null.
-  expect(parsed.settings.editorColors).toEqual(RUSTIC_PALETTE)
+  // Spec 036: no legacy palette is persisted — colours live in theme files.
+  expect('editorColors' in parsed.settings).toBe(false)
   // No folder is open at startup, so the honest FR-013 state is closed.
   expect(parsed.settings.explorerVisible).toBe(false)
 })
