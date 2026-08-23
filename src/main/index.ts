@@ -7,6 +7,10 @@ import { loadSettings, flushSettings } from './settings'
 import { applyThemeOverride } from './theme'
 import { applySpellcheckSetting } from './spellcheck'
 import { registerSpellcheckContextMenu } from './contextMenu'
+import { recentItemsConfigPath } from './recentItemsPath'
+import { themesDir } from './themes/path'
+import { ensureThemesDirectory, seedMissingDefaultThemes } from './themes/store'
+import { migrateLegacyCustomTheme } from './themes/migration'
 import { resolveLaunchBounds, trackWindowState, flushWindowState } from './windowState'
 import { reconcileExplorerClosedWithoutWorkspace } from './workspaceExplorerState'
 import { legacyConfigPath, universalConfigPath, migrateConfigFile } from './configPath'
@@ -132,6 +136,22 @@ function ensureLinuxFolderAction(): void {
   }
 }
 
+// Spec 036 FR-002/FR-007/FR-009: ensure the themes folder exists with the
+// five default files (creating ONLY what is missing — an existing file is
+// never rewritten) and run the legacy spec-023 custom-colour migration. Must
+// run before the first loadSettings() so a repaired selection is what the
+// renderer preloads. Best-effort and quiet (constitution IV).
+function initThemes(): void {
+  try {
+    const dir = themesDir()
+    ensureThemesDirectory(dir)
+    seedMissingDefaultThemes(dir)
+    migrateLegacyCustomTheme(recentItemsConfigPath(), dir)
+  } catch {
+    console.warn('[themes] could not initialise the themes folder')
+  }
+}
+
 function bootApp(): void {
   ensureLinuxFolderAction()
   // Spec 022 FR-004: move an existing config from the legacy appData location
@@ -170,6 +190,9 @@ function bootApp(): void {
   // closed state is persisted. Runs before the window is created so the config
   // is already honest when the renderer loads it.
   reconcileExplorerClosedWithoutWorkspace()
+  // Spec 036: themes folder seeding + legacy migration precede any settings
+  // read (see initThemes).
+  initThemes()
   // Spec 013: resolve the persisted theme override onto nativeTheme BEFORE the
   // window is created, so the native chrome (macOS window frame, native
   // scrollbars/context menus) reflects the choice from the start. The renderer's
