@@ -87,6 +87,17 @@ dev and Linux correct without platform-specific code beyond the darwin guard.
 `resources/icon.png` (512×512) was generated for exactly this purpose
 (script comment: "512x512 convenience master for electron-builder").
 
+**Correction (2026-08-23, PR #73 review)**: the packaged half of the decision
+above was wrong about which copy gets read. `__dirname`-relative addressing
+lands on an asar-bundled duplicate (`app.asar/resources/icon.png`) that exists
+only because `resources/**` is not excluded from the `files:` list; Electron
+merely happens to load PNG icon paths through asar-aware IO, so the
+extraResources copy was never what was read and any future `!resources/**`
+tightening would silently kill the packaged window icon. The fix keeps
+extraResources authoritative: `windowIconPath()` (`src/main/windowIcon.ts`)
+returns `path.join(process.resourcesPath, 'icon.png')` when `app.isPackaged`,
+falling back to the dev-tree path otherwise. Dev resolution is unchanged.
+
 ## D4 — Scoop and macOS inheritance
 
 **Decision**: no Scoop- or macOS-specific work; inheritance verified by reading
