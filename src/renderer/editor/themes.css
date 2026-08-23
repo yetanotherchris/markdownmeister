@@ -5,7 +5,10 @@
  * rules in App.css keep the Inter default; these selectors are more specific so
  * they win regardless of source order (research R1).
  *
- * The theme's values live HERE in the code — never in the config (FR-005).
+ * The theme's identity, six curated colour tokens, and typeface live in its
+ * FILE (spec 036) — never in the config (FR-005). These preset blocks remain
+ * as the defaults' base layer for the derived tones the file schema cannot
+ * express; see the file-driven layers at the bottom of this sheet.
  *
  * Rustic (the default, FR-002/FR-007/US3) is the warm cream `#fdf6e3` canvas
  * with Inter sans body, headings in the same family, monospace inline code
@@ -20,6 +23,30 @@
  * its existing app-theme styling (FR-013). The dark-mode canvas override in
  * App.css was removed: the theme owns the canvas (research R5).
  */
+
+/*
+ * Spec 036: the FILE-DRIVEN theme layers, split in two by precedence
+ * (review finding 2026-08-23 — a single layer was neither specificity-safe
+ * nor pixel-identical; plan D5 records the revision):
+ *
+ * 1. DERIVED TONES (below, FIRST). Maps the delivered tokens onto Crepe's
+ *    coarser derived tones. It sits BEFORE the preset blocks at equal-or-
+ *    lower specificity, so the presets' hand-tuned values always win for the
+ *    five default names and unedited defaults stay pixel-identical to the
+ *    previous version (rustic keeps surface-low #fcefce, on-surface #201b13,
+ *    on-surface-variant #4f4539, and so on). Themes WITHOUT a preset block —
+ *    user-created files and the FR-001 emergency appearance — take these
+ *    mappings from here.
+ *
+ * The var() fallbacks ARE the emergency appearance (today's default: the full
+ * rustic palette + Inter), used when nothing resolves (the container then
+ * carries data-editor-theme="default", which no preset block matches).
+ */
+.app-container[data-editor-theme] .milkdown {
+  --crepe-color-surface-low: var(--mm-theme-surface, #fcefce);
+  --crepe-color-on-surface: var(--mm-theme-foreground, #201b13);
+  --crepe-color-on-surface-variant: var(--mm-theme-outline, #4f4539);
+}
 
 .app-container[data-editor-theme='rustic'] .milkdown {
   --crepe-color-background: #fdf6e3;
@@ -217,27 +244,19 @@
 }
 
 /*
- * Spec 036: the FILE-DRIVEN theme layer. App.tsx resolves the stored theme
- * name against the discovered definitions and feeds the six curated colour
- * tokens + typeface of the effective appearance in as `--mm-theme-*` inline
- * variables. This block maps them onto Crepe's variables with exactly the
- * mapping the spec-023 custom block used (research E2). It MUST stay after
- * the preset blocks above: equal specificity, so source order makes the
- * delivered file values win — which for unedited defaults are identical to
- * the base values, keeping rendering unchanged, while edits to any theme
- * file override the mapped properties.
- *
- * The var() fallbacks ARE the FR-001 emergency appearance (today's default:
- * the rustic palette + Inter), used when nothing resolves (the container
- * then carries data-editor-theme="default", which no preset block matches).
+ * 2. CURATED TOKENS (LAST). The six colours + typeface of the resolved FILE
+ *    drive their direct Crepe counterparts for EVERY discovered theme —
+ *    monotone included. The selector is qualified with `[data-theme]` so it
+ *    TIES with the monotone preset blocks at (0,4,0) and wins by source
+ *    order; without that qualifier those blocks would outrank the file values
+ *    and editing monotone.json would have no effect. For unedited defaults
+ *    the file values equal these blocks' own declarations, so winning changes
+ *    nothing visually (plan D5).
  */
-.app-container[data-editor-theme] .milkdown {
+.app-container[data-editor-theme][data-theme] .milkdown {
   --crepe-color-background: var(--mm-theme-background, #fdf6e3);
   --crepe-color-on-background: var(--mm-theme-foreground, #1f1b16);
   --crepe-color-surface: var(--mm-theme-surface, #fdf3d9);
-  --crepe-color-surface-low: var(--mm-theme-surface, #fdf3d9);
-  --crepe-color-on-surface: var(--mm-theme-foreground, #1f1b16);
-  --crepe-color-on-surface-variant: var(--mm-theme-outline, #817567);
   --crepe-color-outline: var(--mm-theme-outline, #817567);
   --crepe-color-primary: var(--mm-theme-accent, #805610);
   --crepe-color-inline-code: var(--mm-theme-code, #ba1a1a);

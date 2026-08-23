@@ -63,11 +63,16 @@ async function persistedEditorTheme(): Promise<string | undefined> {
   return JSON.parse(fs.readFileSync(configPath, 'utf-8')).settings?.editorTheme
 }
 
-/** The Crepe canvas background token as computed on .milkdown. */
-async function canvasToken(): Promise<string> {
+/** A Crepe canvas custom property as computed on .milkdown. */
+async function canvasTokenNamed(token: string): Promise<string> {
   return window
     .locator('.milkdown')
-    .evaluate((el) => getComputedStyle(el).getPropertyValue('--crepe-color-background').trim())
+    .evaluate((el, name) => getComputedStyle(el).getPropertyValue(name).trim(), token)
+}
+
+/** The Crepe canvas background token as computed on .milkdown. */
+async function canvasToken(): Promise<string> {
+  return canvasTokenNamed('--crepe-color-background')
 }
 
 test.beforeAll(async () => {
@@ -113,6 +118,13 @@ test('US1 a fresh start seeds exactly the five default theme files', async () =>
   const monotone = JSON.parse(fs.readFileSync(path.join(THEMES_DIR(), 'monotone.json'), 'utf-8'))
   expect(monotone.light.background).toBe('#ffffff')
   expect(monotone.dark.background).toBe('#000000') // follows appearance
+
+  // Unedited defaults keep their exact pre-036 derived tones (plan D5, review
+  // finding 2026-08-23): the derived-tone layer must not override the preset
+  // blocks' hand-tuned values with coarser six-token mappings.
+  await expect.poll(canvasTokenNamed('--crepe-color-surface-low')).toBe('#fcefce')
+  await expect.poll(canvasTokenNamed('--crepe-color-on-surface')).toBe('#201b13')
+  await expect.poll(canvasTokenNamed('--crepe-color-on-surface-variant')).toBe('#4f4539')
 })
 
 test('US1 selecting a theme persists across a relaunch with the same configDir', async () => {
@@ -158,6 +170,28 @@ test('US3 editing a token in a theme file applies on the next settings open (SC-
   const reopened = await openSettingsDialog(window)
   await openThemeArea(window)
   await expect.poll(canvasToken).toBe('#fdf6e3')
+  await reopened.getByRole('button', { name: 'Close', exact: true }).click()
+})
+
+test('US3 editing monotone.json recolours the canvas (file tokens beat the preset blocks)', async () => {
+  // Regression (review finding 2026-08-23): the [data-theme]-qualified
+  // monotone preset blocks used to outrank the file-driven layer, so editing
+  // a monotone theme file had no effect.
+  await openFile(window, 'alpha.md')
+  const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
+  await dialog.getByRole('radio', { name: 'monotone', exact: true }).check()
+  await dialog.getByRole('button', { name: 'Save' }).click()
+  await expect.poll(canvasToken).toBe('#ffffff')
+
+  const monotonePath = path.join(THEMES_DIR(), 'monotone.json')
+  const edited = JSON.parse(fs.readFileSync(monotonePath, 'utf-8'))
+  edited.light.background = '#101010'
+  fs.writeFileSync(monotonePath, JSON.stringify(edited, null, 2), 'utf-8')
+
+  const reopened = await openSettingsDialog(window)
+  await openThemeArea(window)
+  await expect.poll(canvasToken).toBe('#101010')
   await reopened.getByRole('button', { name: 'Close', exact: true }).click()
 })
 
