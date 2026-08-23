@@ -48,6 +48,15 @@ All app writes go through `atomicWrite` (temp file `'wx'` in destination dir + f
 - Windows symlink creation for files requires privilege/Developer Mode, so the automated escape tests create a directory junction pointing outside the folder (no elevation needed) and, when the OS allows it, a file symlink; either way the assertion is exclusion-without-following. Recorded here because it shapes how the FR-011 test is written, not as a relaxation.
 - Case-insensitive collisions (`Rustic.json` vs `rustic.json`) exist on Windows/macOS default filesystems; grouping by lowercased stem with the lexicographically smallest full file name winning is deterministic everywhere (code-unit comparison, not locale-aware).
 
+## E10 — Review correction: the single overlay was neither specificity-safe nor pixel-identical
+
+Post-implementation review found two defects in D5 as originally shipped; both are fixed in place and recorded here as evidence for the revision:
+
+- **Specificity.** The four `[data-theme]`-qualified monotone preset blocks score (0,4,0) against the generic layer's (0,3,0) `.app-container[data-editor-theme] .milkdown`, so editing `monotone.json` / `monotone-serif.json` changed nothing — contradicting FR-008's "editing a theme's colours MUST be possible only by editing its file".
+- **Pixel identity.** Mapping surface→surface-low, foreground→on-surface, and outline→on-surface-variant overrode dedicated base values on every static default: rustic `#fcefce`→`#fdf3d9`, `#201b13`→`#1f1b16`, `#4f4539`→`#817567`; scholarly `#f2f2f2`→`#f7f7f7`, `#4d4d4d`→`#8a8a8a`; monotone light `#f2f2f2`→`#ffffff`, `#404040`→`#808080`; dark `#1a1a1a`→`#000000`, `#bfbfbf`→`#808080`. Research E2(b) had listed these divergences without noticing the overlay overrides them — violating US2-S4 despite the clarification's "pixel-identical" wording.
+
+Revision (plan D5): split the overlay in two — derived tones map in a rule placed BEFORE the preset blocks (they lose for the five default names, apply for user themes and the emergency appearance); the six curated tokens + typeface map in a `[data-theme]`-qualified rule AFTER them (ties with the monotone blocks at (0,4,0), wins by source order). A cascade unit test (`tests/renderer/themesCssCascade.test.ts`) pins the exact resolved values per theme/mode so neither defect can recur silently.
+
 ## References
 
 - Fixed decisions issued with the implementation order (theme-file schema, reserved filename, payload shape, strictness matrix, migration rule, fallback exception, dialog behaviour) — recorded in plan.md D1–D9 and data-model.md; not re-litigated there.
