@@ -163,7 +163,8 @@ test('US3 editing a token in a theme file applies on the next settings open (SC-
   await expect(dialog.getByRole('radio', { name: 'rustic', exact: true })).toBeChecked()
   await expect.poll(canvasToken).toBe('#ff0000')
 
-  // Fixing the file restores the theme (US5 S4).
+  // Restoring the original valid value re-syncs rendering at the next open
+  // (FR-012 refresh — not a US5 S4 recovery: both values are valid hex).
   edited.light.background = '#fdf6e3'
   fs.writeFileSync(rusticPath, JSON.stringify(edited, null, 2), 'utf-8')
   await dialog.getByRole('button', { name: 'Close', exact: true }).click()
