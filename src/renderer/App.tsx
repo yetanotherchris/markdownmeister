@@ -37,8 +37,6 @@ import './App.css'
 import './chrome/chrome.css'
 import './editor/editor.css'
 import './editor/themes.css'
-import { resolveEditorTheme, fontStackFor } from '../shared/editorThemePresets'
-import type { EditorThemeName } from '../shared/ipc-contract'
 import { resolveEditorAppearance } from './state/editorThemes'
 import { isSerifTypeface } from '../shared/editorThemeTokens'
 
@@ -68,8 +66,7 @@ export default function App() {
     editorTheme,
     handleEditorThemeChange,
     editorThemes,
-    editorFont,
-    editorColors,
+    refreshEditorThemes,
     spellcheckEnabled,
     handleSpellcheckChange,
     spellcheckLanguage,
@@ -85,39 +82,16 @@ export default function App() {
     themeMode
   } = useSettingsState()
 
-  // Spec 023 (FR-003/004/007): the effective editor theme is the stored preset,
-  // or Custom when the stored colours + font match no preset. The container's
-  // data-editor-theme carries the preset name (driving themes.css) or 'custom';
-  // a custom theme applies its six colour tokens + font stack inline.
-  // Transitional (spec 036 T009 removes this block): the stored value is now a
-  // theme-file name, so the legacy detection is fed it under its historical type.
-  const resolvedEditorTheme = resolveEditorTheme({
-    editorTheme: editorTheme as EditorThemeName,
-    editorFont,
-    editorColors
-  })
-  const dataEditorTheme =
-    resolvedEditorTheme.kind === 'preset' ? resolvedEditorTheme.name : 'custom'
-  const editorThemeStyle =
-    resolvedEditorTheme.kind === 'custom' && editorColors
-      ? ({
-          '--mm-custom-background': editorColors.background,
-          '--mm-custom-foreground': editorColors.foreground,
-          '--mm-custom-accent': editorColors.accent,
-          '--mm-custom-surface': editorColors.surface,
-          '--mm-custom-outline': editorColors.outline,
-          '--mm-custom-code': editorColors.code,
-          '--mm-custom-font': fontStackFor(editorFont)
-        } as React.CSSProperties)
-      : undefined
-
   // Spec 036: the file-driven theme layer. The stored name resolves against
   // the discovered definitions; the matching appearance set feeds inline
   // `--mm-theme-*` variables that themes.css maps onto Crepe's tokens (the
   // generic layer wins over the retained default blocks by source order).
-  // An unresolved name renders today's default appearance and main repairs
-  // the stored selection (contracts/preload.md) — never an error.
+  // The container attribute carries the resolved definition's name (driving
+  // the retained default base blocks) or 'default' — the FR-001 emergency
+  // appearance — when nothing resolves; main repairs the stored selection
+  // (contracts/preload.md). Never an error, never lost document state.
   const resolvedAppearance = resolveEditorAppearance(editorTheme, themeMode, editorThemes)
+  const dataEditorTheme = resolvedAppearance.definitionName ?? 'default'
   const fileThemeVars = {
     '--mm-theme-background': resolvedAppearance.palette.background,
     '--mm-theme-foreground': resolvedAppearance.palette.foreground,
@@ -356,7 +330,7 @@ export default function App() {
       data-theme={themeMode}
       data-editor-serif={isSerifTypeface(resolvedAppearance.typeface) ? 'true' : 'false'}
       data-visual-code-highlighting={visualCodeHighlighting ? 'on' : 'off'}
-      style={{ ...editorThemeStyle, ...fileThemeVars }}
+      style={fileThemeVars}
     >
       {/* Spec 010 (2026-08-05): one header row — chrome buttons + tabs. */}
       <div className="header-bar">
@@ -462,7 +436,9 @@ export default function App() {
         <SettingsDialog
           theme={themeChoice}
           onThemeChange={handleThemeChange}
-          editorTheme={dataEditorTheme}
+          editorThemes={editorThemes}
+          editorTheme={editorTheme}
+          onRefreshEditorThemes={refreshEditorThemes}
           onEditorThemeSave={handleEditorThemeChange}
           spellcheckEnabled={spellcheckEnabled}
           onSpellcheckChange={handleSpellcheckChange}

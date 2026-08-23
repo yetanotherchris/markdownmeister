@@ -1,9 +1,7 @@
 import { useCallback, useState } from 'react'
 import { updateSettings, getSettings } from '../state/settings'
 import type {
-  EditorThemeName,
   SpellcheckLanguage,
-  EditorColors,
   FileOpenBehavior
 } from '../../shared/ipc-contract'
 import {
@@ -12,7 +10,6 @@ import {
   themeOverrideFromChoice
 } from './useEffectiveTheme'
 import type { ThemeChoice } from './useEffectiveTheme'
-import { presetFontFor, presetColorsFor } from '../../shared/editorThemePresets'
 import {
   getEditorThemes,
   loadEditorThemesFromMain
@@ -23,12 +20,12 @@ import { reconfigureAll } from '../editor/markdownSyntaxRuntime'
 import type { MarkdownSyntaxOptions } from '../editor/markdownSyntaxOptions'
 
 /**
- * Spec 012/013/016: the settings-dialog state the composition root owns — the
- * open flag (single instance), the editor theme (spec 016), the app theme
- * choice (spec 013), their apply-and-persist handlers, and the effective
- * `data-theme` mode. Seeded from the settings cache, which main.tsx preloads
- * before the first render (spec 013 — so a persisted dark theme never flashes
- * light); each selection persists through the existing settings store + IPC.
+ * Spec 012/013/016/036: the settings-dialog state the composition root owns —
+ * the open flag (single instance), the editor theme (a theme-file name since
+ * spec 036), the app theme choice (spec 013), their apply-and-persist
+ * handlers, the delivered theme definitions, and the effective `data-theme`
+ * mode. Seeded from the caches main.tsx preloads before the first render; each
+ * selection persists through the existing settings store + IPC.
  *
  * Spec 016 (FR-003/US1 S4): the editor theme is applied ONLY when the dialog's
  * Save button commits it (the dialog stages the selection locally); the app
@@ -39,12 +36,10 @@ export function useSettingsState(): {
   setSettingsOpen: (open: boolean) => void
   /** Spec 036: the stored theme name (a theme-file stem). */
   editorTheme: string
-  handleEditorThemeChange: (theme: EditorThemeName) => void
+  handleEditorThemeChange: (theme: string) => void
   /** Spec 036: the discovered editor theme files, refreshed on demand. */
   editorThemes: EditorThemeDefinition[]
   refreshEditorThemes: () => Promise<void>
-  editorFont: 'serif' | 'sans-serif'
-  editorColors: import('../../shared/ipc-contract').EditorColors | null
   spellcheckEnabled: boolean
   handleSpellcheckChange: (enabled: boolean) => void
   spellcheckLanguage: SpellcheckLanguage | null
@@ -70,8 +65,6 @@ export function useSettingsState(): {
     await loadEditorThemesFromMain()
     setEditorThemes(getEditorThemes().themes)
   }, [])
-  const [editorFont, setEditorFont] = useState<'serif' | 'sans-serif'>(getSettings().editorFont)
-  const [editorColors, setEditorColors] = useState<EditorColors | null>(getSettings().editorColors)
   const [spellcheckEnabled, setSpellcheckEnabled] = useState<boolean>(
     getSettings().spellcheckEnabled
   )
@@ -97,30 +90,19 @@ export function useSettingsState(): {
   )
   const themeMode = useEffectiveTheme(themeChoice)
 
-  // Spec 016, FR-003/FR-004: commit the editor theme (persist + apply). Called
-  // by the dialog's Save button; the visual switch flows through `editorTheme`
-  // → the `data-editor-theme` attribute (editor/themes.css). The persisted
-  // value reaches main for validation via updateSettings.
-  // Spec 023 FR-005/FR-008: selecting a preset writes the preset's exact colours
-  // into `editorColors` (clarified 2026-08-09: presets are materialised in the
-  // config, not stored as null) and its font into `editorFont`. Monotone stores
-  // the resolved app-theme variant's palette.
-  const handleEditorThemeChange = useCallback(
-    (theme: EditorThemeName) => {
-      setEditorTheme(theme)
-      const presetColors = presetColorsFor(theme, themeMode)
-      setEditorColors(presetColors)
-      const presetFont = presetFontFor(theme)
-      setEditorFont(presetFont)
-      updateSettings({ editorTheme: theme, editorColors: presetColors, editorFont: presetFont })
-      window.api
-        .updateSettings({ editorTheme: theme, editorColors: presetColors, editorFont: presetFont })
-        .catch(() => {
-          /* ignore */
-        })
-    },
-    [themeMode]
-  )
+  // Spec 016/036, FR-003/FR-004: commit the editor theme (persist + apply).
+  // Called by the dialog's Save button with a theme-file name; the visual
+  // switch flows through `editorTheme` → resolveEditorAppearance → the inline
+  // `--mm-theme-*` variables. The persisted value reaches main for validation
+  // via updateSettings. Colours and typeface come from the theme FILE now —
+  // nothing else is written (spec 036 FR-008).
+  const handleEditorThemeChange = useCallback((theme: string) => {
+    setEditorTheme(theme)
+    updateSettings({ editorTheme: theme })
+    window.api.updateSettings({ editorTheme: theme }).catch(() => {
+      /* ignore */
+    })
+  }, [])
 
   // Spec 013: apply the theme immediately and persist (FR-006, FR-008). The
   // visual switch flows through `themeChoice` → `useEffectiveTheme` (the
@@ -200,8 +182,6 @@ export function useSettingsState(): {
     handleEditorThemeChange,
     editorThemes,
     refreshEditorThemes,
-    editorFont,
-    editorColors,
     spellcheckEnabled,
     handleSpellcheckChange,
     spellcheckLanguage,

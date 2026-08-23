@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type {
-  EditorThemeName,
+  EditorThemeDefinition,
   SpellcheckLanguage,
   FileOpenBehavior
 } from '../../shared/ipc-contract'
 import type { ThemeChoice } from '../hooks/useEffectiveTheme'
 import type { MarkdownSyntaxOptions } from '../editor/markdownSyntaxOptions'
-import { EDITOR_THEMES } from '../editor/editorThemes'
 import './settings.css'
 
 /** Spec 013: the theme choices; `'system'` maps to the persisted override
@@ -37,14 +36,18 @@ export const SETTINGS_AREAS: { value: SettingsArea; label: string }[] = [
 ]
 
 interface SettingsDialogProps {
-  /** The effective editor theme — a preset name, or `'custom'` when the stored
-   *  colours + font match no preset (spec 023 FR-003/004). */
-  editorTheme: EditorThemeName | 'custom'
+  /** Spec 036 FR-005: the discovered editor theme files, refreshed every time
+   *  the dialog opens; labels are the file stems verbatim. */
+  editorThemes: EditorThemeDefinition[]
+  /** The committed selection (a theme-file stem) for seeding the draft. */
+  editorTheme: string
+  /** Spec 036 FR-012: called on every mount so file edits take effect at the
+   *  next dialog open without a restart. */
+  onRefreshEditorThemes: () => Promise<void>
   /** Spec 016, FR-003/US1 S4: called by the Save button with the staged
-   *  selection, then the dialog closes. Closing without Save leaves the canvas
-   *  at the committed value. Spec 023 (clarified 2026-08-09): committing a
-   *  preset materialises its exact colours into the config. */
-  onEditorThemeSave: (theme: EditorThemeName) => void
+   *  theme name, then the dialog closes. Closing without Save leaves the
+   *  canvas at the committed value. */
+  onEditorThemeSave: (theme: string) => void
   /** The currently selected app theme (from persisted settings). */
   theme: ThemeChoice
   /** Spec 013: the apply-immediately model — a selection persists at once. */
@@ -82,7 +85,9 @@ interface SettingsDialogProps {
  * navigation/footer button is inside the focus trap.
  */
 export default function SettingsDialog({
+  editorThemes,
   editorTheme,
+  onRefreshEditorThemes,
   onEditorThemeSave,
   theme,
   onThemeChange,
@@ -102,12 +107,12 @@ export default function SettingsDialog({
   // Spec 008 FR-005: each mount starts on General, regardless of the area a
   // prior instance closed on. Fresh state because the dialog unmounts on close.
   const [area, setArea] = useState<SettingsArea>('general')
-  // Spec 016: the staged editor-theme selection, seeded from the last committed
-  // preset. Not applied on click — only the Save button commits it (US1 S4).
-  // Spec 023: while the effective theme is Custom (a preset is not staged),
-  // the draft is `null` and the display-only Custom radio is shown.
-  const [draftEditorTheme, setDraftEditorTheme] = useState<EditorThemeName | null>(
-    editorTheme === 'custom' ? null : editorTheme
+  // Spec 016: the staged editor-theme selection, seeded from the committed
+  // name. Not applied on click — only the Save button commits it (US1 S4).
+  // Spec 036: the draft is a theme-file stem; when the committed selection
+  // matches no discovered theme the dialog starts with nothing staged.
+  const [draftEditorTheme, setDraftEditorTheme] = useState<string | null>(
+    editorThemes.some((theme) => theme.name === editorTheme) ? editorTheme : null
   )
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
@@ -124,6 +129,12 @@ export default function SettingsDialog({
       returnFocusRef.current?.focus()
     }
   }, [])
+
+  // Spec 036 FR-012: every mount re-reads the themes folder, so a file added,
+  // edited, or deleted since the last open is reflected without a restart.
+  useEffect(() => {
+    void onRefreshEditorThemes()
+  }, [onRefreshEditorThemes])
 
   // Focus trap: Tab and Shift+Tab cycle within the dialog (FR-007). Spec 008:
   // the trap covers enabled buttons, checkbox/switch inputs, radio inputs, and
@@ -374,35 +385,18 @@ export default function SettingsDialog({
                 </fieldset>
                 <fieldset className="settings-fieldset">
                   <legend className="settings-legend">Editor Theme</legend>
-                  {EDITOR_THEMES.map((option) => (
-                    <label key={option.value} className="settings-radio">
+                  {editorThemes.map((option) => (
+                    <label key={option.name} className="settings-radio">
                       <input
                         type="radio"
                         name="editor-theme"
-                        value={option.value}
-                        checked={draftEditorTheme === option.value}
-                        onChange={() => setDraftEditorTheme(option.value)}
+                        value={option.name}
+                        checked={draftEditorTheme === option.name}
+                        onChange={() => setDraftEditorTheme(option.name)}
                       />
-                      <span>{option.label}</span>
+                      <span>{option.name}</span>
                     </label>
                   ))}
-                  {/* Spec 023 FR-003: a display-only Custom option when the stored
-                      colours + font match no preset. Not selectable (Assumptions); a
-                      separate radio-group name so the disabled checked member never
-                      blocks the preset radios' selection. Unchecks once a preset is
-                      staged. */}
-                  {editorTheme === 'custom' && (
-                    <label className="settings-radio">
-                      <input
-                        type="radio"
-                        name="editor-theme-custom"
-                        value="custom"
-                        checked={draftEditorTheme === null}
-                        disabled
-                      />
-                      <span>Custom</span>
-                    </label>
-                  )}
                 </fieldset>
               </>
             )}
