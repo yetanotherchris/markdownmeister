@@ -5,7 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // of a suite-local redeclaration that could silently drift.
 import { REPOSITORY_URL } from '../../src/main/buildInfo'
 import SettingsDialog, { SETTINGS_AREAS } from '../../src/renderer/chrome/SettingsDialog'
-import type { BuildInfo, MarkdownSyntaxOptions } from '../../src/shared/ipc-contract'
+import type {
+  BuildInfo,
+  EditorColors,
+  EditorThemeDefinition,
+  MarkdownSyntaxOptions
+} from '../../src/shared/ipc-contract'
 
 /**
  * Spec 037 (FR-001..FR-008): the About area joins the settings navigation LAST,
@@ -53,9 +58,27 @@ const DEFAULT_MARKDOWN_OPTIONS: MarkdownSyntaxOptions = {
   autolink: true
 }
 
+/** Spec 036 contract: the dialog consumes discovered theme files via props.
+ *  The About tests only need stems that exist for the staged-draft scenarios;
+ *  token values are inert here. */
+function themeDefinition(name: string, typeface: string): EditorThemeDefinition {
+  const colors: EditorColors = {
+    background: '#fdf6e3',
+    foreground: '#1f1b16',
+    accent: '#805610',
+    surface: '#fdf3d9',
+    outline: '#817567',
+    code: '#ba1a1a'
+  }
+  return { name, typeface, light: colors, dark: colors }
+}
+
 function baseProps(): DialogProps {
   return {
+    editorThemes: [themeDefinition('rustic', 'sans-serif'), themeDefinition('scholarly', 'serif')],
+    invalidThemeFileNames: [],
     editorTheme: 'rustic',
+    onRefreshEditorThemes: vi.fn(async () => undefined),
     onEditorThemeSave: vi.fn(),
     theme: 'light',
     onThemeChange: vi.fn(),

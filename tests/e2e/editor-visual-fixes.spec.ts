@@ -162,7 +162,7 @@ test('US1 changing the editor theme re-paints the full-height canvas (no residua
 
   const dialog = await openSettingsDialog(window)
   await openThemeArea(window)
-  await dialog.getByRole('radio', { name: 'Scholarly', exact: true }).check()
+  await dialog.getByRole('radio', { name: 'scholarly', exact: true }).check()
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
 
@@ -190,7 +190,7 @@ test('US1 dark mode + Monotone fills the editor with the dark canvas colour', as
   const dialog = await openSettingsDialog(window)
   await openThemeArea(window)
   await dialog.getByRole('radio', { name: 'Dark', exact: true }).check()
-  await dialog.getByRole('radio', { name: 'Monotone', exact: true }).check()
+  await dialog.getByRole('radio', { name: 'monotone', exact: true }).check()
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
 
@@ -202,7 +202,9 @@ test('US1 dark mode + Monotone fills the editor with the dark canvas colour', as
 })
 
 test('US1 a custom theme fills the editor with its canvas colour', async () => {
-  // Spec 023 fixture pattern: the config is written BEFORE the app launches.
+  // Spec 036: a pre-upgrade spec-023 fixture migrates at startup — its stored
+  // colours become migrated-custom.json and the selection repairs to it, so
+  // the canvas paints exactly the stored colours.
   await closeAppSafely(app)
   fs.mkdirSync(configDir, { recursive: true })
   fs.writeFileSync(
@@ -222,6 +224,10 @@ test('US1 a custom theme fills the editor with its canvas colour', async () => {
   ;({ app, window } = await launchApp(configDir, testFolder))
   await openFile(window, 'short.md')
 
+  await expect(window.locator('.app-container')).toHaveAttribute(
+    'data-editor-theme',
+    'migrated-custom'
+  )
   await expect
     .poll(() => window.locator('.milkdown').evaluate((el) => getComputedStyle(el).getPropertyValue('--crepe-color-background').trim()))
     .toBe('#2b2b2b')
@@ -247,11 +253,11 @@ test('US1 every preset theme fills the editor with its own canvas colour', async
   await openFile(window, 'short.md')
 
   const themes: { name: string; canvas: string }[] = [
-    { name: 'Rustic', canvas: 'rgb(253, 246, 227)' },
-    { name: 'Rustic Serif', canvas: 'rgb(253, 246, 227)' },
-    { name: 'Scholarly', canvas: 'rgb(255, 255, 255)' },
-    { name: 'Monotone', canvas: 'rgb(255, 255, 255)' }, // light app theme
-    { name: 'Monotone Serif', canvas: 'rgb(255, 255, 255)' } // light app theme
+    { name: 'rustic', canvas: 'rgb(253, 246, 227)' },
+    { name: 'rustic-serif', canvas: 'rgb(253, 246, 227)' },
+    { name: 'scholarly', canvas: 'rgb(255, 255, 255)' },
+    { name: 'monotone', canvas: 'rgb(255, 255, 255)' }, // light app theme
+    { name: 'monotone-serif', canvas: 'rgb(255, 255, 255)' } // light app theme
   ]
 
   for (const theme of themes) {

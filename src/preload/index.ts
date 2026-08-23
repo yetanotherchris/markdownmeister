@@ -17,6 +17,7 @@ import type {
   NativeDialogRequest,
   NativeDialogDecision,
   RecentItem,
+  EditorThemesList,
   BuildInfo,
   ErrorCode
 } from '../shared/ipc-contract'
@@ -81,6 +82,7 @@ const api: DesktopApi = {
     invokeResult<null>('entry:reveal', { path: relativePath, kind }),
   getSettings: () => invokeResult<Settings>('settings:get'),
   updateSettings: (patch: Partial<Settings>) => invokeResult<Settings>('settings:update', patch),
+  getEditorThemes: () => invokeResult<EditorThemesList>('themes:list'),
 
   onWorkspaceChanged: (cb: (e: WatchEvent) => void): (() => void) => {
     const handler = (_e: Electron.IpcRendererEvent, data: WatchEvent) => cb(data)
