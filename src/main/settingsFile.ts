@@ -116,8 +116,9 @@ function validateSettings(raw: unknown): Settings {
 
 /**
  * Merge a renderer-supplied patch into `current`, validating every field
- * against a closed set (review #27: `editorFont` is a closed union — never
- * arbitrary text; `sidebarWidth` must be a finite number). Returns the merged
+ * against a closed set (review #27; spec 036: `editorTheme` must be a
+ * well-formed theme name - bounded printable text, never arbitrary text;
+ * `sidebarWidth` must be a finite number). Returns the merged
  * Settings. Pure and electron-free so the merge is unit-testable; `settings.ts`
  * holds the authoritative in-memory snapshot this is applied to.
  */
