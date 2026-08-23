@@ -135,6 +135,22 @@ describe('registerBuildHandlers (spec 037 contracts/preload.md)', () => {
     ])
   })
 
+  it('build:openRepository returns the typed IO envelope when shell.openExternal throws', async () => {
+    // contracts/preload.md: `{ ok: false, code: 'IO', message }` if the OS
+    // call throws — the rejection must surface as a Result, never crash.
+    mocks.openExternal.mockRejectedValueOnce(new Error('EACCES: operation not permitted'))
+    const result = (await handlerFor('build:openRepository')(eventFor(window, true))) as {
+      ok: boolean
+      code: string
+      message: string
+    }
+    expect(result).toEqual({
+      ok: false,
+      code: 'IO',
+      message: 'Could not open the repository URL'
+    })
+  })
+
   it('both handlers tolerate an unexpected payload instead of rejecting it (zero-argument contract)', async () => {
     const info = handlerFor('build:getInfo')(eventFor(window, true), { sneaky: true }) as {
       ok: boolean
