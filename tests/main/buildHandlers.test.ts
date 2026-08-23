@@ -118,6 +118,23 @@ describe('registerBuildHandlers (spec 037 contracts/preload.md)', () => {
     expect(mocks.openExternal).not.toHaveBeenCalled()
   })
 
+  it('build:openRepository hands off once per activation with no duplicated state (spec edge case)', async () => {
+    const handler = handlerFor('build:openRepository')
+    const event = eventFor(window, true)
+
+    // spec.md Edge Cases / contracts/preload.md: repeated activation repeats
+    // the hand-off; the stateless handler accumulates nothing in between.
+    const first = (await handler(event)) as { ok: boolean }
+    const second = (await handler(event)) as { ok: boolean }
+    expect(first).toEqual({ ok: true, value: null })
+    expect(second).toEqual({ ok: true, value: null })
+    expect(mocks.openExternal).toHaveBeenCalledTimes(2)
+    expect(mocks.openExternal.mock.calls.map(([url]) => url)).toEqual([
+      REPOSITORY_URL,
+      REPOSITORY_URL
+    ])
+  })
+
   it('both handlers tolerate an unexpected payload instead of rejecting it (zero-argument contract)', async () => {
     const info = handlerFor('build:getInfo')(eventFor(window, true), { sneaky: true }) as {
       ok: boolean

@@ -124,6 +124,23 @@ test('US2/FR-004 activating the repository URL hands the exact URL to the OS exa
   await expect(window.getByTestId('settings-dialog')).toBeVisible()
 })
 
+test('US2/FR-004 repeated activation hands off exactly once per click with no duplicated state', async () => {
+  await stubOpenExternal(app)
+  await openAboutArea()
+
+  const link = window.getByTestId('settings-about-repository')
+  await link.click()
+  await link.click()
+
+  // spec.md Edge Cases (specs/archive/037-settings-about-section/spec.md:51):
+  // each activation repeats the hand-off — two clicks, two identical URLs,
+  // and nothing inside the app duplicates (the dialog is still the sole
+  // surface, showing the same three rows).
+  await expect.poll(() => openExternalCalls(app)).toEqual([REPOSITORY_URL, REPOSITORY_URL])
+  await expect(window.getByTestId('settings-dialog')).toBeVisible()
+  await expect(window.getByTestId('settings-about-repository')).toHaveText(REPOSITORY_URL)
+})
+
 test('US2/FR-006 copying the revision yields the complete displayed value', async () => {
   await openAboutArea()
 
