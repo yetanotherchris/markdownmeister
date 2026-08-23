@@ -17,6 +17,7 @@ import type {
   NativeDialogRequest,
   NativeDialogDecision,
   RecentItem,
+  BuildInfo,
   ErrorCode
 } from '../shared/ipc-contract'
 
@@ -150,7 +151,10 @@ const api: DesktopApi = {
   clearRecentItems: () => invokeResult<null>('recent:clear'),
   requestQuit: () => invokeResult<null>('app:requestQuit'),
   getSpellcheckWords: () => invokeResult<string[]>('spellcheck:getWords'),
-  addSpellcheckWord: (word: string) => invokeResult<string[]>('spellcheck:addWord', { word })
+  addSpellcheckWord: (word: string) => invokeResult<string[]>('spellcheck:addWord', { word }),
+
+  getBuildInfo: () => invokeResult<BuildInfo>('build:getInfo'),
+  openRepositoryUrl: () => invokeResult<null>('build:openRepository')
 }
 
 contextBridge.exposeInMainWorld('api', api)

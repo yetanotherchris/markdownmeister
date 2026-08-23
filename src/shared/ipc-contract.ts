@@ -313,4 +313,11 @@ export interface DesktopApi {
   /** Spec 020 (JS spellchecker): teach the JS checker a word so it is never
    *  flagged again. Returns the updated word list. */
   addSpellcheckWord(word: string): Promise<Result<string[]>>
+  /** Spec 037 US1: the read-only build identity for the About area (version,
+   *  revision, repository URL — contracts/preload.md). */
+  getBuildInfo(): Promise<Result<BuildInfo>>
+  /** Spec 037 US2: hand the repository URL to the OS default browser as an
+   *  external hand-off. Takes no arguments; the URL lives only in main and
+   *  the application window never navigates (FR-004). */
+  openRepositoryUrl(): Promise<Result<null>>
 }

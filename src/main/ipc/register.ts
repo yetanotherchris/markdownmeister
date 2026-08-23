@@ -7,6 +7,7 @@ import { registerDialogHandlers } from './handlers/dialogs'
 import { registerSettingsHandlers } from './handlers/settings'
 import { registerRecentHandlers } from './handlers/recent'
 import { registerSpellcheckHandlers } from './handlers/spellcheck'
+import { registerBuildHandlers } from './handlers/build'
 
 export function registerIpcHandlers(window: BrowserWindow, approvedRendererUrl: string): void {
   // Electron keeps handlers process-wide while macOS can recreate windows.
@@ -35,7 +36,9 @@ export function registerIpcHandlers(window: BrowserWindow, approvedRendererUrl: 
     'recent:clear',
     'recent:openFile',
     'spellcheck:getWords',
-    'spellcheck:addWord'
+    'spellcheck:addWord',
+    'build:getInfo',
+    'build:openRepository'
   ]) {
     ipcMain.removeHandler(channel)
   }
@@ -50,4 +53,5 @@ export function registerIpcHandlers(window: BrowserWindow, approvedRendererUrl: 
   registerSettingsHandlers(window, ctx)
   registerRecentHandlers(window, ctx)
   registerSpellcheckHandlers(window, ctx)
+  registerBuildHandlers(window, ctx)
 }
