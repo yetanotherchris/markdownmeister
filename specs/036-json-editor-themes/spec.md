@@ -161,6 +161,11 @@ Theme files are inputs the application does not control, so a broken one — inv
 - **Unknown properties**: Extra unknown keys in a theme file are ignored rather than rejected, allowing forward-compatible additions.
 - **Refresh timing**: Discovery happens at startup and when the settings dialog opens. No live file watching is required; a file saved mid-dialog is picked up on the next open. (Live watching could be added later without changing this contract.)
 - **Ordering**: Themes are listed alphabetically by name; the five defaults therefore appear in alphabetical position among user themes, not grouped separately.
-- **Migration naming**: The auto-created file for migrated customised colours uses a reserved, unlikely-to-collide file name (exact name chosen at planning time).
+- **Migration naming**: The auto-created file for migrated customised colours uses a reserved, unlikely-to-collide file name: `migrated-custom.json` (chosen at planning time, 2026-08-23).
 - **Wrong-extension files**: Files not ending in the theme extension are invisible to discovery (not errors); only files with the right extension that fail validation produce a quiet indication.
 - **Fallback default**: When no valid theme resolves (including an empty or fully-invalid folder), the application falls back to the equivalent of today's default appearance so the editor is always usable.
+
+### 2026-08-23 (during planning)
+
+- **Rendering layering**: "Preserving today's rendered colours" (FR-002, US2 S4) is defined over the six curated colour tokens and each default's typeface — those move into the files verbatim. The per-preset stylesheet blocks that also hard-code derived chrome tones (hover, selection, secondary/inverse pairs, muted text variants, Scholarly's accent headings) are retained beneath the new file-driven token layer so unedited defaults stay pixel-identical; they fire only for the five default names and carry no user-facing customisation path, so files remain the single way to define or change a theme's identity, colours, or typeface. Editing a default file's tokens overrides the base values for every property the six-token mapping drives.
+- **Theme-name validation**: The stored selection is now a theme name (file stem) rather than one of five fixed identifiers; main validates it as a bounded printable string with no path separators and resolves it against discovered themes at read time, falling back silently to the default theme when nothing matches (FR-013).
