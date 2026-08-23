@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-22
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "I want a github page website for the editor. A simple 1 page website, inside the docs/site folder (or whatever the convention is with github pages). It should preferably use tailwind CSS and be simplistic, not overly styled but minimal like the app itself, e.g. white page (or system theme) and a screenshot I'll provide, with features of the app as a bullet point list. The header should have the name, and a download button, and a github icon to point to the github repo, and current version. The screenshot will act as the 'jumbotron' for the page. It should use the icon that was created in the previous spec."
 
