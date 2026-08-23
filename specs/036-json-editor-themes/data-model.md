@@ -63,8 +63,8 @@ Case-insensitive duplicate stems: group by lowercased stem; winner = lexicograph
 Changed fields:
 
 - `editorTheme`: **string** — the selected theme name (file stem). Defaults to `'rustic'`. Validated by `isValidEditorThemeName`: printable, no path separators `/ \`, no control characters, 1–100 chars. A PRESENT invalid value in a `settings:update` patch is strictly rejected (like `fileOpenBehavior`). Resolution against discovered themes happens at read time; unresolved names trigger silent fallback+repair (below).
-- `editorColors`: **removed** from `Settings`. Legacy values are tolerated on disk but read only by the migration step (raw config read), never acted on afterwards.
-- `editorFont`: **removed** from `Settings`. Same tolerate-for-migration-only rule.
+- `editorColors`: **removed** from `Settings`. Legacy values are read only by the migration pass, which drops them from the config in the same atomic write that repairs the selection — afterwards nothing acts on them, so a stale palette can never re-yank a later manual selection.
+- `editorFont`: **removed** from `Settings`. Same rule: consumed by migration, then gone from disk.
 
 All other settings fields unchanged. Writes remain debounced atomic read-modify-write preserving sibling sections.
 
@@ -72,9 +72,9 @@ All other settings fields unchanged. Writes remain debounced atomic read-modify-
 
 Given raw legacy `.settings.editorColors` that passes the six-token hex validation:
 
-1. Colours + stored `editorFont` match a default's colours-and-choice combo exactly (case-insensitive hex; either monotone variant accepted) → rewrite `settings.editorTheme` to that stem via the normal atomic settings write. No new file. Re-running changes nothing further.
-2. No match → create `migrated-custom.json` `{ typeface: fontStackFor(storedChoice), light: storedColours, dark: storedColours }` if absent (atomic, create-only), then repair the selection to `migrated-custom`.
-3. Legacy colours absent/invalid → no-op (fresh configs and hand-edited junk never migrate anything).
+1. Colours + stored `editorFont` match a default's colours-and-choice combo exactly (case-insensitive hex; either monotone variant accepted) → rewrite `settings.editorTheme` to that stem via the normal atomic settings write. No new file.
+2. No match → create `migrated-custom.json` `{ typeface: fontStackFor(storedChoice), light: storedColours, dark: storedColours }` if absent (atomic, create-only), then select it.
+3. Either way, the same write DROPS `editorColors`/`editorFont` from the settings section, so later restarts and later manual selections are never influenced by the stale palette; a config with absent/invalid legacy colours is left completely untouched.
 
 Ordering at startup: ensure dir → seed missing defaults → migrate → (window/renderer fetches list; handler repairs unresolved selections).
 
