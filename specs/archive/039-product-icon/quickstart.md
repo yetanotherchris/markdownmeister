@@ -1,10 +1,6 @@
 # Quickstart: Product Icon — manual verification matrix
 
-The automated suite proves the committed assets are structurally correct and
-that the wiring exists. What only a human can verify is how the icon *renders*
-on real OS surfaces. Run through this checklist on a packaged build per
-platform (`npm run dist` produces installers under `dist/`; Scoop installs from
-the released zip; the AppImage mounts by double-click).
+The automated suite proves the committed assets are structurally correct and that the wiring exists. What only a human can verify is how the icon *renders* on real OS surfaces. Run through this checklist on a packaged build per platform (`npm run dist` produces installers under `dist/`; Scoop installs from the released zip; the AppImage mounts by double-click).
 
 ## Windows (installer)
 
