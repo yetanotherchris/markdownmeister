@@ -1,10 +1,10 @@
-import { test, expect } from '@playwright/test'
-import { _electron as electron, type ElectronApplication, type Page } from '@playwright/test'
+import { test, expect, chromium, type ElectronApplication, type Page } from '@playwright/test'
+import type { BrowserType } from 'playwright-core'
 import { spawn, type ChildProcess } from 'child_process'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { launchApp, closeAppSafely, openFolder, stubMessageBox } from './launch'
+import { launchApp, closeAppSafely, openFolder } from './launch'
 
 /**
  * Spec 038 (FR-004/FR-005): the MSIX execution alias delivers the chosen
@@ -39,12 +39,12 @@ function makeDir(prefix: string): string {
 }
 
 interface SpawnedApp {
-  browser: Awaited<ReturnType<typeof electron.connectOverCDP>>
+  browser: Awaited<ReturnType<BrowserType['connectOverCDP']>>
   page: Page
 }
 
 /** Spawn the real binary the way the OS would (argv carries the target) and
- *  attach over CDP via the DevToolsActivePort file in the isolated profile. */
+ *  attach over CDP using the endpoint Electron announces on stderr. */
 async function spawnWithTarget(
   target: string | null,
   userDataDir: string,
@@ -55,7 +55,8 @@ async function spawnWithTarget(
   const child = spawn(ELECTRON_BINARY, args, {
     cwd: REPO_ROOT,
     detached: false,
-    stdio: 'ignore',
+    // stderr must be piped: it carries the "DevTools listening on ws://" line.
+    stdio: ['ignore', 'ignore', 'pipe'],
     env: {
       ...process.env,
       MM_USER_DATA_DIR: userDataDir,
@@ -67,30 +68,64 @@ async function spawnWithTarget(
   })
   spawned.push(child)
 
-  const portFile = path.join(userDataDir, 'DevToolsActivePort')
-  const deadline = Date.now() + 20_000
-  while (Date.now() < deadline) {
-    if (fs.existsSync(portFile)) {
-      const [port] = fs.readFileSync(portFile, 'utf-8').split('\n')
-      if (port) {
-        const browser = await electron.connectOverCDP(`http://127.0.0.1:${port}`)
-        const page = await new Promise<Page>((resolve, reject) => {
-          const context = browser.contexts()[0]
-          const existing = context.pages()[0]
-          if (existing && existing.url() !== 'about:blank') return resolve(existing)
-          const timer = setTimeout(() => reject(new Error('no renderer page')), 15_000)
-          context.on('page', (p) => {
-            clearTimeout(timer)
-            resolve(p)
-          })
-        })
-        await page.waitForLoadState('domcontentloaded')
-        return { browser, page }
+  const endpoint = await new Promise<string>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('no CDP endpoint announced')), 20_000)
+    child.stderr?.on('data', (chunk: Buffer) => {
+      const match = /DevTools listening on (ws:\/\/\S+)/.exec(chunk.toString())
+      if (match) {
+        clearTimeout(timer)
+        resolve(match[1])
       }
+    })
+    child.on('exit', () => {
+      clearTimeout(timer)
+      reject(new Error('spawned binary exited before announcing a CDP endpoint'))
+    })
+  })
+
+  const browser = await chromium.connectOverCDP(endpoint)
+  const page = await new Promise<Page>((resolve, reject) => {
+    const context = browser.contexts()[0]
+    const existing = context.pages()[0]
+    if (existing && existing.url() !== 'about:blank') return resolve(existing)
+    const timer = setTimeout(() => reject(new Error('no renderer page')), 15_000)
+    context.on('page', (p) => {
+      clearTimeout(timer)
+      resolve(p)
+    })
+  })
+  await page.waitForLoadState('domcontentloaded')
+  return { browser, page }
+}
+
+/** Spawn a secondary instance sharing the primary's profile: the single-
+ *  instance lock makes it forward argv to the running app and exit. It quits
+ *  before Playwright could attach, so no CDP here — the primary asserts the
+ *  outcome (same pattern as launchSecondary in file-association.spec.ts). */
+async function spawnForwardingInstance(
+  target: string,
+  userDataDir: string,
+  configDir: string
+): Promise<void> {
+  const child = spawn(ELECTRON_BINARY, ['--headless', 'out/main/index.js', target], {
+    cwd: REPO_ROOT,
+    detached: false,
+    stdio: 'ignore',
+    env: {
+      ...process.env,
+      MM_USER_DATA_DIR: userDataDir,
+      MM_CONFIG_DIR: configDir,
+      MM_SINGLE_INSTANCE: '1'
     }
-    await new Promise((resolve) => setTimeout(resolve, 250))
-  }
-  throw new Error(`app did not expose a CDP endpoint (${portFile} missing)`)
+  })
+  spawned.push(child)
+  await new Promise<void>((resolve) => {
+    const timer = setTimeout(resolve, 10_000)
+    child.on('exit', () => {
+      clearTimeout(timer)
+      resolve()
+    })
+  })
 }
 
 function killSpawned(): void {
@@ -154,7 +189,7 @@ test('FR-005 running instance: a second argv invocation routes to the first', as
     await openFolder(window)
     await expect(window.getByTestId('footer-workspace')).toContainText(path.basename(workspaceA))
 
-    await spawnWithTarget(workspaceB, userDataDir, configDir)
+    await spawnForwardingInstance(workspaceB, userDataDir, configDir)
 
     // The spawned process must have forwarded its argv and exited; the FIRST
     // process switches workspaces exactly as with the classic verb.
@@ -179,8 +214,9 @@ test('FR-004 parity: cold launch of a missing folder fails closed and quiet', as
     userDataDir,
     configDir
   )
-  await stubMessageBox(browser)
 
+  // No native dialog is involved in a failed open: main sends a scrubbed
+  // message and the renderer shows the quiet footer note (FR-011 parity).
   await expect(page.getByTestId('footer-note')).toBeVisible({ timeout: 20_000 })
   await expect(page.getByRole('tab')).toHaveCount(0)
   await expect(page.getByTestId('footer-document')).toContainText('No document open')
