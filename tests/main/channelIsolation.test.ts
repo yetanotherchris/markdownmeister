@@ -14,7 +14,14 @@ import * as path from 'node:path'
  * markdownmeister.json cannot be byte-compared (the release bot legitimately
  * rewrites release-volatile values on every tag, so a byte fixture would turn
  * every routine release red — plan deviation 2). It is instead parsed and
- * compared DEEPLY after normalising volatile VALUES to fixed sentinels:
+ * compared DEEPLY after normalising volatile VALUES to fixed sentinels.
+ *
+ * The baseline copy is named scoop-manifest-baseline.json, NOT
+ * markdownmeister.json: this repo doubles as the user's scoop bucket, and
+ * scoop's manifest lookup recurses over the whole bucket directory. A second
+ * file with that name makes scoop parse both manifests at once, which breaks
+ * its version comparison ("Cannot convert value to type System.String") and
+ * silently disables update detection for the app (phase 41).
  * replacing — never deleting — keeps the KEYS structural, so removing or
  * renaming version/url/hash still fails CI. Everything else — shortcuts,
  * install/uninstall hooks, bin shims: the entire REGISTRATION surface — is
@@ -64,7 +71,7 @@ describe('channel isolation baseline (SC-003)', () => {
       return parsed
     }
     expect(normaliseVolatile(readRepo('markdownmeister.json'))).toEqual(
-      normaliseVolatile(readBaseline('markdownmeister.json'))
+      normaliseVolatile(readBaseline('scoop-manifest-baseline.json'))
     )
   })
 
