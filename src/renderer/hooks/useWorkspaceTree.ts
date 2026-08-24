@@ -88,7 +88,7 @@ export function useWorkspaceTree(opts: {
   const handleTreeToggle = useCallback(async (id: string, isLoaded: boolean) => {
     if (isLoaded) {
       // A folder already loaded: visibility is arborist's own state. Collapsing
-      // must NOT wipe the children — arborist fires this for auto-opens too,
+      // must NOT wipe the children, arborist fires this for auto-opens too,
       // which would erase the node being edited right after creation.
       return
     }    dispatchWorkspace({ type: 'EXPAND_START', payload: { id } })
@@ -122,7 +122,7 @@ export function useWorkspaceTree(opts: {
     }
     const fromPath = node.id
     const toPath = renameTargetPath(fromPath, newName.trim())
-    // The placeholder state ends at the first committed rename — a later
+    // The placeholder state ends at the first committed rename, a later
     // Escape-cancel must not trash a file that may now hold real content.
     pendingCreateRef.current.delete(fromPath)
     setPendingEditId(null)
@@ -192,7 +192,7 @@ export function useWorkspaceTree(opts: {
   const cleanupAfterDelete = useCallback((node: TreeNode, plan: DeletePlan) => {
     for (const doc of plan.cleanToClose) {
       // A keystroke during the async trash would otherwise discard this edit
-      // without a prompt (Principle III) — re-check and leave it open.
+      // without a prompt (Principle III), re-check and leave it open.
       const fresh = sessionRef.current.documents.find(d => d.id === doc.id)
       if (fresh && isDirtyLive(fresh)) continue
       doClose(doc.id)
@@ -253,7 +253,7 @@ export function useWorkspaceTree(opts: {
         return
       }
       if (trashed.code === 'TRASH_UNAVAILABLE') {
-        // FR-029a: trash unavailable — offer permanent deletion only as an
+        // FR-029a: trash unavailable, offer permanent deletion only as an
         // explicit second confirmation.
         const permanent = await window.api.showConfirmation({
           kind: 'permanent-delete',

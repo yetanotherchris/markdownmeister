@@ -8,7 +8,7 @@ import type { RecentItem, RecentKind } from '../shared/ipc-contract'
  *
  * The config file lives at `appData/markdownmeister/config.json` (on Linux
  * `~/.config/markdownmeister/config.json` per FR-004); this module never resolves that path
- * itself — callers pass the file path in, so it stays unit-testable without
+ * itself, callers pass the file path in, so it stays unit-testable without
  * mocking Electron.
  *
  * Tolerance (FR-011, spec edges): a missing, unreadable, or malformed config
@@ -20,10 +20,10 @@ export const RECENT_ITEMS_LIMIT_PER_KIND = 5
 
 /**
  * Dedupe/remove key for an entry. On Windows the filesystem compares paths
- * case-insensitively, so the key folds case — otherwise `C:\Notes` and
+ * case-insensitively, so the key folds case, otherwise `C:\Notes` and
  * `c:\notes` would survive as two entries for one location (FR-006). The fold
  * is win32-only because on macOS/Linux realpath (canonicalPath in the
- * handlers) is what dedupes case-variant spellings of a LIVE target — the key
+ * handlers) is what dedupes case-variant spellings of a LIVE target, the key
  * fold only matters for recorded-but-missing paths on case-insensitive mounts.
  */
 export function dedupeKey(path_: string, kind: RecentKind): string {
@@ -111,7 +111,7 @@ export function loadRecentItems(filePath: string): RecentItem[] {
 }
 
 /**
- * Atomic write (temp file in the same directory, then rename — Principle III)
+ * Atomic write (temp file in the same directory, then rename, Principle III)
  * via the shared `atomicWrite` helper, with an explicit `0o600` mode so the
  * config (which records absolute paths) is not world-readable on multi-user
  * systems. The parent directory is created on demand; a failure to create it
@@ -128,7 +128,7 @@ export function saveRecentItems(filePath: string, items: RecentItem[]): void {
     const parsed = JSON.parse(fs.readFileSync(filePath, 'utf-8'))
     if (parsed && typeof parsed === 'object') existing = parsed as Record<string, unknown>
   } catch {
-    // Missing or corrupt config — start from a fresh object.
+    // Missing or corrupt config, start from a fresh object.
   }
   const dir = path.dirname(filePath)
   fs.mkdirSync(dir, { recursive: true })

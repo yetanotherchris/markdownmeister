@@ -45,7 +45,7 @@ export interface ResolvedEditorAppearance {
 
 /** Pure: resolve the stored selection against the delivered definitions.
  *  An unresolved name (deleted/invalid/not-yet-listed file) yields today's
- *  default appearance instead — never an error, never empty colours. */
+ *  default appearance instead, never an error, never empty colours. */
 export function resolveEditorAppearance(
   name: string,
   mode: 'light' | 'dark',

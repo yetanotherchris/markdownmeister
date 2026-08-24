@@ -9,7 +9,7 @@ import { recentItemsConfigPath } from '../../src/main/recentItemsPath'
 /**
  * The spec-004 R4 guard: the renderer may only open a path main itself
  * recorded. `isRecentEntry` re-validates against the persisted list before any
- * filesystem access — the OUTSIDE_WORKSPACE rejection the e2e suite probes at
+ * filesystem access, the OUTSIDE_WORKSPACE rejection the e2e suite probes at
  * the IPC boundary is the same rule, unit-tested here (FR-010: the low-level
  * assertion does not need to be duplicated in e2e).
  */

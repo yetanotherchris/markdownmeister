@@ -7,7 +7,7 @@
  * stringify the remark node's boolean `spread` (`${node.spread}`). remark's
  * stringifier (`mdast-util-to-markdown`) only applies its tight/loose
  * blank-line logic when `typeof node.spread === 'boolean'` (lib/join.js), so a
- * string `"false"` is truthy there and the list serializes LOOSE — blank lines
+ * string `"false"` is truthy there and the list serializes LOOSE, blank lines
  * inserted between every item, which GitHub renders as the double spacing.
  * `ordered_list` already compares `node.attrs.spread === "true"`, so ordered
  * lists were never affected; only bullet lists and list items were.

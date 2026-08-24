@@ -4,9 +4,9 @@ import * as path from 'node:path'
 
 /**
  * Spec 039 (FR-001/FR-002/FR-007): structural verification of the committed
- * icon assets. These formats fail silently — a wrong dimension byte, a missing
+ * icon assets. These formats fail silently, a wrong dimension byte, a missing
  * small entry, or a truncated ICNS chunk ships invisibly until some launcher
- * surface renders garbage — so the leading binary structures are parsed here
+ * surface renders garbage, so the leading binary structures are parsed here
  * in pure TypeScript against the committed files.
  *
  * The contract is dimensional/structural equivalence (docs/icon-provenance.md,

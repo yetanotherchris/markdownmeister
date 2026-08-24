@@ -4,13 +4,13 @@ import * as crypto from 'crypto'
 
 /**
  * Atomic write of `content` to `filePath`: exclusive-create a temp file in the
- * same directory (`'wx'`, random suffix — no predictable name a stale leftover
+ * same directory (`'wx'`, random suffix, no predictable name a stale leftover
  * or a same-user actor could collide with), fsync it, then rename over the
  * target (Principle III). On any failure the temp file is removed and the
  * error rethrown; the destination is never left truncated.
  *
  * `mode` applies at temp-file creation only (e.g. `0o600` for the recent-items
- * config — see the security review finding about world-readable configs).
+ * config, see the security review finding about world-readable configs).
  */
 export function atomicWrite(filePath: string, content: string, mode?: number): void {
   const dir = path.dirname(filePath)

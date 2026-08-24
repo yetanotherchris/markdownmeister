@@ -76,7 +76,7 @@ export function useDocumentSession(opts: {
   const getMarkdown = useCallback((id: string) => instancePool.getMarkdown(id), [])
 
   // Spec 033 (contract C2): document-identity accessors backing the dirty
-  // fast path — reference identity proves "untouched since baseline" without
+  // fast path, reference identity proves "untouched since baseline" without
   // serializing; every other case runs the exact comparison.
   const getLiveDoc = useCallback((id: string) => instancePool.getLiveDoc(id), [])
   const getBaselineDoc = useCallback((id: string) => instancePool.getBaselineDoc(id), [])
@@ -274,7 +274,7 @@ export function useDocumentSession(opts: {
 
   // The quit flow decomposed into named sub-steps (FR-004): flush → dirty-check
   // → confirm → discard-all/save-all → quit. A second trigger while any prompt
-  // is open is ignored (one prompt at a time) — checked BEFORE the no-dirty
+  // is open is ignored (one prompt at a time), checked BEFORE the no-dirty
   // fast path, because quitting while a sheet is up (e.g. an external-removed
   // rescue for a clean document) must not close the window and abandon the
   // in-memory content it was offering (review 2026-08-04).
@@ -296,7 +296,7 @@ export function useDocumentSession(opts: {
       let error: string | undefined
       // The still-unsaved set shrinks as saves succeed, so a re-prompt lists
       // (and a second Save All re-saves) only the documents that are actually
-      // still unsaved — not a stale pre-save snapshot (review 2026-08-04).
+      // still unsaved, not a stale pre-save snapshot (review 2026-08-04).
       const remaining = [...dirtyDocs]
       for (;;) {
         const result = await window.api.showConfirmation({
@@ -331,7 +331,7 @@ export function useDocumentSession(opts: {
           window.api.confirmQuit('quit')
           return
         }
-        // A save failed or was cancelled — re-prompt with the failure explained
+        // A save failed or was cancelled, re-prompt with the failure explained
         // (US2 scenario 4); the application stays open.
       }
     } finally {
@@ -448,7 +448,7 @@ export function useDocumentSession(opts: {
 
   // Spec 024 (FR-001/002/005, research R1): decide whether a file open replaces
   // the active tab. The gate is the LIVE dirty check (pool), never the debounced
-  // store flag — a keystroke inside the 200 ms debounce must not be silently
+  // store flag, a keystroke inside the 200 ms debounce must not be silently
   // discarded (Principle III). Existing-tab activation happens in the reducer.
   // Spec 008 FR-018: `explicitNew` forces a new tab; a `same-tab` preference
   // keeps the replace-live-clean behavior (data-model decision table). An

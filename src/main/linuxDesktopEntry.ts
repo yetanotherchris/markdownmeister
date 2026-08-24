@@ -10,13 +10,13 @@ import { atomicWrite } from './fs/atomicWrite'
  * freedesktop desktop entry in sync so file managers list MarkdownMeister
  * under "Open With" for folders (`MimeType=inode/directory;`). The entry is
  * association-only: this module never writes `[Default Applications]`, never
- * touches any `mimeapps.list`, and never runs `xdg-mime` — the app must never
+ * touches any `mimeapps.list`, and never runs `xdg-mime`, the app must never
  * become the default folder handler. `TryExec` points at the AppImage itself,
  * so launchers auto-hide the entry once the file is deleted; no dead visible
  * entry can survive an uninstall-by-deletion.
  *
- * Everything here is Electron-free (like osOpen.ts) so the rendering rules —
- * especially Exec quoting of hostile paths — are unit-testable directly, and
+ * Everything here is Electron-free (like osOpen.ts) so the rendering rules,
+ * especially Exec quoting of hostile paths, are unit-testable directly, and
  * every operation fails soft: a returned failure never blocks startup.
  */
 
@@ -92,7 +92,7 @@ export function renderDesktopEntry(appImagePath: string, options?: { iconName?: 
 /**
  * Find a usable icon inside an AppImage mount root (the AppDir). The AppImage
  * runtime guarantees `.DirIcon`; the other candidates cover electron-builder
- * layouts. Returns null when nothing PNG-shaped is found — the entry is then
+ * layouts. Returns null when nothing PNG-shaped is found, the entry is then
  * written without an `Icon` key rather than half-installed.
  */
 export function findAppImageIcon(mountRoot: string): string | null {
@@ -100,7 +100,7 @@ export function findAppImageIcon(mountRoot: string): string | null {
   const hicolorApps = path.join(mountRoot, 'usr', 'share', 'icons', 'hicolor')
   try {
     // Deterministic preference: the declared theme size first, then larger
-    // sizes before smaller ones — readdir order must not pick a 16x16 over a
+    // sizes before smaller ones, readdir order must not pick a 16x16 over a
     // 512x512 icon.
     const byPreferredSize = (a: string, b: string): number => {
       if (a === ICON_THEME_SIZE) return -1
@@ -112,7 +112,7 @@ export function findAppImageIcon(mountRoot: string): string | null {
       candidates.push(path.join(hicolorApps, size, 'apps', ICON_BASE_NAME))
     }
   } catch {
-    // No hicolor tree in this layout — the ordered candidates still apply.
+    // No hicolor tree in this layout, the ordered candidates still apply.
   }
   return candidates.find(isPng) ?? null
 }

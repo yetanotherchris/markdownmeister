@@ -261,7 +261,7 @@ export function handleApplyWatchEvent(state: WorkspaceState, event: WatchEvent):
 
 export function handleInsertEntry(state: WorkspaceState, payload: { parentPath: string; entry: DirEntry }): WorkspaceState {
   // Application-originated create (the watcher event for it is suppressed
-  // in main, so the renderer applies it directly — T061).
+  // in main, so the renderer applies it directly, T061).
   const { parentPath, entry } = payload
   return insertEntry(state, normalizeParent(parentPath), entry)
 }

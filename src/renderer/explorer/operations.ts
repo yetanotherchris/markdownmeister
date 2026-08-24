@@ -64,7 +64,7 @@ export interface DeletePlan {
   open: DocumentState[]
   /** Clean open documents that can be closed after a successful delete. */
   cleanToClose: DocumentState[]
-  /** Dirty open documents — the delete must be refused while these exist. */
+  /** Dirty open documents, the delete must be refused while these exist. */
   dirtyBlockers: DocumentState[]
 }
 

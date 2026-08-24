@@ -6,13 +6,13 @@ import { isValidEditorThemeName } from './themes/validate'
 import { atomicWrite } from './fs/atomicWrite'
 
 /**
- * Pure, electron-free settings store (spec 010 T003/T004, spec 012 T003) —
+ * Pure, electron-free settings store (spec 010 T003/T004, spec 012 T003),
  * mirrors the `recentItems`/`recentItemsPath` split so the load/save logic is
  * unit-testable without mocking Electron. Callers resolve the file path
  * (settings.ts) and pass it in; this module never touches `app`.
  *
  * Spec 012 FR-002: settings live in the SAME per-user configuration file as the
- * recent-items list — `config.json` at `appData/markdownmeister` (or the `MM_CONFIG_DIR`
+ * recent-items list, `config.json` at `appData/markdownmeister` (or the `MM_CONFIG_DIR`
  * test seam). The file shape is `{ recentItems?, settings? }`, and every write
  * is a read-modify-write so saving settings never clobbers the recent-items
  * list (and vice versa).
@@ -169,7 +169,7 @@ export function mergeSettingsPatch(current: Settings, patch: Partial<Settings>):
  * Strict pre-merge validation for a renderer-supplied `settings:update` patch
  * (spec 008 R1, contracts/settings-ui.md §Settings IPC Validation): a PRESENT
  * `fileOpenBehavior` outside the closed union throws before the patch reaches
- * the tolerant merge — malformed IPC input is never silently coerced into the
+ * the tolerant merge, malformed IPC input is never silently coerced into the
  * settings store. The disk-loaded path stays tolerant (validateSettings)
  * because a hand-edited or partially-written config should recover per-field
  * rather than be rejected whole. Electron-free so the handler is unit-testable.
@@ -185,7 +185,7 @@ export function validateSettingsPatch(patch: unknown): void {
     })
   }
   // Spec 036: a PRESENT editorTheme must be a valid theme name (bounded
-  // printable text, no path separators) — malformed IPC input is rejected
+  // printable text, no path separators), malformed IPC input is rejected
   // before the tolerant merge, never coerced into the settings store.
   if ('editorTheme' in record) {
     if (typeof record.editorTheme !== 'string' || !isValidEditorThemeName(record.editorTheme)) {
@@ -195,7 +195,7 @@ export function validateSettingsPatch(patch: unknown): void {
     }
   }
   // Spec 030 FR-003..FR-008 (research R5): the six markdown syntax toggles are
-  // strictly validated — a PRESENT non-boolean is rejected whole (never
+  // strictly validated, a PRESENT non-boolean is rejected whole (never
   // silently coerced), matching fileOpenBehavior strictness. This is a
   // deliberate tightening over the older spellcheckEnabled/explorerVisible
   // booleans: a syntax toggle is a parse-behaviour switch whose corruption
@@ -220,7 +220,7 @@ export function loadSettingsFile(filePath: string): Settings {
   return validateSettings(readConfigFile(filePath).settings)
 }
 
-/** True when the config file has a `.settings` key — lets the caller decide
+/** True when the config file has a `.settings` key, lets the caller decide
  *  whether a legacy migration applies (settings.ts). */
 export function hasSettingsKey(filePath: string): boolean {
   return 'settings' in readConfigFile(filePath)
@@ -230,7 +230,7 @@ export function hasSettingsKey(filePath: string): boolean {
  * One-time migration (spec 012, plan decision), electron-free: when `configPath`
  * has no `.settings` key yet and `legacyPath` holds a pre-012 flat Settings
  * object, import its values into `configPath`. Returns the migrated Settings, or
- * `null` when no migration applies. Best-effort — a read/write failure returns
+ * `null` when no migration applies. Best-effort, a read/write failure returns
  * `null` and the caller falls through to the defaults (FR-009). The caller
  * resolves both paths (settings.ts); this module never touches `app`.
  */
@@ -273,7 +273,7 @@ export function migrateLegacySettingsFile(configPath: string, legacyPath: string
  * `settings` section, and write the whole file back so `recentItems` survives.
  *
  * The write is ATOMIC (temp + fsync + rename, Principle III) with an explicit
- * `0o600` mode — review #27 M1/M2: settings now share the file that holds the
+ * `0o600` mode, review #27 M1/M2: settings now share the file that holds the
  * MRU list of absolute paths, so this writer must not be able to truncate it on
  * a crash (a plain `writeFileSync` could) or leave it world-readable on first
  * creation (the `ame` directory may not exist yet on a fresh profile).
@@ -288,20 +288,20 @@ export function writeSettingsFile(filePath: string, settings: Settings): void {
 
 /**
  * Spec 008 clarification 2026-08-09: "Materialise defaults on first launch."
- * When the shared config has no settings section — the file is missing (fresh
+ * When the shared config has no settings section, the file is missing (fresh
  * install, config.json deleted) or it only carries sibling sections such as
- * `recentItems` — write the DEFAULTS section so the default Rustic palette is
+ * `recentItems`, write the DEFAULTS section so the default Rustic palette is
  * persisted from the very first launch. Returns the settings written, or `null`
  * when nothing was materialised.
  *
  * FR-009 tolerance: a MALFORMED file (or any valid JSON that is not a config
- * object) is left untouched — an implicit startup write must never overwrite an
+ * object) is left untouched, an implicit startup write must never overwrite an
  * invalid config; only a real user settings write may repair it (the
  * malformed-config e2e tests depend on this). A config that already has a
  * `.settings` key is also left alone.
  *
  * `explorerVisible` is a parameter so the caller can write the honest FR-013
- * state (`false` at startup, when no folder is open — writing plain `true`
+ * state (`false` at startup, when no folder is open, writing plain `true`
  * would be flipped to `false` by reconcile on the next launch anyway).
  *
  * Best-effort: a write failure returns `null` and the caller falls through to
@@ -317,7 +317,7 @@ export function materialiseDefaultSettings(
     raw = fs.readFileSync(filePath, 'utf-8')
   } catch {
     // Missing or unreadable: treat as a fresh install and materialise. A write
-    // failure (e.g. EACCES) falls through to null — the defaults still apply.
+    // failure (e.g. EACCES) falls through to null, the defaults still apply.
     return writeDefaults(filePath, explorerVisible)
   }
 
@@ -330,7 +330,7 @@ export function materialiseDefaultSettings(
   }
 
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    // Valid JSON that is not a config object — leave it alone.
+    // Valid JSON that is not a config object, leave it alone.
     return null
   }
   if ('settings' in (parsed as Record<string, unknown>)) {

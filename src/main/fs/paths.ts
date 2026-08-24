@@ -81,7 +81,7 @@ export function resolveWithinRoot(root: string, candidate: string): ResolveResul
     realTarget = fs.realpathSync(resolved)
   } catch {
     // The target does not exist yet (create/rename flows). Resolve the
-    // nearest existing ancestor and re-attach the remainder — but only when
+    // nearest existing ancestor and re-attach the remainder, but only when
     // that ancestor's real path is still inside the workspace: a directory
     // junction/symlink planted inside the workspace points outside, and
     // re-joining through it would fold the `..` back into a lexical path that
@@ -122,8 +122,8 @@ function findExistingAncestor(p: string, rootReal: string): string | null {
     if (!rel || (rel !== '..' && !rel.startsWith('..' + path.sep) && !path.isAbsolute(rel))) {
       return real
     }
-    // The nearest existing ancestor resolves outside the workspace — a
-    // junction — so every path below it escapes at the OS level.
+    // The nearest existing ancestor resolves outside the workspace, a
+    // junction, so every path below it escapes at the OS level.
     throw Object.assign(new Error('Path escapes workspace'), { code: 'OUTSIDE_WORKSPACE' })
   }
   return null

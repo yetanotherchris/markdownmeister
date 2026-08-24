@@ -23,10 +23,10 @@ const CHAR_WIDTH_PX = 8
  * Both the placeholder decision and the displayed path are driven by
  * `workspaceRoot` alone: `WorkspaceInfo.path` and `name` are only ever
  * populated together (the two REPLACE dispatches), so keying the "no folder
- * open" state off the path — not the name — keeps the invariant structural.
+ * open" state off the path, not the name, keeps the invariant structural.
  *
  * The width is measured on the workspace REGION container (flex: 1, min-width:
- * 0), not the text span — measuring the span itself is a feedback loop, since
+ * 0), not the text span, measuring the span itself is a feedback loop, since
  * the shortened text shrinks the span it was sized against (research R4).
  */
 export default function StatusFooter({ activeDoc, workspaceRoot, note }: StatusFooterProps) {

@@ -29,7 +29,7 @@ function workAreas(): Rect[] {
   return screen.getAllDisplays().map((d) => d.workArea)
 }
 
-/** Load the saved window state (null when missing/malformed — FR-006). */
+/** Load the saved window state (null when missing/malformed, FR-006). */
 export function loadWindowState(): WindowState | null {
   return loadWindowStateFile(windowStatePath())
 }

@@ -209,7 +209,7 @@ export default function CrepeHost({
       editorRef.current = crepe
       const view = crepe.editor.action((ctx) => ctx.get(editorViewCtx))
       viewRef.current = view
-      // Spec 033 (SC-002): the constructor parsed `defaultValue` — count the
+      // Spec 033 (SC-002): the constructor parsed `defaultValue`, count the
       // one full interpretation pass over incoming content.
       recordParse()
       scrollElementRef.current = view.dom.closest('.editor-host') ?? view.dom.parentElement
@@ -237,7 +237,7 @@ export default function CrepeHost({
       // assign them by DOM order now that the tree exists (toolbarLabels.ts).
       const topBar = containerRef.current?.querySelector<HTMLElement>('.milkdown-top-bar')
       if (topBar) applyToolbarLabels(topBar)
-      // Spec 030: build the conditional remark pipeline at create — reconfigure
+      // Spec 030: build the conditional remark pipeline at create, reconfigure
       // the freshly parsed editor in place so the initial pipeline matches the
       // persisted options (defaults all-on are a no-op re-parse). This runs
       // BEFORE the baseline capture so the baseline reflects the final pipeline.
@@ -259,7 +259,7 @@ export default function CrepeHost({
       // recorded into; both store updates land in the same React batch.
       recordIncomingSerialization()
       onReady(crepe)
-      // Spec 033 (contract C5): presentation complete — close the open-timing
+      // Spec 033 (contract C5): presentation complete, close the open-timing
       // measurement opened at open-gesture commit (no-op without one). It ends
       // AT the ready signal; the baseline serialization below is bookkeeping
       // and must not inflate the measured open.

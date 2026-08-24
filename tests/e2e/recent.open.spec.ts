@@ -13,7 +13,7 @@ import {
 } from './recent-helpers'
 
 /**
- * Spec 004 Recent Items — US1/US2 (split from recent.spec.ts): opening and
+ * Spec 004 Recent Items, US1/US2 (split from recent.spec.ts): opening and
  * reopening recorded files and folders, dedupe/move-to-front, restart
  * persistence, and file-vs-folder grouping (FR-006/FR-015).
  */
@@ -39,7 +39,7 @@ test('US1 opening a file via the File menu records it and it can be reopened', a
   await expect(ctx.window.locator('.document-title')).toContainText('external.md')
 
   // The file appears in File > Recent Items (labels carry no File:/Folder:
-  // prefix — the grouping conveys the type).
+  // prefix, the grouping conveys the type).
   const items = await recentItemsState(ctx)
   expect(items.some((i) => i.label.includes('external.md'))).toBe(true)
 
@@ -99,7 +99,7 @@ test('US1 reopening an entry moves it to the front without a duplicate', async (
   expect(items[0].label).toContain('mm-recent-e2e')
   expect(items).toHaveLength(3)
 
-  // Reopen the older file — it stays a single entry and moves to the FRONT of
+  // Reopen the older file, it stays a single entry and moves to the FRONT of
   // the FILES group (folders are grouped above files, FR-015). Poll: the menu
   // click starts an async renderer→main round trip, and the bump happens in
   // main only after that round trip completes. Position-based so a missing
@@ -147,7 +147,7 @@ test('US2 recent file and folder entries are distinguishable by grouping and ope
   await expect(ctx.window.getByRole('treeitem').getByText('alpha.md')).toBeVisible()
 
   // Labels carry no File:/Folder: prefix (2026-08-04 clarification): the type
-  // is conveyed by the FR-015 grouping — the folder entry sits in the top
+  // is conveyed by the FR-015 grouping, the folder entry sits in the top
   // group and the file entry below it, and a file name ends in `.md`.
   const items = await recentItemsState(ctx)
   expect(items).toHaveLength(2)

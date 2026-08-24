@@ -34,7 +34,7 @@ const DICTIONARIES: Record<SpellcheckLanguage, NSpell> = {
  * Spec 025 (2026-08-08): the app-curated list of domain, technical, and
  * proper-noun-derived terms that no general English dictionary contains (e.g.
  * "JSON", "Lacanian", "hominem"). Stored lowercased, one word per line, and
- * treated as valid in both en-GB and en-US — the terms are dialect-neutral.
+ * treated as valid in both en-GB and en-US, the terms are dialect-neutral.
  */
 export const SUPPLEMENTAL_WORDS: ReadonlySet<string> = new Set(
   supplementalWordsRaw
@@ -57,7 +57,7 @@ export function getChecker(language: SpellcheckLanguage | null): NSpell {
 
 /**
  * Word token: letters (any script) and apostrophes (don't, it's). Hyphens are
- * NOT part of a token — compounds like "well-known" are checked part-by-part
+ * NOT part of a token, compounds like "well-known" are checked part-by-part
  * (so the parts are never falsely flagged) and a standalone "-" between spaces
  * is ignored entirely.
  */
@@ -79,7 +79,7 @@ export function findMisspellings(
     const word = match[0]
     const start = match.index as number
     // Ordinal suffix heuristic: "4th"/"2nd" tokenize as "th"/"nd" because a
-    // digit is not a word character — skip tokens that directly follow a digit.
+    // digit is not a word character, skip tokens that directly follow a digit.
     if (start > 0 && /\d/.test(text[start - 1])) continue
     const lower = word.toLowerCase()
     if (customWords.has(lower) || SUPPLEMENTAL_WORDS.has(lower)) continue

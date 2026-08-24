@@ -9,7 +9,7 @@ import { atomicWrite } from '../fs/atomicWrite'
 import { MAX_THEME_FILE_BYTES, parseThemeFile, themeStemOf } from './validate'
 
 /**
- * Spec 036 (plan D3/D4): the themes-directory lifecycle — ensure it exists,
+ * Spec 036 (plan D3/D4): the themes-directory lifecycle, ensure it exists,
  * seed ONLY missing default files (never rewrite an existing file, FR-007),
  * and discover/validate every candidate. All functions take the directory
  * explicitly so the module stays electron-free and unit-testable; callers
@@ -26,7 +26,7 @@ export interface DiscoveredTheme {
 
 export interface DiscoveryOutcome {
   themes: DiscoveredTheme[]
-  /** Quiet indications only (FR-010): rejected file names — malformed
+  /** Quiet indications only (FR-010): rejected file names, malformed
    *  content, oversized, unreadable, case-collision losers, and links that
    *  were not followed. Never surfaced modally. */
   invalidNames: string[]
@@ -95,7 +95,7 @@ export function listThemes(dir: string): DiscoveryOutcome {
   const invalidNames: string[] = []
   const candidates: { fileName: string; stem: string }[] = []
   for (const entry of dirents) {
-    // Only regular files qualify — symlinks/reparse points are never followed
+    // Only regular files qualify, symlinks/reparse points are never followed
     // (FR-011); a link named *.json is reported quietly, plain subdirectories
     // and non-JSON entries are invisible per spec Assumptions.
     if (!entry.isFile()) {

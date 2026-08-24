@@ -39,7 +39,7 @@ export function registerRecentHandlers(window: Electron.BrowserWindow, _ctx: typ
         )
         return ok(opened)
       } catch (e: unknown) {
-        // FR-009: the target is unavailable — drop the entry, then report.
+        // FR-009: the target is unavailable, drop the entry, then report.
         removeRecent(requestedPath, 'file')
         const appErr = toAppError(e)
         return err(appErr.code, sanitizeError(e, ctx.workspaceRoot))
@@ -69,7 +69,7 @@ export function registerRecentHandlers(window: Electron.BrowserWindow, _ctx: typ
     }
   })
 
-  // FR-011: clearing is best-effort like record/remove — on a persistence
+  // FR-011: clearing is best-effort like record/remove, on a persistence
   // failure the empty list cannot be saved, the failure is reported quietly,
   // and nothing else changes.
   ipcMain.handle('recent:clear', (event): Result<null> => {

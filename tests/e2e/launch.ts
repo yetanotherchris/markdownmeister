@@ -3,7 +3,7 @@
  *
  * The app runs under Chromium's `--headless` switch so the suite never steals
  * desktop focus while it runs (the Electron windows are not shown on screen).
- * Set `MM_E2E_HEADED=1` to run with a visible, interactive window — e.g. when
+ * Set `MM_E2E_HEADED=1` to run with a visible, interactive window, e.g. when
  * debugging a failing scenario locally.
  */
 export const electronLaunchArgs: string[] = process.env.MM_E2E_HEADED
@@ -142,9 +142,9 @@ export async function hamburgerRecentStructure(window: Page): Promise<HamburgerE
  * box, so every decision path is exercised by pre-selecting the response here.
  *
  * `choose`:
- * - `'cancel'` (default) — return the options' `cancelId` (the safe choice).
- * - a button label string — return the index of the button with that label.
- * - a function — return its result given the message-box options.
+ * - `'cancel'` (default), return the options' `cancelId` (the safe choice).
+ * - a button label string, return the index of the button with that label.
+ * - a function, return its result given the message-box options.
  */
 export async function stubMessageBox(
   app: ElectronApplication,
@@ -248,7 +248,7 @@ export interface LaunchResult {
  *
  * `userDataDir`, when given, relocates the Chromium profile via the
  * `MM_USER_DATA_DIR` seam (spec 020 research R6) so the native spellcheck
- * dictionary never leaks into — or out of — a test.
+ * dictionary never leaks into, or out of, a test.
  */
 export async function launchApp(
   configDir?: string,
@@ -261,7 +261,7 @@ export async function launchApp(
   if (configDir) env.MM_CONFIG_DIR = configDir
   if (userDataDir) env.MM_USER_DATA_DIR = userDataDir
   // Spec 006 (research R7): most tests launch against the shared default
-  // user-data dir, so the single-instance lock must NOT engage — a test app
+  // user-data dir, so the single-instance lock must NOT engage, a test app
   // could otherwise collide with the developer's real running app and quit.
   // The dedicated second-instance spec opts back in via extraEnv.
   env.MM_SINGLE_INSTANCE = '0'

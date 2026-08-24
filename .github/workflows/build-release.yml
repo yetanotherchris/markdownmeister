@@ -2,7 +2,7 @@ name: Build and Release
 
 # Triggered only by stable semantic-version tags. The filter below is a GitHub
 # Actions GLOB pattern, not a regex: `[0-9]` is a character class, `+` means
-# "one or more", and `.` is a literal dot — so `v1.2.3` matches while `v1.2` and
+# "one or more", and `.` is a literal dot, so `v1.2.3` matches while `v1.2` and
 # `v1.0.0-beta.1` do not. The strict `^v[0-9]+\.[0-9]+\.[0-9]+$` regex is
 # enforced inside the `validate` job, which also checks reachability and that
 # the tag has no existing release before any build leg starts (FR-001, spec
@@ -148,7 +148,7 @@ jobs:
 
       # FR-003: package.json's version is synced to the tag version by the
       # release job (updatepackagejson.ps1, committed to main alongside the
-      # manifests). Build legs must not fail on a drift here — the packaging
+      # manifests). Build legs must not fail on a drift here, the packaging
       # version always comes from the tag via --config.extraMetadata.version.
       - name: Build app
         run: npm run build
@@ -165,7 +165,7 @@ jobs:
       - name: Package (macOS)
         if: matrix.platform == 'macos'
         env:
-          # No signing/notarization (spec Assumptions: out of scope) — tell
+          # No signing/notarization (spec Assumptions: out of scope), tell
           # electron-builder not to auto-discover a signing identity (R5).
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: npx electron-builder --mac --${{ matrix.arch }} --publish never --config.extraMetadata.version=${{ steps.version.outputs.VERSION }}
@@ -247,7 +247,7 @@ jobs:
       # FR-004/FR-010: create the GitHub Release as a DRAFT first
       # (softprops v3 uploads assets before publishing and stays unpublished).
       # The manifests are then updated and committed to main while the release
-      # is still a draft, and the draft is published only at the very end — so a
+      # is still a draft, and the draft is published only at the very end, so a
       # PUBLIC release can never exist referencing stale or missing definitions.
       # fail_on_unmatched_files: true means a missing file in `files` fails the
       # release creation instead of publishing a partial release (research R8).

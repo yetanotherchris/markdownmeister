@@ -128,7 +128,7 @@ describe('documents reducer', () => {
         }
       })
       const docId = s1.documents[0].id
-      // Source view reports raw text — a newline the user typed is an edit,
+      // Source view reports raw text, a newline the user typed is an edit,
       // not editor normalization.
       const s2 = documentsReducer(s1, {
         type: 'UPDATE_CONTENT',

@@ -4,7 +4,7 @@ import type { Settings } from '../../src/shared/ipc-contract'
 
 /**
  * Spec 013 (research R1): the persisted theme override maps 1:1 onto
- * `nativeTheme.themeSource` — the documented three-option dark-mode state
+ * `nativeTheme.themeSource`, the documented three-option dark-mode state
  * machine. `null` (system default) resolves to `'system'` so the renderer's
  * `prefers-color-scheme` follows the OS live (FR-004/FR-005).
  */

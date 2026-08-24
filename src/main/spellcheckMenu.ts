@@ -28,7 +28,7 @@ export const MAX_SUGGESTIONS = 5
 
 /**
  * Build the correction-menu actions for a `context-menu` event. Returns `[]`
- * when no word is flagged — the caller then shows no menu (FR-008 forbids
+ * when no word is flagged, the caller then shows no menu (FR-008 forbids
  * suppressing the native menu, not omitting it when there is nothing to show).
  * An empty suggestion list still yields the add-to-dictionary action so a
  * flagged word can always be silenced (FR-004).

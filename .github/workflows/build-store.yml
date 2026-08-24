@@ -1,7 +1,7 @@
 name: Build Microsoft Store package
 
 # Spec 038 (FR-001): builds the unsigned .appx (MSIX family; Store signing
-# happens during certification, so no certificate is needed here —
+# happens during certification, so no certificate is needed here,
 # electron-builder logs "Windows Store only build"). Dispatched MANUALLY
 # because the resulting package is submitted to Partner Center by a human,
 # never published automatically. This workflow is independent of

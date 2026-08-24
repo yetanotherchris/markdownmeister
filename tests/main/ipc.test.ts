@@ -146,7 +146,7 @@ describe('DesktopApi native-dialog operations (spec 008)', () => {
 
 // Spec 008, contracts/settings-ui.md §Settings IPC Validation: `settings:update`
 // rejects a present new field with an invalid value as a typed IO result before
-// merging — malformed IPC input is never silently coerced into the settings
+// merging, malformed IPC input is never silently coerced into the settings
 // store. `validateSettingsPatch` is the pure, electron-free guard the handler
 // calls; these behavioral tests pin the closed-union/boolean rules (R1).
 describe('settings:update patch validation (spec 008)', () => {

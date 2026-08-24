@@ -33,10 +33,10 @@ export function effectiveThemeMode(choice: ThemeChoice, prefersDark: boolean): T
  *
  * The persisted choice (`'light' | 'dark' | 'system'`) is the source of truth
  * for Light/Dark. For System, the renderer's `prefers-color-scheme` media query
- * reflects the real OS theme — re-read on every matchMedia change event, which
+ * reflects the real OS theme, re-read on every matchMedia change event, which
  * Chromium fires when the OS theme switches (FR-005 live following). Main also
  * resolves the choice onto `nativeTheme.themeSource` for the native chrome
- * (scrollbars, window frames) — see src/main/theme.ts — but this hook never
+ * (scrollbars, window frames), see src/main/theme.ts, but this hook never
  * touches `nativeTheme` (Principle I), so the palette follows the query
  * independently (research R1/R2: themeSource does not propagate to the renderer
  * media query in the Electron build this runs on).

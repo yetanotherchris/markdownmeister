@@ -76,7 +76,7 @@ function restoreCursor(view: EditorView, snapshot: CursorSnapshot): void {
  * Build the remark processor for `options`: the stock base (remark-parse +
  * remark-stringify with Milkdown's stringify options) plus every registered
  * remark plugin EXCEPT `remark-gfm` and `remark-math` (which our conditional
- * composer subsumes — research R1), then the composer itself. The footnote
+ * composer subsumes, research R1), then the composer itself. The footnote
  * syntax (bundled inside remark-gfm) is re-added unconditionally by the
  * composer. The latex feature's math-block transform stays (it is a no-op when
  * no math node exists).
@@ -114,7 +114,7 @@ const appliedOptions = new WeakMap<Crepe, MarkdownSyntaxOptions>()
  *
  *  Spec 033 skip guard (contract C1): the gate-options update always runs, but
  *  when the requested options equal the options already applied to THIS editor,
- *  the parser/serializer swap and the `replaceAll` re-parse are skipped — a
+ *  the parser/serializer swap and the `replaceAll` re-parse are skipped, a
  *  freshly mounted editor is always considered "at defaults", so the create
  *  path with unchanged settings performs no second full parse and no
  *  mount-time undoable transaction. An off→on toggle round-trip still
@@ -152,7 +152,7 @@ export function reconfigureEditor(
 
   // The re-parse fires markdownUpdated (200 ms debounce); on a RUNTIME toggle
   // drop that emission so the store's dirty state / revision guard are
-  // untouched (research R3). The CREATE path does not suppress — no user edit
+  // untouched (research R3). The CREATE path does not suppress, no user edit
   // can race a just-mounted editor, and suppressing would swallow the first
   // real edit's emission (and thus its dirty flag).
   if (suppressEmission) suppressUntil = Date.now() + 300

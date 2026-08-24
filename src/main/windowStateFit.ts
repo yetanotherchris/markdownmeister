@@ -1,7 +1,7 @@
 import type { WindowState } from './windowStateFile'
 
 /**
- * Pure, electron-free display-fit rules for spec 011 (T003) — FR-006/FR-007.
+ * Pure, electron-free display-fit rules for spec 011 (T003), FR-006/FR-007.
  * Electron's `screen` module is not imported here: callers (windowState.ts)
  * pass plain `{ x, y, width, height }` work-areas from `screen.getAllDisplays()`
  * so every clamping rule is unit-testable without mocking Electron.
@@ -33,15 +33,15 @@ function displayContainsCenter(display: Rect, bounds: Rect): boolean {
  *
  * 1. pick the display whose work-area contains the rect's centre; if none does
  *    (the saved display is disconnected, or the resolution/arrangement changed),
- *    fall back to the first display (the primary) — FR-007 scenario 1, FR-006;
+ *    fall back to the first display (the primary), FR-007 scenario 1, FR-006;
  * 2. clamp `width`/`height` to that work-area so the window is never larger
- *    than an available display — FR-007 scenario 2;
- * 3. clamp `x`/`y` so the whole rect sits inside the work-area — a partially
+ *    than an available display, FR-007 scenario 2;
+ * 3. clamp `x`/`y` so the whole rect sits inside the work-area, a partially
  *    off-screen window is pushed back fully on-screen, never left straddling an
  *    edge.
  *
  * Bounds and work-areas are both in DIP, so differing scale factors compare
- * correctly — FR-007 scenario 3.
+ * correctly, FR-007 scenario 3.
  */
 export function fitWindowToDisplays(bounds: Rect, displays: Rect[]): Rect {
   // Skip zero-area work-areas (a disabled display can still be listed): fitting
@@ -57,7 +57,7 @@ export function fitWindowToDisplays(bounds: Rect, displays: Rect[]): Rect {
 }
 
 /** The default position for a fresh window: centred on the given display, and
- *  clamped to fit if the display is smaller than the default size (FR-006 —
+ *  clamped to fit if the display is smaller than the default size (FR-006,
  *  a "sensible default" must actually be visible and usable). */
 export function centerIn(display: Rect): Rect {
   const width = Math.min(DEFAULT_WINDOW.width, display.width)

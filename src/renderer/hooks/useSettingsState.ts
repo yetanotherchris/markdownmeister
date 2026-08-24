@@ -14,7 +14,7 @@ import { reconfigureAll } from '../editor/markdownSyntaxRuntime'
 import type { MarkdownSyntaxOptions } from '../editor/markdownSyntaxOptions'
 
 /**
- * Spec 012/013/016/036: the settings-dialog state the composition root owns —
+ * Spec 012/013/016/036: the settings-dialog state the composition root owns,
  * the open flag (single instance), the editor theme (a theme-file name since
  * spec 036), the app theme choice (spec 013), their apply-and-persist
  * handlers, the delivered theme definitions, and the effective `data-theme`
@@ -96,7 +96,7 @@ export function useSettingsState(): {
   // Called by the dialog's Save button with a theme-file name; the visual
   // switch flows through `editorTheme` → resolveEditorAppearance → the inline
   // `--mm-theme-*` variables. The persisted value reaches main for validation
-  // via updateSettings. Colours and typeface come from the theme FILE now —
+  // via updateSettings. Colours and typeface come from the theme FILE now,
   // nothing else is written (spec 036 FR-008).
   const handleEditorThemeChange = useCallback((theme: string) => {
     setEditorTheme(theme)

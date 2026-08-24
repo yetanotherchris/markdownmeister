@@ -6,7 +6,7 @@ import { launchApp, closeAppSafely } from './launch'
 
 /**
  * Spec 029 suite (contracts/file-open-gesture.md), 2026-08-21 amendment: every
- * open commits immediately — the deferral window is gone. With "Open explorer
+ * open commits immediately, the deferral window is gone. With "Open explorer
  * files in a new tab" disabled, a double-click's first click replaces a clean
  * active tab and its explicit-new second request dedupes onto that tab, so one
  * tab results (amended FR-001/003); over a dirty active tab the first click

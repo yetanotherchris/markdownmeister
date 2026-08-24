@@ -6,7 +6,7 @@ import { DEFAULT_EDITOR_THEME_FILES } from '../../src/shared/editorThemeTokens'
 
 /**
  * Spec 036 (plan D5, review 2026-08-23): themes.css layers the file-driven
- * tokens over the retained preset blocks with precise precedence — derived
+ * tokens over the retained preset blocks with precise precedence, derived
  * tones stay preset-driven for the five default names (unedited defaults
  * render pixel-identically to the previous version), while the six curated
  * tokens + typeface come from the resolved FILE for every discovered theme,

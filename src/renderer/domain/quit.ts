@@ -1,7 +1,7 @@
 import type { DocumentState } from '../state/documents'
 
 /** The documents that still need saving before a quit/close/folder-open can
- *  proceed — the live-dirty set, computed fresh (a re-prompt must list only the
+ *  proceed, the live-dirty set, computed fresh (a re-prompt must list only the
  *  documents that are actually still unsaved, not a stale pre-save snapshot). */
 export function dirtyDocumentsToSave(
   documents: DocumentState[],

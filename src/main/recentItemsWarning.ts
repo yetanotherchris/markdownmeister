@@ -20,7 +20,7 @@ export function reportRecentItemsWarning(e: unknown, action: 'save' | 'clear' = 
   })
 }
 
-/** A recent-items persistence write succeeded — the renderer clears its
+/** A recent-items persistence write succeeded, the renderer clears its
  *  previous warning note so it does not linger after the cause has resolved. */
 export function notifyRecentItemsOk(): void {
   const w = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]

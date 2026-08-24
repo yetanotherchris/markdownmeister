@@ -97,7 +97,7 @@ test('bullet and ordered list markers both render (clip-path neutralised)', asyn
   // Regression (2026-08-07): Crepe's list bullet markers are SVGs whose
   // `clip-path` references a document-global url(#clip0_...) id. With several
   // editor hosts in the DOM the id resolves to a hidden host and the dots
-  // silently never paint — the same defect the top-bar rule fixes (R22), now
+  // silently never paint, the same defect the top-bar rule fixes (R22), now
   // extended to all milkdown SVGs. The DOM-computed clip-path must be `none`
   // on the ACTIVE tab while a second (hidden) editor host exists.
   fs.writeFileSync(path.join(testFolder, 'list.md'), '- bullet one\n- bullet two\n\n1. first\n2. second')

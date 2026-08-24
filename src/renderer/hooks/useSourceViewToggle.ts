@@ -44,7 +44,7 @@ export function useSourceViewToggle(opts: {
   // equals what Crepe already parsed, the editor can stay mounted and
   // undo/scroll/cursor survive (research.md R3, no-edit round trip). When the
   // source text changed (or the editor was evicted so nothing is live), the
-  // new text must become the editor's content — REFRESH_FROM_SOURCE bumps
+  // new text must become the editor's content, REFRESH_FROM_SOURCE bumps
   // contentVersion so CrepeHost remounts with the source bytes. Spec 021: the
   // source textarea holds the FULL file, so the remount payload is the
   // recombined text and the reducer re-splits any frontmatter edits (R3).
@@ -57,11 +57,11 @@ export function useSourceViewToggle(opts: {
       // only the editor's single appended trailing newline is "unchanged", so a
       // blank line typed at EOF in source is not silently dropped, while a
       // pristine file that Crepe merely normalized still skips the remount.
-      // The comparison is against the BODY (`content`) — frontmatter changes
+      // The comparison is against the BODY (`content`), frontmatter changes
       // alone leave the body untouched, so they do not force a remount.
       if (live === null || !editorMatchesContent(live, doc.content)) {
         // Spec 033 (contract C2): the remount rewrites `editorBaseline`, so the
-        // recorded document identity must go too — same reasoning as
+        // recorded document identity must go too, same reasoning as
         // SAVE_SUCCESS. Defense-in-depth: a real source edit already set
         // `dirty`, which short-circuits before the fast path.
         instancePool.clearBaselineDoc(id)
@@ -94,12 +94,12 @@ export function useSourceViewToggle(opts: {
       }
       const read = await window.api.readFile(path)
       if (!read.ok) return null
-      // Spec 024: View source is not a browsing open (FR-008 scope) — it keeps
+      // Spec 024: View source is not a browsing open (FR-008 scope), it keeps
       // the current behaviour (activate existing / new tab), so no mode.
       dispatch({ type: 'OPEN_EXISTING', payload: { value: { ...read.value, view: 'source' } } })
       // The freshly opened tab's editor registers on mount, so it is the newest
       // LRU entry and cannot be evicted here. sessionRef.current.activeId is
-      // still the pre-dispatch document — passing it only protects the tab that
+      // still the pre-dispatch document, passing it only protects the tab that
       // is visible right now, which is the intent.
       enforcePoolCap(sessionRef.current.activeId)
       return read.value.path ?? read.value.name

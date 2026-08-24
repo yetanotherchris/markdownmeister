@@ -29,7 +29,7 @@ import * as os from 'os'
 import { pathToFileURL } from 'url'
 
 // Spec 020 test seam (research R6): `MM_USER_DATA_DIR` relocates the Chromium
-// profile — the home of the native spellcheck dictionary — so the e2e suite can
+// profile, the home of the native spellcheck dictionary, so the e2e suite can
 // isolate its profile per test and never pollute the developer's real
 // dictionary. Must run before the app is ready (the session is created during
 // window setup). Production never sets it.
@@ -79,7 +79,7 @@ function createWindow(): void {
   })
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   // Spec 011 FR-005 (review #30 M1): maximize after the window is ready to be
-  // shown — on Linux/X11 a maximize issued before the window is realized can be
+  // shown, on Linux/X11 a maximize issued before the window is realized can be
   // a no-op, and showing the maximized window avoids a normal-bounds flash.
   mainWindow.once('ready-to-show', () => {
     if (isMaximized) mainWindow?.maximize()
@@ -116,7 +116,7 @@ function createWindow(): void {
   mainWindow.on('closed', () => {
     mainWindow = null
     // Spec 006 (review 2026-08-09): macOS keeps the process alive after the
-    // last window closes — the OS-open host must not target the destroyed
+    // last window closes, the OS-open host must not target the destroyed
     // webContents, and a re-created window re-arms via os:ready.
     clearOsOpenWindow()
   })
@@ -126,7 +126,7 @@ function createWindow(): void {
 
 // Spec 035 (research D4): when running as an AppImage on Linux, keep the
 // user-level folder-action desktop entry in sync with the AppImage's current
-// path. Best-effort and silent (constitution IV) — a failure only logs, and on
+// path. Best-effort and silent (constitution IV), a failure only logs, and on
 // every other platform this is a no-op.
 function ensureLinuxFolderAction(): void {
   if (process.platform !== 'linux' || !process.env.APPIMAGE) return
@@ -144,7 +144,7 @@ function ensureLinuxFolderAction(): void {
 }
 
 // Spec 036 FR-002/FR-007/FR-009: ensure the themes folder exists with the
-// five default files (creating ONLY what is missing — an existing file is
+// five default files (creating ONLY what is missing, an existing file is
 // never rewritten) and run the legacy spec-023 custom-colour migration. Must
 // run before ANY other config reader or writer so a repaired selection is what
 // every later settings read observes (see bootApp; review finding 2026-08-23).
@@ -158,7 +158,7 @@ function initThemes(): void {
     // The migration repairs `editorTheme` with a surgical raw-config edit that
     // bypasses the settings cache. If any code loaded settings before this
     // point, a debounced write armed from that stale snapshot would restore
-    // the pre-migration selection over the repair — adopt the repaired name so
+    // the pre-migration selection over the repair, adopt the repaired name so
     // the pending write persists it instead (review finding 2026-08-23).
     if (outcome.repairedThemeName !== null) adoptRepairedEditorTheme(outcome.repairedThemeName)
   } catch {
@@ -172,10 +172,10 @@ function bootApp(): void {
   // to the universal ~/.config location BEFORE anything reads it. Skipped under
   // the MM_CONFIG_DIR test seam (tests must never move the developer's real
   // config, US4/FR-010), when the home directory is unavailable (FR-011), and
-  // when the legacy and universal paths coincide (Linux without XDG — FR-005).
+  // when the legacy and universal paths coincide (Linux without XDG, FR-005).
   // As a final guard the migration only runs when appData resolves under the
   // home directory, which is true in production on every platform but false
-  // when an e2e test redirects HOME/USERPROFILE — Electron resolves appData via
+  // when an e2e test redirects HOME/USERPROFILE, Electron resolves appData via
   // the OS user record on macOS, so a redirected home would otherwise point the
   // legacy path at the developer's real config and a rename would move (and a
   // test teardown delete) it (review finding 2026-08-08).
@@ -201,7 +201,7 @@ function bootApp(): void {
     }
   }
   // Spec 036 (review finding 2026-08-23): theme seeding + legacy migration
-  // MUST run before ANY other config reader or writer — including the explorer
+  // MUST run before ANY other config reader or writer, including the explorer
   // reconcile below. Its updateSettings seeds main's authoritative settings
   // cache with the pre-migration `editorTheme` and arms the 500 ms debounced
   // disk write; running first means that snapshot is built AFTER the migration
@@ -216,7 +216,7 @@ function bootApp(): void {
   // Spec 013: resolve the persisted theme override onto nativeTheme BEFORE the
   // window is created, so the native chrome (macOS window frame, native
   // scrollbars/context menus) reflects the choice from the start. The renderer's
-  // first paint is themed separately — main.tsx preloads the settings before
+  // first paint is themed separately, main.tsx preloads the settings before
   // rendering (research R1: themeSource does not propagate to the renderer).
   applyThemeOverride(loadSettings().themeOverride)
   // Spec 020 FR-006/FR-009: apply the persisted spellcheck choice BEFORE the
@@ -226,7 +226,7 @@ function bootApp(): void {
 }
 
 // Spec 035 (contracts/registration.md): `--remove-folder-action` removes the
-// Linux folder-action files and exits BEFORE the single-instance lock request —
+// Linux folder-action files and exits BEFORE the single-instance lock request,
 // the contract requires it to work without the lock. Absent files are success,
 // and the outcome is always one line with exit 0.
 if (process.argv.includes(REMOVE_FOLDER_ACTION_FLAG)) {

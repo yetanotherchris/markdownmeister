@@ -12,8 +12,8 @@ import { SERIF_TYPEFACE, SANS_TYPEFACE } from '../../../src/shared/editorThemeTo
 
 /**
  * Spec 036 FR-009 (data-model §Migration): spec-023 legacy custom colours are
- * mirrored into the file-based world — an exact default combo repairs the
- * selection to that stem, anything else becomes migrated-custom.json — and a
+ * mirrored into the file-based world, an exact default combo repairs the
+ * selection to that stem, anything else becomes migrated-custom.json, and a
  * restart after migration is a complete no-op.
  */
 

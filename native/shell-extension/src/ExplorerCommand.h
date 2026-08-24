@@ -10,7 +10,7 @@
 // dialog, wait, or background thread.
 //
 // Hand-off contract (spec FR-012): Invoke launches the app's execution alias
-// with the chosen folder as its sole argument and does nothing else — no
+// with the chosen folder as its sole argument and does nothing else, no
 // filesystem browsing, no content reads, no persistence of observed paths.
 // All validation happens inside the trusted application process.
 //
@@ -42,7 +42,7 @@ public:
   IFACEMETHODIMP_(ULONG) AddRef() override;
   IFACEMETHODIMP_(ULONG) Release() override;
 
-  // IExplorerCommand — every method body is wrapped in an SEH frame.
+  // IExplorerCommand, every method body is wrapped in an SEH frame.
   IFACEMETHODIMP GetTitle(IShellItemArray *items, LPWSTR *out_name) override;
   IFACEMETHODIMP GetIcon(IShellItemArray *items, LPWSTR *out_icon) override;
   IFACEMETHODIMP GetToolTip(IShellItemArray *items, LPWSTR *out_tip) override;

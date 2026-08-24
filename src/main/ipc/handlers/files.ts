@@ -177,7 +177,7 @@ export function registerFileHandlers(window: Electron.BrowserWindow, _ctx: typeo
           kind === 'directory'
             ? mkdir(ctx.workspaceRoot!, parentPath, name)
             : createFile(ctx.workspaceRoot!, parentPath, name)
-        // FR-037: the creation is ours — suppress the watcher so the tree is
+        // FR-037: the creation is ours, suppress the watcher so the tree is
         // not double-fed the event (the renderer applies it directly).
         const resolved = resolveWithinRoot(ctx.workspaceRoot!, entry.path)
         ctx.workspaceState?.suppressWatch(resolved.resolved)
@@ -232,7 +232,7 @@ export function registerFileHandlers(window: Electron.BrowserWindow, _ctx: typeo
 
       if (!ctx.workspaceRoot) return err('NO_WORKSPACE', 'No workspace is open')
       const resolved = resolveWithinRoot(ctx.workspaceRoot, p)
-      // FR-037: the deletion is ours — do not report it back as external.
+      // FR-037: the deletion is ours, do not report it back as external.
       ctx.workspaceState?.suppressWatch(resolved.resolved)
       const receipt = await trashEntry(ctx.workspaceRoot, p, permanent)
       return ok(receipt)
@@ -257,7 +257,7 @@ export function registerFileHandlers(window: Electron.BrowserWindow, _ctx: typeo
 
   // Spec 015 (US1/US2, FR-001/002/005): reveal a workspace item in the OS file
   // manager. The relative path is resolved and containment-validated in main
-  // (resolveFile/resolveDirectory — the same helpers as every other entry
+  // (resolveFile/resolveDirectory, the same helpers as every other entry
   // operation, Principle II) BEFORE any OS call, so a missing or escaping path
   // fails closed and the session is untouched (FR-006).
   ipcMain.handle('entry:reveal', async (event, args: unknown): Promise<Result<null>> => {

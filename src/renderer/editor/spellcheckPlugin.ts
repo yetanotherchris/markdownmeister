@@ -47,8 +47,8 @@ function isSkippedNode(node: PMNode): boolean {
   return name === 'code_block' || name === 'fence' || name === 'math'
 }
 
-/** Inline code is a MARK in Milkdown's commonmark preset — the schema names it
- *  `inlineCode` (with an older `n` id) — so a text node inside `` `code` ``
+/** Inline code is a MARK in Milkdown's commonmark preset, the schema names it
+ *  `inlineCode` (with an older `n` id), so a text node inside `` `code` ``
  *  carries it and must be skipped too. */
 const INLINE_CODE_MARKS = new Set(['inlineCode', 'n'])
 
@@ -141,7 +141,7 @@ export function spellcheckPlugin(onMenu: (menu: SpellingMenuState | null) => voi
       }
 
       // Spec 033 (FR-004, contract C3): the initial whole-document pass runs at
-      // idle time instead of immediately after mount — it must never block
+      // idle time instead of immediately after mount, it must never block
       // presentation of the incoming document. jsdom (unit tests) lacks
       // requestIdleCallback; the timeout fallback keeps the deferral semantics.
       const hasIdleApi = typeof window.requestIdleCallback === 'function'

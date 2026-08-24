@@ -46,12 +46,12 @@ test.afterAll(async () => {
 const CODE_BRACKET_SQUARE_D =
   'M14.25 9.75 16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0 0 20.25 18V6A2.25 2.25 0 0 0 18 3.75H6A2.25 2.25 0 0 0 3.75 6v12A2.25 2.25 0 0 0 6 20.25Z'
 
-/** The View source button — the last top-bar item in the inner bar. */
+/** The View source button, the last top-bar item in the inner bar. */
 function viewSourceButton(): Locator {
   return window.locator('.milkdown-top-bar .top-bar-inner > .top-bar-item').last()
 }
 
-/** The first formatting control (Bold) — the "ordinary" icon to compare against. */
+/** The first formatting control (Bold), the "ordinary" icon to compare against. */
 function boldButton(): Locator {
   return window.locator('.milkdown-top-bar .top-bar-inner > .top-bar-item').first()
 }
@@ -107,7 +107,7 @@ test('US1/US2 the View source icon is the dark-blue last toolbar item', async ()
   // Spec 028 FR-004: the glyph is the heroicons code-bracket-square outline.
   expect(await iconPath(viewSource)).toBe(CODE_BRACKET_SQUARE_D)
 
-  // FR-001/FR-003: its icon renders in the curated dark blue — distinct from the
+  // FR-001/FR-003: its icon renders in the curated dark blue, distinct from the
   // accent token; Bold stays muted outline.
   const viewSourceColorValue = await viewSourceColor()
   expect(await iconColor(viewSource)).toBe(viewSourceColorValue)
@@ -129,7 +129,7 @@ test('FR-005 the icon stays distinct and dark-blue in the dark theme', async () 
   await expect(viewSource).toBeVisible()
 
   // Spec 028 (FR-005/006): the view-source colour is a SINGLE curated colour,
-  // identical in both modes — it must NOT follow the accent, which differs.
+  // identical in both modes, it must NOT follow the accent, which differs.
   const viewSourceColorValue = await viewSourceColor()
   expect(viewSourceColorValue).toBe(lightViewSource)
   expect(await iconColor(viewSource)).toBe(viewSourceColorValue)

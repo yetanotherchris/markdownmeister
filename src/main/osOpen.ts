@@ -6,7 +6,7 @@ import * as fs from 'fs'
  *
  * The OS hands the app a path (Explorer verb argv on Windows, the Finder
  * `open-file` event on macOS). Every such path is untrusted (Principle II):
- * it is realpath-resolved, stat-checked, and — for files — extension-checked
+ * it is realpath-resolved, stat-checked, and, for files, extension-checked
  * BEFORE the caller reads or opens anything. A rejected path fails closed with
  * a user-facing message that never contains the path itself (FR-011).
  *
@@ -72,7 +72,7 @@ export function classifyOsTarget(absPath: unknown): OsTargetResult {
  * Windows passes the selected item as an absolute positional argument. The argv
  * also carries the executable (argv[0]), the dev entry script
  * (`out/main/index.js`), Node/Electron loaders (`-r loader.js`, Playwright's
- * harness), Chromium switches, and — under `electron .` — a bare `'.'` that
+ * harness), Chromium switches, and, under `electron .`, a bare `'.'` that
  * must never be treated as a target. The OS always delivers an absolute path
  * (`%1` / Finder), so scanning from the end for the first arg that is absolute,
  * not a switch, and not a `.js`-family script is robust against all the extras

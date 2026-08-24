@@ -16,7 +16,7 @@ import type { DocumentSessionApi } from './useDocumentSession'
  *  replacement commits, the file is not yet in the session, so the reducer's
  *  path dedupe cannot see it and the second request would append a duplicate
  *  tab. Suppression is keyed by path and released as soon as the first open is
- *  dispatched — after that, the dedupe handles repeats. */
+ *  dispatched, after that, the dedupe handles repeats. */
 export function useFileOpenGesture(opts: {
   session: Pick<DocumentSessionApi, 'openFileFromExplorer'>
 }): {
@@ -28,7 +28,7 @@ export function useFileOpenGesture(opts: {
   const commitOpen = useCallback(
     async (node: TreeNode, explicitNew: boolean) => {
       // Spec 033 (contract C5): the timing window opens at the open-gesture
-      // commit — readFile initiation.
+      // commit, readFile initiation.
       beginOpen()
       const result = await window.api.readFile(node.id)
       if (result.ok) openFileFromExplorer(result.value, explicitNew)

@@ -16,9 +16,9 @@ import {
 } from './recent-helpers'
 
 /**
- * Spec 004 Recent Items — US3 (split from recent.spec.ts): unavailable entries
+ * Spec 004 Recent Items, US3 (split from recent.spec.ts): unavailable entries
  * (deleted files/folders, path-leak safety, type swap) and the folder-open
- * confirmation (Cancel / Save All / failing Save All / Discard) — FR-009/FR-010.
+ * confirmation (Cancel / Save All / failing Save All / Discard), FR-009/FR-010.
  */
 
 const ctx: RecentContext = {
@@ -117,7 +117,7 @@ test('US3 a deleted recent folder explains, preserves the workspace, and is remo
   await expect(ctx.window.getByRole('treeitem').getByText('alpha.md')).toBeVisible()
 
   // Functional probe: the live workspace in MAIN must be intact, not just the
-  // renderer's stale tree — clicking a tree file drives file:read through
+  // renderer's stale tree, clicking a tree file drives file:read through
   // withWorkspace, which fails with NO_WORKSPACE if main nulled the root.
   await ctx.window.getByRole('treeitem').getByText('alpha.md').click()
   await expect(ctx.window.locator('.document-title')).toContainText('alpha.md')
@@ -264,7 +264,7 @@ test('US3 Discard in the folder-open confirmation switches the folder without sa
   await clickRecentItem(ctx, 'other')
 
   // Nothing was written to disk; the folder still switched; and "Discard"
-  // actually discarded — the dirty alpha.md tab is CLOSED (leaving it open
+  // actually discarded, the dirty alpha.md tab is CLOSED (leaving it open
   // dirty would let a later save write its content over the new folder's
   // file sharing the same relative path).
   expect(fs.readFileSync(path.join(ctx.testFolder, 'alpha.md'), 'utf-8')).not.toContain('DISCARDED')

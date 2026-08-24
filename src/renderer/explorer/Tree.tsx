@@ -28,12 +28,12 @@ interface TreeProps {
   onDeleteRequest: (node: TreeNode) => void
   onCreateRequest: (parent: TreeNode | null, kind: EntryKind) => void
   onMove: (id: string, targetParentId: string) => void
-  /** Spec 002 (US7): "Open" in a file's context menu — visual counterpart of
+  /** Spec 002 (US7): "Open" in a file's context menu, visual counterpart of
    *  "View source" (FR-022). */
   onOpen: (path: string) => void
   /** Spec 002: "View source" in a file's context menu (FR-004). */
   onViewSource: (path: string) => void
-  /** Spec 015: "Reveal in Explorer/Finder" — open the item's location in the
+  /** Spec 015: "Reveal in Explorer/Finder", open the item's location in the
    *  OS file manager (FR-001/002/003). */
   onReveal: (node: TreeNode) => void
   /** Spec 024 (FR-005): explicitly open a file in a NEW tab (middle-click),
@@ -42,7 +42,7 @@ interface TreeProps {
   /** Spec 029: a click on a FILE row resolved into a gesture. Single-click
    *  follows the file-opening preference (same-tab: deferred by the double-click
    *  window); double-click always opens a new tab. The row is the sole mouse
-   *  open path for files — `node.handleClick` is not called for them. */
+   *  open path for files, `node.handleClick` is not called for them. */
   onFileOpen: (node: TreeNode, gesture: FileOpenGesture) => void
   /** Spec 002 (US004): imperative handle the app uses to open parents and
    *  scroll a node into view (explorer active-file highlight). */
@@ -106,7 +106,7 @@ function RenameInput({ node }: { node: NodeApi<TreeNode> }) {
       onContextMenu={(e) => e.stopPropagation()}
       onBlur={(e) => {
         // Focus leaving the field does not cancel the edit (Enter/Escape are
-        // the only exits — plan.md Phase 6 decisions). Only reclaim focus when
+        // the only exits, plan.md Phase 6 decisions). Only reclaim focus when
         // it moved inside the tree or the context menu portal; a dialog, the
         // toolbar, or a tab must not be yanked back.
         if (!node.isEditing) return
@@ -307,7 +307,7 @@ export default function Tree({
         // The node exists in the data but its parent is closed in arborist's
         // own visibility state (create flow). Opening the parent fires our
         // onToggle, which lazy-loads the folder if needed and then leaves the
-        // already-loaded data alone — see App.handleTreeToggle.
+        // already-loaded data alone, see App.handleTreeToggle.
         const parent = parentPathOf(id)
         if (parent) treeRef.current?.open(parent)
         for (let i = 0; i < 20 && !node; i++) {
@@ -423,7 +423,7 @@ export default function Tree({
   }, [])
 
   // Stable render callbacks: fresh identities on every Tree render would make
-  // react-arborist remount every visible row (perf M1) — rows are keyed by
+  // react-arborist remount every visible row (perf M1), rows are keyed by
   // node id, but component-type identity changes force full remounts.
   const renderNode = useCallback((nodeProps: NodeRendererProps<TreeNode>) => (
     <TreeNode

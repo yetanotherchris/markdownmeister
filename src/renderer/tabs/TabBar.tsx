@@ -12,7 +12,7 @@ interface TabBarProps {
 
 /**
  * Spec 010 (FR-003/004, US1/US3): the document tabs live in the same header row
- * as the chrome buttons (clarification 2026-08-05) as rounded grey pills — the
+ * as the chrome buttons (clarification 2026-08-05) as rounded grey pills, the
  * active tab is the `#EAEAEA` pill with a decorative edit icon, the truncated
  * label, and the `XMark` close button; the Heroicons `Plus` button replaces the
  * old "New File" text button and always renders (even with no open documents,

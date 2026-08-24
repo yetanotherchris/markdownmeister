@@ -19,7 +19,7 @@ import {
 
 function parse(text: string, options: MarkdownSyntaxOptions): MdNode {
   const processor = unified().use(remarkParse).use(remarkStringify).use(markdownSyntaxRemark(options))
-  // Milkdown runs `remark.runSync(remark.parse(md), md)` — the transformer stage
+  // Milkdown runs `remark.runSync(remark.parse(md), md)`, the transformer stage
   // (where the hard-break flip lives) is `.run()`, not `.parse()`.
   return processor.runSync(processor.parse(text)) as unknown as MdNode
 }
@@ -68,7 +68,7 @@ describe('markdownSyntaxOptionsEqual (spec 033, contract C1)', () => {
   it('the off→on round-trip trap: options equal to the defaults still compare equal — the guard must therefore track per-editor applied options, not compare against defaults alone', () => {
     // A user who toggles a syntax off then back on produces options equal to
     // DEFAULTS. Equality itself cannot distinguish "stock pipeline" from
-    // "swapped-with-defaults pipeline" — which is exactly why the runtime
+    // "swapped-with-defaults pipeline", which is exactly why the runtime
     // records applied options per editor (research R1 correctness trap).
     const toggledOffThenOn: MarkdownSyntaxOptions = { ...DEFAULT_MARKDOWN_SYNTAX_OPTIONS }
     expect(markdownSyntaxOptionsEqual(DEFAULT_MARKDOWN_SYNTAX_OPTIONS, toggledOffThenOn)).toBe(true)
@@ -161,7 +161,7 @@ describe('markdownSyntaxRemark (spec 030 options→extension matrix)', () => {
       // Parse the doc with ALL syntaxes enabled so it actually CONTAINS the
       // node/mark of the syntax under test, then serialize with the given
       // options. Before the fix, serializing a table/strikethrough node while
-      // the matching option was off threw "Cannot handle unknown node" — which
+      // the matching option was off threw "Cannot handle unknown node", which
       // made saves fail on a doc that held a now-disabled syntax (review Major).
       const parse = unified().use(remarkParse).use(markdownSyntaxRemark(ALL_ON))
       const tree = parse.runSync(parse.parse(text)) as unknown as MdNode

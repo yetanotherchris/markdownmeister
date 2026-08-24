@@ -45,7 +45,7 @@ HMODULE SelfModule() {
 }
 
 // "<pkg>\app\MarkdownMeister.exe" derived from this DLL's own location, or an
-// empty string when unavailable (entry renders without icon — quiet, FR-011).
+// empty string when unavailable (entry renders without icon, quiet, FR-011).
 bool ResolvePackagedLauncher(wchar_t *launcher, size_t capacity) {
   launcher[0] = L'\0';
   HMODULE self = SelfModule();
@@ -73,7 +73,7 @@ bool ResolvePackagedLauncher(wchar_t *launcher, size_t capacity) {
 
 // Standard Windows argv rules: wrap the argument in quotes and DOUBLE any
 // trailing backslashes, because backslashes directly preceding a closing
-// quote parse as escapes — a drive root arriving as "C:\" would otherwise be
+// quote parse as escapes, a drive root arriving as "C:\" would otherwise be
 // received as `C:"`. SIGDN_FILESYSPATH returns drive roots with the separator.
 bool QuoteArgument(const wchar_t *text, wchar_t *out, size_t capacity) {
   const size_t length = wcslen(text);
@@ -119,7 +119,7 @@ void LaunchAlias(const wchar_t *folder_path) {
   PROCESS_INFORMATION process{};
   // The alias materialises only while the package is registered; when absent
   // fall back once to ShellExecuteEx on the packaged launcher resolved from
-  // this DLL's own location — never a bare-name lookup through PATH /
+  // this DLL's own location, never a bare-name lookup through PATH /
   // App Paths, which a same-user process could subvert to receive the folder.
   const bool alias_exists = GetFileAttributesW(alias_path) != INVALID_FILE_ATTRIBUTES;
   const BOOL launched =
@@ -138,7 +138,7 @@ void LaunchAlias(const wchar_t *folder_path) {
   SHELLEXECUTEINFOW execute{};
   execute.cbSize = sizeof(execute);
   // SEE_MASK_NOASYNC: never block Explorer on DDE/activation. Together with
-  // SEE_MASK_FLAG_NO_UI the missing-launcher fault path stays a silent no-op —
+  // SEE_MASK_FLAG_NO_UI the missing-launcher fault path stays a silent no-op,
   // no "Windows cannot find" dialog may surface inside Explorer (FR-011).
   execute.fMask = SEE_MASK_NOASYNC | SEE_MASK_FLAG_NO_UI;
   execute.lpVerb = L"open";
@@ -172,7 +172,7 @@ HRESULT InvokeImpl(IShellItemArray *items) {
 } // namespace
 
 // SEH boundary frames. They intentionally contain no C++ objects (unwind would
-// be rejected alongside __try) — implementations live above and are called
+// be rejected alongside __try), implementations live above and are called
 // through these frames so any fault collapses to a contained failure HRESULT.
 
 IFACEMETHODIMP OpenInMarkdownMeisterCommand::QueryInterface(REFIID riid, void **out_object) {

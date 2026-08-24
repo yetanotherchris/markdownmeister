@@ -7,13 +7,13 @@
  * `C:\Users\me\projects\notes`.
  *
  * Both separators (`\` and `/`) are recognised when splitting; the output
- * separator is chosen from the path's leading root — a drive letter (`C:\`), a
+ * separator is chosen from the path's leading root, a drive letter (`C:\`), a
  * UNC root, or a relative path that only uses backslashes picks `\`, otherwise
  * `/`. (The old "any backslash anywhere" rule mis-split a POSIX filename that
  * legitimately contains `\`.) Empty segments (a trailing separator, repeated
  * separators) are dropped. A single-segment path has no
  * separator to shorten with, so the minimal `…<sep>final` form is returned
- * even when it exceeds `maxLength` — the caller's final-folder floor guarantees
+ * even when it exceeds `maxLength`, the caller's final-folder floor guarantees
  * `maxLength >= final.length + 2` (see StatusFooter), and the span's overflow
  * CSS is the hard cap beyond that.
  *

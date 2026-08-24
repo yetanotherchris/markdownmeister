@@ -34,8 +34,8 @@ import { readConfigFile } from '../settingsFile'
  * every restart (FR-006). Idempotent: once the fields are gone the pass is a
  * no-op; a second run never rewrites the file nor duplicates the artifact.
  *
- * The write is a surgical edit of the RAW `.settings` section — deliberately
- * NOT routed through validateSettings — so unrelated corrupt settings fields
+ * The write is a surgical edit of the RAW `.settings` section, deliberately
+ * NOT routed through validateSettings, so unrelated corrupt settings fields
  * are neither normalised nor rewritten as a migration side effect, and
  * sibling sections (recentItems) survive. Electron-free; callers pass paths.
  */
@@ -135,7 +135,7 @@ function persistSelectionAndStripLegacy(configPath: string, themeName: string): 
 export function migrateLegacyCustomTheme(configPath: string, themesDir: string): MigrationOutcome {
   const legacy = readLegacySettings(configPath)
   if (legacy === null) return { repairedThemeName: null, createdFileName: null }
-  // Invalid legacy colours were ignored by the old app too — nothing to act on.
+  // Invalid legacy colours were ignored by the old app too, nothing to act on.
   if (!isLegacyEditorColors(legacy.editorColors)) {
     return { repairedThemeName: null, createdFileName: null }
   }

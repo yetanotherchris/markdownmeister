@@ -344,7 +344,7 @@ test('US3 undo/redo history survives a toggle, and a re-enable restores the rich
   const dialog = await openMarkdownArea()
   await toggle(dialog, /Strikethrough formatting/)
   // FR-011: the toggle added an ordinary undoable transaction, never cleared
-  // the history — undoing the edit the user made BEFORE the toggle must work.
+  // the history, undoing the edit the user made BEFORE the toggle must work.
   await dialog.getByRole('button', { name: 'Close', exact: true }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
   await window.locator('.ProseMirror:visible').click()
@@ -386,7 +386,7 @@ test('US3 a toggle preserves the cursor position in the active tab', async () =>
   const dialog = await openMarkdownArea()
   await toggle(dialog, /Convert single line breaks to hard breaks/)
 
-  // Best-effort offset restore (research R6) — the caret must survive the
+  // Best-effort offset restore (research R6), the caret must survive the
   // re-parse at the same absolute document offset, not jump to the top.
   expect(await docOffset()).toBe(before)
 })

@@ -116,7 +116,7 @@ export async function expectMessageBox(ctx: RecentContext): Promise<void> {
 }
 
 /** Assert the stubbed message-box body does NOT contain an absolute path
- *  (Principle II — used by the path-leak tests). */
+ *  (Principle II, used by the path-leak tests). */
 export async function messageBoxBody(ctx: RecentContext): Promise<string> {
   const { lastMessageBoxOptions } = await import('./launch')
   const last = await lastMessageBoxOptions(ctx.app)

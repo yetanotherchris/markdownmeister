@@ -32,7 +32,7 @@ export function planTaskBackspace(state: EditorState): Transaction | null {
   const tr = state.tr
 
   if (list && list.childCount === 1) {
-    // FR-017: the item is the only one — replace the whole list structure with
+    // FR-017: the item is the only one, replace the whole list structure with
     // a paragraph so no checkbox is left behind. The cursor lands in it.
     const listStart = $from.before(-2)
     const listEnd = $from.after(-2)

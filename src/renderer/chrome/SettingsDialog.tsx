@@ -18,7 +18,7 @@ export const THEME_CHOICES: { value: ThemeChoice; label: string }[] = [
 ]
 
 /** Spec 020 (2026-08-07): the explicit spellchecker languages offered, with
- *  `''` mapping to the persisted `null` ("follow the system"). A closed list —
+ *  `''` mapping to the persisted `null` ("follow the system"). A closed list,
  *  more languages can be added here later. */
 export const SPELLCHECK_LANGUAGE_CHOICES: { value: SpellcheckLanguage; label: string }[] = [
   { value: 'en-GB', label: 'English (United Kingdom)' },
@@ -56,7 +56,7 @@ interface SettingsDialogProps {
   onEditorThemeSave: (theme: string) => void
   /** The currently selected app theme (from persisted settings). */
   theme: ThemeChoice
-  /** Spec 013: the apply-immediately model — a selection persists at once. */
+  /** Spec 013: the apply-immediately model, a selection persists at once. */
   onThemeChange: (theme: ThemeChoice) => void
   /** Spec 020 FR-006/US4: whether native spellcheck is on. Applied immediately
    *  on change (S1: markers vanish the moment the box is unchecked). */
@@ -86,7 +86,7 @@ interface SettingsDialogProps {
  *
  * Spec 008 (FR-001..008): a wider layout with a persistent sidebar navigating
  * between `General` (spellcheck, file-opening preference) and `Theme` (app
- * theme — immediate; editor theme — staged). Boolean controls are native
+ * theme, immediate; editor theme, staged). Boolean controls are native
  * checkboxes styled as pill switches. Every enabled input, select, and
  * navigation/footer button is inside the focus trap.
  */
@@ -115,11 +115,11 @@ export default function SettingsDialog({
   // prior instance closed on. Fresh state because the dialog unmounts on close.
   const [area, setArea] = useState<SettingsArea>('general')
   /** The committed name when it is present in `themes`, else null (nothing
-   *  staged — spec 016: Save only commits a staged theme). */
+   *  staged, spec 016: Save only commits a staged theme). */
   const stageableTheme = (themes: EditorThemeDefinition[]): string | null =>
     themes.some((entry) => entry.name === editorTheme) ? editorTheme : null
   // Spec 016: the staged editor-theme selection, seeded from the committed
-  // name. Not applied on click — only the Save button commits it (US1 S4).
+  // name. Not applied on click, only the Save button commits it (US1 S4).
   // Spec 036: the draft is a theme-file stem; when the committed selection
   // matches no discovered theme the dialog starts with nothing staged.
   const draftTouchedRef = useRef(false)
@@ -135,7 +135,7 @@ export default function SettingsDialog({
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
   // The element that had focus when the dialog opened; focus returns to it on
-  // close (review #27 — the hamburger trigger, per the plan's FR-007 contract).
+  // close (review #27, the hamburger trigger, per the plan's FR-007 contract).
   const returnFocusRef = useRef<HTMLElement | null>(null)
 
   // Focus moves into the dialog on open (the active area's first navigation
@@ -200,7 +200,7 @@ export default function SettingsDialog({
     <div
       className="settings-dialog-overlay"
       onPointerDown={(e) => {
-        // Clicking the backdrop closes the dialog (outside-click) — discarding
+        // Clicking the backdrop closes the dialog (outside-click), discarding
         // any staged editor-theme selection (US1 S4).
         if (e.target === e.currentTarget) onClose()
       }}
@@ -434,7 +434,7 @@ export default function SettingsDialog({
                 </fieldset>
               </>
             ) : (
-              // Spec 037 FR-008: purely read-only rows — no staged state here,
+              // Spec 037 FR-008: purely read-only rows, no staged state here,
               // so the Save button's draftEditorTheme commit is untouched.
               // Terminal fallback so the branch chain mirrors SETTINGS_AREAS
               // nav order: General → Theme → Markdown → About (standards §4).
@@ -450,7 +450,7 @@ export default function SettingsDialog({
             type="button"
             className="settings-dialog-save"
             onClick={() => {
-              // Spec 023: with a Custom theme no preset is staged — Save just
+              // Spec 023: with a Custom theme no preset is staged, Save just
               // closes (the app-theme choices apply immediately). General-area
               // settings already applied immediately; Save only commits the
               // staged editor theme (spec 008 apply-model clarification).

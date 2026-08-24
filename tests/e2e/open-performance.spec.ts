@@ -8,7 +8,7 @@ import { launchApp, closeAppSafely } from './launch'
  * Spec 033 suite (contracts/open-performance.md): same-tab opens present the
  * incoming document within the SC-001 timing target for typical documents
  * (p95 ≤ 250 ms locally, a documented ×4 CI tolerance), scale linearly with
- * document size (SC-004 — the fixed budget does not extend to very large
+ * document size (SC-004, the fixed budget does not extend to very large
  * documents, whose floor is the single mandatory construction parse, research
  * R7), perform exactly one full parse and at most one incoming serialization
  * per open with zero outgoing serializations for an untouched tab
@@ -124,7 +124,7 @@ test('SC-001 a same-tab open of a typical document presents it within the target
 
   const relevant = counters.openDurations
   const p95 = percentile(relevant, 0.95)
-  // Report, then assert — the printed figure is the primary local signal.
+  // Report, then assert, the printed figure is the primary local signal.
   console.log(
     `typical-doc open durations ms: [${relevant.map((d) => d.toFixed(0)).join(', ')}] ` +
       `min=${Math.min(...relevant).toFixed(1)} ` +
@@ -156,7 +156,7 @@ test('SC-004 opening a ten-times-larger document scales linearly', async () => {
       `median(small)=${median(small).toFixed(1)}ms ratio=${ratio.toFixed(2)} (≤12)`
   )
   // SC-004: no more than roughly ten times, bounded at twelve (20% overhead).
-  // This scaling law — not SC-001's fixed budget — governs very large
+  // This scaling law, not SC-001's fixed budget, governs very large
   // documents, whose floor is the single mandatory construction parse (R7).
   expect(ratio).toBeLessThanOrEqual(12)
 })
@@ -169,13 +169,13 @@ test('SC-002/SC-003 one open with unchanged settings parses once, serializes inc
   await openFile('large.md')
   const counters = await readCounters()
 
-  // SC-002: exactly one full interpretation pass over the incoming content —
+  // SC-002: exactly one full interpretation pass over the incoming content,
   // the constructor's parse; the reconfigure skip guard suppressed parse #2.
   expect(counters.fullParses).toBe(1)
   // SC-003: at most one whole-content serialization of the incoming content
   // (the baseline capture); none beyond it.
   expect(counters.fullSerializations).toBeLessThanOrEqual(1)
-  // The untouched outgoing tab is proven clean by document identity — zero
+  // The untouched outgoing tab is proven clean by document identity, zero
   // outgoing serializations (was three before this feature).
   expect(counters.outgoingSerializations).toBe(0)
 })
@@ -246,7 +246,7 @@ test('SC-005 staged replacement stays atomic, typing lands immediately, dirty ta
   })
   expect(inconsistent, `inconsistent samples:\n${inconsistent.join('\n')}`).toEqual([])
 
-  // Keystrokes land in the new document immediately; undo history is fresh —
+  // Keystrokes land in the new document immediately; undo history is fresh,
   // undoing the typed text must not resurrect the previous document.
   await window.locator('[contenteditable="true"]').first().click()
   await window.keyboard.type('XYZZY ')

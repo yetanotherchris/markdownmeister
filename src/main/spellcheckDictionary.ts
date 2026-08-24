@@ -3,7 +3,7 @@ import * as path from 'path'
 import { atomicWrite } from './fs/atomicWrite'
 
 /**
- * Pure, electron-free store for the spec 020 custom spellcheck dictionary — the
+ * Pure, electron-free store for the spec 020 custom spellcheck dictionary, the
  * words the user has taught the JS spellchecker so they are never flagged.
  *
  * Lives as a top-level `spellcheckDictionary` array in the SAME per-user config
@@ -38,7 +38,7 @@ export function addSpellcheckWord(filePath: string, word: string): string[] {
     const parsed = JSON.parse(fs.readFileSync(filePath, 'utf-8'))
     if (parsed && typeof parsed === 'object') existing = parsed as Record<string, unknown>
   } catch {
-    // Missing or corrupt config — start fresh.
+    // Missing or corrupt config, start fresh.
   }
   const current = Array.isArray(existing.spellcheckDictionary) ? existing.spellcheckDictionary : []
   const next = normalized && !current.includes(normalized) ? [...current, normalized] : current

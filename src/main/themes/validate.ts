@@ -2,7 +2,7 @@ import type { EditorColors } from '../../shared/ipc-contract'
 
 /**
  * Spec 036 (data-model §Validation rules): pure parsing/validation of one
- * theme file's text. Strictly fail-closed — anything not matching the schema
+ * theme file's text. Strictly fail-closed, anything not matching the schema
  * is rejected whole; unknown extra keys are ignored (forward compatibility).
  * Electron-free so the matrix is unit-testable without mocks.
  */
@@ -16,7 +16,7 @@ export interface ParsedThemeFile {
 export type ParsedThemeFileResult = { ok: true; theme: ParsedThemeFile } | { ok: false }
 
 /** Files above this size are rejected unread-parse (binary junk / dumps must
- *  not stall startup — spec edge case). */
+ *  not stall startup, spec edge case). */
 export const MAX_THEME_FILE_BYTES = 1_000_000
 
 /** Bound on theme NAMES (file stems) and therefore on the stored selection. */
@@ -35,7 +35,7 @@ const COLOR_TOKEN_KEYS: readonly (keyof EditorColors)[] = [
   'code'
 ]
 
-/** True when `text` contains ASCII control characters — never legitimate in
+/** True when `text` contains ASCII control characters, never legitimate in
  *  a theme name or css font-family string. */
 function hasControlCharacters(text: string): boolean {
   for (const character of text) {
@@ -54,7 +54,7 @@ export function isValidEditorThemeName(name: string): boolean {
 }
 
 /** The theme stem of a directory entry name, or null when the entry is
- *  invisible to discovery (wrong extension or hidden — spec Assumptions). */
+ *  invisible to discovery (wrong extension or hidden, spec Assumptions). */
 export function themeStemOf(fileName: string): string | null {
   if (fileName.startsWith('.')) return null
   if (!fileName.toLowerCase().endsWith(THEME_EXTENSION)) return null
@@ -73,7 +73,7 @@ function isHexPalette(value: unknown): value is EditorColors {
 }
 
 /** Parse and validate one theme file's text (rule 4–6 of the data-model
- *  matrix). Returns `{ ok: false }` for every failure shape — no reasons leak
+ *  matrix). Returns `{ ok: false }` for every failure shape, no reasons leak
  *  because none are ever shown. */
 export function parseThemeFile(text: string): ParsedThemeFileResult {
   let parsed: unknown

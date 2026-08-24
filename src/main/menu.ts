@@ -2,7 +2,7 @@ import { Menu, app } from 'electron'
 
 /**
  * Spec 010 (FR-002, clarification 2026-08-05): no OS-native File or View menu
- * is shown on ANY platform — every action lives in the renderer hamburger. On
+ * is shown on ANY platform, every action lives in the renderer hamburger. On
  * Windows/Linux `Menu.setApplicationMenu(null)` removes the bar entirely (see
  * index.ts). macOS cannot remove its system menu bar, so it keeps a minimal
  * application menu: the About/Quit app roles and the Edit roles (clipboard and

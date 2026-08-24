@@ -8,12 +8,12 @@ import { launchApp, closeAppSafely, openFolder } from './launch'
 
 /**
  * Spec 038 (FR-004/FR-005): the MSIX execution alias delivers the chosen
- * folder as plain argv — the same channel the classic Explorer verb uses.
+ * folder as plain argv, the same channel the classic Explorer verb uses.
  * The suite cannot register an alias, so it reproduces the alias invocation
  * faithfully at the process level: the real Electron binary is SPAWNED with
  * the folder as its trailing argument (cold launch), and as a second process
- * holding the same profile (single-instance forwarding). Everything else —
- * extraction, validation, confirmation, routing — is the production code path.
+ * holding the same profile (single-instance forwarding). Everything else,
+ * extraction, validation, confirmation, routing, is the production code path.
  */
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..')
@@ -96,7 +96,7 @@ async function spawnWithTarget(
 
   const browser = await chromium.connectOverCDP(endpoint)
   // connectOverCDP can land after the window exists but before navigation
-  // commits, leaving the ALREADY-TRACKED renderer reporting about:blank — and
+  // commits, leaving the ALREADY-TRACKED renderer reporting about:blank, and
   // the `page` event fires only for targets added after connection, so
   // waiting on the event alone would deadlock. Poll pages() instead: a
   // deterministic wait that resolves under every attach timing.
@@ -125,7 +125,7 @@ async function spawnWithTarget(
 
 /** Spawn a secondary instance sharing the primary's profile: the single-
  *  instance lock makes it forward argv to the running app and exit. It quits
- *  before Playwright could attach, so no CDP here — the primary asserts the
+ *  before Playwright could attach, so no CDP here, the primary asserts the
  *  outcome (same pattern as launchSecondary in file-association.spec.ts). */
 async function spawnForwardingInstance(
   target: string,

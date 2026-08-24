@@ -47,7 +47,7 @@ export function registerIpcHandlers(window: BrowserWindow, approvedRendererUrl: 
   ctx.allowClose = false
   ctx.quitRequestPending = false
   ctx.approvedRendererUrl = approvedRendererUrl
-  // app first — it owns the window-close handler and the allowClose flag.
+  // app first, it owns the window-close handler and the allowClose flag.
   registerAppHandlers(window, ctx)
   registerFileHandlers(window, ctx)
   registerWorkspaceHandlers(window, ctx)

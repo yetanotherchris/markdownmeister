@@ -4,7 +4,7 @@ import { openFileFromPath, sanitizeError, recordRecent, ctx } from './ipc/handle
 import { prepareFolderFromOsPath } from './ipc/handlers/workspace'
 
 /**
- * Spec 006 OS-open host (Electron wiring only — the classification rules live
+ * Spec 006 OS-open host (Electron wiring only, the classification rules live
  * in the pure `osOpen.ts` module).
  *
  * Windows passes the selected item as an `argv` positional (first launch and
@@ -91,7 +91,7 @@ export function initOsOpenHost(): boolean {
   if (singleInstanceEnabled) {
     const gotLock = app.requestSingleInstanceLock()
     if (!gotLock) {
-      // Another instance holds the lock — its `second-instance` handler will
+      // Another instance holds the lock, its `second-instance` handler will
       // receive our argv (FR-008). Quit immediately.
       app.quit()
       return false
@@ -103,7 +103,7 @@ export function initOsOpenHost(): boolean {
     })
   }
 
-  // macOS Finder opens can fire before `ready` (research R1) — register early.
+  // macOS Finder opens can fire before `ready` (research R1), register early.
   app.on('open-file', (event, filePath) => {
     event.preventDefault()
     enqueueTarget(filePath)

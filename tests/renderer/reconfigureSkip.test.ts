@@ -12,7 +12,7 @@ import { resetOpenPerformanceCounters } from '../../src/renderer/editor/openPerf
 
 /**
  * Spec 033 (contract C1): the reconfigure skip guard. A stub whose
- * `editor.action` throws proves the swap path was NOT taken — the skip must
+ * `editor.action` throws proves the swap path was NOT taken, the skip must
  * return before any ctx access. The full swap path needs the real Milkdown
  * runtime and is covered by the e2e counters (SC-002) and the spec 030
  * settings suites.
@@ -66,7 +66,7 @@ describe('reconfigureEditor skip guard (spec 033, contract C1)', () => {
   it('the gate-options update runs even when the skip fires', () => {
     // setMarkdownSyntaxGateOptions is module-global state with no direct
     // getter; its observable effect is covered by the input-rule suites. Here
-    // we only assert the skip itself is silent about suppression — the skip
+    // we only assert the skip itself is silent about suppression, the skip
     // path must not touch the emission-suppression window either.
     const editor = throwingEditor()
     reconfigureEditor(editor, { ...DEFAULT_MARKDOWN_SYNTAX_OPTIONS })

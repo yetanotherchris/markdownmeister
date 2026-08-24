@@ -11,7 +11,7 @@ let systemLanguages: string[] | null = null
 /**
  * Spec 020 FR-006/FR-009: the native spellcheck switch. Electron's built-in
  * spellchecker (Chromium) highlights misspelled words, feeds the right-click
- * suggestions, and owns the personal dictionary — all keyed off the enabled
+ * suggestions, and owns the personal dictionary, all keyed off the enabled
  * flag and the configured language list. Idempotent.
  *
  * `language` `null` means "system default": the first apply records whatever

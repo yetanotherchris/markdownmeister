@@ -40,7 +40,7 @@ export function useExternalFileEvents(opts: {
         }
         return
       }
-      // removed — the content is still open in memory; OK keeps it, Save As
+      // removed, the content is still open in memory; OK keeps it, Save As
       // writes it to a new location. A failed save re-prompts (research R5).
       let error: string | undefined
       for (;;) {
@@ -64,7 +64,7 @@ export function useExternalFileEvents(opts: {
   }, [dialogInFlightRef, releaseDialogSurface, sessionRef, session])
 
   // Route an external changed/removed event to its handling. Returns true when a
-  // confirmation prompt is opened — used by releaseDialogSurface so a deferred
+  // confirmation prompt is opened, used by releaseDialogSurface so a deferred
   // notice that instead resolves via auto-reload (a clean document) still lets a
   // queued operation error show.
   const handleExternalChange = useCallback((doc: DocumentState, kind: 'changed' | 'removed'): boolean => {

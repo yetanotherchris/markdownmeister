@@ -51,7 +51,7 @@ describe('matchShortcut (spec 010 contracts/renderer.md)', () => {
   })
 
   // Spec 008 (clarification 2026-08-08): the developer-tools shortcuts are
-  // always available — there is no setting gate, so `matchShortcut` returning
+  // always available, there is no setting gate, so `matchShortcut` returning
   // 'devtools' is all the main-process handler needs to toggle.
   it('always maps the devtools combos to the devtools toggle', () => {
     expect(matchShortcut(keyDown({ key: 'F12' }))).toBe('devtools')

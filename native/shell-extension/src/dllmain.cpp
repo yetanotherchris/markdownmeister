@@ -1,6 +1,6 @@
 // Spec 038: classic COM in-proc server glue. The class factory and the command
 // object are hand-rolled (no framework) so every exported entry point is a
-// small, auditable SEH boundary — the containment contract (FR-011) is the
+// small, auditable SEH boundary, the containment contract (FR-011) is the
 // reason this file exists at all.
 
 #include "ExplorerCommand.h"
@@ -90,7 +90,7 @@ extern "C" {
 BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID) {
   // No thread attach/detach work on purpose: the fewer OS callbacks this
   // module participates in, the less can go wrong inside Explorer. The call
-  // must receive THIS module's own handle — GetModuleHandleW(nullptr) would
+  // must receive THIS module's own handle, GetModuleHandleW(nullptr) would
   // return the host EXE and silently suppress nothing for us.
   if (reason == DLL_PROCESS_ATTACH) DisableThreadLibraryCalls(instance);
   return TRUE;
@@ -110,7 +110,7 @@ HRESULT WINAPI DllGetClassObject(REFCLSID clsid, REFIID riid, void **out_object)
 
 HRESULT WINAPI DllCanUnloadNow(void) {
   // Always S_FALSE: the factory singleton keeps an outstanding reference, so
-  // the loader never unloads us while Explorer runs — the only safe choice
+  // the loader never unloads us while Explorer runs, the only safe choice
   // for a component that must never crash its host mid-call.
   // The SEH frame exists for uniformity, not protection: every exported entry
   // point in this module is framed by rule (see file header), so a fault here

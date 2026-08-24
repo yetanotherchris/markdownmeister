@@ -86,7 +86,7 @@ export class WorkspaceWatcher {
 
   /**
    * FR-037: is this event one of our own mutations? The suppression window is
-   * sliding — each matching event refreshes the timestamp — so a large move or
+   * sliding, each matching event refreshes the timestamp, so a large move or
    * delete whose events keep arriving past the initial 2 s stays suppressed
    * instead of being re-reported as an external change (which would flood the
    * renderer with per-file tree updates and could trigger the FR-038 prompt

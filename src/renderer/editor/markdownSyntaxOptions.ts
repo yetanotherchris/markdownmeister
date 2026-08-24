@@ -27,7 +27,7 @@ import { MARKDOWN_SYNTAX_DEFAULTS } from '../../shared/markdownSyntaxDefaults'
  *
  * Serialization (the `*ToMarkdown` extensions) is ALWAYS enabled for every
  * syntax. A disabled syntax's TOKENIZER (micromark) and `*FromMarkdown`
- * extension are not registered, so its delimiters stay literal text (FR-014) —
+ * extension are not registered, so its delimiters stay literal text (FR-014),
  * but a node/mark of that syntax may still exist in the document (created
  * before the toggle, or pasted). Serializing such a doc requires the matching
  * `*ToMarkdown` extension, otherwise `remark-stringify` throws
@@ -49,7 +49,7 @@ export const DEFAULT_MARKDOWN_SYNTAX_OPTIONS: MarkdownSyntaxOptions = { ...MARKD
 
 /** Field-by-field equality of the six flat booleans (spec 033, contract C1).
  *  The reconfigure skip guard compares REQUESTED options against the options
- *  actually applied to each editor — never against the defaults alone, because
+ *  actually applied to each editor, never against the defaults alone, because
  *  an off→on toggle round-trip produces options equal to the defaults while
  *  the live pipeline is non-default. */
 export function markdownSyntaxOptionsEqual(

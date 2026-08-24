@@ -3,7 +3,7 @@
  *
  * Frontmatter is the raw YAML block delimited by `---` on its own line at the
  * very start of the file and `---` on its own line as the closing delimiter.
- * The system never parses or validates the YAML — it is an opaque string
+ * The system never parses or validates the YAML, it is an opaque string
  * preserved verbatim (spec FR-001, FR-008; research R1).
  *
  * The split is a BYTE PARTITION: for the raw file text `t`,
@@ -45,7 +45,7 @@ function isDelimiter(text: string, start: number, end: number): boolean {
  * Split raw file text into a frontmatter block and a body. Byte partition:
  * `frontmatter + body === text` for every input. Returns `{ frontmatter: '',
  * body: text }` when the file does not start with `---` on line 1, or when no
- * closing `---` delimiter line is found (spec edge case — such a file is body).
+ * closing `---` delimiter line is found (spec edge case, such a file is body).
  */
 export function splitFrontmatter(text: string): FrontmatterParts {
   const firstLineEnd = lineEndIndex(text, 0)
@@ -69,7 +69,7 @@ export function splitFrontmatter(text: string): FrontmatterParts {
 
 /** Recombine the stored frontmatter block and the current body into a full
  *  file, with the frontmatter at the top (FR-005). With no frontmatter the
- *  result is the body unchanged — an empty block is never added (FR-010). */
+ *  result is the body unchanged, an empty block is never added (FR-010). */
 export function joinFrontmatter(frontmatter: string, body: string): string {
   return frontmatter + body
 }

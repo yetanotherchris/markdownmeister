@@ -21,7 +21,7 @@ export function markdownSame(a: string, b: string): boolean {
  * Editor-vs-store equality for the return-to-formatted remount decision (spec
  * 002, data-model.md R3). Crepe's serialization always appends exactly one
  * trailing newline, so a live serialization equal to the stored content or that
- * content plus ONE trailing newline is "unchanged" (no remount — undo, cursor
+ * content plus ONE trailing newline is "unchanged" (no remount, undo, cursor
  * and scroll survive). Unlike `markdownSame`, this is directional and strict:
  * a stored content that ends in an EXTRA blank line (`...\n\n`) is NOT equal to
  * a live `...\n`, so a blank line added at EOF in source view is neither
@@ -43,14 +43,14 @@ export interface DocumentState {
   /** Spec 006 (research R8): the file's realpath, when main supplied one.
    *  Gives a detached file (`path: null`) a stable identity so FR-007
    *  ("activate the existing tab, never duplicate") holds outside the
-   *  workspace. Display-only — never fed back into a filesystem call. */
+   *  workspace. Display-only, never fed back into a filesystem call. */
   canonicalPath?: string
   title: string
   baseline: string
   /** The editor's serialization of the content it last parsed, captured after a
    *  (re)mount and after a save. Unlike `baseline` it is NOT the on-disk bytes
    *  (Crepe normalizes markdown). It is the reference for the live-dirty check
-   *  and for UPDATE_CONTENT's dirty flag — an edit undone back to the original
+   *  and for UPDATE_CONTENT's dirty flag, an edit undone back to the original
    *  content is not dirty (raw-bytes policy, spec 002). */
   editorBaseline: string
   content: string
@@ -89,7 +89,7 @@ export interface EditingSession {
 
 /** Create a new untitled document. Pure: the caller (the OPEN_NEW reducer
  *  case) supplies the sequence number from `EditingSession.untitledCounter`.
- *  Never increment a module-level counter here — the reducer must stay pure
+ *  Never increment a module-level counter here, the reducer must stay pure
  *  (React StrictMode double-invokes reducers in dev; a side effect would burn
  *  a number per invocation and produce Untitled-2, -4, -6). */
 export function createEmpty(counter: number): DocumentState {
@@ -236,7 +236,7 @@ export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload
         d.canonicalPath === value.canonicalPath)
   )
   if (existing) {
-    // Reopening an evicted document must bring its editor back — the
+    // Reopening an evicted document must bring its editor back, the
     // active tab would otherwise render the empty evicted container.
     // FR-06: View source from the explorer reactivates the existing tab
     // without duplicating it; the requested view (if given) is applied.
@@ -265,8 +265,8 @@ export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload
   }
   const doc = openFile(value)
   // Spec 024 (FR-001/009): when the dispatcher proved the active tab is clean,
-  // swap its slot for the new document — fresh id, clear dirty, fresh undo
-  // (FR-006/007) — instead of creating a new tab.
+  // swap its slot for the new document, fresh id, clear dirty, fresh undo
+  // (FR-006/007), instead of creating a new tab.
   if (p.mode === 'replace') {
     const active = state.documents.find((d) => d.id === state.activeId)
     if (active && !active.dirty) {
@@ -355,7 +355,7 @@ export function handleUpdateContent(
               content,
               // A formatted document's dirty flag compares against the editor's
               // OWN baseline serialization (which absorbed every normalization),
-              // not the raw disk bytes — so edit → undo back to the original
+              // not the raw disk bytes, so edit → undo back to the original
               // clears dirty. Source-view content is raw text, so the exact byte
               // comparison stays correct there (raw-bytes policy, spec 002).
               dirty: !markdownSame(content, d.editorBaseline),
@@ -373,7 +373,7 @@ export function handleCaptureBaseline(
 ): EditingSession {
   // Raw-bytes policy (spec 002): content/baseline remain the on-disk bytes
   // read by the main process (openFile, RELOAD) or the last saved bytes
-  // (SAVE_SUCCESS) — Crepe's serialization must NOT rewrite the raw content
+  // (SAVE_SUCCESS), Crepe's serialization must NOT rewrite the raw content
   // of a pristine document (a file without a trailing newline would gain
   // one). The payload is stored in the separate `editorBaseline` field, the
   // reference the live-dirty check uses to tell "the editor normalized the
@@ -398,13 +398,13 @@ export function handleSaveSuccess(
   const { id, path, content } = payload
   // Spec 021: the written full text was built by `joinFrontmatter` from the
   // stored parts, so the store's partition is already correct and must NOT be
-  // re-derived from the written bytes — a `---` block the user pasted into the
+  // re-derived from the written bytes, a `---` block the user pasted into the
   // visual editor is body content and must stay body (spec edge case). The
   // frontmatter is the written text's prefix; the written body is the suffix.
   // `baseline` keeps the full written bytes for the source-view byte check and
   // the no-edit round trip (research R3); `dirty` compares the pre-update full
   // text against the written text (the original `d.content !== content` guard,
-  // level-corrected for the split model — a keystroke during the async write
+  // level-corrected for the split model, a keystroke during the async write
   // leaves the document dirty).
   const frontmatter = state.documents.find((d) => d.id === id)?.frontmatter ?? ''
   const body = content.startsWith(frontmatter) ? content.slice(frontmatter.length) : content

@@ -17,7 +17,7 @@ interface OsOpenDeps {
  * - file   → the generic single-file open (`openFileFromTree`, same as File →
  *   Open); existing-tab activation and detached-file dedupe happen in the
  *   reducer (FR-005/007).
- * - folder → `runPreparedFolderOpen`, the existing confirm→commit flow — main
+ * - folder → `runPreparedFolderOpen`, the existing confirm→commit flow, main
  *   already prepared the slot, so the OS open never bypasses the unsaved-work
  *   confirmation (FR-006/009).
  * - failed → the quiet footer note owned by the composition root (constitution

@@ -23,7 +23,7 @@ export interface DialogQueue {
  * Spec 008: the single-prompt guard and its pending queues (US1/FR-002 dialog
  * coordination). One native confirmation at a time; a second trigger while one
  * is open is ignored, and a deferred external notice / queued operation error
- * is re-surfaced once the guard releases — never dropped.
+ * is re-surfaced once the guard releases, never dropped.
  *
  * The session and external-change hooks write `handleExternalChangeRef` and
  * `showOperationErrorRef` on every render, exactly as the monolithic App.tsx
@@ -32,7 +32,7 @@ export interface DialogQueue {
 export function useDialogQueue(sessionRef: React.MutableRefObject<EditingSession>): DialogQueue {
   // Spec 008: native confirmation boxes are modal and the renderer awaits the
   // decision over IPC. Only ONE confirmation prompt may be in flight at a time
-  // (spec edge case), so every prompt entry point guards on this ref — a second
+  // (spec edge case), so every prompt entry point guards on this ref, a second
   // trigger while a dialog is open is ignored rather than stacked.
   const dialogInFlightRef = useRef(false)
   // An operation-failed prompt queued while another prompt is up.

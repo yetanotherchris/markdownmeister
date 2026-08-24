@@ -40,7 +40,7 @@ export function useSidebarLayout(opts: {
       setExplorerCollapsed(collapsed)
       // Never persist a collapsed (0) width. Writing 0 would change the Panel's
       // `defaultSize` prop, which re-runs its registration effect and replaces
-      // the panel object — wiping the library's `expandToSize` so a toggle-expand
+      // the panel object, wiping the library's `expandToSize` so a toggle-expand
       // snaps to minSize instead of the previous width (spec 010 US2 scenario 2,
       // verified 2026-08-05). The collapsed visibility is persisted separately.
       if (collapsed) {
@@ -59,7 +59,7 @@ export function useSidebarLayout(opts: {
       // A non-collapsed panel IS visible, so persist true unconditionally. Main's
       // settings merge reads the CURRENT state from disk, so two updates inside
       // the 500 ms debounce window clobber each other (the sidebarWidth-only
-      // write above would otherwise resurrect a stale persisted "hidden" choice —
+      // write above would otherwise resurrect a stale persisted "hidden" choice,
       // the exact race that broke the reveal-on-open restart e2e, review
       // 2026-08-06). The launch-time restore was removed the same day; the mount
       // guard above still suppresses the transient size-0 from persisting a fake

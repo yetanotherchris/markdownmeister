@@ -27,7 +27,7 @@ import type {
  * contracts/main.md §Shared context). The module-level workspace/allowClose
  * state that handlers.ts used to own lives here so every `register*` module
  * sees the same instance. Helper bodies are moved verbatim from the old
- * handlers.ts — only the module boundary changed (FR-005).
+ * handlers.ts, only the module boundary changed (FR-005).
  */
 
 /** The prepared-but-unconfirmed folder open (spec 004 FR-009/FR-010). A single
@@ -81,7 +81,7 @@ export function sanitizeError(e: unknown, workspaceRootPath: string | null): str
       '<workspace>'
     )
   }
-  // Principle II: NEVER leak an absolute path into a renderer-visible error —
+  // Principle II: NEVER leak an absolute path into a renderer-visible error,
   // run the absolute-path scrub unconditionally. With a workspace open only
   // the CURRENT root is otherwise scrubbed, so a failure while preparing a
   // dialog-chosen folder or committing a recent folder located elsewhere
@@ -186,7 +186,7 @@ export function isRecentEntry(path_: string, kind: RecentKind): boolean {
 }
 
 // FR-011: a persistence failure must NEVER fail the open it follows
-// (FR-002/003) or delete a still-valid entry. Record/remove are best-effort —
+// (FR-002/003) or delete a still-valid entry. Record/remove are best-effort,
 // on a save failure the in-memory list cannot be persisted, the failure is
 // reported quietly, and the open continues.
 export function recordRecent(path_: string, kind: RecentKind, name: string): void {
@@ -237,7 +237,7 @@ export function canonicalPath(p: string): string {
 // always populated so the renderer can dedupe detached files (spec 006 R8).
 export function openFileFromPath(filePath: string): OpenedFile {
   // Research R4 step 2: confirm the target still exists and has the right
-  // type — a recorded 'file' whose path was replaced by a directory must not
+  // type, a recorded 'file' whose path was replaced by a directory must not
   // be read as text (EISDIR would otherwise surface as a bare IO error).
   const stat = fs.statSync(filePath)
   if (!stat.isFile()) {

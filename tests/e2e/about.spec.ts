@@ -8,7 +8,7 @@ import { REPOSITORY_URL } from '../../src/main/buildInfo'
 import { closeAppSafely, launchApp, messageBoxCallCount, openSettingsDialog } from './launch'
 
 /**
- * Spec 037 suite: the About settings area. Covers the acceptance scenarios —
+ * Spec 037 suite: the About settings area. Covers the acceptance scenarios,
  * the nav entry last (FR-001), three read-only values with the true version
  * (FR-002), the exact-URL external hand-off recorded in main (FR-004), the
  * full-value clipboard round-trip (FR-006), the never-prompting stateless
@@ -87,7 +87,7 @@ test('US1 the navigation ends with About and it shows only the three read-only v
   await nav.getByRole('button', { name: 'About' }).click()
   await expect(box.getByRole('group', { name: 'About' })).toBeVisible()
 
-  // FR-008: purely read-only information — no adjustable control renders.
+  // FR-008: purely read-only information, no adjustable control renders.
   expect(await box.locator('.settings-main input, .settings-main select').count()).toBe(0)
 })
 
@@ -102,7 +102,7 @@ test('US1 the repository URL and a revision identifier are both shown', async ()
   await openAboutArea()
 
   await expect(window.getByTestId('settings-about-repository')).toHaveText(REPOSITORY_URL)
-  // MM_BUILD_COMMIT is accepted verbatim (research R2/R4) — any non-blank
+  // MM_BUILD_COMMIT is accepted verbatim (research R2/R4), any non-blank
   // string can surface here, so the assertion must not assume a 40-hex SHA.
   // Assert only that an honest identifier rendered: non-empty, non-placeholder,
   // and unpadded (tests review 2026-08-23).
@@ -119,7 +119,7 @@ test('US2/FR-004 activating the repository URL hands the exact URL to the OS exa
   await window.getByTestId('settings-about-repository').click()
 
   // FR-004: exactly one external hand-off carrying the constant URL, and zero
-  // in-application side effects — the dialog stays put.
+  // in-application side effects, the dialog stays put.
   await expect.poll(() => openExternalCalls(app)).toEqual([REPOSITORY_URL])
   await expect(window.getByTestId('settings-dialog')).toBeVisible()
 })
@@ -133,7 +133,7 @@ test('US2/FR-004 repeated activation hands off exactly once per click with no du
   await link.click()
 
   // spec.md Edge Cases (specs/archive/037-settings-about-section/spec.md:51):
-  // each activation repeats the hand-off — two clicks, two identical URLs,
+  // each activation repeats the hand-off, two clicks, two identical URLs,
   // and nothing inside the app duplicates (the dialog is still the sole
   // surface, showing the same three rows).
   await expect.poll(() => openExternalCalls(app)).toEqual([REPOSITORY_URL, REPOSITORY_URL])
@@ -188,7 +188,7 @@ test('FR-007 an unpackaged run forced into development mode shows the honest pla
 test('US1/FR-007 an odd revision override displays verbatim through the unpackaged seam', async () => {
   await closeAppSafely(app)
 
-  // research R2/R4: the override is taken verbatim — a tag, short SHA, or
+  // research R2/R4: the override is taken verbatim, a tag, short SHA, or
   // branch name must display exactly as provided, not only 40-hex hashes
   // (tests review 2026-08-23).
   ;({ app, window } = await launchApp(configDir, testFolder, undefined, {

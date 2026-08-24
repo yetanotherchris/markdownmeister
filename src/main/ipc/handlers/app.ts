@@ -4,9 +4,9 @@ import { err, ok, ctx, isAuthorizedRenderer, validateShape } from './context'
 
 /**
  * App lifecycle channels (US1/FR-005): the quit/close guard. `setupWindowCloseHandler`
- * owns the `allowClose` flag — it is the only path that may arm it, so a dirty
+ * owns the `allowClose` flag, it is the only path that may arm it, so a dirty
  * document is never discarded silently. (Spec 008: the devtools:toggle channel
- * was removed — developer tools are toggled unconditionally by the main-process
+ * was removed, developer tools are toggled unconditionally by the main-process
  * shortcut handler, never by a renderer IPC call.)
  */
 export function registerAppHandlers(window: BrowserWindow, _ctx: typeof ctx): void {
@@ -17,7 +17,7 @@ export function registerAppHandlers(window: BrowserWindow, _ctx: typeof ctx): vo
   // for unsaved changes, then calls confirmQuit. Never call app.quit() here.
   // Crucially this must NOT arm `allowClose`: the close handler has to
   // intercept first (review 2026-08-06) so a dirty document is never discarded
-  // silently — `quit:respond` (the renderer's confirmation) re-enters
+  // silently, `quit:respond` (the renderer's confirmation) re-enters
   // `tryCloseWindow()`, which is the only path allowed to set `allowClose`.
   ipcMain.handle('app:requestQuit', (event): Result<null> => {
     if (!isAuthorizedRenderer(event, window)) return err('IO', 'Unauthorized renderer')

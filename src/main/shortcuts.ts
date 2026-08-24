@@ -20,7 +20,7 @@ export type ShortcutResult = MenuCommand | 'devtools'
 /**
  * Spec 010 (contracts/renderer.md): re-implements the keyboard accelerators the
  * native menu used to own after FR-002 removes the menu bar (research R1). A
- * pure function — the single source of truth, unit-tested. Returns the
+ * pure function, the single source of truth, unit-tested. Returns the
  * `MenuCommand` to send on `menu:command`, `'devtools'` for the main-side
  * devtools toggle, or `null` to leave the keypress untouched.
  *
@@ -58,12 +58,12 @@ export function matchShortcut(input: ShortcutInput): ShortcutResult | null {
 
 /**
  * Install the `before-input-event` handler on a window. Matched combinations
- * `preventDefault()` and send the existing `menu:command` channel — the same
- * command bus the old native menu used and the renderer hamburger shares — so
+ * `preventDefault()` and send the existing `menu:command` channel, the same
+ * command bus the old native menu used and the renderer hamburger shares, so
  * shortcuts keep working after the menu bar is removed (spec 010 edge case).
  *
  * Spec 008 (clarification 2026-08-08): the developer-tools combos (F12,
- * Ctrl/Cmd+Shift+I) always toggle developer tools. There is no settings gate —
+ * Ctrl/Cmd+Shift+I) always toggle developer tools. There is no settings gate,
  * the developer-tools setting and its `developerToolsEnabled` field were
  * removed as useless (plan R3).
  */

@@ -10,9 +10,9 @@ import { spellcheckMenuActions } from './spellcheckMenu'
  *
  * A flagged word gets a native `Menu` built from `spellcheckMenuActions`:
  * clicking a suggestion replaces the word in place via
- * `webContents.replaceMisspelling` (research R2 — verified to work in the
+ * `webContents.replaceMisspelling` (research R2, verified to work in the
  * ProseMirror editor and the source textarea), and "Add … to Dictionary" learns
- * the word via the session's custom dictionary (research R3 — persists
+ * the word via the session's custom dictionary (research R3, persists
  * natively across restarts). When no word is flagged, no menu is built or shown:
  * nothing is suppressed (FR-008); the app simply has no other edit menu.
  */

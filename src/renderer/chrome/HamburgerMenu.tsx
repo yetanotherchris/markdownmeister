@@ -33,12 +33,12 @@ export default function HamburgerMenu({ onCommand, onOpenSettings }: HamburgerMe
   // DOM deterministically reflects the loaded history (e2e reads it directly).
   const [recentLoaded, setRecentLoaded] = useState(false)
   // True when the most recent load FAILED (e.g. FR-011: broken config). The
-  // list is then unknown, so the Clear action must still be offered — "No
+  // list is then unknown, so the Clear action must still be offered, "No
   // Recent Items" is reserved for a confirmed-empty history.
   const [recentError, setRecentError] = useState(false)
   // Whether the Recent Items submenu (a parent menuitem, like the native
   // `File > Recent Items`) is expanded. `submenuOpenRef` mirrors the state so
-  // the click handler always reads the freshest value — hovering the parent
+  // the click handler always reads the freshest value, hovering the parent
   // opens the submenu, and the click that follows must not see a stale
   // "closed" closure and toggle it shut (a hover→click race).
   const [submenuOpen, setSubmenuOpen] = useState(false)
@@ -180,7 +180,7 @@ export default function HamburgerMenu({ onCommand, onOpenSettings }: HamburgerMe
               aria-expanded={submenuOpen}
               onClick={() => {
                 // Open if closed. Hovering already opened it (onMouseEnter),
-                // so a click is never a "close" — Escape and outside clicks
+                // so a click is never a "close", Escape and outside clicks
                 // close, mirroring a native submenu parent.
                 if (!submenuOpenRef.current) openRecentSubmenu()
               }}

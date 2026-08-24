@@ -11,7 +11,7 @@ import { loadSettingsFromMain } from './state/settings'
 import { loadEditorThemesFromMain } from './state/editorThemes'
 
 // Spec 013: resolve the persisted settings (theme, font, explorer visibility)
-// BEFORE the first render, so the initial paint already applies them — a
+// BEFORE the first render, so the initial paint already applies them, a
 // persisted dark theme never flashes light (the renderer reads the cache
 // synchronously in useState initialisers). The IPC round trip is a few ms and
 // the window shows on `ready-to-show`, so the shell does not visibly wait.

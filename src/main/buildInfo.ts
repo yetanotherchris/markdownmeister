@@ -2,7 +2,7 @@ import type { BuildInfo } from '../shared/ipc-contract'
 
 /**
  * Spec 037 (research R1-R4): the build identity shown in the About area.
- * Electron-free by design — every function here is pure or reads only
+ * Electron-free by design, every function here is pure or reads only
  * globals, so tests/main exercises the policies without mocking electron;
  * the electron edge (`app.getVersion`, `app.isPackaged`) lives in the
  * IPC handler that composes `currentBuildInfo`.
@@ -32,7 +32,7 @@ export function resolveBuildRevision(
 }
 
 /** Honest display value (FR-007): blank or non-string metadata degrades to
- *  `null` — the renderer shows the development-build placeholder, never a
+ *  `null`, the renderer shows the development-build placeholder, never a
  *  fabricated hash. */
 export function normalizeRevision(raw: unknown): string | null {
   if (typeof raw !== 'string') return null

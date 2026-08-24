@@ -7,7 +7,7 @@ import { ctx, err, isAuthorizedRenderer, ok } from './context'
  * Spec 037 channels (contracts/preload.md): `build:getInfo` serves the
  * read-only About trio; `build:openRepository` hands the constant repository
  * URL to the OS default browser exactly once per activation. Both validate
- * the approved renderer FIRST; neither accepts arguments — there is
+ * the approved renderer FIRST; neither accepts arguments, there is
  * deliberately nothing to validate beyond authorization (FR-004).
  */
 export function registerBuildHandlers(window: Electron.BrowserWindow, _ctx: typeof ctx): void {

@@ -22,7 +22,7 @@ export interface WorkspaceFolderApi {
 
 /**
  * Workspace folder lifecycle (US1/FR-002): the two-phase folder open (spec 004
- * FR-009/FR-010 — prepare → confirm → commit) and the reveal-on-open behaviour
+ * FR-009/FR-010, prepare → confirm → commit) and the reveal-on-open behaviour
  * (spec 010 clarification 2026-08-05). Owns the prepared-but-unconfirmed slot.
  */
 export function useWorkspaceFolder(opts: {
@@ -50,7 +50,7 @@ export function useWorkspaceFolder(opts: {
   )
 
   // Spec 010 (clarification 2026-08-05): opening a folder reveals the explorer
-  // even if it was previously hidden — an explicit open overrides the persisted
+  // even if it was previously hidden, an explicit open overrides the persisted
   // hidden choice so the newly opened workspace is always browsable. Runs on
   // every successful folder commit (both Open Folder and a recent-folder open
   // route through commitFolderOpen). The restore flag is deliberately NOT set
@@ -149,7 +149,7 @@ export function useWorkspaceFolder(opts: {
             await commitFolderOpen()
             return
           }
-          // A save failed or was cancelled — keep the confirmation open (the
+          // A save failed or was cancelled, keep the confirmation open (the
           // prepared folder was not committed) and re-prompt.
         }
       } finally {
@@ -195,7 +195,7 @@ export function useWorkspaceFolder(opts: {
     async (prepared: WorkspaceInfo) => {
       if (pendingFolderOpenRef.current) {
         // A previous flow's commit/cancel may still be settling: main has
-        // already cleared its slot for THIS prepared folder, so release it —
+        // already cleared its slot for THIS prepared folder, so release it,
         // otherwise the slot stays filled with a folder nobody will commit and
         // the next Open Folder errors "already in progress" (review finding
         // 2026-08-09). Clearing an already-free slot is a no-op.

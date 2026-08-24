@@ -17,7 +17,7 @@ import {
 } from './recent-helpers'
 
 /**
- * Spec 004 Recent Items — US4 + FR-011/FR-012 + edges (split from
+ * Spec 004 Recent Items, US4 + FR-011/FR-012 + edges (split from
  * recent.spec.ts): Clear Recent Items and restart persistence, per-kind caps,
  * the quiet footer-note on config write failures, empty/separator history,
  * FR-013 explorer-opens-never-record, R4 OUTSIDE_WORKSPACE rejection, and the
@@ -46,7 +46,7 @@ test('only files recorded: no leading/dangling separator (spec edge)', async () 
   await clickFileMenu(ctx, 'Open File')
   await expect(ctx.window.locator('.document-title')).toContainText('external.md')
 
-  // [file, separator, Clear Recent Items] — the folders/files separator must
+  // [file, separator, Clear Recent Items], the folders/files separator must
   // not dangle at the top of the submenu when the folder group is empty.
   const labels = (await recentMenuStructure(ctx)).map((i) => i.label)
   expect(labels[0]?.includes('external.md')).toBe(true)
@@ -75,7 +75,7 @@ test('FR-013 files opened from the explorer never appear in Recent Items', async
 })
 
 test('a recent folder whose path is now a regular file is dropped with NOT_FOUND', async () => {
-  // A folder that will later become a FILE (wrong type at reopen) — the
+  // A folder that will later become a FILE (wrong type at reopen), the
   // exists-but-unopenable branch of FR-009.
   const target = path.join(ctx.testFolder, 'type-swap')
   fs.mkdirSync(target)

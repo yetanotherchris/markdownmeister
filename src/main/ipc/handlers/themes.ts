@@ -15,7 +15,7 @@ import { ctx, ok, err, sanitizeError, isAuthorizedRenderer } from './context'
  */
 
 /** Pure FR-013 rule: null when the stored selection resolves verbatim; the
- *  delivered stem when only its CASE differs — normalised once here so the
+ *  delivered stem when only its CASE differs, normalised once here so the
  *  renderer's exact-name resolution agrees with main's and a case-collision
  *  winner cannot re-repair the same setting on every read (review finding
  *  2026-08-23); otherwise the default theme. */

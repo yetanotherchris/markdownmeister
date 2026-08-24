@@ -58,7 +58,7 @@ export default function App() {
   // Spec 010, US2 (FR-007): persisted explorer visibility drives the collapsed
   // state; handleSidebarResize keeps it in sync while the panel is mounted.
   const [explorerCollapsed, setExplorerCollapsed] = useState(false)
-  // Spec 012/013/016: the settings-dialog state — open flag, editor theme, app
+  // Spec 012/013/016: the settings-dialog state, open flag, editor theme, app
   // theme choice, and the effective data-theme mode (useSettingsState owns them).
   const {
     settingsOpen,
@@ -88,8 +88,8 @@ export default function App() {
   // `--mm-theme-*` variables that themes.css maps onto Crepe's tokens (the
   // generic layer wins over the retained default blocks by source order).
   // The container attribute carries the resolved definition's name (driving
-  // the retained default base blocks) or 'default' — the FR-001 emergency
-  // appearance — when nothing resolves; main repairs the stored selection
+  // the retained default base blocks) or 'default', the FR-001 emergency
+  // appearance, when nothing resolves; main repairs the stored selection
   // (contracts/preload.md). Never an error, never lost document state.
   const resolvedAppearance = resolveEditorAppearance(editorTheme, themeMode, editorThemes)
   const dataEditorTheme = resolvedAppearance.definitionName ?? 'default'
@@ -145,7 +145,7 @@ export default function App() {
   const activeDoc = getActiveDocument(session)
 
   // The live-dirty decision is bound once here (pure rule + pool accessors) so
-  // both the pool eviction and the session checks share it — including the
+  // both the pool eviction and the session checks share it, including the
   // spec 033 document-identity fast path, so eviction scans of untouched
   // documents do not serialize either.
   const getMarkdown = useCallback((id: string) => instancePool.getMarkdown(id), [])
@@ -211,7 +211,7 @@ export default function App() {
   const { handleExternalChange } = external
 
   // Spec 015 (US1/US2, FR-006): reveal a workspace item in the OS file manager.
-  // Read-only — a failure surfaces as a quiet footer note and the session is
+  // Read-only, a failure surfaces as a quiet footer note and the session is
   // untouched. The relative path + kind are validated in main (FR-005).
   const handleReveal = useCallback((node: TreeNode) => {
     window.api
@@ -227,7 +227,7 @@ export default function App() {
   }, [])
 
   // Spec 024 (FR-005): middle-click opens the file in a NEW tab, bypassing the
-  // replace-clean-tab behaviour (and any `same-tab` preference — explicit
+  // replace-clean-tab behaviour (and any `same-tab` preference, explicit
   // middle-click always wins over the setting, data-model decision table).
   const handleOpenNewTab = useCallback(
     (node: TreeNode) => {
@@ -245,7 +245,7 @@ export default function App() {
       const doc = sessionRef.current.documents.find((d) => d.path === e.path)
       if (!doc) return
       dispatch({ type: 'EXTERNAL_CHANGE', payload: { path: e.path, kind: e.kind } })
-      // One prompt at a time: DEFER, don't drop — re-surfaced on release.
+      // One prompt at a time: DEFER, don't drop, re-surfaced on release.
       if (dialog.dialogInFlightRef.current) {
         const pending = dialog.pendingExternalPromptRef.current
         if (!pending.some((item) => item.path === e.path && item.kind === e.kind)) {
@@ -296,7 +296,7 @@ export default function App() {
     }
   }, [])
 
-  // Spec 002, US004: the explorer follows the active tab — reveal/select its
+  // Spec 002, US004: the explorer follows the active tab, reveal/select its
   // workspace file; untitled or workspace-external docs clear the highlight.
   const workspaceActiveId = session.activeId
   useEffect(() => {

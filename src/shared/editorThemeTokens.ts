@@ -3,7 +3,7 @@ import type { EditorColors } from './ipc-contract'
 /**
  * Spec 036: the embedded contents of the five default editor theme files and
  * the typeface helpers. The palettes and stacks are copied VERBATIM from the
- * pre-036 code (editorThemePresets.ts / themes.css — research E1/E2) so seeded
+ * pre-036 code (editorThemePresets.ts / themes.css, research E1/E2) so seeded
  * files render exactly as before; this module is now their single home.
  *
  * Electron-free (src/shared) so main seeds files from it and the renderer uses
@@ -119,7 +119,7 @@ export const DEFAULT_EDITOR_THEME_NAME = 'rustic'
  *  custom colours that match no default; never overwritten once present. */
 export const MIGRATED_CUSTOM_THEME_FILE = 'migrated-custom.json'
 
-/** The legacy two-value choice each default implies — mirrors spec 023's
+/** The legacy two-value choice each default implies, mirrors spec 023's
  *  preset table (editorThemePresets.ts:70-79) for migration matching only. */
 export const DEFAULT_THEME_LEGACY_CHOICES: Record<string, EditorTypefaceChoice> = {
   rustic: 'sans-serif',

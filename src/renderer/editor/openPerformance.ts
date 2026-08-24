@@ -61,7 +61,7 @@ export function endOpen(): void {
   pendingOpenStart = null
 }
 
-/** Drop a pending start without recording a duration — an open whose readFile
+/** Drop a pending start without recording a duration, an open whose readFile
  *  failed never presents an editor, so it must not poison the next mount's
  *  measurement. */
 export function discardOpen(): void {

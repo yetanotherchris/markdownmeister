@@ -31,7 +31,7 @@ import {
  *
  * Spec 006: the prepared-but-unconfirmed folder slot lives in `ctx` (shared
  * with the OS-open host), and `prepareFolderFromOsPath` is the entry point the
- * OS host uses after its own validation — the recent-entry check is skipped
+ * OS host uses after its own validation, the recent-entry check is skipped
  * because the OS path is not (and need not be) a recorded recent folder.
  */
 export function registerWorkspaceHandlers(window: Electron.BrowserWindow, _ctx: typeof ctx): void {
@@ -54,7 +54,7 @@ export function registerWorkspaceHandlers(window: Electron.BrowserWindow, _ctx: 
       try {
         // Single in-flight guard: while a prepared folder awaits the renderer's
         // confirm, a second prepare (toolbar button, native menu, or a
-        // double-clicked recent folder) must NOT overwrite the slot — the first
+        // double-clicked recent folder) must NOT overwrite the slot, the first
         // flow's commit would otherwise swap to the second flow's folder, or the
         // second flow would error with "No folder open is pending". Reject the
         // new flow instead; the renderer surfaces the error in context.
@@ -108,7 +108,7 @@ export function registerWorkspaceHandlers(window: Electron.BrowserWindow, _ctx: 
     // FR-009: the prepare→commit window can outlive the target (the renderer's
     // unsaved-work confirmation may stay open arbitrarily long), so re-validate
     // the root here. chokidar reports a missing root via an async `error`
-    // event, not a synchronous throw — without this check a folder deleted in
+    // event, not a synchronous throw, without this check a folder deleted in
     // that window would silently commit to a dead workspace. A re-validation
     // failure PROVES the target unavailable, so the entry is dropped (FR-009).
     try {
@@ -160,7 +160,7 @@ export function registerWorkspaceHandlers(window: Electron.BrowserWindow, _ctx: 
       candidate?.close()
       ctx.pendingFolderOpen = null
       // FR-009: a failure here (e.g. a watcher/environmental EMFILE/EPERM)
-      // does NOT prove the folder invalid — the spec removes an entry only
+      // does NOT prove the folder invalid, the spec removes an entry only
       // after an attempted open proves it unavailable or invalid, so a still-
       // valid folder keeps its history entry. (The re-validation above is the
       // only place invalidity is proven in commit.)
@@ -214,7 +214,7 @@ function prepareFolderFromRealPath(realRootPath: string): Result<WorkspaceInfo> 
 
 /**
  * Spec 006: the OS-open host entry point for a folder. Same prepare semantics
- * as `workspace:prepareFolderOpen` minus the recent-entry check — the OS path
+ * as `workspace:prepareFolderOpen` minus the recent-entry check, the OS path
  * was already validated and classified by the host (Principle II), so the only
  * remaining guard is the single in-flight slot.
  */

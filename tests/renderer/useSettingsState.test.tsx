@@ -9,9 +9,9 @@ import type { ThemeChoice } from '../../src/renderer/hooks/useEffectiveTheme'
 /**
  * Spec 016/036: `useSettingsState` seeds `editorTheme` (a theme-file name)
  * from the persisted cache and `handleEditorThemeChange` persists the committed
- * name — nothing else, since colours/typeface come from the theme file. The
+ * name, nothing else, since colours/typeface come from the theme file. The
  * hook's IPC calls are stubbed via `window.api` (the preload surface is out of
- * scope for unit tests — the e2e suite covers the real IPC).
+ * scope for unit tests, the e2e suite covers the real IPC).
  */
 
 // Minimal stub of the DesktopApi call the hook makes. The preload surface
@@ -93,7 +93,7 @@ describe('useSettingsState (spec 016)', () => {
     })
     expect(read().editorTheme).toBe('scholarly')
     expect(getSettings().editorTheme).toBe('scholarly')
-    // Spec 036 FR-008: colours and typeface come from the theme FILE — the
+    // Spec 036 FR-008: colours and typeface come from the theme FILE, the
     // handler persists nothing besides the name (no editorColors/editorFont).
     const calls = (globalThis as unknown as { __apiCalls: StubPatch[] }).__apiCalls
     expect(calls).toEqual([{ editorTheme: 'scholarly' }])

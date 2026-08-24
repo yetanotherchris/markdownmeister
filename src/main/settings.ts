@@ -16,7 +16,7 @@ export { DEFAULTS }
 
 /**
  * Spec 012 FR-002: settings live in the SAME per-user configuration file as the
- * recent-items list — `appData/markdownmeister/config.json` (see recentItemsPath.ts). Both
+ * recent-items list, `appData/markdownmeister/config.json` (see recentItemsPath.ts). Both
  * `MM_CONFIG_DIR` (test seam) and the production path therefore resolve to the
  * same file the MRU list uses; the settings section is a sibling key.
  */
@@ -64,7 +64,7 @@ export function loadSettings(): Settings {
 
 /** Validate a renderer-supplied patch field by field against the current
  *  settings (review #27; spec 036: `editorTheme` must be a well-formed theme
- *  name — never arbitrary text). Returns the merged Settings. */
+ *  name, never arbitrary text). Returns the merged Settings. */
 function validateAndMerge(patch: Partial<Settings>): Settings {
   return mergeSettingsPatch(loadSettings(), patch)
 }
@@ -90,13 +90,13 @@ export function saveSettings(settings: Settings): void {
       writeSettingsFile(settingsPath(), settings)
       writeTimer = null
     } catch {
-      // Fail silently — settings are non-critical
+      // Fail silently, settings are non-critical
     }
   }, 500)
 }
 
 /** Flush any pending debounced settings write immediately (review #27: a font
- *  change followed by a fast quit must not be lost — FR-006). Called from the
+ *  change followed by a fast quit must not be lost, FR-006). Called from the
  *  quit path in index.ts. */
 export function flushSettings(): void {
   if (writeTimer) {
@@ -105,7 +105,7 @@ export function flushSettings(): void {
     try {
       writeSettingsFile(settingsPath(), currentSettings ?? loadFromDisk())
     } catch {
-      // Fail silently — settings are non-critical
+      // Fail silently, settings are non-critical
     }
   }
 }
@@ -116,7 +116,7 @@ export function flushSettings(): void {
  *  that would later restore the pre-migration selection over the repaired one.
  *  Adopting the repaired name keeps the authoritative cache honest and re-arms
  *  any pending write with the corrected snapshot. A no-op before a cache
- *  exists — the first load then reads the already-repaired file. */
+ *  exists, the first load then reads the already-repaired file. */
 export function adoptRepairedEditorTheme(themeName: string): void {
   if (!currentSettings || currentSettings.editorTheme === themeName) return
   currentSettings = { ...currentSettings, editorTheme: themeName }

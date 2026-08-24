@@ -5,7 +5,7 @@ import type { ThemeChoice, ThemeMode } from '../../src/renderer/hooks/useEffecti
 /**
  * Spec 013: the pure resolution of the effective appearance. Light/Dark are
  * forced by the choice; System follows the OS colour-scheme query. (The hook
- * itself wraps this in matchMedia listening — covered by the e2e suite.)
+ * itself wraps this in matchMedia listening, covered by the e2e suite.)
  */
 describe('effectiveThemeMode', () => {
   const cases: { choice: ThemeChoice; prefersDark: boolean; expected: ThemeMode }[] = [

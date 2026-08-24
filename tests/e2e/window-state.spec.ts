@@ -112,7 +112,7 @@ test('US2/FR-002 the last state survives a fast quit (flush on close)', async ()
   await app.evaluate(({ BrowserWindow }) => {
     BrowserWindow.getAllWindows()[0].setBounds({ x: 60, y: 70, width: 460, height: 360 })
   })
-  // Quit immediately — before the 500 ms debounce would naturally fire.
+  // Quit immediately, before the 500 ms debounce would naturally fire.
   await app.evaluate(({ BrowserWindow }) => {
     BrowserWindow.getAllWindows()[0].close()
   })

@@ -16,7 +16,7 @@ export type EntryKind = 'file' | 'directory'
 
 export interface WorkspaceInfo {
   name: string
-  /** The realpath of the opened workspace root (spec 003, display only — the
+  /** The realpath of the opened workspace root (spec 003, display only, the
    *  renderer never feeds it back into any filesystem call). */
   path: string | null
   entries: DirEntry[]
@@ -37,7 +37,7 @@ export interface OpenedFile {
   /** Spec 006 (research R8): the realpath of the file, populated by
    *  `openFileFromPath` for every open (dialog, recent, OS). Gives a detached
    *  file (`path: null`) a stable identity so FR-007 ("activate the existing
-   *  tab, never duplicate") holds outside the workspace too. Display-only —
+   *  tab, never duplicate") holds outside the workspace too. Display-only,
    *  the renderer never feeds it back into any filesystem call (Principle I). */
   canonicalPath?: string
 }
@@ -82,7 +82,7 @@ export interface RecentItem {
 }
 
 /** A quiet persistence warning from main (spec 004, FR-011): the recent-items
- *  config could not be written. Non-fatal — the operation it accompanied
+ *  config could not be written. Non-fatal, the operation it accompanied
  *  already succeeded. */
 export interface RecentItemsWarning {
   message: string
@@ -90,7 +90,7 @@ export interface RecentItemsWarning {
 
 /** Native confirmation surfaces (spec 008). A closed union of every dialog the
  *  app can show through the OS message box. Requests carry only display strings
- *  and renderer-owned state — NEVER filesystem paths (Principle II). */
+ *  and renderer-owned state, NEVER filesystem paths (Principle II). */
 export type NativeDialogRequest =
   | { kind: 'unsaved-close'; documentTitle: string; error?: string }
   | { kind: 'unsaved-quit'; documentTitles: string[]; error?: string }
@@ -102,7 +102,7 @@ export type NativeDialogRequest =
   | { kind: 'delete-blocked'; targetName: string; blockerTitles: string[] }
   | { kind: 'operation-failed'; message: string }
 
-/** The semantic outcome of a native dialog — what the renderer acts on. The
+/** The semantic outcome of a native dialog, what the renderer acts on. The
  *  renderer never receives a button index or the platform (spec 008). */
 export type NativeDialogDecision =
   | 'save'
@@ -128,7 +128,7 @@ export type MenuCommand =
   | { type: 'open-recent'; path: string; kind: RecentKind }
 
 /** Spec 006: an OS-initiated open the main process has already validated and
- *  read. Only read-ready data crosses the boundary — never a raw path the
+ *  read. Only read-ready data crosses the boundary, never a raw path the
  *  renderer could act on (Principle I). Channels: 'os:fileOpen',
  *  'os:folderOpen', 'os:openFailed'. */
 export type OsOpenRequest =
@@ -137,13 +137,13 @@ export type OsOpenRequest =
   | { kind: 'failed'; message: string }
 
 /** Spec 020: the spellchecker languages the app can select explicitly. A
- *  closed union — validated in main, never arbitrary text. More languages can
+ *  closed union, validated in main, never arbitrary text. More languages can
  *  be added here later (the mechanism is identical). */
 export type SpellcheckLanguage = 'en-GB' | 'en-US'
 
 /** Spec 023: the six curated editor colour tokens a theme palette stores,
  *  mapped to Crepe's `--crepe-color-*` variables (contracts/editor-theme.md).
- *  A closed record of `#rrggbb` hex strings — validated in main. */
+ *  A closed record of `#rrggbb` hex strings, validated in main. */
 export interface EditorColors {
   background: string
   foreground: string
@@ -164,7 +164,7 @@ export interface EditorThemeDefinition {
 }
 
 /** Spec 036 (`themes:list` payload): every valid theme plus the quiet
- *  indication of rejected files (never surfaced modally — FR-010). */
+ *  indication of rejected files (never surfaced modally, FR-010). */
 export interface EditorThemesList {
   themes: EditorThemeDefinition[]
   invalidNames: string[]
@@ -172,7 +172,7 @@ export interface EditorThemesList {
 
 /** Spec 008: how an explorer-originated file open places the document (FR-008,
  *  clarification 2026-08-08). 'same-tab' replaces a live-clean active tab;
- *  'new-tab' always opens a new tab. A closed union — validated in main, never
+ *  'new-tab' always opens a new tab. A closed union, validated in main, never
  *  arbitrary text. Only explorer-originated opens consume it; File-menu and
  *  recent-item opens keep their own generic behavior. */
 export type FileOpenBehavior = 'same-tab' | 'new-tab'
@@ -181,11 +181,11 @@ export interface Settings {
   sidebarWidth: number
   themeOverride: 'light' | 'dark' | null
   /** The persisted visibility of the left explorer panel (spec 010 FR-007).
-   *  Defaults to true — a fresh install shows the explorer; once the user
+   *  Defaults to true, a fresh install shows the explorer; once the user
    *  toggles it, the choice persists across restarts. */
   explorerVisible: boolean
   /** The selected editor theme (spec 036 FR-006): the NAME of the selected
-   *  theme file — its stem — resolved against discovered themes at read time.
+   *  theme file, its stem, resolved against discovered themes at read time.
    *  Defaults to 'rustic'. Validated in main as a bounded printable string
    *  with no path separators; an unresolved name falls back silently to the
    *  default theme and is repaired (FR-013). Colours and typeface come from
@@ -194,38 +194,38 @@ export interface Settings {
    *  startup migration converts stored custom colours into a theme file. */
   editorTheme: string
   /** Spec 020 FR-006/FR-009: whether the native spellchecker is enabled.
-   *  Defaults to true. A closed type — validated in main as a boolean, never
+   *  Defaults to true. A closed type, validated in main as a boolean, never
    *  arbitrary text. Persisted via the same settings store as the rest. */
   spellcheckEnabled: boolean
   /** Spec 020 (2026-08-07): the explicit spellchecker language, or `null` for
-   *  the platform/system default. A closed union — validated in main. Applied
+   *  the platform/system default. A closed union, validated in main. Applied
    *  via `session.setSpellCheckerLanguages`. */
   spellcheckLanguage: SpellcheckLanguage | null
   /** Spec 008 FR-008: whether an explorer-originated file open replaces the
    *  active live-clean tab ('same-tab') or always opens a new tab ('new-tab').
-   *  Defaults to 'same-tab'. A closed union — validated in main. The explorer
+   *  Defaults to 'same-tab'. A closed union, validated in main. The explorer
    *  single-click/activation/context-Open paths read it; a dirty active tab is
    *  never replaced (Principle III). */
   fileOpenBehavior: FileOpenBehavior
   /** Spec 030 FR-003: whether a single newline within a paragraph renders as a
    *  hard break (`<br>`) instead of a soft break (space). Defaults to false
-   *  (strict CommonMark soft breaks, FR-013). A boolean — validated in main,
+   *  (strict CommonMark soft breaks, FR-013). A boolean, validated in main,
    *  never coerced (research R5). */
   hardBreaks: boolean
   /** Spec 030 FR-004: whether `~~text~~` parses into a strikethrough mark.
-   *  Defaults to true (FR-013). A boolean — validated in main, never coerced. */
+   *  Defaults to true (FR-013). A boolean, validated in main, never coerced. */
   strikethrough: boolean
   /** Spec 030 FR-005: whether pipe-delimited markdown parses into a table.
-   *  Defaults to true (FR-013). A boolean — validated in main, never coerced. */
+   *  Defaults to true (FR-013). A boolean, validated in main, never coerced. */
   tables: boolean
   /** Spec 030 FR-006: whether `- [ ]` / `- [x]` parses into task checkboxes.
-   *  Defaults to true (FR-013). A boolean — validated in main, never coerced. */
+   *  Defaults to true (FR-013). A boolean, validated in main, never coerced. */
   taskLists: boolean
   /** Spec 030 FR-007: whether `$…$` / `$$…$$` parses into math formulas.
-   *  Defaults to true (FR-013). A boolean — validated in main, never coerced. */
+   *  Defaults to true (FR-013). A boolean, validated in main, never coerced. */
   math: boolean
   /** Spec 030 FR-008: whether bare URLs/emails auto-link without explicit
-   *  markdown link syntax. Defaults to true (FR-013). A boolean — validated in
+   *  markdown link syntax. Defaults to true (FR-013). A boolean, validated in
    *  main, never coerced. */
   autolink: boolean
   /** Spec 031 FR-013: whether fenced code blocks in visual editing retain
@@ -236,7 +236,7 @@ export interface Settings {
 /** Spec 037: the build identity shown in the About area. All three values are
  *  composed in main; `revision` is `null` when the running build carries no
  *  embedded revision metadata (development runs show a placeholder instead of
- *  a fabricated value — FR-007). */
+ *  a fabricated value, FR-007). */
 export interface BuildInfo {
   version: string
   revision: string | null
@@ -245,13 +245,13 @@ export interface BuildInfo {
 
 export interface DesktopApi {
   /** The platform the app runs on (`process.platform`, exposed read-only so the
-   *  sandboxed renderer can adapt labels — spec 015 FR-003). */
+   *  sandboxed renderer can adapt labels, spec 015 FR-003). */
   platform: NodeJS.Platform
   /**
    * Phase 1 of folder open (spec 004, FR-009/FR-010): with `path` undefined,
    * shows the OS folder picker; with `path`, opens only a recorded recent
    * folder (rejected with `OUTSIDE_WORKSPACE` otherwise). Validates the target
-   * and returns its entries WITHOUT touching the current workspace — the swap
+   * and returns its entries WITHOUT touching the current workspace, the swap
    * happens only on `commitFolderOpen`, so a cancelled or failed open leaves
    * the current workspace and session unchanged. Returns `null` when the picker
    * is cancelled.
@@ -308,7 +308,7 @@ export interface DesktopApi {
    *  boundary; the renderer never sees a button index or the platform. */
   showConfirmation(request: NativeDialogRequest): Promise<Result<NativeDialogDecision>>
   /** Spec 010: the current Recent Items list for the hamburger submenu. Returns
-   *  display strings only — the renderer never feeds the paths back into the
+   *  display strings only, the renderer never feeds the paths back into the
    *  filesystem (the recent-open handlers re-validate against this list). */
   getRecentItems(): Promise<Result<RecentItem[]>>
   /** Spec 010: clear the Recent Items list (hamburger "Clear Recent Items"). */
@@ -322,7 +322,7 @@ export interface DesktopApi {
    *  flagged again. Returns the updated word list. */
   addSpellcheckWord(word: string): Promise<Result<string[]>>
   /** Spec 037 US1: the read-only build identity for the About area (version,
-   *  revision, repository URL — contracts/preload.md). */
+   *  revision, repository URL, contracts/preload.md). */
   getBuildInfo(): Promise<Result<BuildInfo>>
   /** Spec 037 US2: hand the repository URL to the OS default browser as an
    *  external hand-off. Takes no arguments; the URL lives only in main and

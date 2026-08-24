@@ -83,7 +83,7 @@ export class InstancePool {
   /**
    * Returns the id of the oldest *clean* live instance to evict, or null when
    * nothing may be evicted (every live instance is dirty, or the only clean
-   * one is the active document). The active document is never evicted — its
+   * one is the active document). The active document is never evicted, its
    * editor would vanish while visible. Does not remove the entry; the caller
    * does that after capturing any state it needs.
    */

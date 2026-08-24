@@ -7,7 +7,7 @@ import * as path from 'path'
  *
  * In dev the file lives at <repo>/resources/icon.png next to out/main. When
  * packaged it ships via electron-builder's extraResources mapping to
- * <install>/resources/icon.png — which is exactly `process.resourcesPath` —
+ * <install>/resources/icon.png, which is exactly `process.resourcesPath`,
  * and that copy is addressed authoritatively (PR #73 review finding): an
  * __dirname-relative path would land inside app.asar and only work while
  * resources/** happens to ride unbanned inside the archive.

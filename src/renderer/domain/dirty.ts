@@ -26,14 +26,14 @@ export function getLiveContent(doc: DocumentState, getMarkdown: MarkdownAccessor
  *  source-view document's signal is entirely `doc.dirty` (its editor would
  *  serialize the stale pre-source-edit content, so the editor comparison below
  *  would be meaningless). Otherwise compare the live serialization against the
- *  editor's OWN baseline — Crepe normalizes markdown, so a pristine normalizing
+ *  editor's OWN baseline, Crepe normalizes markdown, so a pristine normalizing
  *  file must not count as dirty; only drift from the baseline means the user
  *  typed (raw-bytes policy).
  *
  *  Spec 033 fast path (contract C2): when the live view's document object is
  *  reference-identical to the one recorded at baseline capture, no
  *  doc-changing transaction has occurred since capture, so the live
- *  serialization is provably identical to what was captured — clean with zero
+ *  serialization is provably identical to what was captured, clean with zero
  *  serializations. Reference identity is the ONLY skip condition: any
  *  doc-changing transaction produces a new reference and falls back to the
  *  exact comparison below, while decoration-only transactions (spellcheck

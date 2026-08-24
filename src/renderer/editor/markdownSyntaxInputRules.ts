@@ -15,7 +15,7 @@ import { DEFAULT_MARKDOWN_SYNTAX_OPTIONS, type MarkdownSyntaxOptions } from './m
  *
  * The rules are identified by the regex they were built with (their
  * `match.source`), which is the stable shape Milkdown uses for these rules and
- * what the undo/redo behaviour keys off — see the `$inputRule` composables in
+ * what the undo/redo behaviour keys off, see the `$inputRule` composables in
  * `@milkdown/preset-gfm` and the Crepe latex feature. Non-gated rules pass
  * through untouched.
  */

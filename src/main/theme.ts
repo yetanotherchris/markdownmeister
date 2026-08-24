@@ -8,7 +8,7 @@ import type { Settings } from '../shared/ipc-contract'
  * 'dark'`, and "Follow OS / Dark / Light" correspond to `system` / `dark` /
  * `light` respectively. Setting it makes `prefers-color-scheme` match in every
  * sandboxed renderer window and, while `themeSource` is `'system'`, re-fires it
- * when the OS theme changes — so live OS following (FR-005) needs no IPC.
+ * when the OS theme changes, so live OS following (FR-005) needs no IPC.
  */
 
 /** Pure mapping (unit-tested): `null` (system default) → `'system'`. */

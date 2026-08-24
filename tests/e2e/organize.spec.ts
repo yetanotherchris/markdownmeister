@@ -374,7 +374,7 @@ test('deleting a file with unsaved changes is refused', async () => {
   await stubMessageBox(app, 'OK')
   await window.getByRole('menuitem').getByText('Delete').click()
 
-  // The blocked-delete acknowledgement must have been shown — and it must be
+  // The blocked-delete acknowledgement must have been shown, and it must be
   // the blocked-delete surface, not a delete-to-trash box (the stub finds no
   // "Delete" button on a blocked box and would fail loudly).
   await expect.poll(() => messageBoxCallCount(app)).toBeGreaterThanOrEqual(1)
@@ -407,7 +407,7 @@ test('when trash is unavailable, permanent deletion requires a second confirmati
   await openFolder()
   const row = window.getByRole('treeitem').getByText('beta.md')
   await openContextMenu(row)
-  // First the delete-to-trash confirmation, then — after trash fails — the
+  // First the delete-to-trash confirmation, then, after trash fails, the
   // permanent-delete confirmation, which offers Cancel / Delete Permanently.
   await stubMessageBox(app, ['Delete', 'Delete Permanently'])
   await window.getByRole('menuitem').getByText('Delete').click()

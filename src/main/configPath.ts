@@ -8,13 +8,13 @@ import * as fs from 'fs'
  */
 
 export interface ConfigPathParts {
-  /** `os.homedir()` — the user's home directory. */
+  /** `os.homedir()`, the user's home directory. */
   homeDir: string
   /** `process.platform`. */
   platform: NodeJS.Platform
   /** `process.env.XDG_CONFIG_HOME` (Linux only; ignored elsewhere). */
   xdgConfigHome?: string
-  /** `app.getPath('appData')` — the legacy per-platform config parent. */
+  /** `app.getPath('appData')`, the legacy per-platform config parent. */
   appDataDir?: string
 }
 
