@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-24
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "Take the logo file new-logo.png (provided by the maintainer) and change the logo to this new logo."
 
