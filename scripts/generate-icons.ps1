@@ -36,9 +36,20 @@ $IcnsChunks = @(
 # from it: square, at least 1024x1024, 8-bit-per-channel truecolour with
 # alpha. Parsed from the raw bytes so the check cannot be fooled by a
 # decoder's pixel-format normalisation.
+function Read-PngUInt32BigEndian {
+    # PNG multi-byte header fields are big-endian.
+    param([byte[]]$Bytes, [int]$Offset)
+    $b0 = [uint32]$Bytes[$Offset]
+    $b1 = [uint32]$Bytes[$Offset + 1]
+    $b2 = [uint32]$Bytes[$Offset + 2]
+    $b3 = [uint32]$Bytes[$Offset + 3]
+    return ($b0 -shl 24) -bor ($b1 -shl 16) -bor ($b2 -shl 8) -bor $b3
+}
+
 function Assert-MasterPng {
     param([string]$Path)
     $bytes = [System.IO.File]::ReadAllBytes($Path)
+    if ($bytes.Length -lt 26) { throw "$Path is too short to contain a PNG header" }
     $signature = [byte[]](0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
     for ($i = 0; $i -lt 8; $i++) {
         if ($bytes[$i] -ne $signature[$i]) { throw "$Path is not a PNG file" }
@@ -46,9 +57,8 @@ function Assert-MasterPng {
     if ([System.Text.Encoding]::ASCII.GetString($bytes, 12, 4) -ne 'IHDR') {
         throw "$Path has no leading IHDR chunk"
     }
-    # PNG multi-byte fields are big-endian.
-    $width = ([uint32]$bytes[16] -shl 24) -bor ([uint32]$bytes[17] -shl 16) -bor ([uint32]$bytes[18] -shl 8) -bor [uint32]$bytes[19]
-    $height = ([uint32]$bytes[20] -shl 24) -bor ([uint32]$bytes[21] -shl 16) -bor ([uint32]$bytes[22] -shl 8) -bor [uint32]$bytes[23]
+    $width = Read-PngUInt32BigEndian -Bytes $bytes -Offset 16
+    $height = Read-PngUInt32BigEndian -Bytes $bytes -Offset 20
     $bitDepth = $bytes[24]
     $colourType = $bytes[25]
     if ($width -ne $height) { throw "$Path must be square (got ${width}x${height})" }

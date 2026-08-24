@@ -18,6 +18,7 @@ import * as path from 'node:path'
 const repoRoot = path.resolve(__dirname, '..', '..')
 const masterPngPath = path.join(repoRoot, 'assets', 'icon', 'master.png')
 const windowPngPath = path.join(repoRoot, 'resources', 'icon.png')
+const siteIconPath = path.join(repoRoot, 'docs', 'site', 'assets', 'icon.png')
 const icoPath = path.join(repoRoot, 'resources', 'icon.ico')
 const icnsPath = path.join(repoRoot, 'resources', 'icon.icns')
 
@@ -70,6 +71,10 @@ describe('PNG ladder (resources/icons)', () => {
   it('ships resources/icon.png as a byte copy of the largest ladder entry', () => {
     // This output is a direct copy of the largest ladder entry.
     expect(fs.readFileSync(windowPngPath).equals(fs.readFileSync(ladderPath(512)))).toBe(true)
+  })
+
+  it('ships the website icon as a byte copy of the desktop-entry 256 ladder entry', () => {
+    expect(fs.readFileSync(siteIconPath).equals(fs.readFileSync(ladderPath(256)))).toBe(true)
   })
 })
 
