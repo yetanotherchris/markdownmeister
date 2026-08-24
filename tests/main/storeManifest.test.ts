@@ -6,10 +6,8 @@ import * as path from 'node:path'
 /**
  * Spec 038 (FR-002): the manifest fragment that declares the execution alias,
  * the packaged COM class and the windows.fileExplorerContextMenus folder verb
- * must be well-formed XML AND structurally valid when spliced into the real
- * electron-builder AppxManifest template. The local unsigned appx build
- * validates against vendor makeappx; this suite pins the same guarantees for
- * CI machines without that toolchain.
+ * must be well-formed XML and structurally valid when used with the manifest
+ * template. This suite checks the fragment without running an app package build.
  */
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..')
@@ -26,7 +24,7 @@ const TEMPLATE_PATH = path.join(
 // The CLSID, alias file name and DLL name are parsed out of the NATIVE
 // sources and the copy hook rather than duplicated here as literals: a
 // regenerated GUID or renamed alias in C++ must fail CI until the manifest
-// moves with it (review 2026-08-23). Must equal
+// moves with it. It equals
 // CLSID_OpenInMarkdownMeisterCommand in native/shell-extension/src/ExplorerCommand.h.
 function readClsidFromHeader(): string {
   const header = fs.readFileSync(

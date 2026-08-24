@@ -228,7 +228,7 @@ test('quitting with Save All writes every dirty document and closes the app', as
   await openFolderAndFile('alpha.md')
   await openSecondFile('beta.md')
 
-  // Dirty both documents. typeInEditor targets the FIRST contenteditable in the
+  // Dirty both documents. typeInEditor targets the first contenteditable in the
   // DOM, so activate the tab being typed into first (the active editor is the
   // visible one; the others stay mounted but hidden).
   await window.getByRole('tab', { name: /alpha\.md/ }).click()
@@ -382,11 +382,7 @@ test('reopening an evicted document from the tree brings its editor back', async
   await expect(window.getByRole('tab', { name: /f01\.md/ }).locator('.tab-dirty')).toBeVisible()
 })
 
-// Crepe's top-bar icons clip via a document-global url(#clip...) fragment id;
-// with several editor hosts in the DOM the later editors' icons would resolve
-// against the first host's (hidden) clipPath and never paint. App.css sets
-// clip-path: none on those groups (research.md R22); assume the active tab's
-// top bar still has the rules applied.
+// The active tab's clip-path groups have no clipping rule so its icons paint.
 test('top-bar clip-path groups are neutralised so icons paint on any tab', async () => {
   await openFolderAndFile('alpha.md')
   await openSecondFile('beta.md')

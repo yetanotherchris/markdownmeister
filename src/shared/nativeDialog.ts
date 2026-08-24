@@ -24,10 +24,7 @@ export interface NativeDialogLayout {
   buttons: string[]
   defaultId: number
   cancelId: number
-  /** Windows only: render every button as a standard push button instead of the
-   *  default command-link style Electron uses for non-common labels (Save,
-   *  Don't Save, Reload…), the native Windows look (research R2, decision log
-   *  2026-08-04). */
+
   noLink?: boolean
 }
 
@@ -39,7 +36,6 @@ interface ButtonLayout {
 
 function platformOf(p: string): DialogPlatform {
   if (p === 'win32' || p === 'darwin') return p
-  // Closest conventional equivalent for unknown platforms (spec edge case).
   return 'linux'
 }
 
@@ -57,7 +53,7 @@ function saveDiscardCancel(saveLabel: string, discardLabel: string): Record<Dial
   }
 }
 
-/** Keep / Replace, default is the safe choice (Keep) everywhere (FR-006). */
+
 const keepReplace: Record<DialogPlatform, ButtonLayout> = {
   win32: { buttons: ['Keep My Version', 'Reload from Disk'], defaultId: 0, cancelId: 0 },
   darwin: { buttons: ['Keep My Version', 'Reload from Disk'], defaultId: 0, cancelId: 0 },
@@ -71,16 +67,14 @@ const okSaveAs: Record<DialogPlatform, ButtonLayout> = {
   linux: { buttons: [OK, 'Save As...'], defaultId: 1, cancelId: 0 }
 }
 
-/** Delete / Cancel, recoverable, so the destructive action may be the default
- *  where the platform expects it (FR-006, clarification 2026-08-04). */
+
 const deleteCancel: Record<DialogPlatform, ButtonLayout> = {
   win32: { buttons: ['Delete', CANCEL], defaultId: 0, cancelId: 1 },
   darwin: { buttons: ['Delete', CANCEL], defaultId: 0, cancelId: 1 },
   linux: { buttons: [CANCEL, 'Delete'], defaultId: 1, cancelId: 0 }
 }
 
-/** Delete Permanently / Cancel, IRREVERSIBLE: Cancel is the default on every
- *  platform (FR-006, US1 scenario 4). */
+
 const permanentDeleteCancel: Record<DialogPlatform, ButtonLayout> = {
   win32: { buttons: ['Delete Permanently', CANCEL], defaultId: 1, cancelId: 1 },
   darwin: { buttons: [CANCEL, 'Delete Permanently'], defaultId: 0, cancelId: 0 },
@@ -112,9 +106,6 @@ function layoutFor(platform: DialogPlatform, request: NativeDialogRequest): Butt
   }
 }
 
-// ---- Per-kind message map (FR-020): a lookup keyed by the discriminating
-// field instead of a long conditional chain. Each entry produces the
-// `{ type, message, detail }` for its kind. ----
 
 type MessageResult = { type: NativeDialogLayout['type']; message: string; detail: string }
 
@@ -246,14 +237,11 @@ export function buildNativeDialogOptions(platform: string, request: NativeDialog
   }
 }
 
-/** Map the OS-returned button index back to the semantic decision. The renderer
- *  only ever receives the decision, never the index or the platform. */
+
 export function decisionFromResponse(platform: string, request: NativeDialogRequest, response: number): NativeDialogDecision {
   const p = platformOf(platform)
   const { buttons, cancelId } = layoutFor(p, request)
   if (response === cancelId) {
-    // The platform's Escape / window-close / cancel action, always the safe
-    // cancellation outcome (research R2).
     return cancelDecision(request)
   }
   const clicked = buttons[response]
@@ -284,8 +272,7 @@ export function decisionFromResponse(platform: string, request: NativeDialogRequ
   return cancelDecision(request)
 }
 
-/** The safe cancellation decision for a kind, what Escape / window close must
- *  never lose, and what a garbage response index fails closed to. */
+
 function cancelDecision(request: NativeDialogRequest): NativeDialogDecision {
   switch (request.kind) {
     case 'unsaved-close':

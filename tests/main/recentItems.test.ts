@@ -260,7 +260,7 @@ describe('loadRecentItems / saveRecentItems', () => {
 
   it('preserves a pre-existing settings section (spec 012 FR-002, read-modify-write)', () => {
     // The shared config.json holds both stores; recording a recent item must
-    // not clobber the settings dialog's data (review #27 coverage gap).
+    // not clobber the settings dialog's data.
     fs.writeFileSync(filePath, JSON.stringify({
       settings: { sidebarWidth: 30, themeOverride: 'dark', explorerVisible: false, editorFont: 'serif' }
     }), 'utf-8')

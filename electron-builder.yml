@@ -1,8 +1,5 @@
 appId: com.yetanotherchris.markdownmeister
 productName: MarkdownMeister
-# The packaged launcher binary is `markdownmeister` (markdownmeister.exe on
-# Windows) on every platform (spec 019); productName keeps the human-facing app
-# identity.
 executableName: markdownmeister
 directories:
   output: dist
@@ -30,32 +27,14 @@ files:
   - "!test-results/**"
   - "!playwright-report/**"
 
-# The Scoop manifest hooks (markdownmeister.json) call this script to
-# register/remove the "Open with" context-menu verbs on a portable install,
-# which has no installer to do it. It is shipped into the packaged app's
-# `resources/` (Scoop reaches it at `<dir>\resources\scripts\open-with.ps1`);
-# the Windows installer has its own NSIS registration and ignores it.
-#
-# Spec 039: the 512x512 product PNG ships alongside them so the main process
-# can hand the BrowserWindow its icon at runtime. When packaged, this mapping's
-# destination (<resources>/icon.png) is what src/main/index.ts resolves via
-# process.resourcesPath (src/main/windowIcon.ts); in dev it resolves the
-# dev-tree resources/icon.png relative to out/main.
 extraResources:
   - from: scripts/open-with.ps1
     to: scripts/open-with.ps1
   - from: resources/icon.png
     to: icon.png
 
-# Every asset name carries product-version-os-arch (FR-005). The os token is
-# literal per platform so names read windows/macos/linux rather than electron-
-# builder's win/mac/linux abbreviations (contracts/release.md §2). The product
-# token is the short prefix `markdownmeister` (spec 019).
 win:
   artifactName: markdownmeister-${version}-windows-${arch}.${ext}
-  # Spec 039: embedded into the exe (taskbar/title bar, Scoop shortcuts,
-  # installer.nsh verb icons) and defaulted into the NSIS installer/uninstaller
-  # UI. Validated: app-builder-lib requires a >=256 entry, which the ICO has.
   icon: resources/icon.ico
   target:
     - target: nsis
@@ -63,36 +42,20 @@ win:
     - target: zip
       arch: [x64]
 
-# Spec 006 (FR-001/002/012): the Windows installer registers per-user Explorer
-# context-menu verbs (scripts/installer.nsh) instead of electron-builder's
-# `fileAssociations`, which would take over the default handler (research R2).
 nsis:
   include: scripts/installer.nsh
 
-# Spec 038: inject the built shell-extension DLL into win-unpacked before
-# packaging targets run. Silent no-op when native/shell-extension has not been
-# built, so NSIS/zip release artifacts stay byte-identical (SC-003).
 afterPack: scripts/copy-shell-extension.cjs
 
-# Spec 038 (FR-001/FR-002): Microsoft Store channel configuration. The appx
-# TARGET is intentionally NOT added to win.target above — Store packages are
-# built explicitly via `npx electron-builder --win appx --publish never`
-# (.github/workflows/build-store.yml), leaving every existing build unchanged.
-# IDENTITY PLACEHOLDERS: replace identityName and publisher with the exact
-# values Partner Center assigns when reserving the product name (docs/
-# store-release.md). Submission fails validation while they are placeholders.
 appx:
-  # Partner Center → Product setup → Package/Identity name (individual
+  # Partner Center, Product setup, Package/Identity name (individual
   # accounts: e.g. "12345YourName.MarkdownMeister"). Placeholder below.
   identityName: ReplaceWithPartnerCenterIdentity.MarkdownMeister
-  # Partner Center → Product setup → Publisher (format "CN=<GUID>").
+  # Partner Center, Product setup, Publisher (format "CN=<GUID>").
   publisher: CN=00000000-0000-0000-0000-000000000000
   publisherDisplayName: MarkdownMeister
   displayName: MarkdownMeister
   applicationId: MarkdownMeister
-  # Windows 10 2004 floor so the modern shell-extension declarations are
-  # schema-valid everywhere the package installs; tested ceiling matches the
-  # SDK electron-builder vendors its makeappx from (research R4).
   minVersion: 10.0.19041.0
   maxVersionTested: 10.0.26100.0
   # The alias + packaged-COM + windows.fileExplorerContextMenus declarations,
@@ -101,19 +64,12 @@ appx:
 
 mac:
   artifactName: markdownmeister-${version}-macos-${arch}.${ext}
-  # Spec 039: bundled as Contents/Resources/icon.icns with CFBundleIconFile
-  # pointed at it, driving Dock/Finder/Applications/Cmd-Tab (research D1).
   icon: resources/icon.icns
   target:
     - target: dmg
       arch: [x64, arm64]
     - target: zip
       arch: [x64, arm64]
-  # Spec 006 (FR-003/004/012, research R3/R4): declare the app's document types
-  # so it appears in Finder's "Open With…" for .md/.markdown files and folders
-  # WITHOUT becoming the default handler (role Viewer, LSHandlerRank Alternate).
-  # electron-builder cannot express the folder type, so the full array is set
-  # here rather than via `fileAssociations`.
   extendInfo:
     CFBundleDocumentTypes:
       - CFBundleTypeName: MarkdownMeister Markdown Document
@@ -129,14 +85,7 @@ mac:
           - public.folder
 
 linux:
-  # Hard-code x64 rather than using ${arch}: electron-builder's ${arch} macro
-  # resolves to "x86_64" for Linux, but the release contract names every asset
-  # with os-arch tokens (linux-x64.AppImage, contracts/release.md §2).
   artifactName: markdownmeister-${version}-linux-x64.${ext}
-  # Spec 039: directory form - the whole NxN.png ladder is staged into the
-  # AppImage's usr/share/icons/hicolor/<size>/apps/ tree, and the largest is
-  # symlinked to .DirIcon + markdownmeister.png at the mount root, which are
-  # exactly the candidates src/main/linuxDesktopEntry.ts searches (research D2).
   icon: resources/icons
   target:
     - target: AppImage

@@ -1,12 +1,5 @@
 name: Deploy site to GitHub Pages
 
-# Publishes docs/site on merges to main. The repo's docs/ root holds project
-# documentation, so branch-based "/docs" Pages is not an option (spec 040 D1).
-#
-# Every action below is pinned to a full commit SHA (repo precedent from
-# build-release.yml): this job holds pages:write + id-token:write, so a moved
-# or compromised mutable tag would mean arbitrary code on a runner with
-# Pages-deployment rights.
 on:
   push:
     branches: [main]
@@ -31,10 +24,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      # Full history and tags so `git describe --tags --abbrev=0` can actually
-      # resolve the latest release tag; checkout's shallow default (depth 1,
-      # no tags) made that command dead code and silently forced the
-      # package.json fallback on every run.
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # actions/checkout v7.0.1
         with:
@@ -66,9 +55,6 @@ jobs:
         run: |
           sed -i "s/__MM_DEPLOY_VERSION__/${VERSION}/g" docs/site/index.html
 
-      # enablement: true lets the very first run enable GitHub Pages itself;
-      # without it configure-pages fails until Pages is switched on by hand
-      # under Settings → Pages → Source: GitHub Actions.
       - name: Configure GitHub Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # actions/configure-pages v5.0.0
         with:

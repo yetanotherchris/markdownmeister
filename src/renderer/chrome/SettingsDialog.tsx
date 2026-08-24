@@ -9,26 +9,20 @@ import type { MarkdownSyntaxOptions } from '../editor/markdownSyntaxOptions'
 import AboutArea from './AboutArea'
 import './settings.css'
 
-/** Spec 013: the theme choices; `'system'` maps to the persisted override
- *  `null` (the setting's default and "follow the OS"). */
+
 export const THEME_CHOICES: { value: ThemeChoice; label: string }[] = [
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
   { value: 'system', label: 'System default' }
 ]
 
-/** Spec 020 (2026-08-07): the explicit spellchecker languages offered, with
- *  `''` mapping to the persisted `null` ("follow the system"). A closed list,
- *  more languages can be added here later. */
+
 export const SPELLCHECK_LANGUAGE_CHOICES: { value: SpellcheckLanguage; label: string }[] = [
   { value: 'en-GB', label: 'English (United Kingdom)' },
   { value: 'en-US', label: 'English (United States)' }
 ]
 
-/** Spec 008 FR-002: the settings areas shown in the sidebar navigation. Each
- *  mount starts with `general` selected (FR-005). Spec 030 FR-001 adds a
- *  `Markdown` area. Spec 037 adds a read-only `about` area, last per the
- *  spec's placement assumption. */
+
 export type SettingsArea = 'general' | 'theme' | 'markdown' | 'about'
 
 export const SETTINGS_AREAS: { value: SettingsArea; label: string }[] = [
@@ -39,38 +33,30 @@ export const SETTINGS_AREAS: { value: SettingsArea; label: string }[] = [
 ]
 
 interface SettingsDialogProps {
-  /** Spec 036 FR-005: the discovered editor theme files, refreshed every time
-   *  the dialog opens; labels are the file stems verbatim. */
+
   editorThemes: EditorThemeDefinition[]
-  /** Spec 036 FR-010: rejected theme file names, surfaced as a quiet
-   *  (non-modal) note so their exclusion is indicated without blocking. */
+
   invalidThemeFileNames: string[]
   /** The committed selection (a theme-file stem) for seeding the draft. */
   editorTheme: string
-  /** Spec 036 FR-012: called on every mount so file edits take effect at the
-   *  next dialog open without a restart. */
+
   onRefreshEditorThemes: () => Promise<void>
-  /** Spec 016, FR-003/US1 S4: called by the Save button with the staged
-   *  theme name, then the dialog closes. Closing without Save leaves the
-   *  canvas at the committed value. */
+
   onEditorThemeSave: (theme: string) => void
   /** The currently selected app theme (from persisted settings). */
   theme: ThemeChoice
-  /** Spec 013: the apply-immediately model, a selection persists at once. */
+
   onThemeChange: (theme: ThemeChoice) => void
-  /** Spec 020 FR-006/US4: whether native spellcheck is on. Applied immediately
-   *  on change (S1: markers vanish the moment the box is unchecked). */
+
   spellcheckEnabled: boolean
   onSpellcheckChange: (enabled: boolean) => void
-  /** Spec 020 (2026-08-07): the explicit spellchecker language, or `null` for
-   *  the system default. Applied immediately. */
+
   spellcheckLanguage: SpellcheckLanguage | null
   onSpellcheckLanguageChange: (language: SpellcheckLanguage | null) => void
-  /** Spec 008 FR-008: whether explorer-originated file opens should always
-   *  create a new tab. Applied immediately. */
+
   fileOpenBehavior: FileOpenBehavior
   onFileOpenBehaviorChange: (behavior: FileOpenBehavior) => void
-  /** Spec 030: the six markdown syntax options (FR-003..FR-008). */
+
   markdownOptions: MarkdownSyntaxOptions
   onMarkdownOptionChange: (patch: Partial<MarkdownSyntaxOptions>) => void
   visualCodeHighlighting: boolean
@@ -78,18 +64,7 @@ interface SettingsDialogProps {
   onClose: () => void
 }
 
-/**
- * Spec 008/012/013/016 settings dialog (contracts/settings-ui.md). A
- * keyboard-accessible React modal: `role="dialog"` + `aria-modal="true"`, focus
- * trapped on open, closed by Escape, the Close button, or the backdrop with
- * focus returning to the hamburger trigger.
- *
- * Spec 008 (FR-001..008): a wider layout with a persistent sidebar navigating
- * between `General` (spellcheck, file-opening preference) and `Theme` (app
- * theme, immediate; editor theme, staged). Boolean controls are native
- * checkboxes styled as pill switches. Every enabled input, select, and
- * navigation/footer button is inside the focus trap.
- */
+
 export default function SettingsDialog({
   editorThemes,
   invalidThemeFileNames,
@@ -111,31 +86,18 @@ export default function SettingsDialog({
   onClose
 }: SettingsDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
-  // Spec 008 FR-005: each mount starts on General, regardless of the area a
-  // prior instance closed on. Fresh state because the dialog unmounts on close.
   const [area, setArea] = useState<SettingsArea>('general')
-  /** The committed name when it is present in `themes`, else null (nothing
-   *  staged, spec 016: Save only commits a staged theme). */
+
   const stageableTheme = (themes: EditorThemeDefinition[]): string | null =>
     themes.some((entry) => entry.name === editorTheme) ? editorTheme : null
-  // Spec 016: the staged editor-theme selection, seeded from the committed
-  // name. Not applied on click, only the Save button commits it (US1 S4).
-  // Spec 036: the draft is a theme-file stem; when the committed selection
-  // matches no discovered theme the dialog starts with nothing staged.
   const draftTouchedRef = useRef(false)
   const [draftEditorTheme, setDraftEditorTheme] = useState<string | null>(() =>
     stageableTheme(editorThemes)
   )
-  // The mount refresh (below) replaces the preloaded list; re-seed from it so
-  // the dialog never shows nothing staged (and Save silently no-ops) just
-  // because the initial cache predates discovery (review finding 2026-08-23).
-  // An explicit user pick is never overwritten.
   const latestThemesRef = useRef(editorThemes)
   latestThemesRef.current = editorThemes
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
-  // The element that had focus when the dialog opened; focus returns to it on
-  // close (review #27, the hamburger trigger, per the plan's FR-007 contract).
   const returnFocusRef = useRef<HTMLElement | null>(null)
 
   // Focus moves into the dialog on open (the active area's first navigation
@@ -148,8 +110,6 @@ export default function SettingsDialog({
     }
   }, [])
 
-  // Spec 036 FR-012: every mount re-reads the themes folder, so a file added,
-  // edited, or deleted since the last open is reflected without a restart.
   useEffect(() => {
     let cancelled = false
     void onRefreshEditorThemes().then(() => {
@@ -162,9 +122,6 @@ export default function SettingsDialog({
     }
   }, [onRefreshEditorThemes, editorTheme])
 
-  // Focus trap: Tab and Shift+Tab cycle within the dialog (FR-007). Spec 008:
-  // the trap covers enabled buttons, checkbox/switch inputs, radio inputs, and
-  // selects (contracts/settings-ui.md).
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -182,8 +139,6 @@ export default function SettingsDialog({
       const first = focusables[0]
       const last = focusables[focusables.length - 1]
       const active = document.activeElement as HTMLElement | null
-      // Tab wraps forward from the last element, and also pulls focus back in
-      // when it has strayed outside the dialog (review #27, focus-trap gap).
       if (!e.shiftKey && (active === last || !root.contains(active))) {
         e.preventDefault()
         first.focus()
@@ -200,8 +155,6 @@ export default function SettingsDialog({
     <div
       className="settings-dialog-overlay"
       onPointerDown={(e) => {
-        // Clicking the backdrop closes the dialog (outside-click), discarding
-        // any staged editor-theme selection (US1 S4).
         if (e.target === e.currentTarget) onClose()
       }}
     >
@@ -434,10 +387,6 @@ export default function SettingsDialog({
                 </fieldset>
               </>
             ) : (
-              // Spec 037 FR-008: purely read-only rows, no staged state here,
-              // so the Save button's draftEditorTheme commit is untouched.
-              // Terminal fallback so the branch chain mirrors SETTINGS_AREAS
-              // nav order: General → Theme → Markdown → About (standards §4).
               <AboutArea />
             )}
           </div>
@@ -450,10 +399,6 @@ export default function SettingsDialog({
             type="button"
             className="settings-dialog-save"
             onClick={() => {
-              // Spec 023: with a Custom theme no preset is staged, Save just
-              // closes (the app-theme choices apply immediately). General-area
-              // settings already applied immediately; Save only commits the
-              // staged editor theme (spec 008 apply-model clarification).
               if (draftEditorTheme !== null) onEditorThemeSave(draftEditorTheme)
               onClose()
             }}

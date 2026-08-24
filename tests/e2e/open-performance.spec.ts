@@ -9,7 +9,7 @@ import { launchApp, closeAppSafely } from './launch'
  * incoming document within the SC-001 timing target for typical documents
  * (p95 ≤ 250 ms locally, a documented ×4 CI tolerance), scale linearly with
  * document size (SC-004, the fixed budget does not extend to very large
- * documents, whose floor is the single mandatory construction parse, research
+ * documents, whose floor is the single construction parse.
  * R7), perform exactly one full parse and at most one incoming serialization
  * per open with zero outgoing serializations for an untouched tab
  * (SC-002/SC-003, read from the window.__mmOpenPerformance counters), and
@@ -100,7 +100,7 @@ function percentile(durations: number[], p: number): number {
 }
 
 // The SC-001 target (250 ms p95) applies to reference hardware; shared CI
-// runners get the documented tolerance multiplier (research R6). Local runs
+// runners use a wider tolerance multiplier. Local runs
 // are the primary signal.
 const TIMING_MULTIPLIER = process.env.CI ? 4 : 1
 const SC001_TARGET_MS = 250 * TIMING_MULTIPLIER

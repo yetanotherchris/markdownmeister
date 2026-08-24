@@ -249,7 +249,7 @@ test('FR-011 Clear Recent Items with a broken config reports quietly', async () 
   await clickFileMenu(ctx, 'Open File')
   await expect(ctx.window.locator('.document-title')).toContainText('external.md')
 
-  // Break the config path AFTER recording, then clear.
+  // Break the config path after recording, then clear.
   fs.rmSync(ctx.configDir, { recursive: true, force: true })
   fs.writeFileSync(ctx.configDir, 'x')
   await clickMenuAction(ctx, 'Clear Recent Items')

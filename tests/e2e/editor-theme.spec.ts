@@ -20,7 +20,7 @@ import {
  *
  * OS switches are simulated with Playwright's `emulateMedia({ colorScheme })`,
  * which re-fires the renderer's `prefers-color-scheme` media query, the same
- * mechanism spec 013's `data-theme` uses (research R3).
+ * mechanism used by the app theme.
  */
 
 let app: ElectronApplication
@@ -329,11 +329,7 @@ test('FR-006 a malformed config still opens with the default Rustic theme', asyn
   const configPath = path.join(configDir, 'config.json')
   fs.writeFileSync(configPath, '{ not json', 'utf-8')
 
-  // Deliberately do NOT open a file/folder first: a folder open records a
-  // recent item, whose read-modify-write repairs the malformed file before the
-  // dialog reads it (review #27 #4). Opening the dialog directly exercises the
-  // true malformed-config tolerance path, the app still starts with the Rustic
-  // default (FR-006).
+  // Open the dialog first so another action does not rewrite the malformed file.
   const dialog = await openSettingsDialog(window)
   await openThemeArea(window)
   await expect(window.locator('.app-container')).toHaveAttribute('data-editor-theme', 'rustic')

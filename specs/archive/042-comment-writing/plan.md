@@ -2,7 +2,7 @@
 
 **Branch**: `phase-42-comment-style` | **Date**: 2026-08-24 | **Spec**: [spec.md](spec.md)
 
-**Input**: Feature specification from `/specs/042-comment-writing/spec.md`
+**Input**: Feature specification from `/specs/archive/042-comment-writing/spec.md`
 
 ## Summary
 
@@ -47,7 +47,7 @@ tests/                              # Test comments
 scripts/                            # Automation comments
 .github/                            # Workflow comments
 native/                             # Native-code comments
-specs/042-comment-writing/
+specs/archive/042-comment-writing/
 ├── spec.md
 ├── plan.md
 └── tasks.md

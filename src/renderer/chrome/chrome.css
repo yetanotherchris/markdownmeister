@@ -1,10 +1,6 @@
-/* Spec 010 chrome: the header bar, the chrome icon buttons, and the
- * hamburger dropdown + Recent Items submenu (co-located with the chrome
- * components; split from App.css in the 017 stylesheet restructure). */
 
-/* Spec 010: the top header row holds the chrome buttons and the document tabs
-   in one horizontal space (clarification 2026-08-05):
-   `[hamburger] [explorer toggle] [tabs… +]`. */
+
+
 .header-bar {
   display: flex;
   align-items: center;
@@ -13,16 +9,12 @@
   border-bottom: 1px solid var(--mm-border);
   background: var(--mm-surface);
   flex-shrink: 0;
-  /* The header forms its own stacking context (position + z-index) so the
-     hamburger dropdown — an absolutely-positioned descendant that hangs below
-     this row — always paints above the tab strip and the editor panel. No
-     overflow clip: the tab strip scrolls within its own container. */
+
   position: relative;
   z-index: 10;
 }
 
-/* Spec 010: the primary chrome controls (hamburger + explorer toggle) in the
-   rounded-corner modern grey look (FR-001, FR-005, FR-006). */
+
 .chrome-bar {
   display: flex;
   align-items: center;
@@ -30,9 +22,7 @@
   flex-shrink: 0;
 }
 
-/* Every chrome icon button (hamburger trigger, explorer toggle) is a square
-   ghost button; the visible focus ring and Enter/Space activation satisfy
-   FR-009. */
+
 .chrome-icon-button {
   display: inline-flex;
   align-items: center;
@@ -93,9 +83,7 @@
   left: 0;
 }
 
-/* The Recent Items parent item is the anchor for its nested submenu, which
-   opens to the right — the standard submenu affordance (FR-001, mirrors the
-   native `File > Recent Items`). */
+
 .submenu-anchor {
   position: relative;
 }

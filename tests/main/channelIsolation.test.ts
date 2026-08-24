@@ -2,21 +2,6 @@ import { describe, it, expect } from 'vitest'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
-/**
- * Keeps channel-registration files unchanged outside the release update.
- *
- * The installer scripts are compared byte-for-byte. The Scoop manifest is
- * compared as JSON after replacing release-managed version, URL, and hash
- * values. Replacing those values instead of removing them detects a missing
- * property while allowing release updates.
- *
- * The baseline fixture must not be named `markdownmeister.json`, because Scoop
- * scans the bucket for manifests and treats a second manifest as another app.
- *
- * The release manifest currently has only a 64-bit architecture entry. Extend
- * the normalization when adding another architecture.
- */
-
 const REPO_ROOT = path.resolve(__dirname, '..', '..')
 const BASELINE_DIR = path.join(REPO_ROOT, 'tests', 'fixtures', 'channel-baseline')
 const VOLATILE_SENTINEL = '<release-volatile>'
@@ -44,7 +29,7 @@ describe('channel isolation baseline (SC-003)', () => {
         version?: unknown
         architecture?: Record<string, Record<string, unknown> | undefined>
       }
-      // Keep the properties so a missing release-managed field still differs.
+      // Replace changing values without hiding missing fields.
       if ('version' in parsed) parsed.version = VOLATILE_SENTINEL
       for (const entry of Object.values(parsed.architecture ?? {})) {
         if (!entry || typeof entry !== 'object') continue

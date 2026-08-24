@@ -10,13 +10,6 @@ import App from './App'
 import { loadSettingsFromMain } from './state/settings'
 import { loadEditorThemesFromMain } from './state/editorThemes'
 
-// Spec 013: resolve the persisted settings (theme, font, explorer visibility)
-// BEFORE the first render, so the initial paint already applies them, a
-// persisted dark theme never flashes light (the renderer reads the cache
-// synchronously in useState initialisers). The IPC round trip is a few ms and
-// the window shows on `ready-to-show`, so the shell does not visibly wait.
-// Spec 036: the discovered editor themes preload the same way so the first
-// paint resolves the stored theme name against real files.
 async function start(): Promise<void> {
   await Promise.all([loadSettingsFromMain(), loadEditorThemesFromMain()])
   const root = document.getElementById('root')

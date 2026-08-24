@@ -33,12 +33,8 @@ function writeIconSource(dir: string): string {
 }
 
 /**
- * Stage layout electron-builder actually produces inside an AppImage
- * (spec 039 research D2, node_modules/app-builder-lib/.../appLauncher.js):
- * every configured icon size lands in usr/share/icons/hicolor/<s>x<s>/apps/,
- * and the largest is linked to <root>/markdownmeister.png and <root>/.DirIcon.
- * Real files stand in for the symlinks, Windows CI cannot create symlinks
- * unprivileged, and the finder resolves both identically.
+ * Build an AppImage-like icon layout. Real files stand in for symlinks because
+ * the finder accepts either form and unprivileged Windows runs cannot create symlinks.
  */
 function writeElectronBuilderAppImageLayout(mountRoot: string, sizes: number[]): void {
   for (const size of sizes) {

@@ -88,7 +88,7 @@ test('US3 a failed recent open never leaks an absolute path in the error', async
 })
 
 test('US3 a deleted recent folder explains, preserves the workspace, and is removed', async () => {
-  // A dedicated folder that will be deleted while it is NOT the current
+  // A dedicated folder that will be deleted while it is not the current
   // workspace, so deleting it cannot disturb the running watcher.
   const doomed = path.join(ctx.testFolder, 'doomed')
   fs.mkdirSync(doomed)
@@ -231,7 +231,7 @@ test('US3 a failing Save All keeps the confirmation open and does not commit', a
     const body = await messageBoxBody(ctx)
     expect(body).toContain('Could not save alpha.md')
 
-    // The failed save does NOT commit (no delta.md in the tree) and the session
+    // The failed save does not commit (no delta.md in the tree) and the session
     // stays on the current folder.
     await expect(ctx.window.getByRole('treeitem').getByText('delta.md')).toHaveCount(0)
     await expect(ctx.window.getByRole('treeitem').getByText('alpha.md')).toBeVisible()

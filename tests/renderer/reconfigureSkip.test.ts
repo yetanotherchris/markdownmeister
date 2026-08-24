@@ -12,10 +12,8 @@ import { resetOpenPerformanceCounters } from '../../src/renderer/editor/openPerf
 
 /**
  * Spec 033 (contract C1): the reconfigure skip guard. A stub whose
- * `editor.action` throws proves the swap path was NOT taken, the skip must
- * return before any ctx access. The full swap path needs the real Milkdown
- * runtime and is covered by the e2e counters (SC-002) and the spec 030
- * settings suites.
+ * `editor.action` throws if the skip path attempts a swap. The e2e suite covers
+ * the complete reconfiguration path.
  */
 
 const ALL_OFF: MarkdownSyntaxOptions = {

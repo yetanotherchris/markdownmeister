@@ -206,9 +206,6 @@ function applyWatchEvent(state: WorkspaceState, event: WatchEvent): WorkspaceSta
   }
 }
 
-// ---- Per-action-case helpers (FR-019): each case body is a named, exported,
-// pure function so it is short and independently testable. The reducer switch
-// below only dispatches to them; the state-transition logic lives here. ----
 
 export function handleReplace(state: WorkspaceState, payload: { name: string | null; root: string | null; entries: DirEntry[] }): WorkspaceState {
   const { name, root, entries } = payload

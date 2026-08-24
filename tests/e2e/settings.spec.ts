@@ -281,7 +281,7 @@ test('FR-007 the dialog is keyboard-accessible (open, navigate, close)', async (
   await expect(window.getByTestId('settings-dialog')).toBeVisible()
 
   // Arrow keys within the Editor Theme group change the staged selection (the
-  // canvas does NOT change until Save).
+  // canvas does not change until Save).
   const dialog = window.getByTestId('settings-dialog')
   const nav = dialog.getByRole('navigation', { name: 'Settings areas' })
   await nav.getByRole('button', { name: 'Theme' }).focus()
@@ -352,10 +352,7 @@ test('FR-006 a malformed config still opens the dialog with Rustic default', asy
   const configPath = path.join(configDir, 'config.json')
   fs.writeFileSync(configPath, '{ not json', 'utf-8')
 
-  // Deliberately do NOT open a file/folder first: a folder open records a
-  // recent item, whose read-modify-write repairs the malformed file before the
-  // dialog reads it (review #27 #4, the old test was vacuous). Opening the
-  // dialog directly exercises the true malformed-config tolerance path.
+  // Open the dialog first so another action does not rewrite the malformed file.
   const dialog = await openSettingsDialog(window)
   await openThemeArea(dialog)
   await expect(dialog.getByRole('radio', { name: 'rustic', exact: true })).toBeChecked()

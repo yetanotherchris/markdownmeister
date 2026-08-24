@@ -11,24 +11,10 @@ interface StatusFooterProps {
   note?: string | null
 }
 
-/** Character-width estimate for Inter at the footer's ~12px size. */
+
 const CHAR_WIDTH_PX = 8
 
-/**
- * Spec 003, US3 (FR-008…012): the persistent status footer. The left region
- * identifies the active document; the right region shows the workspace's full
- * path, shortened with a '…' prefix (final folder kept whole) when the
- * available width cannot fit it.
- *
- * Both the placeholder decision and the displayed path are driven by
- * `workspaceRoot` alone: `WorkspaceInfo.path` and `name` are only ever
- * populated together (the two REPLACE dispatches), so keying the "no folder
- * open" state off the path, not the name, keeps the invariant structural.
- *
- * The width is measured on the workspace REGION container (flex: 1, min-width:
- * 0), not the text span, measuring the span itself is a feedback loop, since
- * the shortened text shrinks the span it was sized against (research R4).
- */
+
 export default function StatusFooter({ activeDoc, workspaceRoot, note }: StatusFooterProps) {
   const [regionRef, regionSize] = useElementSize<HTMLDivElement>()
   const hasWorkspace = workspaceRoot !== null

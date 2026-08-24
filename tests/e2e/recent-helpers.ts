@@ -48,7 +48,7 @@ export function recentHooks(ctx: RecentContext): void {
 
   test.beforeEach(async () => {
     // A per-test config directory so tests never read or write the developer's
-    // real ~/.config/markdownmeister (research R1, MM_CONFIG_DIR seam).
+    // real ~/.config/markdownmeister.
     ctx.configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mm-recent-config-'))
     // externalFile is a shared fixture that the deleted-file tests remove;
     // recreate it so any later test that opens it has a real target.
@@ -115,7 +115,7 @@ export async function expectMessageBox(ctx: RecentContext): Promise<void> {
   await expect.poll(() => messageBoxCallCount(ctx.app)).toBeGreaterThanOrEqual(1)
 }
 
-/** Assert the stubbed message-box body does NOT contain an absolute path
+/** Assert the stubbed message-box body does not contain an absolute path
  *  (Principle II, used by the path-leak tests). */
 export async function messageBoxBody(ctx: RecentContext): Promise<string> {
   const { lastMessageBoxOptions } = await import('./launch')

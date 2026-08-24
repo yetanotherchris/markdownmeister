@@ -1,11 +1,6 @@
 import type { EditorColors } from '../../shared/ipc-contract'
 
-/**
- * Spec 036 (data-model §Validation rules): pure parsing/validation of one
- * theme file's text. Strictly fail-closed, anything not matching the schema
- * is rejected whole; unknown extra keys are ignored (forward compatibility).
- * Electron-free so the matrix is unit-testable without mocks.
- */
+
 
 export interface ParsedThemeFile {
   typeface: string
@@ -15,8 +10,7 @@ export interface ParsedThemeFile {
 
 export type ParsedThemeFileResult = { ok: true; theme: ParsedThemeFile } | { ok: false }
 
-/** Files above this size are rejected unread-parse (binary junk / dumps must
- *  not stall startup, spec edge case). */
+
 export const MAX_THEME_FILE_BYTES = 1_000_000
 
 /** Bound on theme NAMES (file stems) and therefore on the stored selection. */
@@ -35,8 +29,7 @@ const COLOR_TOKEN_KEYS: readonly (keyof EditorColors)[] = [
   'code'
 ]
 
-/** True when `text` contains ASCII control characters, never legitimate in
- *  a theme name or css font-family string. */
+
 function hasControlCharacters(text: string): boolean {
   for (const character of text) {
     const code = character.codePointAt(0) ?? 0
@@ -45,16 +38,14 @@ function hasControlCharacters(text: string): boolean {
   return false
 }
 
-/** A valid stored/discovered theme name: bounded printable text, never a path
- *  fragment (plan Complexity Tracking #2). */
+
 export function isValidEditorThemeName(name: string): boolean {
   if (name.length === 0 || name.length > MAX_THEME_NAME_LENGTH) return false
   if (name.includes('/') || name.includes('\\')) return false
   return !hasControlCharacters(name)
 }
 
-/** The theme stem of a directory entry name, or null when the entry is
- *  invisible to discovery (wrong extension or hidden, spec Assumptions). */
+
 export function themeStemOf(fileName: string): string | null {
   if (fileName.startsWith('.')) return null
   if (!fileName.toLowerCase().endsWith(THEME_EXTENSION)) return null
@@ -72,9 +63,7 @@ function isHexPalette(value: unknown): value is EditorColors {
   return true
 }
 
-/** Parse and validate one theme file's text (rule 4–6 of the data-model
- *  matrix). Returns `{ ok: false }` for every failure shape, no reasons leak
- *  because none are ever shown. */
+/** Parse a theme file and return a generic failure for invalid input. */
 export function parseThemeFile(text: string): ParsedThemeFileResult {
   let parsed: unknown
   try {

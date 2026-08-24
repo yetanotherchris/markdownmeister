@@ -11,20 +11,13 @@ import type { DocumentSessionApi } from './useDocumentSession'
 export interface WorkspaceFolderApi {
   commitFolderOpen: () => Promise<void>
   runFolderOpenFlow: (requestPath?: string) => Promise<void>
-  /** Spec 006: an OS-initiated folder open whose prepare step main already ran
-   *  (the shared `ctx.pendingFolderOpen` slot is filled); the renderer runs the
-   *  same confirm→commit flow, so unsaved-work confirmation is preserved
-   *  (FR-009). */
+
   runPreparedFolderOpen: (prepared: WorkspaceInfo) => Promise<void>
   dirtyWorkspaceRelativeDocs: () => DocumentState[]
   revealExplorer: () => void
 }
 
-/**
- * Workspace folder lifecycle (US1/FR-002): the two-phase folder open (spec 004
- * FR-009/FR-010, prepare → confirm → commit) and the reveal-on-open behaviour
- * (spec 010 clarification 2026-08-05). Owns the prepared-but-unconfirmed slot.
- */
+
 export function useWorkspaceFolder(opts: {
   dispatchWorkspace: React.Dispatch<WorkspaceAction>
   sessionRef: React.MutableRefObject<EditingSession>
@@ -35,13 +28,8 @@ export function useWorkspaceFolder(opts: {
   const { dispatchWorkspace, sessionRef, dialog, session, sidebarPanelRef } = opts
   const { dialogInFlightRef, releaseDialogSurface, showOperationError } = dialog
 
-  // The prepared-but-unconfirmed folder open (spec 004 FR-009/FR-010); a ref so
-  // overlapping open flows cannot clobber the pending slot.
   const pendingFolderOpenRef = useRef<WorkspaceInfo | null>(null)
 
-  // Spec 004, FR-010: a folder switch rebinds the workspace-relative paths of
-  // open documents to the new root. Before committing a folder open (which
-  // swaps main's workspace), confirm when those documents have unsaved changes.
   const dirtyWorkspaceRelativeDocs = useCallback(
     () => sessionRef.current.documents.filter(
       d => session.isDirtyLive(d) && !!d.path && isWorkspaceRelative(d.path)
@@ -49,14 +37,6 @@ export function useWorkspaceFolder(opts: {
     [session, sessionRef]
   )
 
-  // Spec 010 (clarification 2026-08-05): opening a folder reveals the explorer
-  // even if it was previously hidden, an explicit open overrides the persisted
-  // hidden choice so the newly opened workspace is always browsable. Runs on
-  // every successful folder commit (both Open Folder and a recent-folder open
-  // route through commitFolderOpen). The restore flag is deliberately NOT set
-  // here (review 2026-08-06): the panel has not mounted yet, and arming it
-  // would defeat the mount guard that suppresses the transient size-0 resize.
-  // Persistence is explicit on this path, so nothing is lost.
   const revealExplorer = useCallback(() => {
     updateSettings({ explorerVisible: true })
     window.api.updateSettings({ explorerVisible: true }).catch(() => { /* ignore */ })
@@ -81,10 +61,6 @@ export function useWorkspaceFolder(opts: {
     revealExplorer()
   }, [dispatchWorkspace, revealExplorer, showOperationError])
 
-  // The confirm→commit steps shared by every folder open (spec 004 FR-004:
-  // dirty-check → confirm → save-or-discard → commit). `prepared` is main's
-  // prepared folder (its `ctx.pendingFolderOpen` slot is filled); the ref
-  // guards the renderer against overlapping confirmation flows.
   const confirmAndCommitPrepared = useCallback(
     async (prepared: WorkspaceInfo) => {
       // ---- step 2: dirty-check (fast path commits when nothing is unsaved) ----
@@ -117,14 +93,10 @@ export function useWorkspaceFolder(opts: {
           }
           const decision = result.value
           if (decision === 'cancel') {
-            // FR-010: cancel keeps the session and the recent entry unchanged.
             await window.api.cancelFolderOpen()
             return
           }
           if (decision === 'discard-all') {
-            // FR-010 "Discard": the user chose to throw the unsaved changes
-            // away, so the dirty workspace-relative documents are CLOSED (their
-            // edits dropped) before the workspace swap rebinds their paths.
             for (const doc of dirtyWorkspaceRelativeDocs()) {
               session.doClose(doc.id)
             }
@@ -166,10 +138,6 @@ export function useWorkspaceFolder(opts: {
     ]
   )
 
-  // Both entry points (File > Open Folder and a recent-folder open, FR-007)
-  // route through the same prepare → (confirm) → commit flow. A second folder
-  // open while the confirmation is up is ignored here (main also rejects new
-  // prepares while one is pending) so the in-flight flow cannot be clobbered.
   const runFolderOpenFlow = useCallback(
     async (requestPath?: string) => {
       // ---- step 1: prepare ----
@@ -182,23 +150,15 @@ export function useWorkspaceFolder(opts: {
         void showOperationError(prepared.message)
         return
       }
-      if (!prepared.value) return // dialog cancelled — nothing pending
+      if (!prepared.value) return // Dialog cancelled; nothing pending.
       await confirmAndCommitPrepared(prepared.value)
     },
     [confirmAndCommitPrepared, showOperationError]
   )
 
-  // Spec 006: main already validated and prepared the folder (FR-006); the
-  // renderer only confirms and commits, so the OS open never bypasses the
-  // unsaved-work confirmation (FR-009, Principle III).
   const runPreparedFolderOpen = useCallback(
     async (prepared: WorkspaceInfo) => {
       if (pendingFolderOpenRef.current) {
-        // A previous flow's commit/cancel may still be settling: main has
-        // already cleared its slot for THIS prepared folder, so release it,
-        // otherwise the slot stays filled with a folder nobody will commit and
-        // the next Open Folder errors "already in progress" (review finding
-        // 2026-08-09). Clearing an already-free slot is a no-op.
         await window.api.cancelFolderOpen()
         return
       }

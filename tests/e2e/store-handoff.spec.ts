@@ -8,12 +8,8 @@ import { launchApp, closeAppSafely, openFolder } from './launch'
 
 /**
  * Spec 038 (FR-004/FR-005): the MSIX execution alias delivers the chosen
- * folder as plain argv, the same channel the classic Explorer verb uses.
- * The suite cannot register an alias, so it reproduces the alias invocation
- * faithfully at the process level: the real Electron binary is SPAWNED with
- * the folder as its trailing argument (cold launch), and as a second process
- * holding the same profile (single-instance forwarding). Everything else,
- * extraction, validation, confirmation, routing, is the production code path.
+ * folder as plain argv. The suite starts Electron with a folder argument and
+ * with a shared profile for second-instance forwarding.
  */
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..')
@@ -68,8 +64,7 @@ async function spawnWithTarget(
       ...process.env,
       MM_USER_DATA_DIR: userDataDir,
       MM_CONFIG_DIR: configDir,
-      // Production parity: single-instance lock ON (launch.ts disables it for
-      // ordinary tests; here it IS the behaviour under test).
+      // Enable the single-instance lock for forwarding tests.
       MM_SINGLE_INSTANCE: '1'
     }
   })
@@ -95,11 +90,7 @@ async function spawnWithTarget(
   })
 
   const browser = await chromium.connectOverCDP(endpoint)
-  // connectOverCDP can land after the window exists but before navigation
-  // commits, leaving the ALREADY-TRACKED renderer reporting about:blank, and
-  // the `page` event fires only for targets added after connection, so
-  // waiting on the event alone would deadlock. Poll pages() instead: a
-  // deterministic wait that resolves under every attach timing.
+  // The initial page can exist before CDP attaches, so poll for its navigation.
   const context = browser.contexts()[0]
   let poll: ReturnType<typeof setInterval> | undefined
   const page = await new Promise<Page>((resolve, reject) => {
@@ -123,10 +114,7 @@ async function spawnWithTarget(
   return { browser, page }
 }
 
-/** Spawn a secondary instance sharing the primary's profile: the single-
- *  instance lock makes it forward argv to the running app and exit. It quits
- *  before Playwright could attach, so no CDP here, the primary asserts the
- *  outcome (same pattern as launchSecondary in file-association.spec.ts). */
+/** Spawn a secondary instance that forwards its argv to the running app. */
 async function spawnForwardingInstance(
   target: string,
   userDataDir: string,
@@ -225,8 +213,7 @@ test('FR-005 running instance: a second argv invocation routes to the first', as
 
     await spawnForwardingInstance(workspaceB, userDataDir, configDir)
 
-    // The spawned process must have forwarded its argv and exited; the FIRST
-    // process switches workspaces exactly as with the classic verb.
+    // The running process receives the secondary process's workspace argument.
     await expect(window.getByTestId('footer-workspace')).toContainText(path.basename(workspaceB), {
       timeout: 20_000
     })

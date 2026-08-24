@@ -1,11 +1,5 @@
 name: Build Microsoft Store package
 
-# Spec 038 (FR-001): builds the unsigned .appx (MSIX family; Store signing
-# happens during certification, so no certificate is needed here,
-# electron-builder logs "Windows Store only build"). Dispatched MANUALLY
-# because the resulting package is submitted to Partner Center by a human,
-# never published automatically. This workflow is independent of
-# build-release.yml and must not change it.
 on:
   workflow_dispatch:
 
@@ -29,8 +23,6 @@ jobs:
           node-version: 22
           cache: npm
 
-      # Same retry posture as build-release.yml: Electron's postinstall
-      # downloads a platform binary outside npm's retry coverage.
       - name: Install dependencies
         shell: bash
         run: |
@@ -46,9 +38,6 @@ jobs:
           echo "::error::npm ci failed after 3 attempts."
           exit 1
 
-      # windows-latest ships Visual Studio 2022 (MSVC v143) and the Windows 11
-      # SDK that native/shell-extension requires (scripts/build-shell-extension.ps1
-      # fails loudly when either is missing).
       - name: Build shell extension
         shell: pwsh
         run: ./scripts/build-shell-extension.ps1
@@ -56,11 +45,6 @@ jobs:
       - name: Build app
         run: npm run build
 
-      # Unsigned on purpose (research R4). Optional repository variables/
-      # secrets STORE_IDENTITY_NAME and STORE_PUBLISHER inject the real
-      # Partner Center identity WITHOUT editing electron-builder.yml; when
-      # unset, the committed placeholders are used and the artifact is a
-      # verification build only (docs/store-release.md).
       - name: Package (unsigned MSIX for Store)
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'

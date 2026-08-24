@@ -107,7 +107,7 @@ test('US4 a missing target shows a quiet footer note and leaves the session unch
   await expect(window.locator('.document-title')).toContainText('alpha.md')
 
   // Write a fresh file, open its context menu, then delete it externally while
-  // the menu is still open: the reveal resolves AFTER the deletion, so main's
+  // the menu is still open: the reveal resolves after the deletion, so main's
   // existence check fails (FR-006 scenario 1).
   fs.writeFileSync(path.join(testFolder, 'gone.md'), '# Gone')
   await expect(window.getByRole('treeitem').getByText('gone.md')).toBeVisible()

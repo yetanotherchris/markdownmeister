@@ -3,29 +3,10 @@ import * as path from 'path'
 import { atomicWrite } from './fs/atomicWrite'
 import type { RecentItem, RecentKind } from '../shared/ipc-contract'
 
-/**
- * Pure, electron-free store for the spec-004 recent-items list (research R1/R4).
- *
- * The config file lives at `appData/markdownmeister/config.json` (on Linux
- * `~/.config/markdownmeister/config.json` per FR-004); this module never resolves that path
- * itself, callers pass the file path in, so it stays unit-testable without
- * mocking Electron.
- *
- * Tolerance (FR-011, spec edges): a missing, unreadable, or malformed config
- * yields the valid entries that can be recovered (or `[]`), never an exception.
- * Entries with a relative path, an unknown kind, or a non-number timestamp are
- * dropped.
- */
+
 export const RECENT_ITEMS_LIMIT_PER_KIND = 5
 
-/**
- * Dedupe/remove key for an entry. On Windows the filesystem compares paths
- * case-insensitively, so the key folds case, otherwise `C:\Notes` and
- * `c:\notes` would survive as two entries for one location (FR-006). The fold
- * is win32-only because on macOS/Linux realpath (canonicalPath in the
- * handlers) is what dedupes case-variant spellings of a LIVE target, the key
- * fold only matters for recorded-but-missing paths on case-insensitive mounts.
- */
+
 export function dedupeKey(path_: string, kind: RecentKind): string {
   const normalized = process.platform === 'win32' ? path_.toLowerCase() : path_
   return `${kind}\u0000${normalized}`
@@ -34,8 +15,6 @@ export function dedupeKey(path_: string, kind: RecentKind): string {
 export function recordRecentItem(items: RecentItem[], item: RecentItem): RecentItem[] {
   const key = dedupeKey(item.path, item.kind)
   const withoutOld = items.filter((existing) => dedupeKey(existing.path, existing.kind) !== key)
-  // Per-type cap (FR-012): a new entry may evict the least recent of ITS OWN
-  // type, never an entry of the other type.
   const others = withoutOld.filter((existing) => existing.kind !== item.kind)
   const sameKind = withoutOld
     .filter((existing) => existing.kind === item.kind)
@@ -82,9 +61,6 @@ export function normalizeRecentItems(raw: unknown): RecentItem[] {
     const parsed = parseEntry(entry)
     if (parsed) valid.push(parsed)
   }
-  // Most-recent-first; dedupe by (path, kind) keeping the most recent copy
-  // (a hand-edited config may hold duplicates); cap per type (FR-012) while
-  // preserving global recency order within each type.
   const seen = new Set<string>()
   const deduped = valid
     .sort((a, b) => b.lastOpenedAt - a.lastOpenedAt)
@@ -110,18 +86,7 @@ export function loadRecentItems(filePath: string): RecentItem[] {
   return normalizeRecentItems(raw)
 }
 
-/**
- * Atomic write (temp file in the same directory, then rename, Principle III)
- * via the shared `atomicWrite` helper, with an explicit `0o600` mode so the
- * config (which records absolute paths) is not world-readable on multi-user
- * systems. The parent directory is created on demand; a failure to create it
- * or to write the temp propagates to the caller, which must treat the
- * persistence failure as non-fatal (FR-011).
- *
- * Spec 012 FR-002: settings share this file (`{ recentItems?, settings? }`).
- * A save is a read-modify-write that preserves the `.settings` section, so
- * recording a recent item never clobbers the settings dialog's data.
- */
+
 export function saveRecentItems(filePath: string, items: RecentItem[]): void {
   let existing: Record<string, unknown> = {}
   try {

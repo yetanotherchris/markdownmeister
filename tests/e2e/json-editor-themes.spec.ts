@@ -119,9 +119,7 @@ test('US1 a fresh start seeds exactly the five default theme files', async () =>
   expect(monotone.light.background).toBe('#ffffff')
   expect(monotone.dark.background).toBe('#000000') // follows appearance
 
-  // Unedited defaults keep their exact pre-036 derived tones (plan D5, review
-  // finding 2026-08-23): the derived-tone layer must not override the preset
-  // blocks' hand-tuned values with coarser six-token mappings.
+  // Unedited defaults retain their derived tones.
   await expect.poll(() => canvasTokenNamed('--crepe-color-surface-low')).toBe('#fcefce')
   await expect.poll(() => canvasTokenNamed('--crepe-color-on-surface')).toBe('#201b13')
   await expect.poll(() => canvasTokenNamed('--crepe-color-on-surface-variant')).toBe('#4f4539')
@@ -175,7 +173,7 @@ test('US3 editing a token in a theme file applies on the next settings open (SC-
 })
 
 test('US3 editing monotone.json recolours the canvas (file tokens beat the preset blocks)', async () => {
-  // Regression (review finding 2026-08-23): the [data-theme]-qualified
+  // The [data-theme]-qualified
   // monotone preset blocks used to outrank the file-driven layer, so editing
   // a monotone theme file had no effect.
   await openFile(window, 'alpha.md')
@@ -335,9 +333,9 @@ test('US3/FR-009 legacy custom-colour config migrates into migrated-custom.json'
 })
 
 test('US3/FR-009 a real legacy config (explorerVisible set) migrates and the repair survives startup', async () => {
-  // Regression (review finding 2026-08-23): the explorer reconcile runs an
+  // The explorer reconcile runs an
   // updateSettings at startup, seeding the settings cache and arming the
-  // debounced write BEFORE the migration repaired the selection, the pending
+  // debounced write before the migration repaired the selection, the pending
   // write then restored the pre-migration name ~500 ms into the run. Real
   // spec-023 configs always carry explorerVisible: true, so the reconcile
   // acted on every real upgrade; earlier fixtures omitted it and missed this.

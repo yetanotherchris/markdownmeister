@@ -8,12 +8,7 @@ export interface ExternalFileEventsApi {
   handleExternalPrompt: (prompt: { id: string; kind: 'changed' | 'removed' }) => Promise<void>
 }
 
-/**
- * External file-change handling (US1/FR-002): routing a filesystem
- * changed/removed notice to auto-reload (clean document) or the native prompt
- * (dirty document), including the external-removed Save-As rescue flow. Registers
- * `handleExternalChangeRef` so the dialog queue can drain a deferred notice.
- */
+
 export function useExternalFileEvents(opts: {
   sessionRef: React.MutableRefObject<EditingSession>
   dialog: DialogQueue
@@ -34,14 +29,10 @@ export function useExternalFileEvents(opts: {
           documentTitle: doc.title
         })
         if (result.ok && result.value === 'reload') {
-          // The user explicitly chose to replace their version with the disk
-          // version, so the pre-existing dirty state must not block the reload.
           await session.reloadDocument(doc, true)
         }
         return
       }
-      // removed, the content is still open in memory; OK keeps it, Save As
-      // writes it to a new location. A failed save re-prompts (research R5).
       let error: string | undefined
       for (;;) {
         const result = await window.api.showConfirmation({

@@ -1,9 +1,6 @@
-/* Spec 010 tabs: the document tab strip pills in the header row (co-located
- * with tabs/TabBar.tsx; split from App.css in the 017 restructure). */
 
-/* Spec 010, FR-003: the tab bar lives in the header row next to the chrome
-   buttons. Tabs are rounded pills; the active tab is the `#EAEAEA` pill
-   (clarification 2026-08-05). */
+
+
 .tab-bar {
   display: flex;
   flex-direction: row;
@@ -47,7 +44,7 @@
   white-space: nowrap;
 }
 
-/* Spec 010 FR-003: the active tab's decorative edit indicator. */
+
 .tab-edit-icon {
   width: 14px;
   height: 14px;
@@ -61,8 +58,7 @@
 }
 
 .tab-warning {
-  /* No red exists in the grey palette; a desaturated red keeps the warning
-     semantic while harmonising with it (decision log 2026-08-06, plan.md). */
+
   color: #b8453a;
   font-weight: 700;
 }
@@ -96,9 +92,7 @@
   outline-offset: 1px;
 }
 
-/* Spec 010 FR-004: the "+" new-file button replaces the old text button. It
-   sits at the end of the tab strip and sticks to the right edge so it stays
-   reachable while the strip scrolls under overflow (spec edge). */
+
 .tab-new {
   position: sticky;
   right: 0;

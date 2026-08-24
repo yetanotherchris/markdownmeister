@@ -1,7 +1,3 @@
-/* App shell styles: global reset, design tokens, editor font overrides, the
-   app container, and the panel group. The per-area stylesheets (chrome, tabs,
-   editor, status, settings) are co-located with their components and imported
-   there — see the 017 stylesheet restructure. */
 * {
   margin: 0;
   padding: 0;
@@ -10,40 +6,28 @@
 
 html, body, #root {
   height: 100%;
-  /* Spec 003, US4 (FR-006/007): Inter is bundled locally via @fontsource/inter
-     (OFL-1.1) — no network fetch. System fallbacks cover non-Latin scripts. */
+
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
 }
 
-/* Form controls and buttons do not inherit font-family from their ancestors;
-   without this reset the dialogs, tab close buttons and context menu render in
-   the platform default font while the chrome is Inter (FR-006). */
+
 button, input, select, textarea {
   font-family: inherit;
 }
 
-/* The editor canvas consumes the same sans-serif family as the chrome so the
-   whole interface has one clean desktop-editor appearance (research R2).
-   Spec 016: this is the RUSTIC default; each editor theme overrides the
-   --crepe-font-* variables via its own `data-editor-theme` block
-   (editor/themes.css). */
+
 .milkdown {
   --crepe-font-default: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
   --crepe-font-title: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
 }
 
-/* Spec 010, FR-006: the modern grey palette. Prefixed custom properties scoped
-   to the chrome. Spec 013 FR-010: the editor canvas and source view resolve the
-   --mm-editor-bg token (white in light, dark in dark) so the editing surface
-   follows the theme. */
+
 :root {
   --mm-bg: #ffffff;
   --mm-surface: #f9f9fb;
   --mm-surface-secondary: #f8f8fa;
   --mm-active-tab: #eaeaea;
-  /* Spec 018: the WYSIWYG editor toolbar (header bar) surface — a shade
-     darker than the active tab pill. The main app header bar keeps
-     --mm-surface; only the editor toolbar uses this token. */
+
   --mm-header: #e0e0e0;
   --mm-text: #1a1a1a;
   --mm-text-secondary: #222222;
@@ -54,35 +38,17 @@ button, input, select, textarea {
   --mm-accent: #d96b27;
   --mm-control: #2d2d2d;
   --mm-editor-bg: #ffffff;
-  /* Spec 028 (FR-005/006): the single curated dark blue for the view-source
-     action — the heroicons code-bracket-square glyph. Deliberately distinct
-     from the accent token (orange in light, #3794ff in dark) and defined ONCE
-     here, NOT under [data-theme='dark'], so the colour is identical in both
-     modes (plan D2 / research R2). */
+
   --mm-view-source: #2563eb;
 }
 
-/* Spec 013, FR-002/FR-003: the dark palette (VS Code Dark, user decision
-   2026-08-06). Main Editor Background #1F1F1F, Sidebar #181818, Primary Text
-   #8C8C8C, Editor Header Text #CCCCCC, Links/Highlights #3794FF; buttons are a
-   neutral grey (the palette's #0E639C blue is deliberately not used). Every
-   chrome surface resolves the --mm-* tokens from .app-container, so redefining
-   them here retints the whole chrome in one place when the effective theme
-   (nativeTheme.themeSource → prefers-color-scheme → data-theme, see
-   useEffectiveTheme) is dark.
-   Spec 016: the FORMATTED CANVAS no longer follows this palette — the editor
-   theme owns the canvas (research R5). Only the Monotone themes re-scope their
-   --crepe-color-* tokens against [data-theme] (editor/themes.css); Rustic,
-   Rustic Serif, and Scholarly keep their fixed palettes in dark chrome. The
-   source view still resolves --mm-editor-bg/--mm-text and follows the app
-   theme (FR-013). */
+
 .app-container[data-theme='dark'] {
   --mm-bg: #1f1f1f;
   --mm-surface: #1f1f1f;
   --mm-surface-secondary: #181818;
   --mm-active-tab: #2d2d2d;
-  /* Spec 018: the dark WYSIWYG editor-toolbar equivalent — a step darker
-     than the dark-mode tab pill (FR-007). */
+
   --mm-header: #262626;
   --mm-text: #8c8c8c;
   --mm-text-secondary: #7a7a7a;
@@ -104,11 +70,7 @@ button, input, select, textarea {
   flex: 1;
   min-height: 0;
   display: flex;
-  /* Isolate: the Crepe editor's sticky top bar carries z-index: 10. Without a
-     stacking context here that escapes to the root context, ties the
-     header-bar's z-index (10), and — being later in DOM order — paints over
-     the hamburger dropdown hanging below the header row. isolation keeps the
-     top bar below the header chrome (verified 2026-08-05). */
+
   isolation: isolate;
 }
 
@@ -121,13 +83,11 @@ button, input, select, textarea {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  /* Overflow is clipped so a collapsed panel (0-width) never lets the tree
-     spill over the editor (spec 010 US2: hiding must actually hide). */
+
   overflow: hidden;
   background: var(--mm-surface-secondary);
   border-right: 1px solid var(--mm-border);
-  /* The explorer tree has no color of its own; pinning the token here keeps its
-     text readable in both the light and dark palettes (spec 013). */
+
   color: var(--mm-text);
 }
 

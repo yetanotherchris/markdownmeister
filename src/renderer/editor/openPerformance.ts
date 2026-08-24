@@ -1,16 +1,4 @@
-/**
- * Spec 033 (research R5, contract C4): renderer-memory instrumentation for the
- * open path. Counts whole-document parse passes over incoming content
- * (`fullParses`, SC-002), whole-document serializations of incoming content for
- * baseline bookkeeping (`fullSerializations`, SC-003), serializations triggered
- * by outgoing dirty checks (`outgoingSerializations`, fast-path effectiveness),
- * and per-open durations from open-gesture commit to editor-ready
- * (`openDurations`, SC-001/SC-004).
- *
- * Counters are observability only: no user-facing behaviour may read or depend
- * on them. The snapshot is exposed on `window.__mmOpenPerformance` so e2e
- * tests can read it through the page context without touching the preload API.
- */
+
 
 export interface OpenPerformanceCounters {
   fullParses: number
@@ -26,8 +14,7 @@ const counters: OpenPerformanceCounters = {
   openDurations: []
 }
 
-/** Timestamp of the most recent open-gesture commit, or null. A second begin
- *  supersedes the first (spec edge case: only the latest request pays). */
+
 let pendingOpenStart: number | null = null
 
 /** Durations are diagnostic; the cap bounds memory on very long sessions. */
@@ -50,8 +37,7 @@ export function beginOpen(): void {
   pendingOpenStart = performance.now()
 }
 
-/** Mark the end of an open (editor-ready). Records a duration only when a
- *  start is pending; mounts without a preceding open contribute nothing. */
+
 export function endOpen(): void {
   if (pendingOpenStart === null) return
   counters.openDurations.push(performance.now() - pendingOpenStart)
@@ -61,9 +47,7 @@ export function endOpen(): void {
   pendingOpenStart = null
 }
 
-/** Drop a pending start without recording a duration, an open whose readFile
- *  failed never presents an editor, so it must not poison the next mount's
- *  measurement. */
+
 export function discardOpen(): void {
   pendingOpenStart = null
 }

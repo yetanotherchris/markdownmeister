@@ -7,7 +7,7 @@ import { REPOSITORY_URL } from '../../src/main/buildInfo'
  * shape). The electron module is mocked so the REAL registration and
  * authorization code runs while `ipcMain.handle` is captured and
  * `shell.openExternal` recorded. This is the first vi.mock use in tests/main
- * (research R8): the authorization guard lives inline in the handlers, exactly
+ * The authorization guard runs inline in the handlers while
  * like every other channel, so exercising it requires the module boundary.
  */
 

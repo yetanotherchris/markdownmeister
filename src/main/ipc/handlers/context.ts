@@ -22,17 +22,9 @@ import type {
   RecentKind
 } from '../../../shared/ipc-contract'
 
-/**
- * Shared state and helpers for the split IPC handler modules (spec 017,
- * contracts/main.md §Shared context). The module-level workspace/allowClose
- * state that handlers.ts used to own lives here so every `register*` module
- * sees the same instance. Helper bodies are moved verbatim from the old
- * handlers.ts, only the module boundary changed (FR-005).
- */
 
-/** The prepared-but-unconfirmed folder open (spec 004 FR-009/FR-010). A single
- *  slot shared by the `workspace:prepareFolderOpen` handler and the spec 006
- *  OS-open host, so a second prepare while one is pending is refused. */
+
+
 export interface PendingFolderOpen {
   root: string
   name: string
@@ -81,11 +73,6 @@ export function sanitizeError(e: unknown, workspaceRootPath: string | null): str
       '<workspace>'
     )
   }
-  // Principle II: NEVER leak an absolute path into a renderer-visible error,
-  // run the absolute-path scrub unconditionally. With a workspace open only
-  // the CURRENT root is otherwise scrubbed, so a failure while preparing a
-  // dialog-chosen folder or committing a recent folder located elsewhere
-  // (EACCES/ENOENT on `C:\Users\...\secret`) would pass the raw path through.
   return scrubAbsolutePaths(msg)
 }
 
@@ -176,19 +163,11 @@ export function validateShape(
   }
 }
 
-// ---- spec-004 recent-items helpers (moved from handlers.ts) ----
 
-// The renderer may only open a path main itself recorded (research R4):
-// the recent-open handlers re-validate against the persisted list before any
-// filesystem access.
 export function isRecentEntry(path_: string, kind: RecentKind): boolean {
   return loadRecentItems(recentItemsConfigPath()).some((i) => i.path === path_ && i.kind === kind)
 }
 
-// FR-011: a persistence failure must NEVER fail the open it follows
-// (FR-002/003) or delete a still-valid entry. Record/remove are best-effort,
-// on a save failure the in-memory list cannot be persisted, the failure is
-// reported quietly, and the open continues.
 export function recordRecent(path_: string, kind: RecentKind, name: string): void {
   const configPath = recentItemsConfigPath()
   const items = loadRecentItems(configPath)
@@ -219,9 +198,7 @@ export function removeRecent(path_: string, kind: RecentKind): void {
   }
 }
 
-/** Realpath-canonical form of an absolute path for recording (FR-006: raw
- *  dialog spellings and realpath-resolved spellings of the same file must
- *  dedupe). Falls back to `path.resolve` when the target is already gone. */
+
 export function canonicalPath(p: string): string {
   try {
     return fs.realpathSync(p)
@@ -230,15 +207,7 @@ export function canonicalPath(p: string): string {
   }
 }
 
-// Opens a file by absolute path, mirroring the dialog handler: when the file
-// sits inside the current workspace the response carries the workspace-
-// relative path and the parent is watched; otherwise the content is read
-// directly with a `path: null` response. `canonicalPath` (the realpath) is
-// always populated so the renderer can dedupe detached files (spec 006 R8).
 export function openFileFromPath(filePath: string): OpenedFile {
-  // Research R4 step 2: confirm the target still exists and has the right
-  // type, a recorded 'file' whose path was replaced by a directory must not
-  // be read as text (EISDIR would otherwise surface as a bare IO error).
   const stat = fs.statSync(filePath)
   if (!stat.isFile()) {
     throw Object.assign(new Error('Target is not a file'), { code: 'NOT_TEXT' as ErrorCode })

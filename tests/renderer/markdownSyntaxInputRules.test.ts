@@ -7,7 +7,7 @@ import {
 import { DEFAULT_MARKDOWN_SYNTAX_OPTIONS } from '../../src/renderer/editor/markdownSyntaxOptions'
 
 /**
- * Spec 030 (contract §Input-rule gate, research R4): the syntax-producing
+ * Spec 030: the syntax-producing
  * ProseMirror input rules consult `MarkdownSyntaxOptions`; a rule for a
  * disabled syntax returns `null` and does nothing, while enabled syntaxes
  * behave exactly as today.
@@ -67,7 +67,7 @@ describe('markdownSyntaxInputRuleGate (spec 030 input-rule gate)', () => {
 
   it('disables exactly one option at a time', () => {
     // tables is off but strikethrough is still on → handler runs (returns the
-    // original handler's result, which is null here), NOT the disabled path.
+    // original handler's result, which is null here), not the disabled path.
     setMarkdownSyntaxGateOptions({ ...DEFAULT_MARKDOWN_SYNTAX_OPTIONS, tables: false })
     const wrapped = wrapGatedRule(new InputRule(GATED_SOURCES.strikethrough, () => null))
     expect(handlerOf(wrapped)(undefined, EMPTY_MATCH, 0, 0)).toBeNull()

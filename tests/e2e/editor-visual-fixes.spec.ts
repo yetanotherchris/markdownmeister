@@ -16,13 +16,11 @@ import {
  *
  * US1 (FR-001/002/003), the theme's canvas colour fills the whole editor
  * region, edge to edge, for short and long documents, across preset and custom
- * themes, in both light and dark modes. Verified by asserting the `.milkdown`
- * root (which paints `background: var(--crepe-color-background)`) stretches to
- * the `.editor-host` height and that a probe at the bottom of the editor area
- * resolves to the theme canvas colour.
+ * themes, in both light and dark modes. The checks compare the editor height
+ * and its bottom color with the selected canvas color.
  *
- * US2 (FR-004/005/006), the view-source action is the heroicons
- * code-bracket-square glyph in the single curated `--mm-view-source` dark blue,
+ * US2 (FR-004/005/006), the view-source action uses the code-bracket-square
+ * glyph in `--mm-view-source` dark blue,
  * in both the editor top bar and the explorer context menu.
  */
 
@@ -56,11 +54,11 @@ test.afterAll(async () => {
   fs.rmSync(testFolder, { recursive: true, force: true })
 })
 
-/** The heroicons 24px code-bracket-square outline path (research R3). */
+/** The 24px code-bracket-square outline path. */
 const CODE_BRACKET_SQUARE_D =
   'M14.25 9.75 16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0 0 20.25 18V6A2.25 2.25 0 0 0 18 3.75H6A2.25 2.25 0 0 0 3.75 6v12A2.25 2.25 0 0 0 6 20.25Z'
 
-/** The dark-blue token (plan D2 / research R2). */
+/** The dark-blue token. */
 async function viewSourceColour(): Promise<string> {
   return window.evaluate(() => {
     const root = document.querySelector('.app-container') as Element
@@ -280,7 +278,7 @@ test('US2 the top-bar view-source glyph is the code-bracket-square in the dark b
   const viewSource = viewSourceButton()
   await expect(viewSource).toBeVisible()
 
-  // FR-004: the glyph is the heroicons code-bracket-square outline.
+  // The glyph uses the expected code-bracket-square path.
   expect(await iconPath(viewSource)).toBe(CODE_BRACKET_SQUARE_D)
 
   // FR-005/FR-006: rendered in the curated dark blue, distinct from the accent.

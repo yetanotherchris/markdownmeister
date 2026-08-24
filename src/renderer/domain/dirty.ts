@@ -3,15 +3,10 @@ import { markdownSame } from '../state/documents'
 import { joinFrontmatter } from './frontmatter'
 import { recordOutgoingSerialization } from '../editor/openPerformance'
 
-/** The instance-pool markdown accessor, injected so these functions stay pure
- *  and testable without the Crepe runtime (FR-003, US2). */
+
 export type MarkdownAccessor = (documentId: string) => string | null
 
-/** Spec 033 (contract C2): injected document-identity accessors. `getLiveDoc`
- *  returns the editor's current ProseMirror document reference;
- *  `getBaselineDoc` the reference recorded at baseline capture. Both return
- *  undefined when absent. Injected (and optional) so the decision rules stay
- *  pure and testable without a pool. */
+
 export type DocRefAccessor = (documentId: string) => unknown
 
 /** The editor's live serialization for a document, or null when it has no
@@ -22,23 +17,7 @@ export function getLiveContent(doc: DocumentState, getMarkdown: MarkdownAccessor
   return getMarkdown(doc.id)
 }
 
-/** Live-dirty check (spec 002): `doc.dirty` is authoritative when set; a
- *  source-view document's signal is entirely `doc.dirty` (its editor would
- *  serialize the stale pre-source-edit content, so the editor comparison below
- *  would be meaningless). Otherwise compare the live serialization against the
- *  editor's OWN baseline, Crepe normalizes markdown, so a pristine normalizing
- *  file must not count as dirty; only drift from the baseline means the user
- *  typed (raw-bytes policy).
- *
- *  Spec 033 fast path (contract C2): when the live view's document object is
- *  reference-identical to the one recorded at baseline capture, no
- *  doc-changing transaction has occurred since capture, so the live
- *  serialization is provably identical to what was captured, clean with zero
- *  serializations. Reference identity is the ONLY skip condition: any
- *  doc-changing transaction produces a new reference and falls back to the
- *  exact comparison below, while decoration-only transactions (spellcheck
- *  marks, selections) keep the reference and cannot false-positive. The fast
- *  path only ever returns "clean"; it never widens dirtiness. */
+
 export function isDirtyLive(
   doc: DocumentState,
   getMarkdown: MarkdownAccessor,
@@ -49,8 +28,6 @@ export function isDirtyLive(
   if (doc.view === 'source') return false
   if (getLiveDoc && getBaselineDoc) {
     const live = getLiveDoc(doc.id)
-    // Both references must exist: a missing baseline record means the exact
-    // comparison is the only proof available.
     if (live !== undefined && live === getBaselineDoc(doc.id)) return false
   }
   const live = getLiveContent(doc, getMarkdown)
@@ -59,20 +36,7 @@ export function isDirtyLive(
   return !markdownSame(live, doc.editorBaseline)
 }
 
-/** The bytes a save writes (spec 002 save model): source view writes the raw
- *  full text the user sees; a formatted document that is clean in the live-dirty
- *  sense writes the stored raw body bytes (a no-edit open/save stays
- *  byte-identical); only a document with real body drift writes the Crepe
- *  serialization so the edits are kept. Spec 021: the stored frontmatter block
- *  is recombined at the top of every save (FR-005), and with no frontmatter the
- *  body is returned unchanged so no empty block is ever added (FR-010).
- *
- *  Review 2026-08-07: a document made dirty by a FRONTMATTER-only source edit
- *  has an untouched body. The dirty branch prefers the stored raw body when the
- *  live serialization matches it modulo the tolerated trailing newline, so the
- *  editor's normalisation never rewrites bytes the user did not edit. Only a
- *  body that Crepe cannot represent verbatim (real drift) takes the
- *  serialization path (FR-12 in spec 002). */
+
 export function getContentToSave(doc: DocumentState, getMarkdown: MarkdownAccessor): string {
   if (doc.view === 'source') return joinFrontmatter(doc.frontmatter, doc.content)
   if (isDirtyLive(doc, getMarkdown)) {
@@ -85,13 +49,7 @@ export function getContentToSave(doc: DocumentState, getMarkdown: MarkdownAccess
   return joinFrontmatter(doc.frontmatter, doc.content)
 }
 
-/** Per-document flush decision (raw-bytes policy): a source-view document's
- *  text lives in the store, so flushing its editor would clobber raw edits;
- *  the serialization of a PRISTINE document must never replace the stored disk
- *  bytes (Crepe's output can differ beyond the tolerated trailing newline and
- *  would mark an unedited file dirty); and the live text is only adopted when
- *  the reducer already knows the document was edited (`dirty` set by the
- *  debounced emission). */
+
 export function shouldFlushLive(doc: DocumentState, getMarkdown: MarkdownAccessor): boolean {
   if (doc.view === 'source') return false
   const live = getLiveContent(doc, getMarkdown)

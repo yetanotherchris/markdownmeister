@@ -1,5 +1,3 @@
-// Spec 038: IExplorerCommand implementation. See ExplorerCommand.h for the
-// containment (FR-011) and hand-off (FR-012) contracts.
 
 #include "ExplorerCommand.h"
 
@@ -15,15 +13,8 @@ constexpr wchar_t kTitle[] = L"Open in MarkdownMeister";
 constexpr wchar_t kAliasFileName[] = L"markdownmeister.exe";
 // Where MSIX materialises execution aliases for the current user.
 constexpr wchar_t kWindowsAppsSubdir[] = L"Microsoft\\WindowsApps\\";
-// The packaged layout produced by electron-builder maps win-unpacked to `app\`
-// inside the MSIX root, and scripts/copy-shell-extension.cjs places this DLL at
-// app\resources\shell-extension\. Resolving the application icon therefore
-// means walking up past the DLL file name plus two directory levels and
-// appending the launcher binary name (research R6).
 constexpr int kTrailingComponentsToStrip = 3;
 
-// Copy `text` into a shell-allocated string; empty input yields an empty
-// (non-null) allocation so callers never dereference null.
 HRESULT CopyCoString(const wchar_t *text, LPWSTR *out) {
   *out = nullptr;
   const size_t characters = wcslen(text) + 1;
@@ -34,8 +25,6 @@ HRESULT CopyCoString(const wchar_t *text, LPWSTR *out) {
   return S_OK;
 }
 
-// Resolve the module handle for an address inside this DLL without keeping a
-// reference alive (a held handle would pin the DLL in Explorer forever).
 HMODULE SelfModule() {
   HMODULE module = nullptr;
   GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
@@ -44,8 +33,6 @@ HMODULE SelfModule() {
   return module;
 }
 
-// "<pkg>\app\MarkdownMeister.exe" derived from this DLL's own location, or an
-// empty string when unavailable (entry renders without icon, quiet, FR-011).
 bool ResolvePackagedLauncher(wchar_t *launcher, size_t capacity) {
   launcher[0] = L'\0';
   HMODULE self = SelfModule();
@@ -90,9 +77,6 @@ bool QuoteArgument(const wchar_t *text, wchar_t *out, size_t capacity) {
   return true;
 }
 
-// Detached launch of the execution alias with the quoted folder as its only
-// argument (contracts/handoff.md). Never waits on the child, never shows UI,
-// never surfaces launch failure beyond a silent no-op.
 void LaunchAlias(const wchar_t *folder_path) {
   PWSTR local_app = nullptr;
   if (FAILED(SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &local_app))) return;
@@ -117,10 +101,6 @@ void LaunchAlias(const wchar_t *folder_path) {
   STARTUPINFOW startup{};
   startup.cb = sizeof(startup);
   PROCESS_INFORMATION process{};
-  // The alias materialises only while the package is registered; when absent
-  // fall back once to ShellExecuteEx on the packaged launcher resolved from
-  // this DLL's own location, never a bare-name lookup through PATH /
-  // App Paths, which a same-user process could subvert to receive the folder.
   const bool alias_exists = GetFileAttributesW(alias_path) != INVALID_FILE_ATTRIBUTES;
   const BOOL launched =
       alias_exists
@@ -137,9 +117,6 @@ void LaunchAlias(const wchar_t *folder_path) {
   if (!ResolvePackagedLauncher(packaged_launcher, std::size(packaged_launcher))) return;
   SHELLEXECUTEINFOW execute{};
   execute.cbSize = sizeof(execute);
-  // SEE_MASK_NOASYNC: never block Explorer on DDE/activation. Together with
-  // SEE_MASK_FLAG_NO_UI the missing-launcher fault path stays a silent no-op,
-  // no "Windows cannot find" dialog may surface inside Explorer (FR-011).
   execute.fMask = SEE_MASK_NOASYNC | SEE_MASK_FLAG_NO_UI;
   execute.lpVerb = L"open";
   execute.lpFile = packaged_launcher;
@@ -148,8 +125,6 @@ void LaunchAlias(const wchar_t *folder_path) {
   ShellExecuteExW(&execute);
 }
 
-// Multi-selection is out of scope (spec 038 edge cases, spec 035 FR-013): act
-// only when exactly one item arrives; otherwise do nothing.
 HRESULT InvokeImpl(IShellItemArray *items) {
   DWORD count = 0;
   if (!items || FAILED(items->GetCount(&count)) || count != 1) return S_OK;
@@ -256,8 +231,6 @@ IFACEMETHODIMP OpenInMarkdownMeisterCommand::GetState(IShellItemArray *, BOOL,
                                                       EXPCMDSTATE *out_state) {
   if (!out_state) return E_POINTER;
   __try {
-    // Enabled unconditionally, without inspecting the item: menu presence
-    // costs nothing (US5 scenario 3); validation belongs to the app (FR-012).
     *out_state = ECS_ENABLED;
     return S_OK;
   } __except (EXCEPTION_EXECUTE_HANDLER) {

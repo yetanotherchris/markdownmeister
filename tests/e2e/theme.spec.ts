@@ -8,15 +8,10 @@ import { closeAppSafely, launchApp, openSettingsDialog, openFile, openThemeArea 
  * Spec 013 theme suite (contracts/renderer.md §E2e): the Theme setting's three
  * choices, Light (US1), Dark (US2), System default following the OS live
  * (US3/FR-005), plus restart persistence (US4/FR-006), the editor-content
- * invariant (FR-010), keyboard access (FR-007), and missing/malformed-config
+ * editor-content behavior (FR-010), keyboard access (FR-007), and missing/malformed-config
  * tolerance (FR-009).
  *
- * The OS theme cannot be changed deterministically, so OS switches are simulated
- * with Playwright's `emulateMedia({ colorScheme })`, which re-fires the
- * renderer's `prefers-color-scheme` media query exactly as an OS switch would.
- * (Research R1/R2: `nativeTheme.themeSource` does not propagate to the renderer
- * media query in this Electron build, so the palette follows the query, hence
- * this simulation is the faithful path.)
+ * OS theme changes use Playwright's `emulateMedia({ colorScheme })`.
  */
 
 let app: ElectronApplication
@@ -66,8 +61,7 @@ async function persistedThemeOverride(): Promise<string | null | undefined> {
   return JSON.parse(fs.readFileSync(configPath, 'utf-8')).settings?.themeOverride ?? null
 }
 
-/** Simulate an OS theme switch by re-firing the renderer's colour-scheme query
- *  (the faithful path, see the suite comment; research R1/R2). */
+/** Simulate an OS theme switch. */
 async function setOsColorScheme(scheme: 'light' | 'dark'): Promise<void> {
   await window.emulateMedia({ colorScheme: scheme })
 }
@@ -142,9 +136,7 @@ test('FR-010 the default Rustic canvas keeps its palette in dark mode; Monotone 
   const lightBackground = await editorBackground()
   expect(lightBackground).toBe('rgb(253, 246, 227)') // #fdf6e3
 
-  // The app theme can be dark WITHOUT re-theming the canvas, the editor theme
-  // owns the canvas; only the Monotone themes follow the resolved app theme
-  // (spec 016 user decision 2026-08-07; research R5). The chrome flips dark.
+  // Rustic retains its canvas color when the app theme changes.
   const dialog = await openSettingsDialog(window)
   await openThemeArea(window)
   await dialog.getByRole('radio', { name: 'Dark', exact: true }).check()
@@ -160,9 +152,7 @@ test('FR-010 the default Rustic canvas keeps its palette in dark mode; Monotone 
   await expect.poll(editorBackground).toBe('rgb(0, 0, 0)')
   expect(await editorTextColor()).toBe('rgb(255, 255, 255)')
 
-  // The source view still follows the app theme, the "Back to visual editing"
-  // button must not fall back to black text on the dark surface (regression
-  // guard, unchanged from spec 013).
+  // Source-view controls remain legible in dark mode.
   await window.getByRole('button', { name: 'View source' }).click()
   await expect(window.getByTestId('source-view')).toBeVisible()
   expect(await window.locator('.source-return').evaluate((el) => getComputedStyle(el).color)).toBe(

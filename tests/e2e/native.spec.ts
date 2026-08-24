@@ -184,7 +184,7 @@ test.describe('US3 status footer', () => {
 
   test('US3 footer right shows the workspace full path', async () => {
     await openFolder()
-    // The footer shows the resolved path of the opened folder (research R-Path).
+    // The footer shows the opened folder path.
     const resolved = fs.realpathSync(testFolder)
     await expect(window.getByTestId('footer-workspace')).toHaveText(resolved)
     // The full path is also the hover tooltip.

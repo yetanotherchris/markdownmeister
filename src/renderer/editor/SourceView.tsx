@@ -32,10 +32,7 @@ function sourceContext(view: EditorView): {
   }
 }
 
-/**
- * Spec 031: an editable raw Markdown surface. CodeMirror decorations are
- * presentational only; every document change remains the exact source text.
- */
+
 export default function SourceView({
   value,
   onChange,

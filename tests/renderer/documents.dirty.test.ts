@@ -45,8 +45,7 @@ describe('documents reducer', () => {
         payload: { value: { path: 'f.md', name: 'f.md', content: 'hello', mtimeMs: 1, size: 5 } }
       })
       const docId = s1.documents[0].id
-      // Mount captured the editor's serialization: raw bytes + the newline
-      // Milkdown always appends (CrepeHost CAPTURE_BASELINE).
+      // Baseline capture includes the editor's trailing newline.
       const s2 = documentsReducer(s1, {
         type: 'CAPTURE_BASELINE',
         payload: { id: docId, baseline: 'hello\n' }

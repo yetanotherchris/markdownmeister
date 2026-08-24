@@ -6,7 +6,7 @@ describe('toolbar labels map (research WG)', () => {
     // Heading selector + bold/italic/strikethrough/code + bullet/ordered/task
     // + link + image + table + code-block + math + quote + hr + the custom
     // view-source group. Crepe keeps ImageBlock/Table/Latex at their feature
-    // defaults, so all 16 controls are present (research.md R7).
+    // defaults, so all 16 controls are present.
     expect(TOP_BAR_LABELS).toHaveLength(16)
   })
 

@@ -6,13 +6,7 @@ export interface EditorPoolApi {
   enforcePoolCap: (activeId: string | null) => void
 }
 
-/**
- * Editor-instance pool management (US1/FR-002): the LRU cap enforcement that
- * drives `instancePool` eviction. The pool itself (cap 8, clean-only eviction,
- * never the active document) lives in `editor/instancePool.ts`; this hook owns
- * the orchestration, when the pool is full, evict the oldest *clean* live
- * instance and drop its entry so the next activate remounts from stored bytes.
- */
+
 export function useEditorPool(opts: {
   dispatch: React.Dispatch<DocumentsAction>
   sessionRef: React.MutableRefObject<EditingSession>

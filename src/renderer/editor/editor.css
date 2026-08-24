@@ -6,8 +6,7 @@
   flex: 1;
   position: relative;
   overflow: hidden;
-  /* Spec 013 FR-010: the region behind/around the editor canvas follows the
-     theme (--mm-editor-bg: white in light, a dark surface in dark). */
+
   background: var(--mm-editor-bg);
 }
 
@@ -18,27 +17,12 @@
   width: 100%;
   height: 100%;
   overflow: auto;
-  /* Spec 028 (FR-001/002/003): a column flex makes the Crepe wrapper a flex
-     item with a definite resolved height, so .milkdown's percentage min-height
-     can resolve against it (research R1 / plan D1). Without this, the wrapper's
-     specified height stays auto and the child's min-height: 100% computes to
-     auto — the short-document canvas never fills the host. */
+
   display: flex;
   flex-direction: column;
 }
 
-/* Spec 028 (FR-001/002/003): the theme canvas colour fills the whole editor
-   region, not just the content height. Crepe's root (.milkdown) paints
-   background: var(--crepe-color-background), but for a short document it only
-   spans the content, exposing .editor-area's --mm-editor-bg below the last line
-   as a white/chrome patch. Stretching the root to the host's height makes the
-   canvas colour reach the bottom edge to edge; a longer document still grows
-   past 100% and scrolls with the colour behind it (research R1, plan D1).
-   Crepe nests .milkdown inside the container div passed to its constructor
-   (editor-view.ts createViewContainer), so BOTH the wrapper and the root must
-   stretch — a percentage min-height only resolves against a definite-height
-   parent. The `.editor-host > div` rule also matches the absolutely-positioned
-   .source-view, which is inset: 0 and therefore unaffected. */
+
 .editor-host > div {
   min-height: 100%;
 }
@@ -47,64 +31,34 @@
   min-height: 100%;
 }
 
-/* While the source overlay is visible, the host must not scroll the crepe
-   content underneath it (FR-009: one editing view at a time). */
+
 .editor-host.has-source {
   overflow: hidden;
 }
 
-/* Milkdown's Crepe theme defaults the canvas to padding: 60px 120px
-   (reset.css), which is oversized for a desktop editor. Tighten it — and halve
-   the top padding so the first line sits closer to the toolbar (user decision
-   2026-08-06). */
+
 .editor-host .milkdown .ProseMirror {
   padding: 16px 48px;
 }
 
-/* Spec 018 (FR-002): the WYSIWYG editor toolbar (the TopBar Crepe renders for
-   each instance) is a shade of grey darker than the active tab pill. The main
-   app header bar keeps its existing --mm-surface; only this toolbar moves
-   darker. The override targets the top bar directly rather than redefining
-   --crepe-color-surface, which also paints the table cells and the heading
-   dropdown (research R1, FR-005). */
+
 .milkdown .milkdown-top-bar {
   background: var(--mm-header);
 }
 
-/* Spec 014 (FR-001/002/003/005/006): the "View source" action is the LAST
-   top-bar-item inside .top-bar-inner (the custom 'view' group is appended by
-   buildTopBar — see CrepeHost.tsx and toolbarLabels.ts). Crepe gives every
-   top-bar button the same outline-coloured icon, so the source action is easy
-   to miss. Make it prominent: the icon is rendered in the spec-028 dark-blue
-   token, with NO background fill — the blue glyph alone stands out from the
-   muted formatting controls while keeping Crepe's button size/alignment
-   (contracts/renderer.md R1-R3; spec 028 D4 as amended 2026-08-10: the pill
-   was removed at the user's request, and the spec-014 accent colour is
-   superseded by --mm-view-source).
-   The :last-child target is deliberately coupled to Crepe's group order; the
-   e2e `isLast` assertion in tests/e2e/view-source-icon.spec.ts is the tripwire
-   if a future group is appended after 'view'. */
+
 .milkdown .milkdown-top-bar .top-bar-inner > .top-bar-item:last-child {
   border-radius: 4px;
 }
 
-/* Spec 028 (FR-004/005): the glyph is the heroicons code-bracket-square outline,
-   which paints via stroke (fill: none). Crepe's base rule sets fill on every
-   top-bar svg, so the outline must be re-asserted or the square fills solid
-   (research R3). */
+
 .milkdown .milkdown-top-bar .top-bar-inner > .top-bar-item:last-child svg {
   color: var(--mm-view-source);
   stroke: var(--mm-view-source);
   fill: none;
 }
 
-/* GitHub-style block spacing (2026-08-07): Crepe's reset.css collapses block
-   rhythm to `padding: 4px 0` on paragraphs and no bottom margins anywhere,
-   which renders documents visually squashed. GitHub's rendered markdown
-   separates blocks with vertical margins (paragraphs 16px, headings ~24px top
-   / 16px bottom, lists 16px, blockquote/pre/code 16px) and indents list
-   markers with 2em. Mirror that rhythm for a GitHub-like reading feel while
-   keeping the WYSIWYG editable. */
+
 .editor-host .milkdown .ProseMirror {
   line-height: 1.6;
 }
@@ -143,19 +97,13 @@
   margin: 4px 0;
 }
 
-/* 2026-08-07: Crepe wraps each list item's text in a <p> (li > .children > p),
-   so the general `p { margin: 0 0 16px }` rule above stacked onto the li margin
-   and made bullets sit ~20px apart — far looser than GitHub's rendered lists.
-   Zero the inner paragraph margin so the li margin alone owns the rhythm. */
+
 .editor-host .milkdown .ProseMirror li p {
   margin: 0;
   padding: 0;
 }
 
-/* 2026-08-07: Crepe fixes the list marker at height: 32px, but the body text
-   line box is 24px (reset.css), so a numbered marker's centre sat ~4px below
-   its text line. Match the label to the text line box so marker and first line
-   of text align vertically. */
+
 .editor-host .milkdown .milkdown-list-item-block li .label-wrapper,
 .editor-host .milkdown .milkdown-list-item-block li .label-wrapper .label {
   height: 24px;
@@ -163,9 +111,7 @@
 
 .editor-host .milkdown .ProseMirror blockquote {
   margin: 0 0 16px;
-  /* 2026-08-07: Crepe's reset.css pads blockquotes 40px left (with a 4px bar).
-     Halve the indent to 20px — the default reads too wide inside a desktop
-     canvas. */
+
   padding-left: 20px;
 }
 
@@ -182,24 +128,12 @@
   margin: 0 0 16px;
 }
 
-/* 2026-08-07: HTML comments (<!-- … -->) parse into inline `html` atom spans
-   (`span[data-type="html"]`, verified in the live editor). Hide them so the
-   visual canvas reads like rendered markdown — the atom stays in the document
-   and still round-trips to disk on save, so no content is lost. The attribute
-   value is the raw comment (e.g. `<!-- note -->`), so the prefix selector
-   catches every comment node and only comments. */
+
 .editor-host .milkdown .ProseMirror span[data-type='html'][data-value^='<!--'] {
   display: none;
 }
 
-/* Crepe's inline SVGs (top-bar icons AND list-item bullet/checkbox markers)
-   wrap their paths in `<g clip-path="url(#clip0_977_...)">` referencing a
-   `<defs><clipPath>` with a generated id. Every editor instance duplicates
-   the same ids, and `url(#clip0_977_...)` is a document-global lookup — the
-   browser paints the FIRST match, which on the second/third document sits in
-   a hidden editor host, so those icons and bullet dots silently never paint.
-   The clip path is a full-view-box rect (a visual no-op), so disabling it is
-   a pure fix (research.md R22; extended to list bullets 2026-08-07). */
+
 .milkdown svg g[clip-path] {
   clip-path: none;
 }
@@ -209,10 +143,7 @@
   pointer-events: none;
 }
 
-/* Spec 002: the source view is an opaque overlay inside the editor host,
-   sliding in from the right to replace the formatted editor (FR-003, FR-009).
-   The Crepe host stays mounted underneath but is covered while source shows.
-   Spec 013 FR-010: it follows the theme via the --mm-* tokens. */
+
 .source-view {
   position: absolute;
   inset: 0;
@@ -288,19 +219,14 @@
   outline-offset: -2px;
 }
 
-/* Spec 031: this only changes visual-editor code token paint. The embedded
-   CodeMirror instance, source text, selection, and history stay untouched. */
+
 .app-container[data-visual-code-highlighting='off'] .milkdown-code-block .cm-content span {
   color: inherit !important;
   font-style: inherit !important;
   font-weight: inherit !important;
 }
 
-/* outline: none is offset by a visible keyboard focus indicator (WCAG 2.4.11).
-   The textarea fills the whole source surface, so a 2px outline reads as a
-   window border. Use a subtle theme-neutral ring (--mm-muted) instead of the
-   loud accent colour, so it signals keyboard focus without framing the window
-   (fix 2026-08-07: was the accent, orange in light theme). */
+
 .source-textarea:focus-visible {
   outline: 2px solid var(--mm-muted);
   outline-offset: -2px;
@@ -321,9 +247,7 @@
   }
 }
 
-/* Spec 020 (2026-08-07): the JS spellchecker's wavy-red underline on
-   misspelled words in the WYSIWYG editor (applied by the spellcheck plugin's
-   inline decoration). */
+
 .mm-spelling-error {
   text-decoration: underline wavy #d0021b;
   text-decoration-skip-ink: none;

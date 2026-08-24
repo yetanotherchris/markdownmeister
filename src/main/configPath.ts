@@ -1,11 +1,7 @@
 import * as path from 'path'
 import * as fs from 'fs'
 
-/**
- * Spec 022 (FR-001/002/005): pure, electron-free path resolution and the
- * one-time config-location migration. Path inputs are injected so the module is
- * unit-testable without Electron or a real home directory (research R2).
- */
+
 
 export interface ConfigPathParts {
   /** `os.homedir()`, the user's home directory. */
@@ -14,12 +10,11 @@ export interface ConfigPathParts {
   platform: NodeJS.Platform
   /** `process.env.XDG_CONFIG_HOME` (Linux only; ignored elsewhere). */
   xdgConfigHome?: string
-  /** `app.getPath('appData')`, the legacy per-platform config parent. */
+
   appDataDir?: string
 }
 
-/** The universal config directory: `~/.config/markdownmeister`, or
- *  `$XDG_CONFIG_HOME/markdownmeister` on Linux when set (FR-001/002). */
+
 export function universalConfigDir(parts: ConfigPathParts): string {
   if (parts.platform === 'linux' && parts.xdgConfigHome && parts.xdgConfigHome.length > 0) {
     return path.join(parts.xdgConfigHome, 'markdownmeister')
@@ -27,15 +22,12 @@ export function universalConfigDir(parts: ConfigPathParts): string {
   return path.join(parts.homeDir, '.config', 'markdownmeister')
 }
 
-/** The universal config file: `<universalConfigDir>/config.json` (FR-001). */
+
 export function universalConfigPath(parts: ConfigPathParts): string {
   return path.join(universalConfigDir(parts), 'config.json')
 }
 
-/** The legacy platform-specific config location (FR-005). On Linux the legacy
- *  location honours `$XDG_CONFIG_HOME` (matching the pre-022 `appData`-based
- *  path), so with XDG set it equals the universal path and there is nothing to
- *  migrate; without XDG both resolve to `~/.config/markdownmeister`. */
+
 export function legacyConfigPath(parts: ConfigPathParts): string {
   if (parts.platform === 'linux') {
     const configHome = parts.xdgConfigHome && parts.xdgConfigHome.length > 0
@@ -49,10 +41,7 @@ export function legacyConfigPath(parts: ConfigPathParts): string {
 
 export type MigrationResult = 'nothing' | 'migrated' | 'new-wins' | 'failed'
 
-/** One-time migration: rename `legacy` to `universal` when the new location is
- *  empty and the old one holds a config. The new config always wins (FR-007);
- *  any failure leaves the old file in place and reports `failed` so the caller
- *  can log and continue with defaults (FR-008). */
+
 export function migrateConfigFile(legacy: string, universal: string): MigrationResult {
   try {
     const universalExists = fs.existsSync(universal)

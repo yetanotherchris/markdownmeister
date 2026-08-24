@@ -9,15 +9,10 @@ import * as path from 'node:path'
  * surface renders garbage, so the leading binary structures are parsed here
  * in pure TypeScript against the committed files.
  *
- * The contract is dimensional/structural equivalence (docs/icon-provenance.md,
- * research D6), not byte identity: regenerating the assets must reproduce the
+ * The checks cover dimensions and structure, not byte identity: regeneration reproduces the
  * same sizes, colour types, ICO directory shape, and ICNS chunk layout.
  *
- * Cross-asset byte identity is asserted only where the derivation chain itself
- * copies bytes verbatim (icon.png ← 512 ladder entry, ICO payloads ← ladder,
- * ic10 body ← master.png). A final block guards FR-007's sync rule: the
- * generator's mirrored geometry constants must keep matching master.svg, so an
- * SVG edit without the matching script edit cannot ship non-derivative artwork.
+ * Byte identity is checked for copied icon payloads.
  */
 
 const repoRoot = path.resolve(__dirname, '..', '..')
@@ -73,9 +68,7 @@ describe('PNG ladder (resources/icons)', () => {
   })
 
   it('ships resources/icon.png as a byte copy of the largest ladder entry', () => {
-    // The generator's final Copy-Item step (derivation chain). Pinning byte
-    // identity means a hand-touched single derived file cannot drift silently
-    // from its source while every structural check still passes.
+    // This output is a direct copy of the largest ladder entry.
     expect(fs.readFileSync(windowPngPath).equals(fs.readFileSync(ladderPath(512)))).toBe(true)
   })
 })
@@ -210,10 +203,7 @@ describe('macOS bundled icon (resources/icon.icns)', () => {
   it('contains exactly the ic07/ic08/ic09/ic10 chunks in ascending-size order', () => {
     const chunks = readChunks(fs.readFileSync(icnsPath))
     expect(chunks.map((chunk) => chunk.type)).toEqual(['ic07', 'ic08', 'ic09', 'ic10'])
-    // Byte LENGTHS are deliberately not compared for monotonicity: a valid
-    // regenerated PNG can encode a larger canvas into fewer bytes than its
-    // predecessor, so length ordering goes beyond the ICNS format contract.
-    // The per-chunk IHDR assertions below carry the size guarantee instead.
+    // PNG byte length does not indicate image dimensions.
   })
 
   it.each([
@@ -232,8 +222,7 @@ describe('macOS bundled icon (resources/icon.icns)', () => {
   })
 
   it('carries the committed master artwork verbatim as its largest chunk body', () => {
-    // The generator reads assets/icon/master.png straight into the ic10 body
-    // (derivation chain); pinning the bytes keeps the surfaces from drifting.
+    // The largest ICNS payload matches the master image.
     const chunks = readChunks(fs.readFileSync(icnsPath))
     const ic10 = chunks.find((chunk) => chunk.type === 'ic10')
     if (!ic10) throw new Error('missing ic10 chunk')

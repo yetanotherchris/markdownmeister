@@ -66,11 +66,7 @@ export function readFile(root: string, relativePath: string): OpenedFile {
   }
 }
 
-/**
- * FR-025/FR-029b: describe an entry for a delete confirmation. For folders,
- * scans the subtree for non-markdown files without following symlinks, so the
- * confirmation can warn about contents the tree never shows.
- */
+
 export function describeEntry(root: string, relativePath: string): EntryInfo {
   const { resolved } = resolveWithinRoot(root, relativePath)
   const stat = fs.statSync(resolved)
@@ -79,11 +75,6 @@ export function describeEntry(root: string, relativePath: string): EntryInfo {
     return { kind: 'file', isEmpty: false, hasHiddenFiles: false }
   }
 
-  // Early-exit scan: the confirmation needs only `isEmpty` and
-  // `hasHiddenFiles`. Stop at the first non-markdown file; only an
-  // all-markdown deep tree forces a full walk. An unreadable subfolder is
-  // treated as non-empty (conservative: the FR-025 warning must not understate
-  // what a delete will remove).
   const scan = (dirPath: string, state: { any: boolean; hidden: boolean; error: boolean }): boolean => {
     let entries: fs.Dirent[]
     try {
@@ -95,9 +86,6 @@ export function describeEntry(root: string, relativePath: string): EntryInfo {
     for (const entry of entries) {
       state.any = true
       if (entry.isDirectory()) {
-        // Real directories only: symlinked directories are never shown in the
-        // tree (readDir filters them out) and are not recursed, so an external
-        // target or a symlink loop cannot be scanned.
         if (scan(path.join(dirPath, entry.name), state)) return true
       } else if (!(entry.isFile() && isMarkdown(entry.name))) {
         // Anything the tree does not show: non-markdown files, symlinks,

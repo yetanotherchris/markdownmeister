@@ -102,12 +102,7 @@ export function resolveWithinRoot(root: string, candidate: string): ResolveResul
   return { resolved: realTarget, relative: normalized }
 }
 
-/**
- * Nearest existing ancestor of `p` (which itself does not exist yet). Its
- * real path must stay inside the workspace: a directory junction/symlink
- * planted in the path resolves elsewhere, and the OS will write through it,
- * so the path escapes even though its lexical form looks contained.
- */
+
 function findExistingAncestor(p: string, rootReal: string): string | null {
   let current = p
   while (current !== path.dirname(current)) {

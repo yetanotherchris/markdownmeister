@@ -1,9 +1,3 @@
-// Spec 038: electron-builder afterPack hook (resolved from the `afterPack`
-// config key). Copies the built shell-extension DLL into win-unpacked so the
-// appx target packs it at `app\resources\shell-extension\`.
-//
-// Non-Store targets skip this hook when the DLL is absent. Appx packages need
-// the DLL because their manifest references it, so the hook reports an error.
 'use strict'
 
 const fs = require('fs')

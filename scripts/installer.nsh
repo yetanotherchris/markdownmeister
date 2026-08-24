@@ -1,32 +1,9 @@
-; Spec 006 (FR-001/002/012/013/015) + fix 2026-08-09: per-user Explorer
-; context-menu verbs that open .md/.markdown files and folders in MarkdownMeister
-; WITHOUT changing the user's default application.
-;
-; Registration targets the EFFECTIVE file type (fix 2026-08-09): the shell
-; ignores verbs registered under the bare extension key whenever a Windows
-; user-choice default exists (the file resolves to the chosen ProgID). For each
-; supported extension the verb is therefore registered under the per-user class
-; of the resolved ProgID when that is safe — the class already exists in HKCU,
-; or the ProgID is dead (registered nowhere, so a fresh HKCU class shadows
-; nothing) — otherwise under `*` (AllFilesystemObjects), which the shell always
-; enumerates. Folders register under `Directory`. Every class registered is
-; recorded in an app-owned state key so uninstall removes exactly what was
-; added, even if the user's default changed in between.
-;
-; Spec 035 (D5): the folder verb gets its own display label, "Open in
-; ${PRODUCT_NAME}", mirroring the platform's "Open in Terminal" convention,
-; while file verbs keep "Open with ${PRODUCT_NAME}". Both derive from the one
-; product name; the verb KEY stays the product name so the uninstall removal
-; keys written by earlier versions still resolve.
 
 !ifndef PRODUCT_NAME
   !define PRODUCT_NAME "MarkdownMeister"
 !endif
 
-; electron-builder defines `${PRODUCT_FILENAME}.exe` as APP_EXECUTABLE_FILENAME
-; in its common.nsh (markdownmeister.exe, spec 019) — never redefine it here.
 
-; FR-015: one product display name feeds every native action label.
 !define MM_VERB_NAME "${PRODUCT_NAME}"
 !define MM_VERB_DISPLAY_FILE "Open with ${PRODUCT_NAME}"
 !define MM_VERB_DISPLAY_FOLDER "Open in ${PRODUCT_NAME}"
@@ -43,7 +20,6 @@
   WriteRegDWord HKCU "${MM_STATE_KEY}" "${CLASS}" 1
 !macroend
 
-; Resolve the effective ProgID for an extension and register the file verb.
 !macro MM_RegisterFileVerb EXT
   ClearErrors
   ReadRegStr $1 HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\${EXT}\UserChoice" "ProgId"
@@ -76,9 +52,6 @@
   MM_FILE_DONE_${EXT}:
 !macroend
 
-; Remove the file verb for an extension: re-resolve the effective class and
-; delete the verb there, then drop a dead-ProgID class we created once it is
-; empty (the predefined `*` class is never removed).
 !macro MM_UnregisterFileVerb EXT
   ClearErrors
   ReadRegStr $1 HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\${EXT}\UserChoice" "ProgId"
@@ -106,15 +79,11 @@
 !macro customInstall
   !insertmacro MM_RegisterFileVerb ".md"
   !insertmacro MM_RegisterFileVerb ".markdown"
-  ; Spec 035: the folder action carries the folder label (D5).
   !insertmacro MM_RegisterVerbClass "Directory" "${MM_VERB_DISPLAY_FOLDER}"
-  ; Refresh Explorer so the verbs appear without a shell restart.
   System::Call 'shell32::SHChangeNotify(i, i, i, i) v (0x08000000, 0, 0, 0)'
 !macroend
 
 !macro customUnInstall
-  ; Remove the verb from every class recorded at install — robust even when the
-  ; user changed their default application since.
   StrCpy $0 0
   MM_LOOP:
   EnumRegValue $1 HKCU "${MM_STATE_KEY}" $0
@@ -124,8 +93,6 @@
   Goto MM_LOOP
   MM_LOOP_DONE:
   DeleteRegKey HKCU "${MM_STATE_KEY}"
-  ; Also clean the legacy v0.1.0 extension-key entries and the standard
-  ; locations, in case an earlier version or a manual change left them.
   !insertmacro MM_UnregisterFileVerb ".md"
   !insertmacro MM_UnregisterFileVerb ".markdown"
   DeleteRegKey HKCU "Software\Classes\Directory\shell\${MM_VERB_NAME}"

@@ -4,21 +4,7 @@ import type { EditorState, Transaction } from '@milkdown/kit/prose/state'
 import type { Ctx, MilkdownPlugin } from '@milkdown/kit/ctx'
 import { DEFAULT_MARKDOWN_SYNTAX_OPTIONS, type MarkdownSyntaxOptions } from './markdownSyntaxOptions'
 
-/**
- * Spec 030 (research R4): the syntax-producing ProseMirror `InputRule`s
- * (`~~`, `| col |`, `- [ ]`, `$...$`, `$$...$$`) fire independently of the
- * remark parser, so gating parsing alone would still let typing `~~x~~` wrap a
- * strike mark when strikethrough is disabled. This module replaces each gated
- * rule's handler with a flag-checking wrapper that consults the shared runtime
- * options at INVOKE time, so a settings toggle takes effect on every live
- * editor without re-registering any rule (FR-014, US1 S3).
- *
- * The rules are identified by the regex they were built with (their
- * `match.source`), which is the stable shape Milkdown uses for these rules and
- * what the undo/redo behaviour keys off, see the `$inputRule` composables in
- * `@milkdown/preset-gfm` and the Crepe latex feature. Non-gated rules pass
- * through untouched.
- */
+
 
 type InputRuleHandler = (
   state: EditorState,

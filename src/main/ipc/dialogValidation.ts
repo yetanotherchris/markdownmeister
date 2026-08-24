@@ -1,9 +1,5 @@
 import type { ErrorCode, NativeDialogRequest } from '../../shared/ipc-contract'
 
-// Spec 008: the renderer may only ask main to show one of the nine known dialog
-// kinds, with length-bounded display strings (never paths). A malformed request
-// fails closed, no dialog is shown (Principle II). Electron-free so the
-// validator is unit-testable without Electron (tests/main/dialogValidation.test.ts).
 const MAX_STRING = 500
 const MAX_LIST = 50
 const MAX_ERROR = 1000

@@ -3,22 +3,7 @@ import * as path from 'path'
 
 import { atomicWrite } from './fs/atomicWrite'
 
-/**
- * Spec 035 (research D4, contracts/registration.md): the Linux folder action.
- *
- * When the app runs as an AppImage, the main process keeps a USER-LEVEL
- * freedesktop desktop entry in sync so file managers list MarkdownMeister
- * under "Open With" for folders (`MimeType=inode/directory;`). The entry is
- * association-only: this module never writes `[Default Applications]`, never
- * touches any `mimeapps.list`, and never runs `xdg-mime`, the app must never
- * become the default folder handler. `TryExec` points at the AppImage itself,
- * so launchers auto-hide the entry once the file is deleted; no dead visible
- * entry can survive an uninstall-by-deletion.
- *
- * Everything here is Electron-free (like osOpen.ts) so the rendering rules,
- * especially Exec quoting of hostile paths, are unit-testable directly, and
- * every operation fails soft: a returned failure never blocks startup.
- */
+
 
 export const PRODUCT_NAME = 'MarkdownMeister'
 export const DESKTOP_ENTRY_FILE_NAME = 'markdownmeister.desktop'
@@ -37,12 +22,7 @@ export interface FolderActionLocations {
   iconFile: string
 }
 
-/**
- * Resolve `$XDG_DATA_HOME` per the XDG base-directory spec: an absolute
- * override wins; otherwise `$HOME/.local/share`. A relative or missing value
- * is ignored rather than guessed at. Returns null when no usable home exists
- * (the caller treats that as "no folder action possible" and moves on).
- */
+
 export function resolveXdgDataHome(env: { XDG_DATA_HOME?: string; HOME?: string }): string | null {
   const xdgDataHome = env.XDG_DATA_HOME?.trim()
   if (xdgDataHome && path.isAbsolute(xdgDataHome)) return xdgDataHome
@@ -60,14 +40,7 @@ export function folderActionLocations(dataHome: string): FolderActionLocations {
   }
 }
 
-/**
- * Encode one Exec argument for writing to a desktop-entry file. The spec
- * applies two escape layers, read in reverse: the file layer treats the value
- * as a string where a literal `\` is written `\\`, and the Exec layer takes a
- * double-quoted argument where `\` and `"` are escaped and a literal `%` is
- * written `%%` so field codes never fire. Writing fileEncode(execEncode(path))
- * makes a strict parser decode back exactly the chosen path.
- */
+
 function encodeExecArgument(argument: string): string {
   const quoted = `"${argument.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/%/g, '%%')}"`
   return quoted.replace(/\\/g, '\\\\')
@@ -89,19 +62,11 @@ export function renderDesktopEntry(appImagePath: string, options?: { iconName?: 
   return lines.join('\n') + '\n'
 }
 
-/**
- * Find a usable icon inside an AppImage mount root (the AppDir). The AppImage
- * runtime guarantees `.DirIcon`; the other candidates cover electron-builder
- * layouts. Returns null when nothing PNG-shaped is found, the entry is then
- * written without an `Icon` key rather than half-installed.
- */
+
 export function findAppImageIcon(mountRoot: string): string | null {
   const candidates = [path.join(mountRoot, '.DirIcon'), path.join(mountRoot, ICON_BASE_NAME)]
   const hicolorApps = path.join(mountRoot, 'usr', 'share', 'icons', 'hicolor')
   try {
-    // Deterministic preference: the declared theme size first, then larger
-    // sizes before smaller ones, readdir order must not pick a 16x16 over a
-    // 512x512 icon.
     const byPreferredSize = (a: string, b: string): number => {
       if (a === ICON_THEME_SIZE) return -1
       if (b === ICON_THEME_SIZE) return 1
@@ -160,12 +125,7 @@ export function ensureFolderAction(input: {
   }
 }
 
-/**
- * Copy a validated PNG source into the hicolor destination unless identical
- * bytes are already there (launches must not churn the file's mtime). Returns
- * whether an icon is installed at the destination afterwards; any failure is
- * best-effort and simply leaves the entry without its Icon key.
- */
+
 function installIcon(iconSource: string, iconFile: string): boolean {
   try {
     if (!isPng(iconSource)) return false
@@ -184,10 +144,7 @@ export interface RemoveFolderActionResult {
   removedIcon: boolean
 }
 
-/**
- * Delete the entry and icon files (contract: absent files are success). Never
- * touches `mimeapps.list` or anything else in the applications directory.
- */
+
 export function removeFolderAction(locations: FolderActionLocations): RemoveFolderActionResult {
   return {
     removedEntry: deleteIfPresent(locations.entryFile),

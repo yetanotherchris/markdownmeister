@@ -7,16 +7,12 @@ interface SpellingMenuProps {
   onDismiss: () => void
 }
 
-/** Cap the menu within the viewport so it never renders off-screen. */
+
 function clamp(value: number, max: number): number {
   return Math.max(0, Math.min(value, max))
 }
 
-/**
- * Spec 020 (2026-08-07): the JS-spellchecker correction menu. A small popover
- * at the right-click position offering nspell's suggestions and an
- * add-to-dictionary action. Dismissed by outside click, Escape, or a choice.
- */
+
 export default function SpellingMenu({ menu, onDismiss }: SpellingMenuProps) {
   const rootRef = useRef<HTMLDivElement>(null)
 

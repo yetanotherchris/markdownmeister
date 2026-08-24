@@ -7,12 +7,9 @@ import { closeAppSafely, launchApp, openFile, openSettingsDialog, openThemeArea 
 
 /**
  * Spec 014 suite (contracts/renderer.md): the View source action is the last
- * `.top-bar-item` in the Crepe top bar (the custom 'view' group is appended by
- * buildTopBar). Spec 028 supersedes the accent colour: the glyph is now the
- * heroicons code-bracket-square rendered in the single curated `--mm-view-source`
- * dark blue, identical in both modes (research R2, plan D4). The structural
- * checks from 014 are kept: last item, tooltip/aria-label, distinctness from the
- * muted formatting controls, and dark-mode coverage.
+ * `.top-bar-item` in the editor toolbar. Its code-bracket-square glyph uses
+ * `--mm-view-source` dark blue in both modes. The checks cover position,
+ * labels, color distinction, and dark mode.
  */
 
 let app: ElectronApplication
@@ -42,7 +39,7 @@ test.afterAll(async () => {
   fs.rmSync(testFolder, { recursive: true, force: true })
 })
 
-/** The heroicons 24px code-bracket-square outline path (spec 028, research R3). */
+/** The 24px code-bracket-square outline path. */
 const CODE_BRACKET_SQUARE_D =
   'M14.25 9.75 16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0 0 20.25 18V6A2.25 2.25 0 0 0 18 3.75H6A2.25 2.25 0 0 0 3.75 6v12A2.25 2.25 0 0 0 6 20.25Z'
 
@@ -104,7 +101,7 @@ test('US1/US2 the View source icon is the dark-blue last toolbar item', async ()
   const isLast = await viewSource.evaluate((el) => el === el.parentElement?.lastElementChild)
   expect(isLast).toBe(true)
 
-  // Spec 028 FR-004: the glyph is the heroicons code-bracket-square outline.
+  // The glyph uses the expected code-bracket-square path.
   expect(await iconPath(viewSource)).toBe(CODE_BRACKET_SQUARE_D)
 
   // FR-001/FR-003: its icon renders in the curated dark blue, distinct from the
@@ -129,7 +126,7 @@ test('FR-005 the icon stays distinct and dark-blue in the dark theme', async () 
   await expect(viewSource).toBeVisible()
 
   // Spec 028 (FR-005/006): the view-source colour is a SINGLE curated colour,
-  // identical in both modes, it must NOT follow the accent, which differs.
+  // identical in both modes and does not follow the accent.
   const viewSourceColorValue = await viewSourceColor()
   expect(viewSourceColorValue).toBe(lightViewSource)
   expect(await iconColor(viewSource)).toBe(viewSourceColorValue)

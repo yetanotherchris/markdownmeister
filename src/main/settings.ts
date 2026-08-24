@@ -14,18 +14,12 @@ import { ctx } from './ipc/handlers/context'
 
 export { DEFAULTS }
 
-/**
- * Spec 012 FR-002: settings live in the SAME per-user configuration file as the
- * recent-items list, `appData/markdownmeister/config.json` (see recentItemsPath.ts). Both
- * `MM_CONFIG_DIR` (test seam) and the production path therefore resolve to the
- * same file the MRU list uses; the settings section is a sibling key.
- */
+
 function settingsPath(): string {
   return recentItemsConfigPath()
 }
 
-/** The pre-012 legacy path: MM_CONFIG_DIR/settings.json in tests, otherwise
- *  userData/settings.json. */
+
 function legacySettingsPath(): string {
   const override = process.env.MM_CONFIG_DIR
   if (override && override.length > 0) {
@@ -34,14 +28,7 @@ function legacySettingsPath(): string {
   return path.join(app.getPath('userData'), 'settings.json')
 }
 
-/**
- * Authoritative in-memory settings, seeded from disk once. Kept because the
- * on-disk write is debounced (saveSettings): without it, a `settings:update`
- * that arrives before the previous write flushed would build its snapshot from
- * a STALE disk read and silently revert the earlier field (review #27 finding:
- * a Serif choice followed within 500 ms by a sidebar resize clobbered the font).
- * All merges go through this object, so updates are never lost to the debounce.
- */
+
 let currentSettings: Settings | null = null
 
 function loadFromDisk(): Settings {
@@ -49,10 +36,6 @@ function loadFromDisk(): Settings {
   const migrated = migrateLegacySettingsFile(configPath, legacySettingsPath())
   if (migrated) return migrated
   const settings = loadSettingsFile(configPath)
-  // Spec 008 clarification 2026-08-09: a fresh config (missing file, or a file
-  // with no settings section) is materialised on first launch so the default
-  // Rustic palette is persisted. At startup no folder is open, so the honest
-  // FR-013 explorer state is `false` (see workspaceExplorerState.ts).
   materialiseDefaultSettings(configPath, ctx.workspaceRoot !== null)
   return settings
 }
@@ -62,9 +45,7 @@ export function loadSettings(): Settings {
   return currentSettings
 }
 
-/** Validate a renderer-supplied patch field by field against the current
- *  settings (review #27; spec 036: `editorTheme` must be a well-formed theme
- *  name, never arbitrary text). Returns the merged Settings. */
+
 function validateAndMerge(patch: Partial<Settings>): Settings {
   return mergeSettingsPatch(loadSettings(), patch)
 }
@@ -90,14 +71,11 @@ export function saveSettings(settings: Settings): void {
       writeSettingsFile(settingsPath(), settings)
       writeTimer = null
     } catch {
-      // Fail silently, settings are non-critical
     }
   }, 500)
 }
 
-/** Flush any pending debounced settings write immediately (review #27: a font
- *  change followed by a fast quit must not be lost, FR-006). Called from the
- *  quit path in index.ts. */
+
 export function flushSettings(): void {
   if (writeTimer) {
     clearTimeout(writeTimer)
@@ -105,18 +83,11 @@ export function flushSettings(): void {
     try {
       writeSettingsFile(settingsPath(), currentSettings ?? loadFromDisk())
     } catch {
-      // Fail silently, settings are non-critical
     }
   }
 }
 
-/** Spec 036 (review finding 2026-08-23): the themes migration repairs
- *  `editorTheme` through a surgical raw-config edit (plan D9) that this module
- *  cannot see. A snapshot cached BEFORE such a write arms a debounced write
- *  that would later restore the pre-migration selection over the repaired one.
- *  Adopting the repaired name keeps the authoritative cache honest and re-arms
- *  any pending write with the corrected snapshot. A no-op before a cache
- *  exists, the first load then reads the already-repaired file. */
+
 export function adoptRepairedEditorTheme(themeName: string): void {
   if (!currentSettings || currentSettings.editorTheme === themeName) return
   currentSettings = { ...currentSettings, editorTheme: themeName }

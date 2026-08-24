@@ -271,14 +271,11 @@ test.describe('US5 task backspace', () => {
     // Place the caret in the paragraph text, then add one empty block.
     await window.locator('[contenteditable="true"] p').last().click()
     await window.keyboard.press('End')
-    // Wait for the new empty paragraph Enter creates to be ingested BEFORE
-    // toggling it, the toolbar button reads the block state, and clicking it
-    // before the new block lands can toggle the previous paragraph, so no list
-    // item ever appears (pre-existing race, fixed 2026-08-07).
+    // Wait for the new paragraph before toggling it so the toolbar targets it.
     const blockCount = await window.locator('[contenteditable="true"] p').count()
     await window.keyboard.press('Enter')
     await expect(window.locator('[contenteditable="true"] p')).toHaveCount(blockCount + 1)
-    // Ensure the caret is inside the new empty block before the toolbar toggle,
+    // Keep the caret inside the new empty block before the toolbar toggle,
     // Enter alone may leave the selection at the old block under load.
     await window.locator('[contenteditable="true"] p').last().click()
     // Create the task item strictly with the checklist control (SC-005) rather
@@ -328,7 +325,7 @@ test.describe('FR-12 normalization is preserved, not announced', () => {
     await window.getByRole('button', { name: /Back to visual editing/ }).click()
     await expect(window.getByTestId('source-view')).toHaveCount(0)
 
-    // No dirty dot, and closing the tab does NOT prompt for unsaved changes.
+    // No dirty dot appears, and closing the tab does not prompt for unsaved changes.
     await expect(window.locator('.document-title')).not.toContainText('\u2022')
     await window.getByRole('button', { name: 'Close link.md' }).click()
     // The native prompt must not have fired.
@@ -357,7 +354,7 @@ test.describe('FR-12 normalization is preserved, not announced', () => {
     await window.getByRole('menuitem', { name: 'View source' }).click()
     await expect(window.getByTestId('source-textarea')).toHaveText('No trailing newline')
 
-    // Edit AND save while still in source view: the disk write must be the raw
+    // Edit and save while still in source view: the disk write is the raw
     // store bytes, neither a re-serialized editor output nor an added `\n`.
     await window.getByTestId('source-textarea').fill('Edited raw source, no newline')
     await stubMessageBox(app, 'Save')

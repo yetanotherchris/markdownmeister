@@ -222,7 +222,7 @@ describe('useSettingsState (spec 016)', () => {
     expect(getSettings().strikethrough).toBe(false)
     const calls = (globalThis as unknown as { __apiCalls: { strikethrough?: boolean }[] })
       .__apiCalls
-    // The handler persists the FULL six-field snapshot, not just the patch.
+    // The handler persists all six fields, not just the patch.
     expect(calls).toEqual([
       {
         hardBreaks: false,

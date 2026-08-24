@@ -5,7 +5,7 @@ import type { NativeDialogRequest } from '../../src/shared/ipc-contract'
 // Spec 008, "Malformed request" edge case (contracts/renderer.md): the main-
 // process validator rejects a bad request with an IO error and no dialog is
 // shown. These behavioral tests pin the nine-kind whitelist and the length
-// caps that the old type-shape tests could not (test review 2026-08-04).
+// caps that type-shape tests do not cover.
 
 const errorOf = (fn: () => NativeDialogRequest): string => {
   try {

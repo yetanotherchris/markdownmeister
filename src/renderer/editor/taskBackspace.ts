@@ -1,22 +1,7 @@
 import { TextSelection } from '@milkdown/kit/prose/state'
 import type { EditorState, Transaction } from '@milkdown/kit/prose/state'
 
-/**
- * Pure decision helper for FR-016/017/018: pressing Backspace at the start of
- * an EMPTY task-list item should remove the item (or the whole list when it is
- * the only child) instead of leaving an undeletable checkbox.
- *
- * Returns a Transaction to dispatch when the keystroke is handled, or null so
- * the caller falls through to ProseMirror's ordinary Backspace (FR-018: other
- * deletions are never changed).
- *
- * Trigger conditions (research R-Task):
- *  - collapsed TextSelection,
- *  - cursor at the very start of the item's paragraph (parentOffset === 0),
- *  - the position's parent is a `list_item` with a `checked` attribute (the
- *    extended task-list variant, `taskListItemSchema`),
- *  - the item carries no text content.
- */
+
 export function planTaskBackspace(state: EditorState): Transaction | null {
   const { selection } = state
   if (!(selection instanceof TextSelection) || !selection.empty) return null
@@ -32,8 +17,6 @@ export function planTaskBackspace(state: EditorState): Transaction | null {
   const tr = state.tr
 
   if (list && list.childCount === 1) {
-    // FR-017: the item is the only one, replace the whole list structure with
-    // a paragraph so no checkbox is left behind. The cursor lands in it.
     const listStart = $from.before(-2)
     const listEnd = $from.after(-2)
     const paragraph = state.schema.nodes.paragraph
@@ -44,7 +27,6 @@ export function planTaskBackspace(state: EditorState): Transaction | null {
     return tr
   }
 
-  // FR-016: remove just the empty item; the remaining siblings stay coherent.
   const itemStart = $from.before(-1)
   const itemEnd = $from.after(-1)
   tr.delete(itemStart, itemEnd)

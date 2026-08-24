@@ -1,13 +1,4 @@
-/**
- * Ordered, stable label map for the Crepe top-bar controls (research.md WG).
- *
- * Crepe's `TopBar` renders every item in DOM order with NO title or aria-label
- * (verified: feature/top-bar/index.js renderButton/renderSelector). The app's
- * fixed feature set ([TopBar]: true, [Toolbar]: false, [BlockEdit]: false,
- * ImageBlock/Table/Latex off) yields a deterministic control order:
- * heading selector, then each top-bar-item in getGroups() order, then the
- * custom "view-source" group appended by buildTopBar.
- */
+
 
 export interface ToolbarLabel {
   title: string
@@ -50,8 +41,6 @@ export function applyToolbarLabels(container: HTMLElement): number {
     button.setAttribute('aria-label', label.ariaLabel)
     labelled++
   })
-  // A library or feature-flag change that drifts the DOM count from the map
-  // mislabels controls silently; break loudly instead (research WG).
   if (controls.length !== TOP_BAR_LABELS.length) {
     console.warn(
       `[toolbar-labels] DOM has ${controls.length} top-bar controls but TOP_BAR_LABELS has ` +

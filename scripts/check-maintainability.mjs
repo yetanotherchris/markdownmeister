@@ -1,18 +1,5 @@
 // Maintainability guardrail (see npm run check).
-/**
- * Maintainability guardrail for the codebase refactor (spec 017, contracts/guardrails.md).
- *
- * Uses the TypeScript compiler API (already a dependency) to report:
- *   [size]        source modules over 500 lines / orchestration over 300 / stylesheets over 400
- *   [complexity]  functions over cyclomatic-complexity 15
- *   [cycle]       circular imports across src/**
- *   [unused]      exported declarations referenced by no module in src/** or tests/**
- *
- * The command is a gate: violations are printed and the process exits non-zero
- * so CI cannot report a false-green maintainability result.
- *
- * Run: node scripts/check-maintainability.mjs   (or npm run check)
- */
+
 import * as ts from 'typescript'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
@@ -305,8 +292,6 @@ export function runCheck(rootDir) {
   }
 
   for (const [sym, info] of exportedSymbols) {
-    // The preload surface and the shared contract it exposes are the only
-    // external consumers; everything else must be referenced somewhere.
     const isPreload = info.file.includes('preload') || info.file.endsWith('ipc-contract.ts')
     if (isPreload) continue
     if (!referencedSymbols.has(sym)) {
