@@ -11,7 +11,7 @@ The single-page marketing site served by GitHub Pages. Everything under `docs/si
 | `index.html` | The page: markup, Tailwind utility classes in `class` attributes, and one inline script |
 | `styles.css` | Compiled Tailwind output — committed; regenerate after editing classes in `index.html` |
 | `tailwind.input.css` | Tailwind entry point (`@import 'tailwindcss'; @source './index.html';`) |
-| `assets/icon.png` | Product icon, copied unchanged from `resources/icons/256x256.png` (spec 039 master artwork) |
+| `assets/icon.png` | Product icon, copied unchanged from `resources/icons/256x256.png` (spec 043 master artwork) |
 | `assets/screenshot-placeholder.svg` | Placeholder hero artwork pending the maintainer's screenshot |
 
 ## Regenerating styles.css

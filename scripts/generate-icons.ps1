@@ -1,14 +1,13 @@
-# Generates the product icon asset set from a single programmatic source.
+# Derives the product icon asset set from the committed master artwork.
 # Zero external dependencies (GDI+ via System.Drawing).
 #
-# Edit assets/icon/master.svg to change the artwork. This script renders its
-# geometry into the committed platform assets. GDI+ output is not byte-stable,
-# so regenerated PNG files can differ while keeping the same format and size.
+# The master is assets/icon/master.png: the maintainer-approved artwork,
+# committed verbatim at its native size. This script never writes it; it
+# only produces the derived raster set below.
 #
-#   pwsh -File scripts/generate-icon-master.ps1 [-RepoRoot <path>]
+#   pwsh -File scripts/generate-icons.ps1 [-RepoRoot <path>]
 #
 # Outputs (tracked in git; idempotent, safe to re-run):
-#   assets/icon/master.png            1024x1024 RGBA master artwork (lossless PNG)
 #   resources/icon.ico                multi-resolution Windows icon (PNG-encoded entries)
 #   resources/icon.icns               macOS ic07/ic08/ic09/ic10 chunks (PNG-encoded)
 #   resources/icon.png                512x512 convenience master for electron-builder
@@ -24,7 +23,6 @@ $ErrorActionPreference = 'Stop'
 
 Add-Type -AssemblyName System.Drawing
 
-$MasterSize = 1024
 $LadderSizes = @(16, 24, 32, 48, 64, 128, 256, 512)
 $IcoSizes = @(16, 24, 32, 48, 64, 128, 256)
 $IcnsChunks = @(
@@ -34,84 +32,39 @@ $IcnsChunks = @(
     @{ Type = 'ic10'; Size = 1024 }
 )
 
-# Geometry constants mirrored 1:1 from assets/icon/master.svg (viewBox 0 0 1024 1024).
-$TileInsetRatio = 0.085
-$TileRadiusRatio = 0.225
-$StrokeWidthRatio = 0.078
-$MarkPoints = @(
-    @{ X = 0.295; Y = 0.705 },
-    @{ X = 0.295; Y = 0.335 },
-    @{ X = 0.500; Y = 0.575 },
-    @{ X = 0.705; Y = 0.335 },
-    @{ X = 0.705; Y = 0.705 }
-)
-$TileTopColor = [System.Drawing.Color]::FromArgb(255, 38, 49, 78)     # #26314E
-$TileBottomColor = [System.Drawing.Color]::FromArgb(255, 19, 26, 43)  # #131A2B
-$MarkColor = [System.Drawing.Color]::FromArgb(255, 249, 250, 252)     # #F9FAFC
-
-function New-RoundedRectPath {
-    param([float]$X, [float]$Y, [float]$W, [float]$H, [float]$R)
-    $path = New-Object System.Drawing.Drawing2D.GraphicsPath
-    $d = $R * 2
-    $path.AddArc($X, $Y, $d, $d, 180, 90)
-    $path.AddArc($X + $W - $d, $Y, $d, $d, 270, 90)
-    $path.AddArc($X + $W - $d, $Y + $H - $d, $d, $d, 0, 90)
-    $path.AddArc($X, $Y + $H - $d, $d, $d, 90, 90)
-    $path.CloseFigure()
-    return $path
+# The master must satisfy the committed contract before anything derives
+# from it: square, at least 1024x1024, 8-bit-per-channel truecolour with
+# alpha. Parsed from the raw bytes so the check cannot be fooled by a
+# decoder's pixel-format normalisation.
+function Read-PngUInt32BigEndian {
+    # PNG multi-byte header fields are big-endian.
+    param([byte[]]$Bytes, [int]$Offset)
+    $b0 = [uint32]$Bytes[$Offset]
+    $b1 = [uint32]$Bytes[$Offset + 1]
+    $b2 = [uint32]$Bytes[$Offset + 2]
+    $b3 = [uint32]$Bytes[$Offset + 3]
+    return ($b0 -shl 24) -bor ($b1 -shl 16) -bor ($b2 -shl 8) -bor $b3
 }
 
-function New-MasterBitmap {
-    param([int]$Size)
-
-    $bmp = New-Object System.Drawing.Bitmap($Size, $Size, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
-    $g = [System.Drawing.Graphics]::FromImage($bmp)
-    try {
-        $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
-        $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::Half
-
-        $g.Clear([System.Drawing.Color]::Transparent)
-
-        $inset = [math]::Round($Size * $TileInsetRatio)
-        $tileW = $Size - ($inset * 2)
-        $radius = [math]::Round($Size * $TileRadiusRatio)
-        $tilePath = New-RoundedRectPath -X $inset -Y $inset -W $tileW -H $tileW -R $radius
-
-        try {
-            $gradient = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
-                ([System.Drawing.PointF]::new(0, $inset)),
-                ([System.Drawing.PointF]::new(0, $inset + $tileW)),
-                $TileTopColor,
-                $TileBottomColor
-            )
-            try {
-                $g.FillPath($gradient, $tilePath)
-            }
-            finally {
-                $gradient.Dispose()
-            }
-        }
-        finally {
-            $tilePath.Dispose()
-        }
-
-        [System.Drawing.PointF[]]$points = $MarkPoints | ForEach-Object {
-            [System.Drawing.PointF]::new($_.X * $Size, $_.Y * $Size)
-        }
-        $pen = New-Object System.Drawing.Pen($MarkColor, ($Size * $StrokeWidthRatio))
-        try {
-            $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
-            $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
-            $pen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
-            $g.DrawLines($pen, $points)
-        }
-        finally {
-            $pen.Dispose()
-        }
-        return $bmp
+function Assert-MasterPng {
+    param([string]$Path)
+    $bytes = [System.IO.File]::ReadAllBytes($Path)
+    if ($bytes.Length -lt 26) { throw "$Path is too short to contain a PNG header" }
+    $signature = [byte[]](0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
+    for ($i = 0; $i -lt 8; $i++) {
+        if ($bytes[$i] -ne $signature[$i]) { throw "$Path is not a PNG file" }
     }
-    finally {
-        $g.Dispose()
+    if ([System.Text.Encoding]::ASCII.GetString($bytes, 12, 4) -ne 'IHDR') {
+        throw "$Path has no leading IHDR chunk"
+    }
+    $width = Read-PngUInt32BigEndian -Bytes $bytes -Offset 16
+    $height = Read-PngUInt32BigEndian -Bytes $bytes -Offset 20
+    $bitDepth = $bytes[24]
+    $colourType = $bytes[25]
+    if ($width -ne $height) { throw "$Path must be square (got ${width}x${height})" }
+    if ($width -lt 1024) { throw "$Path must be at least 1024x1024 (got ${width}x${height})" }
+    if ($bitDepth -ne 8 -or $colourType -ne 6) {
+        throw "$Path must be 8-bit RGBA (got bitDepth=$bitDepth colourType=$colourType)"
     }
 }
 
@@ -137,6 +90,19 @@ function Save-Png {
     $dir = Split-Path -Parent $Path
     if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
     $Bmp.Save($Path, [System.Drawing.Imaging.ImageFormat]::Png)
+}
+
+function Get-PngBytes {
+    # Encode a bitmap to PNG bytes in memory (no file side effect).
+    param([System.Drawing.Bitmap]$Bmp)
+    $ms = New-Object System.IO.MemoryStream
+    try {
+        $Bmp.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png)
+        return $ms.ToArray()
+    }
+    finally {
+        $ms.Dispose()
+    }
 }
 
 function Write-Ico {
@@ -204,19 +170,16 @@ function Write-Icns {
 
 $assetsDir = Join-Path $RepoRoot 'assets\icon'
 $iconsDir = Join-Path $RepoRoot 'resources\icons'
-New-Item -ItemType Directory -Force -Path $assetsDir, $iconsDir | Out-Null
+New-Item -ItemType Directory -Force -Path $iconsDir | Out-Null
 
-if (-not (Test-Path -LiteralPath (Join-Path $assetsDir 'master.svg'))) {
-    throw "assets/icon/master.svg is missing; it is the canonical artwork source."
+$masterPath = Join-Path $assetsDir 'master.png'
+if (-not (Test-Path -LiteralPath $masterPath)) {
+    throw "assets/icon/master.png is missing; it is the canonical artwork source."
 }
+Assert-MasterPng -Path $masterPath
 
-Write-Host "Rendering ${MasterSize}x${MasterSize} master..."
-$master = New-MasterBitmap -Size $MasterSize
+$master = New-Object System.Drawing.Bitmap($masterPath)
 try {
-    $masterPath = Join-Path $assetsDir 'master.png'
-    Save-Png -Bmp $master -Path $masterPath
-    Write-Host "  wrote assets\icon\master.png"
-
     $pngBytes = @{}
     foreach ($size in $LadderSizes) {
         $resized = Resize-Master -Master $master -TargetSize $size
@@ -239,7 +202,13 @@ try {
     Write-Host '  wrote resources\icon.ico'
 
     $icnsBytes = @{} + $pngBytes
-    $icnsBytes[1024] = [System.IO.File]::ReadAllBytes($masterPath)
+    $icns1024 = Resize-Master -Master $master -TargetSize 1024
+    try {
+        $icnsBytes[1024] = Get-PngBytes -Bmp $icns1024
+    }
+    finally {
+        $icns1024.Dispose()
+    }
     Write-Icns -Path (Join-Path $RepoRoot 'resources\icon.icns') -PngBytesBySize $icnsBytes
     Write-Host '  wrote resources\icon.icns'
 }
