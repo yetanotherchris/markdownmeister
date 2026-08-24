@@ -5,15 +5,6 @@ import type {
 } from '../../shared/ipc-contract'
 import { EMERGENCY_EDITOR_THEME } from '../../shared/editorThemeTokens'
 
-/**
- * Spec 036: the renderer's cache of the discovered editor theme files,
- * preloaded before the first render (main.tsx, mirroring the settings cache)
- * and refreshed every time the settings dialog opens (FR-012). Resolution is
- * pure and renderer-side: the appearance decides which of a theme's two
- * palettes applies (FR-004), and an unresolved selection renders the FR-001
- * emergency appearance while main repairs the stored name (contracts/preload.md).
- */
-
 let cached: EditorThemeDefinition[] = []
 let cachedInvalidNames: string[] = []
 
@@ -31,7 +22,6 @@ export async function loadEditorThemesFromMain(): Promise<void> {
   if (result.ok) updateEditorThemes(result.value)
 }
 
-/** Pure (FR-004): the palette matching the effective appearance. */
 export function paletteForMode(theme: EditorThemeDefinition, mode: 'light' | 'dark'): EditorColors {
   return mode === 'dark' ? theme.dark : theme.light
 }
@@ -43,9 +33,6 @@ export interface ResolvedEditorAppearance {
   typeface: string
 }
 
-/** Pure: resolve the stored selection against the delivered definitions.
- *  An unresolved name (deleted/invalid/not-yet-listed file) yields today's
- *  default appearance instead — never an error, never empty colours. */
 export function resolveEditorAppearance(
   name: string,
   mode: 'light' | 'dark',

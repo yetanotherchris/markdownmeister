@@ -4,9 +4,9 @@ import { EditorState, TextSelection } from '@milkdown/kit/prose/state'
 import { planTaskBackspace } from '../../src/renderer/editor/taskBackspace'
 
 /**
- * Minimal schema matching the shape this helper touches (research R-Task): a
+ * Minimal schema matching the shape this helper touches: a
  * `bullet_list` holding `list_item` nodes with a nullable `checked` attribute
- * (the task-list variant) and a `paragraph` per item — `paragraph` must exist
+ * (the task-list variant) and a `paragraph` per item, `paragraph` must exist
  * for the sole-item replacement (FR-17). toDOM/parseDOM are unnecessary: the
  * tests only exercise transactions, never DOM serialization.
  */

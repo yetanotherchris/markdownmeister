@@ -22,9 +22,6 @@ export function mkdir(root: string, parentRelativePath: string, name: string): D
 }
 
 export function createFile(root: string, parentRelativePath: string, name: string): DirEntry {
-  // FR-010: non-markdown files are hidden from the tree. Enforcing here too
-  // (not only in the renderer) keeps the file from silently vanishing from
-  // the explorer after creation.
   if (!isMarkdown(name)) {
     throw Object.assign(new Error('Files must have the .md or .markdown extension'), { code: 'IO' })
   }
@@ -50,9 +47,6 @@ export function moveEntry(root: string, fromRelativePath: string, toRelativePath
 
   const fromStat = fs.statSync(fromResolved)
 
-  // FR-010: renaming a file to a non-markdown name would make it vanish from
-  // the tree. Enforced here as well as in the renderer — renderer-side checks
-  // are never trusted.
   if (!fromStat.isDirectory() && !isMarkdown(path.basename(toRelativePath))) {
     throw Object.assign(new Error('Files must have the .md or .markdown extension'), { code: 'IO' })
   }
@@ -60,12 +54,10 @@ export function moveEntry(root: string, fromRelativePath: string, toRelativePath
   const fromReal = fs.realpathSync(fromResolved)
   // The rename target is the *lexical* path: resolveNonExistent realpaths the
   // target, and for a case-only rename (alpha.md → ALPHA.md) realpath
-  // canonicalises the case back to the source — the rename would then be a
+  // canonicalises the case back to the source, the rename would then be a
   // no-op and the case change would be lost.
   const toLexical = path.resolve(root, toRelativePath)
 
-  // Case-only rename on a case-insensitive filesystem: the target exists (it
-  // is the same file) and must not be treated as a conflict.
   const caseOnlyRename = fs.existsSync(toResolved) &&
     fromReal.toLowerCase() === toLexical.toLowerCase()
 

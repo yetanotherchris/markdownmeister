@@ -106,7 +106,7 @@ test.describe('US1 toolbar view source', () => {
     // No edits in source.
     await window.getByRole('button', { name: /Back to visual editing/ }).click()
     await expect(window.getByTestId('source-view')).toHaveCount(0)
-    // Clean document — no dirty dot appeared because nothing changed.
+    // Clean document, no dirty dot appeared because nothing changed.
     await expect(window.locator('.document-title')).not.toContainText('\u2022')
   })
 })
@@ -209,7 +209,7 @@ test.describe('US3 mutual exclusivity', () => {
     await expect(window.getByTestId('source-view')).toHaveCSS('transform', 'none')
 
     // The overlay and the textarea are the only editable surface. A real click at
-    // the centre of the (covered) ProseMirror must land on the source textarea —
+    // the centre of the (covered) ProseMirror must land on the source textarea,
     // the ProseMirror underneath is not the interactive target (FR-009).
     const covered = window.locator('.editor-host .ProseMirror').first()
     await expect(covered).toBeAttached()
@@ -271,18 +271,15 @@ test.describe('US5 task backspace', () => {
     // Place the caret in the paragraph text, then add one empty block.
     await window.locator('[contenteditable="true"] p').last().click()
     await window.keyboard.press('End')
-    // Wait for the new empty paragraph Enter creates to be ingested BEFORE
-    // toggling it — the toolbar button reads the block state, and clicking it
-    // before the new block lands can toggle the previous paragraph, so no list
-    // item ever appears (pre-existing race, fixed 2026-08-07).
+    // Wait for the new paragraph before toggling it so the toolbar targets it.
     const blockCount = await window.locator('[contenteditable="true"] p').count()
     await window.keyboard.press('Enter')
     await expect(window.locator('[contenteditable="true"] p')).toHaveCount(blockCount + 1)
-    // Ensure the caret is inside the new empty block before the toolbar toggle —
+    // Keep the caret inside the new empty block before the toolbar toggle,
     // Enter alone may leave the selection at the old block under load.
     await window.locator('[contenteditable="true"] p').last().click()
     // Create the task item strictly with the checklist control (SC-005) rather
-    // than by typing `- [ ] ` raw — the raw path makes the button click race the
+    // than by typing `- [ ] ` raw, the raw path makes the button click race the
     // ingest of the typed text and is flaky.
     await window.getByRole('button', { name: 'Task list' }).click()
     await expect(window.locator('.list-item .label-wrapper')).toBeVisible()
@@ -303,7 +300,7 @@ test.describe('FR-12 normalization is preserved, not announced', () => {
     await getViewSourceButton().click()
     // An https autolink round-trips as a bracketed link in Crepe's
     // serialization, so the fresh editor's baseline differs from the raw text
-    // the user typed — the FR-12 "cannot be represented verbatim" case.
+    // the user typed, the FR-12 "cannot be represented verbatim" case.
     const raw = '# Alpha\n\nhttp://example.com/path'
     await window.getByTestId('source-textarea').fill(raw)
     await window.getByRole('button', { name: /Back to visual editing/ }).click()
@@ -328,7 +325,7 @@ test.describe('FR-12 normalization is preserved, not announced', () => {
     await window.getByRole('button', { name: /Back to visual editing/ }).click()
     await expect(window.getByTestId('source-view')).toHaveCount(0)
 
-    // No dirty dot, and closing the tab does NOT prompt for unsaved changes.
+    // No dirty dot appears, and closing the tab does not prompt for unsaved changes.
     await expect(window.locator('.document-title')).not.toContainText('\u2022')
     await window.getByRole('button', { name: 'Close link.md' }).click()
     // The native prompt must not have fired.
@@ -357,8 +354,8 @@ test.describe('FR-12 normalization is preserved, not announced', () => {
     await window.getByRole('menuitem', { name: 'View source' }).click()
     await expect(window.getByTestId('source-textarea')).toHaveText('No trailing newline')
 
-    // Edit AND save while still in source view: the disk write must be the raw
-    // store bytes — neither a re-serialized editor output nor an added `\n`.
+    // Edit and save while still in source view: the disk write is the raw
+    // store bytes, neither a re-serialized editor output nor an added `\n`.
     await window.getByTestId('source-textarea').fill('Edited raw source, no newline')
     await stubMessageBox(app, 'Save')
     await window.getByRole('button', { name: 'Close no-newline.md' }).click()

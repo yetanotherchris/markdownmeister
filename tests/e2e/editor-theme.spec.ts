@@ -19,8 +19,8 @@ import {
  * and the document invariant (FR-014).
  *
  * OS switches are simulated with Playwright's `emulateMedia({ colorScheme })`,
- * which re-fires the renderer's `prefers-color-scheme` media query — the same
- * mechanism spec 013's `data-theme` uses (research R3).
+ * which re-fires the renderer's `prefers-color-scheme` media query, the same
+ * mechanism used by the app theme.
  */
 
 let app: ElectronApplication
@@ -70,7 +70,7 @@ async function headingColor(): Promise<string> {
   return window.locator('.milkdown h1').evaluate((el) => getComputedStyle(el).color)
 }
 
-/** Whether the body face is a serif stack (Georgia/Noto Serif) — distinct from
+/** Whether the body face is a serif stack (Georgia/Noto Serif), distinct from
  *  the Inter stack's trailing `sans-serif`, which also matches `/serif/i`. */
 function isSerif(font: string): boolean {
   return /Georgia|Times New Roman|Noto Serif/.test(font)
@@ -135,7 +135,7 @@ test('US1 S4 closing the dialog without Save leaves the canvas unchanged', async
   const dialog = await openSettingsDialog(window)
   await openThemeArea(window)
   await dialog.getByRole('radio', { name: 'scholarly', exact: true }).check()
-  // Close via the X — the staged selection is discarded (US1 S4).
+  // Close via the X, the staged selection is discarded (US1 S4).
   await dialog.getByRole('button', { name: 'Close settings' }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
 
@@ -317,7 +317,7 @@ test('FR-006 a missing config opens with the default Rustic theme and a change w
   await expect.poll(persistedEditorTheme).toBe('rustic-serif')
 
   // The written config is valid JSON and still carries recentItems. Spec 036:
-  // no palette is materialised — colours live in the theme files.
+  // no palette is materialised, colours live in the theme files.
   const configPath = path.join(configDir, 'config.json')
   const parsed = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
   expect(parsed.settings.editorTheme).toBe('rustic-serif')
@@ -329,11 +329,7 @@ test('FR-006 a malformed config still opens with the default Rustic theme', asyn
   const configPath = path.join(configDir, 'config.json')
   fs.writeFileSync(configPath, '{ not json', 'utf-8')
 
-  // Deliberately do NOT open a file/folder first: a folder open records a
-  // recent item, whose read-modify-write repairs the malformed file before the
-  // dialog reads it (review #27 #4). Opening the dialog directly exercises the
-  // true malformed-config tolerance path — the app still starts with the Rustic
-  // default (FR-006).
+  // Open the dialog first so another action does not rewrite the malformed file.
   const dialog = await openSettingsDialog(window)
   await openThemeArea(window)
   await expect(window.locator('.app-container')).toHaveAttribute('data-editor-theme', 'rustic')
@@ -353,7 +349,7 @@ test('a fresh launch materialises the default settings section (spec 008 clarifi
     })
     .toBeTruthy()
   const parsed = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
-  // Spec 036: no legacy palette is persisted — colours live in theme files.
+  // Spec 036: no legacy palette is persisted, colours live in theme files.
   expect('editorColors' in parsed.settings).toBe(false)
   // No folder is open at startup, so the honest FR-013 state is closed.
   expect(parsed.settings.explorerVisible).toBe(false)
@@ -370,7 +366,7 @@ test('addendum: list spacing, blockquote indent, number alignment, and hidden HT
   await openFile(window, 'polish.md')
 
   // 1+3. Numbered-list marker aligns vertically with its text line (the label
-  // is fixed to the 24px line box — spec addendum item 3).
+  // is fixed to the 24px line box, spec addendum item 3).
   const numberAlign = await window
     .locator('.milkdown li .label')
     .first()
@@ -384,7 +380,7 @@ test('addendum: list spacing, blockquote indent, number alignment, and hidden HT
   // 1. Tight list rhythm: adjacent list items within a list are close together
   // (no per-item 16px paragraph gap stacked on the li margin). lineGaps[0] is
   // within the numbered list, lineGaps[1] spans the blank line BETWEEN the two
-  // lists (its larger gap is expected — inter-list spacing), lineGaps[2] is
+  // lists (its larger gap is expected, inter-list spacing), lineGaps[2] is
   // within the bullet list.
   const lineGaps = await window.locator('.milkdown li p').evaluateAll((els) => {
     const tops = (els as HTMLElement[]).map((p) => p.getBoundingClientRect().top)
@@ -412,7 +408,7 @@ test('addendum: list spacing, blockquote indent, number alignment, and hidden HT
     .evaluate((el) => el.getAttribute('data-value'))
   expect(commentValue).toBe('<!-- hidden note -->')
 
-  // Saving preserves the hidden comment and every list verbatim — a no-edit
+  // Saving preserves the hidden comment and every list verbatim, a no-edit
   // save is byte-identical, proving no content is lost (FR-014).
   await window.locator('.ProseMirror:visible').click()
   await stubMessageBox(app, 'Save')

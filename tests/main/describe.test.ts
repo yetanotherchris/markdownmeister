@@ -81,7 +81,7 @@ describe('describeEntry', () => {
     try {
       fs.symlinkSync(root, link, process.platform === 'win32' ? 'junction' : undefined)
     } catch {
-      // Link creation unsupported on this filesystem — nothing to verify.
+      // Link creation unsupported on this filesystem, nothing to verify.
       return
     }
 
@@ -105,7 +105,7 @@ describe('describeEntry', () => {
     }
 
     const info = describeEntry(root, 'notes')
-    // A markdown-named file would be visible — but this is a link, which the
+    // A markdown-named file would be visible, but this is a link, which the
     // tree never shows, so the scan must still report it as hidden without
     // reading through to the external target.
     expect(info.hasHiddenFiles).toBe(true)

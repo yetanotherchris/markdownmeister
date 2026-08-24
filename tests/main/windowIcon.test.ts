@@ -3,9 +3,9 @@ import * as path from 'path'
 import { windowIconPath } from '../../src/main/windowIcon'
 
 /**
- * Spec 039 (research D3, PR #73 review finding): the BrowserWindow icon must
+ * Spec 039: the BrowserWindow icon
  * resolve to the extraResources-shipped copy (<install>/resources/icon.png,
- * i.e. process.resourcesPath) when packaged — never to an __dirname-relative
+ * i.e. process.resourcesPath) when packaged, never to an __dirname-relative
  * path that only works while resources/** rides inside app.asar.
  */
 

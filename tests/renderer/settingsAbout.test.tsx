@@ -1,7 +1,7 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-// Shared constant from the electron-free policy module (research R3) instead
+// Shared constant instead
 // of a suite-local redeclaration that could silently drift.
 import { REPOSITORY_URL } from '../../src/main/buildInfo'
 import SettingsDialog, { SETTINGS_AREAS } from '../../src/renderer/chrome/SettingsDialog'
@@ -14,7 +14,7 @@ import type {
 
 /**
  * Spec 037 (FR-001..FR-008): the About area joins the settings navigation LAST,
- * shows three read-only values, and contributes no staged state — visiting it
+ * shows three read-only values, and contributes no staged state, visiting it
  * can neither stage anything nor disturb the editor-theme draft the dialog
  * already manages (statelessness both ways).
  */
@@ -161,7 +161,7 @@ describe('the About area (spec 037 US1)', () => {
     const link = container.querySelector<HTMLButtonElement>('.settings-about-link')
     expect(link?.textContent?.trim()).toBe(REPOSITORY_URL)
 
-    // FR-001/FR-008: read-only information — no checkbox, select, or radio.
+    // FR-001/FR-008: read-only information, no checkbox, select, or radio.
     expect(container.querySelectorAll('.settings-main input, .settings-main select')).toHaveLength(
       0
     )
@@ -187,7 +187,7 @@ describe('the About area (spec 037 US1)', () => {
     renderDialog()
     await clickButton('About')
 
-    // The link is a constant needing no fetched data — it must stay usable;
+    // The link is a constant needing no fetched data, it must stay usable;
     // only the version/revision rows degrade, showing no fabricated values.
     const link = container.querySelector<HTMLButtonElement>('.settings-about-link')
     expect(link?.textContent?.trim()).toBe(REPOSITORY_URL)

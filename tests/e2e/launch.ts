@@ -3,7 +3,7 @@
  *
  * The app runs under Chromium's `--headless` switch so the suite never steals
  * desktop focus while it runs (the Electron windows are not shown on screen).
- * Set `MM_E2E_HEADED=1` to run with a visible, interactive window — e.g. when
+ * Set `MM_E2E_HEADED=1` to run with a visible, interactive window, e.g. when
  * debugging a failing scenario locally.
  */
 export const electronLaunchArgs: string[] = process.env.MM_E2E_HEADED
@@ -142,9 +142,9 @@ export async function hamburgerRecentStructure(window: Page): Promise<HamburgerE
  * box, so every decision path is exercised by pre-selecting the response here.
  *
  * `choose`:
- * - `'cancel'` (default) — return the options' `cancelId` (the safe choice).
- * - a button label string — return the index of the button with that label.
- * - a function — return its result given the message-box options.
+ * - `'cancel'` (default), return the options' `cancelId` (the safe choice).
+ * - a button label string, return the index of the button with that label.
+ * - a function, return its result given the message-box options.
  */
 export async function stubMessageBox(
   app: ElectronApplication,
@@ -176,12 +176,7 @@ export async function stubMessageBox(
       } else {
         const idx = (options.buttons ?? []).indexOf(step)
         if (idx < 0) {
-          // A requested label that no shown dialog has is a test bug, not a
-          // "safe" fallback: fail loudly so a typo (or a label renamed in the
-          // layout module) cannot silently rewrite a test's semantics (test
-          // review 2026-08-04). The rejection surfaces through main's
-          // dialog:show handler as an error Result and the flow aborts, so the
-          // test's outcome assertions fail instead of coincidentally passing.
+          // Fail when a test requests a button absent from the displayed dialog.
           throw new Error(
             `stubMessageBox: no button "${step}" on this dialog. Available: [${(options.buttons ?? []).join(', ')}]`
           )
@@ -213,14 +208,8 @@ export async function lastMessageBoxOptions(
 /**
  * Teardown helper: close the app's window and dismiss the (stubbed) native quit
  * confirmation with "Discard and Quit" if dirty documents are left behind.
- * Replaces the old renderer-dialog teardown now that the quit dialog is native
- * (spec 008). Safe when the app has already closed (the evaluate throws, which
- * the per-spec afterEach catch absorbs).
  *
- * A stalled quit round-trip is NOT treated as "closed": swallowing the timeout
- * would leak a live Electron process into the next test. Throwing lets the
- * per-spec afterEach catch force-close the app, restoring the guard the shared
- * helper was meant to preserve (test review 2026-08-04).
+ * A timeout leaves the error visible so teardown can close the remaining app.
  */
 export async function closeAppDiscardingQuit(app: ElectronApplication): Promise<void> {
   await stubMessageBox(app, 'Discard and Quit')
@@ -229,10 +218,6 @@ export async function closeAppDiscardingQuit(app: ElectronApplication): Promise<
   })
   await app.waitForEvent('close', { timeout: 8000 })
 }
-
-// ---- Spec 017 US4: the shared e2e harness (contracts/renderer.md §Test layout).
-// Every spec's repeated launch/teardown/open/type/stub blocks delegate here so
-// the suite stays DRY and a scenario never re-implements setup. ----
 
 export interface LaunchResult {
   app: ElectronApplication
@@ -247,8 +232,7 @@ export interface LaunchResult {
  * inline `electron.launch` copies).
  *
  * `userDataDir`, when given, relocates the Chromium profile via the
- * `MM_USER_DATA_DIR` seam (spec 020 research R6) so the native spellcheck
- * dictionary never leaks into — or out of — a test.
+ * `MM_USER_DATA_DIR` environment variable to isolate the browser profile.
  */
 export async function launchApp(
   configDir?: string,
@@ -260,10 +244,7 @@ export async function launchApp(
   const env: Record<string, string> = { ...process.env } as Record<string, string>
   if (configDir) env.MM_CONFIG_DIR = configDir
   if (userDataDir) env.MM_USER_DATA_DIR = userDataDir
-  // Spec 006 (research R7): most tests launch against the shared default
-  // user-data dir, so the single-instance lock must NOT engage — a test app
-  // could otherwise collide with the developer's real running app and quit.
-  // The dedicated second-instance spec opts back in via extraEnv.
+  // Disable the lock so test launches do not route to another running app.
   env.MM_SINGLE_INSTANCE = '0'
   if (extraEnv) Object.assign(env, extraEnv)
   const instance = await electron.launch({

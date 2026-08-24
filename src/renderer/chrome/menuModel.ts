@@ -4,19 +4,14 @@ import { shortenPath } from '../../shared/shortenPath'
 /** The platform names the chrome cares about (the renderer has no Node types). */
 export type Platform = 'win32' | 'darwin' | 'linux'
 
-/**
- * Pure model for the spec-010 hamburger menu (contracts/renderer.md). Electron-
- * free and unit-testable; `HamburgerMenu` renders this structure. The recent
- * items entry is a parent submenu (mirroring the native `File > Recent Items`);
- * its content is filled at render time from `window.api.getRecentItems()`.
- */
+
 export type HamburgerItem =
   | { kind: 'command'; label: string; command: MenuCommand; accelerator?: string }
   | { kind: 'recent-items' }
   | { kind: 'separator' }
   | { kind: 'action'; label: string; action: 'clear-recent' | 'settings' | 'quit' }
 
-/** Character budget for a Recent Items label, matching menu.ts. */
+
 export const RECENT_LABEL_MAX = 60
 
 /** Format an accelerator for the current platform (⌘ on macOS, Ctrl+ elsewhere;
@@ -44,8 +39,7 @@ export function formatAccelerator(
   }
 }
 
-/** The ordered hamburger structure (data-model.md). FR-001: every action the
- *  native menu exposed, with its accelerator label. */
+
 export function hamburgerMenuStructure(platform: Platform): HamburgerItem[] {
   return [
     { kind: 'command', label: 'New File', command: 'new-file', accelerator: formatAccelerator('new-file', platform) },

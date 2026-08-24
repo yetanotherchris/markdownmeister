@@ -28,16 +28,7 @@ import {
 import { setMarkdownSyntaxGateOptions } from './markdownSyntaxInputRules'
 import { recordParse } from './openPerformance'
 
-/**
- * Spec 030 (research R3/R6): runtime reconfiguration of every live editor's
- * remark pipeline. A settings toggle rebuilds each editor's `remarkCtx` +
- * parser/serializer slices in place (the schema is untouched, so the undo stack
- * stays valid), captures `getMarkdown()` BEFORE the serializer swap so disabled
- * syntax still serializes its delimiters correctly, then re-parses via
- * Milkdown's `replaceAll` (an ordinary, undoable transaction). The re-parse's
- * `markdownUpdated` emission is suppressed for a short window so the store's
- * content/baseline/dirty and any in-flight save's revision guard are untouched.
- */
+
 
 /** Suppress the re-parse emission (mirrors the source-view lock in CrepeHost). */
 let suppressUntil = 0
@@ -72,20 +63,7 @@ function restoreCursor(view: EditorView, snapshot: CursorSnapshot): void {
   }
 }
 
-/**
- * Build the remark processor for `options`: the stock base (remark-parse +
- * remark-stringify with Milkdown's stringify options) plus every registered
- * remark plugin EXCEPT `remark-gfm` and `remark-math` (which our conditional
- * composer subsumes — research R1), then the composer itself. The footnote
- * syntax (bundled inside remark-gfm) is re-added unconditionally by the
- * composer. The latex feature's math-block transform stays (it is a no-op when
- * no math node exists).
- *
- * The gfm/math exclusion matches by reference OR by the plugin function's
- * stable `.name`, so it still filters correctly if npm ever resolves two
- * copies of remark-gfm/remark-math (the composer and the ctx would then hold
- * different function identities for the same plugin).
- */
+
 const EXCLUDED_REMARK_PLUGINS = new Set(['remarkGfm', 'remarkMath'])
 
 function isExcludedRemarkPlugin(plugin: unknown): boolean {
@@ -101,34 +79,16 @@ function buildRemarkProcessor(ctx: Ctx, options: MarkdownSyntaxOptions) {
   return processor.use(markdownSyntaxRemark(options))
 }
 
-/**
- * Spec 033 (research R1, contract C1): the syntax options whose parser/
- * serializer pipeline was actually applied to each editor. Absence means the
- * editor was freshly constructed against Crepe's stock pipeline, i.e.
- * effectively the defaults. Lives and dies with each editor instance
- * (WeakMap semantics), so no explicit cleanup.
- */
+
 const appliedOptions = new WeakMap<Crepe, MarkdownSyntaxOptions>()
 
-/** Reconfigure a single live editor in place (research R3).
- *
- *  Spec 033 skip guard (contract C1): the gate-options update always runs, but
- *  when the requested options equal the options already applied to THIS editor,
- *  the parser/serializer swap and the `replaceAll` re-parse are skipped — a
- *  freshly mounted editor is always considered "at defaults", so the create
- *  path with unchanged settings performs no second full parse and no
- *  mount-time undoable transaction. An off→on toggle round-trip still
- *  reapplies: the comparison is against per-editor applied options, never
- *  bare defaults. */
+
 export function reconfigureEditor(
   editor: Crepe,
   options: MarkdownSyntaxOptions,
   params: { sourceMarkdown?: string; suppressEmission?: boolean } = {}
 ): void {
   const { sourceMarkdown, suppressEmission = true } = params
-  // Point the input-rule gate at the same options so typing a disabled syntax
-  // never auto-formats (research R4, contract "Input-rule gate"). Unconditional:
-  // gating must reflect requested options even when the pipeline skip fires.
   setMarkdownSyntaxGateOptions(options)
   if (markdownSyntaxOptionsEqual(appliedOptions.get(editor) ?? DEFAULT_MARKDOWN_SYNTAX_OPTIONS, options)) {
     return
@@ -150,11 +110,6 @@ export function reconfigureEditor(
     ctx.set(serializerCtx, SerializerState.create(schema, remark))
   })
 
-  // The re-parse fires markdownUpdated (200 ms debounce); on a RUNTIME toggle
-  // drop that emission so the store's dirty state / revision guard are
-  // untouched (research R3). The CREATE path does not suppress — no user edit
-  // can race a just-mounted editor, and suppressing would swallow the first
-  // real edit's emission (and thus its dirty flag).
   if (suppressEmission) suppressUntil = Date.now() + 300
   recordParse()
   editor.editor.action(replaceAll(markdown))
@@ -163,7 +118,7 @@ export function reconfigureEditor(
   appliedOptions.set(editor, options)
 }
 
-/** Reconfigure every live editor in the pool (multi-tab sync, FR-010). */
+
 export function reconfigureAll(pool: InstancePool, options: MarkdownSyntaxOptions): void {
   pool.forEach((editor) => reconfigureEditor(editor, options, { suppressEmission: true }))
 }

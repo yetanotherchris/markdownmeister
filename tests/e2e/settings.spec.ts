@@ -74,7 +74,7 @@ async function focusedElement(): Promise<string> {
 }
 
 /** Toggle a pill switch by clicking its visible label row (the hidden native
- *  checkbox cannot be `.check()`ed — Playwright needs a visible target). */
+ *  checkbox cannot be `.check()`ed, Playwright needs a visible target). */
 async function clickSwitch(dialog: Locator, label: string): Promise<void> {
   await dialog.locator('.settings-switch', { hasText: label }).click()
 }
@@ -158,7 +158,7 @@ test('US1 General settings persist immediately and survive a restart', async () 
   const box = dialog.getByTestId('settings-dialog')
 
   await clickSwitch(box, 'Open files in a new tab')
-  // Immediate persistence — no Save required for General (spec 008 apply model).
+  // Immediate persistence, no Save required for General (spec 008 apply model).
   await expect.poll(() => persistedSetting<string>('fileOpenBehavior')).toBe('new-tab')
 
   await closeAppSafely(app)
@@ -192,7 +192,7 @@ test('US1 S4 closing without Save leaves the theme at the last committed value',
   const dialog = await openSettingsDialog(window)
   await openThemeArea(dialog)
   await dialog.getByRole('radio', { name: 'monotone', exact: true }).check()
-  // Close with the X — the staged selection is discarded.
+  // Close with the X, the staged selection is discarded.
   await dialog.getByRole('button', { name: 'Close settings' }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
 
@@ -281,7 +281,7 @@ test('FR-007 the dialog is keyboard-accessible (open, navigate, close)', async (
   await expect(window.getByTestId('settings-dialog')).toBeVisible()
 
   // Arrow keys within the Editor Theme group change the staged selection (the
-  // canvas does NOT change until Save).
+  // canvas does not change until Save).
   const dialog = window.getByTestId('settings-dialog')
   const nav = dialog.getByRole('navigation', { name: 'Settings areas' })
   await nav.getByRole('button', { name: 'Theme' }).focus()
@@ -291,7 +291,7 @@ test('FR-007 the dialog is keyboard-accessible (open, navigate, close)', async (
   await themeGroup.getByRole('radio', { name: 'rustic', exact: true }).focus()
   await window.keyboard.press('ArrowDown')
   await expect(themeGroup.getByRole('radio', { name: 'rustic-serif', exact: true })).toBeChecked()
-  // Staged only — the canvas is still the default Rustic.
+  // Staged only, the canvas is still the default Rustic.
   await expect(window.locator('.app-container')).toHaveAttribute('data-editor-theme', 'rustic')
 
   // Escape closes the dialog without committing the staged selection.
@@ -352,10 +352,7 @@ test('FR-006 a malformed config still opens the dialog with Rustic default', asy
   const configPath = path.join(configDir, 'config.json')
   fs.writeFileSync(configPath, '{ not json', 'utf-8')
 
-  // Deliberately do NOT open a file/folder first: a folder open records a
-  // recent item, whose read-modify-write repairs the malformed file before the
-  // dialog reads it (review #27 #4 — the old test was vacuous). Opening the
-  // dialog directly exercises the true malformed-config tolerance path.
+  // Open the dialog first so another action does not rewrite the malformed file.
   const dialog = await openSettingsDialog(window)
   await openThemeArea(dialog)
   await expect(dialog.getByRole('radio', { name: 'rustic', exact: true })).toBeChecked()
@@ -393,7 +390,7 @@ test('edge case: at a very narrow width the sidebar and panel stay usable withou
   })
   expect(sidebarRect.width).toBeGreaterThan(0)
   expect(mainRect.width).toBeGreaterThan(0)
-  // On narrow widths the sidebar stacks above the panel — no overlap.
+  // On narrow widths the sidebar stacks above the panel, no overlap.
   expect(sidebarRect.bottom).toBeLessThanOrEqual(mainRect.top)
 
   // Both area entries remain reachable after the resize.
@@ -403,7 +400,7 @@ test('edge case: at a very narrow width the sidebar and panel stay usable withou
 
 test('the dialog keeps a stable height across General and Theme areas', async () => {
   // Spec 028 follow-up (2026-08-10): the Theme area is taller than General, so
-  // switching areas must not resize the dialog — .settings-dialog pins a
+  // switching areas must not resize the dialog, .settings-dialog pins a
   // min-height at the taller area's height.
   await openFile()
   const dialog = await openSettingsDialog(window)

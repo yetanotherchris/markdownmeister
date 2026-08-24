@@ -53,9 +53,6 @@ function DocumentHost({
   )
   const handleBaselineCapture = useCallback(
     (baseline: string, docRef: unknown) => {
-      // Spec 033 (contract C2): record the parsed document's identity so the
-      // dirty fast path can prove "untouched since baseline" without
-      // serializing. Cleared by the pool on removal and on save.
       instancePool.setBaselineDoc(document.id, docRef)
       onBaselineCapture(document.id, baseline)
     },

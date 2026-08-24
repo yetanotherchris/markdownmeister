@@ -35,7 +35,7 @@ export function moveTargetPath(fromPath: string, targetDirId: string): string | 
   return targetDirId ? `${targetDirId}/${name}` : name
 }
 
-/** FR-027 guard, mirroring the main-process check for fast, friendly feedback. */
+
 export function wouldMoveIntoOwnDescendant(fromPath: string, targetDirId: string): boolean {
   return isWithinOrEqual(targetDirId, fromPath)
 }
@@ -64,16 +64,11 @@ export interface DeletePlan {
   open: DocumentState[]
   /** Clean open documents that can be closed after a successful delete. */
   cleanToClose: DocumentState[]
-  /** Dirty open documents — the delete must be refused while these exist. */
+
   dirtyBlockers: DocumentState[]
 }
 
-/**
- * FR-025 + Principle III: plan what happens to open documents on delete.
- * `isDirty` must consult the live editor (R4): the reducer flag lags
- * keystrokes by the listener debounce, and a delete inside that window must
- * still be refused rather than silently discarding the edit.
- */
+
 export function planDelete(
   documents: DocumentState[],
   targetPath: string,
@@ -87,7 +82,7 @@ export function planDelete(
   }
 }
 
-/** Wording for the delete confirmation (FR-025, FR-029, FR-029a, FR-029b). */
+
 export function deleteDescription(info: EntryInfo): string {
   const parts: string[] = []
   if (info.kind === 'directory' && !info.isEmpty) {

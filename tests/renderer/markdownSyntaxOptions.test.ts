@@ -19,8 +19,7 @@ import {
 
 function parse(text: string, options: MarkdownSyntaxOptions): MdNode {
   const processor = unified().use(remarkParse).use(remarkStringify).use(markdownSyntaxRemark(options))
-  // Milkdown runs `remark.runSync(remark.parse(md), md)` — the transformer stage
-  // (where the hard-break flip lives) is `.run()`, not `.parse()`.
+  // Run transforms after parsing so syntax options affect the tree.
   return processor.runSync(processor.parse(text)) as unknown as MdNode
 }
 
@@ -66,10 +65,7 @@ describe('markdownSyntaxOptionsEqual (spec 033, contract C1)', () => {
   })
 
   it('the off→on round-trip trap: options equal to the defaults still compare equal — the guard must therefore track per-editor applied options, not compare against defaults alone', () => {
-    // A user who toggles a syntax off then back on produces options equal to
-    // DEFAULTS. Equality itself cannot distinguish "stock pipeline" from
-    // "swapped-with-defaults pipeline" — which is exactly why the runtime
-    // records applied options per editor (research R1 correctness trap).
+    // Toggling a syntax off and on restores the default option values.
     const toggledOffThenOn: MarkdownSyntaxOptions = { ...DEFAULT_MARKDOWN_SYNTAX_OPTIONS }
     expect(markdownSyntaxOptionsEqual(DEFAULT_MARKDOWN_SYNTAX_OPTIONS, toggledOffThenOn)).toBe(true)
     expect(markdownSyntaxOptionsEqual(ALL_OFF, DEFAULT_MARKDOWN_SYNTAX_OPTIONS)).toBe(false)
@@ -116,10 +112,7 @@ describe('markdownSyntaxRemark (spec 030 options→extension matrix)', () => {
   })
 
   it('hard breaks: on flips soft break nodes to isInline:false, off keeps isInline:true', () => {
-    // The commonmark preset registers `remarkLineBreak`, which splits single
-    // newlines into `break` nodes with `isInline:true` (soft). Our composer
-    // runs after it and flips them to `isInline:false` when hardBreaks is on.
-    // Replicate that upstream plugin here (research R2).
+    // Create soft-break nodes before testing the hard-break transform.
     const softBreaks = () => (tree: MdNode) => {
       visit(tree, 'text', (node, index, parent) => {
         const text = node as MdNode & { value: string }
@@ -156,13 +149,9 @@ describe('markdownSyntaxRemark (spec 030 options→extension matrix)', () => {
     expect(offBreaks[0].data?.isInline).toBe(true)
   })
 
-  describe('serialization stays enabled for disabled syntax (2026-08-15 review fix)', () => {
+  describe('serialization stays enabled for disabled syntax', () => {
     function stringify(text: string, options: MarkdownSyntaxOptions): string {
-      // Parse the doc with ALL syntaxes enabled so it actually CONTAINS the
-      // node/mark of the syntax under test, then serialize with the given
-      // options. Before the fix, serializing a table/strikethrough node while
-      // the matching option was off threw "Cannot handle unknown node" — which
-      // made saves fail on a doc that held a now-disabled syntax (review Major).
+      // Parse enabled syntax, then serialize it with the option disabled.
       const parse = unified().use(remarkParse).use(markdownSyntaxRemark(ALL_ON))
       const tree = parse.runSync(parse.parse(text)) as unknown as MdNode
       const serialize = unified().use(remarkStringify).use(markdownSyntaxRemark(options))

@@ -21,8 +21,7 @@ import { useFileOpenGesture } from './useFileOpenGesture'
 export interface WorkspaceTreeApi {
   handleTreeSelect: (id: string | null) => void
   handleTreeActivate: (id: string) => Promise<void>
-  /** Spec 029: a resolved click gesture on a file row. Single-click follows the
-   *  preference (deferred in same-tab mode); double-click opens a new tab. */
+
   handleFileOpen: (node: TreeNode, gesture: FileOpenGesture) => Promise<void>
   handleTreeToggle: (id: string, isLoaded: boolean) => Promise<void>
   applyMove: (fromPath: string, toPath: string) => Promise<boolean>
@@ -34,10 +33,7 @@ export interface WorkspaceTreeApi {
   handleTreeMove: (id: string, targetParentId: string) => void
 }
 
-/**
- * Workspace tree CRUD (US1/FR-002): expand/select/open/create/rename/delete/
- * move, plus the confirmed-delete flow and the placeholder-cancel cleanup.
- */
+
 export function useWorkspaceTree(opts: {
   dispatch: React.Dispatch<DocumentsAction>
   dispatchWorkspace: React.Dispatch<WorkspaceAction>
@@ -64,8 +60,6 @@ export function useWorkspaceTree(opts: {
   const { dialogInFlightRef, releaseDialogSurface, showOperationError } = dialog
   const { doClose, isDirtyLive, openFileFromExplorer } = session
 
-  // Spec 029: selection only. Mouse opens go through the row gesture router
-  // (handleFileOpen); `handleTreeActivate` stays for keyboard activation (Space).
   const handleTreeSelect = useCallback((id: string | null) => {
     dispatchWorkspace({ type: 'SELECT', payload: { id } })
   }, [dispatchWorkspace])
@@ -80,16 +74,10 @@ export function useWorkspaceTree(opts: {
     }
   }, [openFileFromExplorer, workspaceRef])
 
-  // Spec 029 (2026-08-21 amendment): mouse opens of files go through the
-  // gesture router (useFileOpenGesture, immediate commit); handleTreeActivate
-  // stays the keyboard (Space) path.
   const { handleFileOpen } = useFileOpenGesture({ session })
 
   const handleTreeToggle = useCallback(async (id: string, isLoaded: boolean) => {
     if (isLoaded) {
-      // A folder already loaded: visibility is arborist's own state. Collapsing
-      // must NOT wipe the children — arborist fires this for auto-opens too,
-      // which would erase the node being edited right after creation.
       return
     }    dispatchWorkspace({ type: 'EXPAND_START', payload: { id } })
     const result = await window.api.readDir(id)
@@ -106,8 +94,6 @@ export function useWorkspaceTree(opts: {
       void showOperationError(result.message)
       return false
     }
-    // The watcher event for this mutation is suppressed in main (FR-037), so
-    // the renderer applies the result to its own tree and document state.
     dispatchWorkspace({ type: 'MOVE_ENTRY', payload: { fromPath, toPath, entry: result.value } })
     dispatchWorkspace({ type: 'SELECT', payload: { id: toPath } })
     dispatch({ type: 'REROUTE_PATHS', payload: { fromPath, toPath } })
@@ -122,8 +108,6 @@ export function useWorkspaceTree(opts: {
     }
     const fromPath = node.id
     const toPath = renameTargetPath(fromPath, newName.trim())
-    // The placeholder state ends at the first committed rename — a later
-    // Escape-cancel must not trash a file that may now hold real content.
     pendingCreateRef.current.delete(fromPath)
     setPendingEditId(null)
     if (toPath === fromPath) return true
@@ -191,8 +175,6 @@ export function useWorkspaceTree(opts: {
 
   const cleanupAfterDelete = useCallback((node: TreeNode, plan: DeletePlan) => {
     for (const doc of plan.cleanToClose) {
-      // A keystroke during the async trash would otherwise discard this edit
-      // without a prompt (Principle III) — re-check and leave it open.
       const fresh = sessionRef.current.documents.find(d => d.id === doc.id)
       if (fresh && isDirtyLive(fresh)) continue
       doClose(doc.id)
@@ -206,10 +188,6 @@ export function useWorkspaceTree(opts: {
     }
   }, [dispatchWorkspace, doClose, isDirtyLive, sessionRef, workspaceRef])
 
-  // Spec 008 delete flow, decomposed into named sub-steps (FR-004): describe →
-  // plan → (delete-blocked | delete-to-trash) → trash; on TRASH_UNAVAILABLE an
-  // explicit permanent-delete confirmation. The whole flow holds the
-  // single-prompt guard (FR-012).
   const runDeleteConfirmation = useCallback(async (node: TreeNode) => {
     if (dialogInFlightRef.current) return
     dialogInFlightRef.current = true
@@ -253,8 +231,6 @@ export function useWorkspaceTree(opts: {
         return
       }
       if (trashed.code === 'TRASH_UNAVAILABLE') {
-        // FR-029a: trash unavailable — offer permanent deletion only as an
-        // explicit second confirmation.
         const permanent = await window.api.showConfirmation({
           kind: 'permanent-delete',
           targetName: node.name,

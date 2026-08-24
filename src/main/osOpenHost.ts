@@ -3,22 +3,7 @@ import { classifyOsTarget, extractTargetFromArgv } from './osOpen'
 import { openFileFromPath, sanitizeError, recordRecent, ctx } from './ipc/handlers/context'
 import { prepareFolderFromOsPath } from './ipc/handlers/workspace'
 
-/**
- * Spec 006 OS-open host (Electron wiring only — the classification rules live
- * in the pure `osOpen.ts` module).
- *
- * Windows passes the selected item as an `argv` positional (first launch and
- * `second-instance`); macOS delivers it via the `open-file` event, which can
- * fire BEFORE `ready`. Every path is classified in main (Principle II), then
- * routed:
- *
- * - file    → `openFileFromPath` → `os:fileOpen` (existing single-file open)
- * - folder  → `prepareFolderFromOsPath` → `os:folderOpen` (existing confirm→commit)
- * - failure → `os:openFailed` with a scrubbed message (FR-011, session unchanged)
- *
- * Requests that arrive before the renderer is live are queued and drained when
- * it signals `os:ready`. A burst is serialized (FR-014: one item per invocation).
- */
+
 
 type PendingOpen =
   | { kind: 'file'; absPath: string }
@@ -53,8 +38,6 @@ function drain(): void {
       if (item.kind === 'file') {
         try {
           const opened = openFileFromPath(item.absPath)
-          // Mirror the File → Open dialog (spec 004 FR-002): a successfully
-          // opened file is a recent file. Best-effort (FR-011).
           recordRecent(opened.canonicalPath ?? item.absPath, 'file', opened.name)
           currentWindow.webContents.send('os:fileOpen', opened)
         } catch (e: unknown) {
@@ -84,15 +67,12 @@ function focusPrimaryWindow(): void {
   win.focus()
 }
 
-/** Called once before `app.whenReady()` (research R7/R1). Returns `false` when
- *  the single-instance lock is held elsewhere and this process must exit. */
+
 export function initOsOpenHost(): boolean {
   const singleInstanceEnabled = process.env.MM_SINGLE_INSTANCE !== '0'
   if (singleInstanceEnabled) {
     const gotLock = app.requestSingleInstanceLock()
     if (!gotLock) {
-      // Another instance holds the lock — its `second-instance` handler will
-      // receive our argv (FR-008). Quit immediately.
       app.quit()
       return false
     }
@@ -103,15 +83,11 @@ export function initOsOpenHost(): boolean {
     })
   }
 
-  // macOS Finder opens can fire before `ready` (research R1) — register early.
   app.on('open-file', (event, filePath) => {
     event.preventDefault()
     enqueueTarget(filePath)
   })
 
-  // Gated like every IPC entry point (review finding 2026-08-09): only the
-  // bound window's own renderer may arm the drain, so a compromised page cannot
-  // force early drains (dropped opens / a stuck pending-folder slot).
   ipcMain.on('os:ready', (event) => {
     if (!currentWindow || event.sender !== currentWindow.webContents) return
     rendererReady = true
@@ -134,9 +110,7 @@ export function setOsOpenWindow(window: BrowserWindow): void {
   drain()
 }
 
-/** Clear the bound window (called when the window closes). macOS keeps the
- *  process alive after the last window closes, so a later OS open must not
- *  target a destroyed webContents (review finding 2026-08-09). */
+
 export function clearOsOpenWindow(): void {
   currentWindow = null
   rendererReady = false

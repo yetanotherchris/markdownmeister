@@ -8,14 +8,6 @@ import {
 import { atomicWrite } from '../fs/atomicWrite'
 import { MAX_THEME_FILE_BYTES, parseThemeFile, themeStemOf } from './validate'
 
-/**
- * Spec 036 (plan D3/D4): the themes-directory lifecycle — ensure it exists,
- * seed ONLY missing default files (never rewrite an existing file, FR-007),
- * and discover/validate every candidate. All functions take the directory
- * explicitly so the module stays electron-free and unit-testable; callers
- * resolve it via themes/path.ts.
- */
-
 /** A theme delivered to the renderer (contracts/preload.md). */
 export interface DiscoveredTheme {
   name: string
@@ -26,9 +18,7 @@ export interface DiscoveredTheme {
 
 export interface DiscoveryOutcome {
   themes: DiscoveredTheme[]
-  /** Quiet indications only (FR-010): rejected file names — malformed
-   *  content, oversized, unreadable, case-collision losers, and links that
-   *  were not followed. Never surfaced modally. */
+
   invalidNames: string[]
 }
 
@@ -36,14 +26,10 @@ function themeFilePath(dir: string, stem: string): string {
   return path.join(dir, `${stem}.json`)
 }
 
-/** Create the themes folder when missing; never fails silently (the caller
- *  decides policy). Idempotent. */
 export function ensureThemesDirectory(dir: string): void {
   fs.mkdirSync(dir, { recursive: true })
 }
 
-/** Seed any MISSING default theme file with its embedded contents verbatim
- *  (plan D3). An existing file is never read, compared, or rewritten. */
 export function seedMissingDefaultThemes(dir: string): void {
   for (const stem of DEFAULT_EDITOR_THEME_STEMS) {
     const filePath = themeFilePath(dir, stem)
@@ -60,11 +46,6 @@ function byName(a: { name: string }, b: { name: string }): number {
   return 0
 }
 
-/** Case-insensitive duplicate stems collapse deterministically (research E9):
- *  sort candidates ascending by file name (code-unit order), keep the first
- *  entry per lowercased stem as the winner, and report every later duplicate
- *  as a loser. Pure so the rule is testable on case-insensitive filesystems,
- *  where both files cannot exist at once. */
 export function resolveCaseCollisions(
   candidates: {
     fileName: string
@@ -95,9 +76,6 @@ export function listThemes(dir: string): DiscoveryOutcome {
   const invalidNames: string[] = []
   const candidates: { fileName: string; stem: string }[] = []
   for (const entry of dirents) {
-    // Only regular files qualify — symlinks/reparse points are never followed
-    // (FR-011); a link named *.json is reported quietly, plain subdirectories
-    // and non-JSON entries are invisible per spec Assumptions.
     if (!entry.isFile()) {
       if (entry.isSymbolicLink() && entry.name.toLowerCase().endsWith('.json')) {
         invalidNames.push(entry.name)

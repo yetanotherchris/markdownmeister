@@ -46,20 +46,13 @@ const initialSession: EditingSession = {
   untitledCounter: 0
 }
 
-/** Thin composition root (US1/FR-001): owns the reducers, shared refs, and view
- *  state; wires the focused hooks in dependency order. No business rules here. */
 export default function App() {
   const [session, dispatch] = useReducer(documentsReducer, initialSession)
   const [workspace, dispatchWorkspace] = useReducer(workspaceReducer, initialWorkspaceState)
   const [pendingEditId, setPendingEditId] = useState<string | null>(null)
   const [footerNote, setFooterNote] = useState<string | null>(null)
-  // Spec 020 (JS spellchecker): the open correction menu, or null.
   const [spellMenu, setSpellMenu] = useState<SpellingMenuState | null>(null)
-  // Spec 010, US2 (FR-007): persisted explorer visibility drives the collapsed
-  // state; handleSidebarResize keeps it in sync while the panel is mounted.
   const [explorerCollapsed, setExplorerCollapsed] = useState(false)
-  // Spec 012/013/016: the settings-dialog state — open flag, editor theme, app
-  // theme choice, and the effective data-theme mode (useSettingsState owns them).
   const {
     settingsOpen,
     setSettingsOpen,
@@ -83,14 +76,6 @@ export default function App() {
     themeMode
   } = useSettingsState()
 
-  // Spec 036: the file-driven theme layer. The stored name resolves against
-  // the discovered definitions; the matching appearance set feeds inline
-  // `--mm-theme-*` variables that themes.css maps onto Crepe's tokens (the
-  // generic layer wins over the retained default blocks by source order).
-  // The container attribute carries the resolved definition's name (driving
-  // the retained default base blocks) or 'default' — the FR-001 emergency
-  // appearance — when nothing resolves; main repairs the stored selection
-  // (contracts/preload.md). Never an error, never lost document state.
   const resolvedAppearance = resolveEditorAppearance(editorTheme, themeMode, editorThemes)
   const dataEditorTheme = resolvedAppearance.definitionName ?? 'default'
   const fileThemeVars = {
@@ -103,8 +88,6 @@ export default function App() {
     '--mm-theme-font': resolvedAppearance.typeface
   } as React.CSSProperties
 
-  // Spec 020 (JS spellchecker): keep the shared runtime in sync with the
-  // persisted settings, and load the user dictionary once on startup.
   useEffect(() => {
     updateSpellcheckRuntime({ enabled: spellcheckEnabled, language: spellcheckLanguage })
   }, [spellcheckEnabled, spellcheckLanguage])
@@ -114,16 +97,12 @@ export default function App() {
       .getSpellcheckWords()
       .then((res) => {
         if (res.ok && alive) {
-          // Merge, don't replace: a word added in-session before this resolves
-          // must survive in the runtime set.
           const merged = new Set(spellcheckRuntime.customWords)
           res.value.forEach((word) => merged.add(word))
           updateSpellcheckRuntime({ customWords: merged })
         }
       })
-      .catch(() => {
-        /* non-critical */
-      })
+      .catch(() => {})
     return () => {
       alive = false
     }
@@ -132,8 +111,6 @@ export default function App() {
   // `defaultSize` is initialization-only. Reapplying a newly persisted width
   // during a resize makes react-resizable-panels discard its restore size.
   const sidebarInitialSizeRef = useRef(getSettings().sidebarWidth)
-  // Spec 010, US2 (FR-007): set once the initial restore has run, so resize
-  // events while the panel settles are not persisted as the user's choice.
   const explorerRestoreDoneRef = useRef(false)
   const pendingCreateRef = useRef(new Set<string>())
   const createCounterRef = useRef(0)
@@ -144,10 +121,6 @@ export default function App() {
   workspaceRef.current = workspace
   const activeDoc = getActiveDocument(session)
 
-  // The live-dirty decision is bound once here (pure rule + pool accessors) so
-  // both the pool eviction and the session checks share it — including the
-  // spec 033 document-identity fast path, so eviction scans of untouched
-  // documents do not serialize either.
   const getMarkdown = useCallback((id: string) => instancePool.getMarkdown(id), [])
   const getLiveDoc = useCallback((id: string) => instancePool.getLiveDoc(id), [])
   const getBaselineDoc = useCallback((id: string) => instancePool.getBaselineDoc(id), [])
@@ -202,23 +175,16 @@ export default function App() {
     dispatch,
     enforcePoolCap: pool.enforcePoolCap
   })
-  // Spec 006: route OS-initiated opens through the existing session/folder
-  // flows; a rejected open surfaces as a quiet footer note (FR-011).
   useOsOpen({ session: sessionApi, folder, onOpenFailed: setFooterNote })
 
   const { handleMenuCommand } = menu
   const { handleQuitRequest } = sessionApi
   const { handleExternalChange } = external
 
-  // Spec 015 (US1/US2, FR-006): reveal a workspace item in the OS file manager.
-  // Read-only — a failure surfaces as a quiet footer note and the session is
-  // untouched. The relative path + kind are validated in main (FR-005).
   const handleReveal = useCallback((node: TreeNode) => {
     window.api
       .revealEntry(node.id, node.kind)
       .then((res) => {
-        // FR-006: a failure surfaces as a quiet footer note; a success clears a
-        // stale note from a previous failed reveal.
         setFooterNote(res.ok ? null : res.message)
       })
       .catch(() => {
@@ -226,9 +192,6 @@ export default function App() {
       })
   }, [])
 
-  // Spec 024 (FR-005): middle-click opens the file in a NEW tab, bypassing the
-  // replace-clean-tab behaviour (and any `same-tab` preference — explicit
-  // middle-click always wins over the setting, data-model decision table).
   const handleOpenNewTab = useCallback(
     (node: TreeNode) => {
       window.api.readFile(node.id).then((result) => {
@@ -245,7 +208,6 @@ export default function App() {
       const doc = sessionRef.current.documents.find((d) => d.path === e.path)
       if (!doc) return
       dispatch({ type: 'EXTERNAL_CHANGE', payload: { path: e.path, kind: e.kind } })
-      // One prompt at a time: DEFER, don't drop — re-surfaced on release.
       if (dialog.dialogInFlightRef.current) {
         const pending = dialog.pendingExternalPromptRef.current
         if (!pending.some((item) => item.path === e.path && item.kind === e.kind)) {
@@ -264,7 +226,6 @@ export default function App() {
       void handleQuitRequest()
     })
 
-    // Spec 004, FR-011: persistence failure → footer note; cleared on success.
     const unsubRecentWarning = window.api.onRecentItemsWarning((w) => {
       setFooterNote(w.message)
     })
@@ -296,8 +257,6 @@ export default function App() {
     }
   }, [])
 
-  // Spec 002, US004: the explorer follows the active tab — reveal/select its
-  // workspace file; untitled or workspace-external docs clear the highlight.
   const workspaceActiveId = session.activeId
   useEffect(() => {
     if (!workspace.name) return
@@ -333,7 +292,7 @@ export default function App() {
       data-visual-code-highlighting={visualCodeHighlighting ? 'on' : 'off'}
       style={fileThemeVars}
     >
-      {/* Spec 010 (2026-08-05): one header row — chrome buttons + tabs. */}
+      {}
       <div className="header-bar">
         <div className="chrome-bar">
           <HamburgerMenu

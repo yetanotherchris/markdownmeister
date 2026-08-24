@@ -14,15 +14,13 @@ import {
 /**
  * Spec 028 suite (contracts/renderer.md): two carry-over visual fixes.
  *
- * US1 (FR-001/002/003) — the theme's canvas colour fills the whole editor
+ * US1 (FR-001/002/003), the theme's canvas colour fills the whole editor
  * region, edge to edge, for short and long documents, across preset and custom
- * themes, in both light and dark modes. Verified by asserting the `.milkdown`
- * root (which paints `background: var(--crepe-color-background)`) stretches to
- * the `.editor-host` height and that a probe at the bottom of the editor area
- * resolves to the theme canvas colour.
+ * themes, in both light and dark modes. The checks compare the editor height
+ * and its bottom color with the selected canvas color.
  *
- * US2 (FR-004/005/006) — the view-source action is the heroicons
- * code-bracket-square glyph in the single curated `--mm-view-source` dark blue,
+ * US2 (FR-004/005/006), the view-source action uses the code-bracket-square
+ * glyph in `--mm-view-source` dark blue,
  * in both the editor top bar and the explorer context menu.
  */
 
@@ -56,11 +54,11 @@ test.afterAll(async () => {
   fs.rmSync(testFolder, { recursive: true, force: true })
 })
 
-/** The heroicons 24px code-bracket-square outline path (research R3). */
+/** The 24px code-bracket-square outline path. */
 const CODE_BRACKET_SQUARE_D =
   'M14.25 9.75 16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0 0 20.25 18V6A2.25 2.25 0 0 0 18 3.75H6A2.25 2.25 0 0 0 3.75 6v12A2.25 2.25 0 0 0 6 20.25Z'
 
-/** The dark-blue token (plan D2 / research R2). */
+/** The dark-blue token. */
 async function viewSourceColour(): Promise<string> {
   return window.evaluate(() => {
     const root = document.querySelector('.app-container') as Element
@@ -94,7 +92,7 @@ async function canvasColour(): Promise<string> {
 /**
  * The effective background colour at the bottom-centre of the editor area.
  * Walks up from the hit-tested element until a non-transparent background is
- * found — proving no wrong-colour patch is painted below the content.
+ * found, proving no wrong-colour patch is painted below the content.
  */
 async function editorColourAtBottom(): Promise<string> {
   return window.evaluate(() => {
@@ -129,7 +127,7 @@ async function scrollEditorToBottom(): Promise<void> {
   })
 }
 
-/** The View source button — the last top-bar item in the inner bar. */
+/** The View source button, the last top-bar item in the inner bar. */
 function viewSourceButton(): Locator {
   return window.locator('.milkdown-top-bar .top-bar-inner > .top-bar-item').last()
 }
@@ -177,7 +175,7 @@ test('US1 a long document scrolled to the bottom keeps the canvas colour behind 
   await openFile(window, 'long.md')
 
   // The canvas fills the host (taller than the viewport) and rides behind the
-  // content when scrolled — the bottom of the editor still shows the canvas
+  // content when scrolled, the bottom of the editor still shows the canvas
   // colour, no chrome band.
   await expect.poll(canvasFillRatio).toBeGreaterThanOrEqual(1)
   await scrollEditorToBottom()
@@ -202,7 +200,7 @@ test('US1 dark mode + Monotone fills the editor with the dark canvas colour', as
 })
 
 test('US1 a custom theme fills the editor with its canvas colour', async () => {
-  // Spec 036: a pre-upgrade spec-023 fixture migrates at startup — its stored
+  // Spec 036: a pre-upgrade spec-023 fixture migrates at startup, its stored
   // colours become migrated-custom.json and the selection repairs to it, so
   // the canvas paints exactly the stored colours.
   await closeAppSafely(app)
@@ -280,7 +278,7 @@ test('US2 the top-bar view-source glyph is the code-bracket-square in the dark b
   const viewSource = viewSourceButton()
   await expect(viewSource).toBeVisible()
 
-  // FR-004: the glyph is the heroicons code-bracket-square outline.
+  // The glyph uses the expected code-bracket-square path.
   expect(await iconPath(viewSource)).toBe(CODE_BRACKET_SQUARE_D)
 
   // FR-005/FR-006: rendered in the curated dark blue, distinct from the accent.
@@ -297,7 +295,7 @@ test('US2 the top-bar view-source glyph stays the dark blue in dark mode', async
   await dialog.getByRole('radio', { name: 'Dark', exact: true }).check()
   await expect(window.locator('.app-container')).toHaveAttribute('data-theme', 'dark')
 
-  // The single curated colour is identical in both modes (FR-005/006) — it does
+  // The single curated colour is identical in both modes (FR-005/006), it does
   // not follow the accent, which differs between light and dark.
   const viewSource = viewSourceButton()
   await expect(viewSource).toBeVisible()
@@ -314,7 +312,7 @@ test('US2 the explorer context-menu View source item is a plain text label', asy
   const item = window.getByRole('menuitem', { name: 'View source' })
   await expect(item).toBeVisible()
 
-  // The context-menu action is a plain text item — no glyph. The code-bracket-
+  // The context-menu action is a plain text item, no glyph. The code-bracket-
   // square dark-blue icon lives only in the editor top bar (spec 028 follow-up
   // 2026-08-10).
   await expect(item.locator('svg')).toHaveCount(0)

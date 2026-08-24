@@ -34,20 +34,12 @@ export interface DocumentSessionApi {
   ) => void
   handleActivate: (id: string) => void
   handleNew: () => void
-  /** Spec 024: open a file read from disk, replacing the active tab's content
-   *  when it is live-clean and no explicit-new-tab action was used; otherwise
-   *  create a new tab. Existing-tab activation is preserved (FR-001-005).
-   *  An optional `view` (spec 002) is applied by the reducer. */
+
   openFileFromTree: (
     file: OpenedFile & { view?: 'formatted' | 'source' },
     explicitNew?: boolean
   ) => void
-  /** Spec 008 FR-018: open a file from the explorer. Same contract as
-   *  `openFileFromTree`, except the persisted `fileOpenBehavior` preference
-   *  decides replacement vs new-tab (data-model decision table): a `new-tab`
-   *  preference always creates a new tab (unless the file is already open,
-   *  which activates its existing tab); `same-tab` keeps the generic
-   *  replace-live-clean behavior. */
+
   openFileFromExplorer: (
     file: OpenedFile & { view?: 'formatted' | 'source' },
     explicitNew?: boolean
@@ -56,13 +48,6 @@ export interface DocumentSessionApi {
   isDirtyLive: (doc: DocumentState) => boolean
 }
 
-/**
- * Document lifecycle (US1/FR-002): open/close/save/reload, dirty & live-content
- * checks, baseline, content-to-save, and the quit/close confirmation flows.
- * Binds the pure `domain/dirty.ts` functions to the instance-pool markdown
- * accessor so the decision rules stay electron-free and unit-tested while the
- * orchestration (IPC, prompts, dispatches) lives here.
- */
 export function useDocumentSession(opts: {
   dispatch: React.Dispatch<DocumentsAction>
   sessionRef: React.MutableRefObject<EditingSession>
@@ -75,9 +60,6 @@ export function useDocumentSession(opts: {
 
   const getMarkdown = useCallback((id: string) => instancePool.getMarkdown(id), [])
 
-  // Spec 033 (contract C2): document-identity accessors backing the dirty
-  // fast path — reference identity proves "untouched since baseline" without
-  // serializing; every other case runs the exact comparison.
   const getLiveDoc = useCallback((id: string) => instancePool.getLiveDoc(id), [])
   const getBaselineDoc = useCallback((id: string) => instancePool.getBaselineDoc(id), [])
 
@@ -118,11 +100,6 @@ export function useDocumentSession(opts: {
         const pathAtStart = doc.path
         const result = await window.api.writeFile(pathAtStart, content)
         if (result.ok) {
-          // A rename/move may have rerouted this document while the write was
-          // in flight (REROUTE_PATHS, FR-028). The write hit the pre-reroute
-          // path; re-apply it to the current path so the content does not fork
-          // into two divergent files and the tab does not silently point back
-          // at the old location.
           const current = sessionRef.current.documents.find((d) => d.id === doc.id)
           const currentPath = current?.path ?? pathAtStart
           if (currentPath !== pathAtStart) {
@@ -132,10 +109,6 @@ export function useDocumentSession(opts: {
               return 'failed'
             }
           }
-          // Spec 033 (contract C2): SAVE_SUCCESS moves `editorBaseline`
-          // without a remount, so a recorded document identity could prove
-          // cleanliness against the WRONG baseline. Drop it; the next mount
-          // re-records it.
           instancePool.clearBaselineDoc(doc.id)
           dispatch({
             type: 'SAVE_SUCCESS',
@@ -205,8 +178,6 @@ export function useDocumentSession(opts: {
         doClose(id)
         return
       }
-      // Spec 008: show the native unsaved-changes box. Only one prompt at a time
-      // at a time (spec edge case); a second trigger while one is open is ignored.
       if (dialogInFlightRef.current) return
       dialogInFlightRef.current = true
       flushLiveContent()
@@ -232,8 +203,6 @@ export function useDocumentSession(opts: {
             return
           }
           if (saved === 'failed') {
-            // Research R5: a failed save re-prompts with the failure explained and
-            // the document stays open and dirty (US2 scenario 4).
             error = `Could not save ${doc.title}. The document stays open.`
             continue
           }
@@ -261,8 +230,6 @@ export function useDocumentSession(opts: {
       const result = await window.api.readFile(doc.path)
       if (!result.ok) return
       if (!force) {
-        // Auto-reload path only: a keystroke landing while the read was in
-        // flight must not be silently discarded by the reload.
         const fresh = sessionRef.current.documents.find((d) => d.id === doc.id)
         if (!fresh || fresh.dirty || isDirtyLive(fresh)) return
       }
@@ -272,12 +239,6 @@ export function useDocumentSession(opts: {
     [dispatch, isDirtyLive, sessionRef]
   )
 
-  // The quit flow decomposed into named sub-steps (FR-004): flush → dirty-check
-  // → confirm → discard-all/save-all → quit. A second trigger while any prompt
-  // is open is ignored (one prompt at a time) — checked BEFORE the no-dirty
-  // fast path, because quitting while a sheet is up (e.g. an external-removed
-  // rescue for a clean document) must not close the window and abandon the
-  // in-memory content it was offering (review 2026-08-04).
   const handleQuitRequest = useCallback(async () => {
     if (dialogInFlightRef.current) return
     const current = sessionRef.current
@@ -294,9 +255,6 @@ export function useDocumentSession(opts: {
     dialogInFlightRef.current = true
     try {
       let error: string | undefined
-      // The still-unsaved set shrinks as saves succeed, so a re-prompt lists
-      // (and a second Save All re-saves) only the documents that are actually
-      // still unsaved — not a stale pre-save snapshot (review 2026-08-04).
       const remaining = [...dirtyDocs]
       for (;;) {
         const result = await window.api.showConfirmation({
@@ -322,8 +280,6 @@ export function useDocumentSession(opts: {
           if (saved === 'failed') {
             error = `Could not save ${doc.title}. The application stays open.`
           }
-          // A failed save re-prompts with the failure explained (US2 scenario
-          // 4); a cancelled Save-As re-prompts with the tab staying open.
           allSaved = !shouldRePromptForFailedSave(saved)
           break
         }
@@ -331,8 +287,6 @@ export function useDocumentSession(opts: {
           window.api.confirmQuit('quit')
           return
         }
-        // A save failed or was cancelled — re-prompt with the failure explained
-        // (US2 scenario 4); the application stays open.
       }
     } finally {
       releaseDialogSurface()
@@ -349,8 +303,6 @@ export function useDocumentSession(opts: {
   const handleContentChange = useCallback(
     (id: string, content: string) => {
       const outgoing = sessionRef.current.documents.find((d) => d.id === id)
-      // A source edit is store-owned and a formatted edit may arrive before its
-      // debounced dirty flag. Either must make a staged replacement unsafe.
       if (outgoing?.pendingReplacement) {
         instancePool.remove(outgoing.pendingReplacement.id)
         dispatch({
@@ -363,10 +315,6 @@ export function useDocumentSession(opts: {
     [dispatch, sessionRef]
   )
 
-  // The editor's serialization right after it parses content is the reference
-  // for the live-dirty check (see isDirtyLive). It lives in the store's
-  // `editorBaseline` field; content/baseline stay the raw disk bytes
-  // (raw-bytes policy, spec 002).
   const handleBaselineCapture = useCallback(
     (id: string, baseline: string) => {
       dispatch({ type: 'CAPTURE_BASELINE', payload: { id, baseline } })
@@ -446,13 +394,6 @@ export function useDocumentSession(opts: {
     enforcePoolCap(sessionRef.current.activeId)
   }, [dispatch, enforcePoolCap, sessionRef])
 
-  // Spec 024 (FR-001/002/005, research R1): decide whether a file open replaces
-  // the active tab. The gate is the LIVE dirty check (pool), never the debounced
-  // store flag — a keystroke inside the 200 ms debounce must not be silently
-  // discarded (Principle III). Existing-tab activation happens in the reducer.
-  // Spec 008 FR-018: `explicitNew` forces a new tab; a `same-tab` preference
-  // keeps the replace-live-clean behavior (data-model decision table). An
-  // already-open file always activates its existing tab.
   const openWithDecision = useCallback(
     (
       file: OpenedFile & { view?: 'formatted' | 'source' },
@@ -485,9 +426,6 @@ export function useDocumentSession(opts: {
     [openWithDecision]
   )
 
-  // Spec 008 FR-018: the explorer entry point consults the persisted preference
-  // read at open time (the renderer cache mirrors main). `new-tab` → always a
-  // new tab unless already open; middle-click still forces explicit new.
   const openFileFromExplorer = useCallback(
     (file: OpenedFile & { view?: 'formatted' | 'source' }, explicitNew = false) => {
       openWithDecision(file, explicitNew, getSettings().fileOpenBehavior === 'new-tab')

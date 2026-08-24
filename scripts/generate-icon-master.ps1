@@ -1,13 +1,9 @@
 # Generates the product icon asset set from a single programmatic source.
 # Zero external dependencies (GDI+ via System.Drawing).
 #
-# The canonical editable artwork is assets/icon/master.svg. This script renders
-# the identical geometry (tile gradient, rounded corners, "M" stroke skeleton)
-# into the committed raster masters and every derived platform asset from one
-# entrypoint. Re-runs reproduce STRUCTURALLY equivalent output - identical
-# dimensions, colour types, ICO directory shape, ICNS chunk layout - not
-# byte-identical PNGs, because GDI+ encoder output is not byte-stable
-# (docs/icon-provenance.md, research D6):
+# Edit assets/icon/master.svg to change the artwork. This script renders its
+# geometry into the committed platform assets. GDI+ output is not byte-stable,
+# so regenerated PNG files can differ while keeping the same format and size.
 #
 #   pwsh -File scripts/generate-icon-master.ps1 [-RepoRoot <path>]
 #
@@ -18,7 +14,7 @@
 #   resources/icon.png                512x512 convenience master for electron-builder
 #   resources/icons/{16,24,32,48,64,128,256,512}.png
 #
-# NOTE: never output into build/ - it is gitignored in this repository.
+# Do not write generated icons to build/, which is ignored by Git.
 param(
     [string]$RepoRoot = (Resolve-Path "$PSScriptRoot\..").Path
 )

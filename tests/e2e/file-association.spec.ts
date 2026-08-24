@@ -6,9 +6,9 @@ import * as path from 'path'
 import { launchApp, closeAppSafely, openFolder, electronLaunchArgs, messageBoxCallCount } from './launch'
 
 /**
- * Spec 006 suite (contracts/os-open.md): OS-initiated opens — the Windows
+ * Spec 006 suite (contracts/os-open.md): OS-initiated opens, the Windows
  * Explorer verb argv and the macOS Finder `open-file` event both arrive in main
- * as a path — open a file or folder through the existing flows, never bypassing
+ * as a path, open a file or folder through the existing flows, never bypassing
  * the unsaved-work protections. Failures fail closed with a quiet footer note.
  */
 
@@ -37,7 +37,7 @@ test.afterEach(async () => {
  * Launch a secondary instance with the SAME private user-data dir so the
  * single-instance lock is held by the primary; the secondary forwards its argv
  * to the primary's `second-instance` handler and then quits (FR-008). It quits
- * so fast Playwright may or may not attach — either way the argv is delivered.
+ * so fast Playwright may or may not attach, either way the argv is delivered.
  * A timeout guard ensures a stuck `electron.launch` (slow CI) can never hang
  * the test; the primary's assertions poll regardless.
  */
@@ -53,7 +53,7 @@ async function launchSecondary(target: string): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 1500))
     await second?.close().catch(() => {})
   } catch {
-    /* the secondary exited before Playwright attached — argv already forwarded */
+    /* the secondary exited before Playwright attached, argv already forwarded */
   }
 }
 
@@ -98,7 +98,7 @@ test('US1/FR-007 an already-open file OS-open activates its existing tab (no dup
 
   await launchSecondary(path.join(testFolder, 'alpha.md'))
 
-  // FR-007: the existing tab is activated — the tab count never grows.
+  // FR-007: the existing tab is activated, the tab count never grows.
   await expect(window.getByRole('tab', { name: 'alpha.md' })).toBeVisible({ timeout: 15000 })
   await expect(window.getByRole('tab')).toHaveCount(1)
 })
@@ -119,7 +119,7 @@ test('US2/FR-009 a folder OS-open preserves the unsaved-work confirmation', asyn
     await launchSecondary(otherFolder)
 
     // FR-009: the dirty workspace-relative document triggers the folder-open
-    // confirmation (stubbed to Cancel) — the OS folder is never committed.
+    // confirmation (stubbed to Cancel), the OS folder is never committed.
     await expect.poll(async () => messageBoxCallCount(app)).toBeGreaterThanOrEqual(1)
     await expect(window.getByTestId('footer-workspace')).toContainText(
       path.basename(testFolder)

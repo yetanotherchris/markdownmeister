@@ -5,8 +5,8 @@ import type { EditorColors } from '../../src/shared/ipc-contract'
 import { DEFAULT_EDITOR_THEME_FILES } from '../../src/shared/editorThemeTokens'
 
 /**
- * Spec 036 (plan D5, review 2026-08-23): themes.css layers the file-driven
- * tokens over the retained preset blocks with precise precedence — derived
+ * Spec 036: themes.css layers the file-driven
+ * tokens over the retained preset blocks with precise precedence, derived
  * tones stay preset-driven for the five default names (unedited defaults
  * render pixel-identically to the previous version), while the six curated
  * tokens + typeface come from the resolved FILE for every discovered theme,
@@ -32,7 +32,7 @@ function parseMilkdownRules(css: string): Rule[] {
   let match: RegExpExecArray | null
   while ((match = pattern.exec(withoutComments)) !== null) {
     const selector = match[1].trim()
-    // Only rules whose subject IS the canvas element set its custom properties.
+    // Only rules targeting the canvas element set its custom properties.
     if (!selector.endsWith('.milkdown')) continue
     const declarations: Record<string, string> = {}
     for (const declaration of match[2].split(';')) {

@@ -21,7 +21,7 @@ describe('fitWindowToDisplays (FR-007)', () => {
   })
 
   it('repositions an off-screen rect onto the available display (FR-007 s1)', () => {
-    // The saved display is gone — the rect centre is outside every work-area.
+    // The saved display is gone, the rect centre is outside every work-area.
     const bounds = { x: 5000, y: 5000, width: 800, height: 600 }
     const fitted = fitWindowToDisplays(bounds, [PRIMARY])
     expect(fitted.x).toBeGreaterThanOrEqual(PRIMARY.x)

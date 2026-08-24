@@ -71,8 +71,6 @@ export default tseslint.config(
     }
   },
   {
-    // electron-builder lifecycle hooks must be CommonJS modules (resolved via
-    // require by packager.js); Node globals are their entire surface.
     files: ['scripts/**/*.cjs'],
     languageOptions: {
       globals: {

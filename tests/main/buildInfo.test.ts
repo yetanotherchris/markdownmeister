@@ -8,11 +8,11 @@ import {
 } from '../../src/main/buildInfo'
 
 /**
- * Spec 037 (research R2-R4): the build-identity policies. The env override and
+ * Spec 037: build-identity policies. The environment override and
  * git fallback run at electron-vite config load; the policies are extracted so
  * each branch is provable without spawning processes or building. Under vitest
  * no `__BUILD_COMMIT__` define exists, so `embeddedRevision()` is always null
- * here — the embedded-value branches are exercised through explicit arguments.
+ * here, the embedded-value branches are exercised through explicit arguments.
  */
 
 describe('resolveBuildRevision (build-time policy)', () => {

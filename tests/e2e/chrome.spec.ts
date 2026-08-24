@@ -7,7 +7,7 @@ import { launchApp, closeAppSafely, closeAppDiscardingQuit, openFolder as openWo
 /**
  * Spec 010 chrome suite (contracts/renderer.md §E2e): the hamburger menu, the
  * explorer toggle, the tab strip pills, and the "+" new-file button in the one
- * header row — plus the FR-009 keyboard contract and the shortcuts that used to
+ * header row, plus the FR-009 keyboard contract and the shortcuts that used to
  * live in the native menu bar (removed by FR-002).
  */
 
@@ -178,7 +178,7 @@ test('US3 the + button opens an untitled tab without discarding unsaved changes'
   await expect(window.getByRole('tab')).toHaveCount(2)
   await expect(window.getByRole('tab', { name: /Untitled-\d/ })).toHaveClass(/active/)
 
-  // The unsaved edit is still there — switching back shows the typed text.
+  // The unsaved edit is still there, switching back shows the typed text.
   await alphaTab.click()
   await expect(window.locator('.ProseMirror:visible')).toContainText('EXTRA')
   await expect(alphaTab.locator('.tab-dirty')).toBeVisible()

@@ -8,11 +8,7 @@ interface InstanceEntry {
   documentId: string
   editor: Crepe
   lastActiveAt: number
-  /** Spec 033 (contract C2): the ProseMirror document object reference at the
-   *  moment `editorBaseline` was captured. Reference identity with the live
-   *  view's doc proves no doc-changing transaction occurred, so dirty checks
-   *  can return clean without serializing. Cleared when the entry is removed,
-   *  and explicitly when a save moves `editorBaseline` without a remount. */
+
   baselineDoc: unknown
 }
 export class InstancePool {
@@ -34,8 +30,7 @@ export class InstancePool {
     this.instances.delete(documentId)
   }
 
-  /** Record the document reference captured alongside `editorBaseline`
-   *  (spec 033). No-op when no live entry exists for the document. */
+
   setBaselineDoc(documentId: string, docRef: unknown): void {
     const entry = this.instances.get(documentId)
     if (entry) entry.baselineDoc = docRef
@@ -45,9 +40,7 @@ export class InstancePool {
     return this.instances.get(documentId)?.baselineDoc
   }
 
-  /** Drop the recorded identity: the fast path must never prove cleanliness
-   *  against a baseline that has moved (e.g. after SAVE_SUCCESS rewrites
-   *  `editorBaseline` without a remount). */
+
   clearBaselineDoc(documentId: string): void {
     const entry = this.instances.get(documentId)
     if (entry) entry.baselineDoc = null
@@ -75,18 +68,12 @@ export class InstancePool {
     return entry.editor.getMarkdown()
   }
 
-  /** Run `fn` for every live editor (spec 030 reconfiguration fan-out). */
+
   forEach(fn: (editor: Crepe) => void): void {
     this.instances.forEach((entry) => fn(entry.editor))
   }
 
-  /**
-   * Returns the id of the oldest *clean* live instance to evict, or null when
-   * nothing may be evicted (every live instance is dirty, or the only clean
-   * one is the active document). The active document is never evicted — its
-   * editor would vanish while visible. Does not remove the entry; the caller
-   * does that after capturing any state it needs.
-   */
+
   evictLRU(dirtyDocuments: DocumentState[], activeId: string | null): string | null {
     const dirtyIds = new Set(dirtyDocuments.map(d => d.id))
     let oldest: InstanceEntry | null = null

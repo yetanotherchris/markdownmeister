@@ -105,7 +105,7 @@ describe('resolveWithinRoot', () => {
       expect(result.relative).toBe('test.md')
     } catch {
       // File symlinks need developer mode or admin on Windows. Junctions work
-      // without admin but only for directories — use one as the equivalent.
+      // without admin but only for directories, use one as the equivalent.
       if (process.platform === 'win32') {
         const junctionPath = path.join(root, 'linkdir')
         try {
@@ -208,11 +208,7 @@ describe('resolveNonExistent', () => {
 })
 
 describe('fs operations reject absolute paths (what the IPC handlers route through)', () => {
-  // Security hardening (003 review): resolveWithinRoot's absolute-path
-  // rejection is the gate every file:read/file:write/readDir argument passes
-  // through. A handler-level regression — e.g. someone joining
-  // workspace.root + a renderer path — would silently read outside the
-  // workspace unless the fs layer itself refuses absolute inputs.
+  // File operations reject absolute paths before resolving workspace paths.
   let root: string
 
   beforeEach(() => {

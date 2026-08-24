@@ -1,29 +1,14 @@
 name: Build and Release
 
-# Triggered only by stable semantic-version tags. The filter below is a GitHub
-# Actions GLOB pattern, not a regex: `[0-9]` is a character class, `+` means
-# "one or more", and `.` is a literal dot — so `v1.2.3` matches while `v1.2` and
-# `v1.0.0-beta.1` do not. The strict `^v[0-9]+\.[0-9]+\.[0-9]+$` regex is
-# enforced inside the `validate` job, which also checks reachability and that
-# the tag has no existing release before any build leg starts (FR-001, spec
-# Assumptions; research R2).
 on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
-# Minimum credentials (FR-013, research R9): read is the default for the whole
-# workflow; the release job alone scopes `contents: write` to itself (creating
-# the release and pushing the package-definition commit). Build/validate legs
-# only need read and run `npm ci` (arbitrary postinstall scripts) and
-# electron-builder.
 permissions:
   contents: read
 
 jobs:
-  # Cheap preflight that rejects bad tags BEFORE the four build legs start, so a
-  # non-main or already-released tag never burns four build runners (US1
-  # scenarios 3-4, spec Edge Cases).
   validate:
     runs-on: ubuntu-latest
     permissions:
@@ -34,9 +19,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # FR-001: the glob trigger already restricts the shape; this real regex
-      # keeps the strict vMAJOR.MINOR.PATCH guarantee explicit and actionable if
-      # the trigger filter is ever widened.
       - name: Assert tag matches strict semver
         shell: bash
         run: |
@@ -45,10 +27,6 @@ jobs:
             exit 1
           fi
 
-      # FR-002, US1 scenario 4: a valid-shape tag on a revision not reachable
-      # from main is rejected with an explicit message before anything is built
-      # or published. `git fetch origin main` guarantees refs/remotes/origin/main
-      # exists even if checkout's ref filtering did not fetch it.
       - name: Verify tag is reachable from main
         run: |
           git fetch origin main
@@ -59,8 +37,6 @@ jobs:
             exit 1
           fi
 
-      # Spec Edge Case: a valid tag whose version is already released fails
-      # clearly instead of overwriting the existing release or manifest state.
       - name: Check the tag has no existing release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -74,10 +50,6 @@ jobs:
   build:
     # Only run the expensive four-leg matrix once the cheap validation passed.
     needs: validate
-    # fail-fast: false so one failed leg never cancels the still-running legs
-    # and silently produces a "partial success" matrix (FR-010). There is NO
-    # continue-on-error on any leg: every leg MUST succeed or the release job
-    # never runs (research R1/R4).
     strategy:
       fail-fast: false
       matrix:
@@ -86,8 +58,6 @@ jobs:
             platform: windows
             arch: x64
             suffix: windows-x64
-          # macos-13 (the plain Intel image) was retired by GitHub in Dec 2025;
-          # macos-15-intel is the dedicated native x64 macOS runner (research R4).
           - os: macos-15-intel
             platform: macos
             arch: x64
@@ -119,8 +89,6 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        # Electron's postinstall downloads a platform binary outside npm's registry retries. Retry transient
-        # artifact-network failures, but keep a persistent install failure blocking the release (FR-010).
         shell: bash
         run: |
           for attempt in 1 2 3; do
@@ -137,7 +105,6 @@ jobs:
           echo "::error::npm ci failed after 3 attempts."
           exit 1
 
-      # FR-003: the release version is the numeric portion of the triggering tag.
       - name: Determine version
         id: version
         shell: bash
@@ -146,18 +113,9 @@ jobs:
           VERSION="${VERSION#v}"
           echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
 
-      # FR-003: package.json's version is synced to the tag version by the
-      # release job (updatepackagejson.ps1, committed to main alongside the
-      # manifests). Build legs must not fail on a drift here — the packaging
-      # version always comes from the tag via --config.extraMetadata.version.
       - name: Build app
         run: npm run build
 
-      # FR-003/FR-008: the packaged version (artifact names AND the app version
-      # embedded in the build) comes from the tag, NOT package.json.
-      # --config.extraMetadata.version merges into the app package.json before
-      # AppInfo reads `version`, so artifact names always match the tag even if
-      # `--publish never` runs against a `package.json` holding `0.1.0`.
       - name: Package (Windows)
         if: matrix.platform == 'windows'
         run: npx electron-builder --win --x64 --publish never --config.extraMetadata.version=${{ steps.version.outputs.VERSION }}
@@ -165,8 +123,6 @@ jobs:
       - name: Package (macOS)
         if: matrix.platform == 'macos'
         env:
-          # No signing/notarization (spec Assumptions: out of scope) — tell
-          # electron-builder not to auto-discover a signing identity (R5).
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: npx electron-builder --mac --${{ matrix.arch }} --publish never --config.extraMetadata.version=${{ steps.version.outputs.VERSION }}
 
@@ -174,12 +130,6 @@ jobs:
         if: matrix.platform == 'linux'
         run: npx electron-builder --linux --x64 --publish never --config.extraMetadata.version=${{ steps.version.outputs.VERSION }}
 
-      # Curate the upload to the final installers only. electron-builder also
-      # leaves unpacked staging directories (win-unpacked/, linux-unpacked/,
-      # mac/) and config output in dist/; uploading them would bloat the
-      # workflow artifact and could leak into the release (release reviews).
-      # if-no-files-found: error so an empty dist (a failed packaging step that
-      # happened to exit 0) fails the leg instead of uploading nothing (FR-010).
       - name: Upload artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # actions/upload-artifact v7.0.1
         with:
@@ -192,8 +142,6 @@ jobs:
           if-no-files-found: error
 
   release:
-    # Runs only when EVERY build leg succeeded (no continue-on-error above), and
-    # only for a tag push, never a manual dispatch (FR-010, US4 scenario 1).
     needs: build
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
@@ -220,9 +168,6 @@ jobs:
           path: artifacts
           merge-multiple: true
 
-      # FR-009/FR-010, US4 scenarios 1-2: verify the FULL required artifact set
-      # (contracts/release.md §2) is present and non-empty before publishing.
-      # Any missing or empty artifact fails the job before the release exists.
       - name: Verify required artifact set
         shell: bash
         run: |
@@ -244,13 +189,6 @@ jobs:
             echo "verified: $f"
           done
 
-      # FR-004/FR-010: create the GitHub Release as a DRAFT first
-      # (softprops v3 uploads assets before publishing and stays unpublished).
-      # The manifests are then updated and committed to main while the release
-      # is still a draft, and the draft is published only at the very end — so a
-      # PUBLIC release can never exist referencing stale or missing definitions.
-      # fail_on_unmatched_files: true means a missing file in `files` fails the
-      # release creation instead of publishing a partial release (research R8).
       - name: Create draft GitHub Release
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # softprops/action-gh-release v3
         with:
@@ -259,11 +197,6 @@ jobs:
           fail_on_unmatched_files: true
           generate_release_notes: true
 
-      # FR-006/007/008: update both package definitions from the downloaded
-      # (verified + hashed) artifacts. Each script throws on a missing file, so
-      # a failed build can never reach the commit. Move off the detached tag
-      # checkout onto main FIRST so the commit at the end can actually be pushed
-      # (release reviews; reference repos do the same via an explicit checkout).
       - name: Checkout main
         run: |
           git fetch origin main
@@ -284,9 +217,6 @@ jobs:
           RELEASE_VERSION: ${{ steps.version.outputs.VERSION }}
         run: ./updatebrew.ps1 -Version "$env:RELEASE_VERSION" -ArtifactsDir artifacts
 
-      # FR-003: keep the committed package.json version in sync with the release
-      # tag, committed to main in the same commit as the package definitions, so
-      # the released version is never silently misrepresented by the manifest.
       - name: Sync package.json version to tag
         shell: pwsh
         working-directory: ${{ github.workspace }}
@@ -303,9 +233,6 @@ jobs:
           commit_user_name: github-actions[bot]
           commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
 
-      # Publish the draft now that the manifests referencing this exact version
-      # are committed to main. Omitting `draft` makes softprops publish the
-      # existing draft (research R8).
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # softprops/action-gh-release v3
         with:

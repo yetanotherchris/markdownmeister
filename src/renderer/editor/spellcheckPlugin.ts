@@ -5,15 +5,7 @@ import type { Node as PMNode } from '@milkdown/kit/prose/model'
 import { findMisspellings } from '../domain/spellcheck'
 import { spellcheckRuntime, updateSpellcheckRuntime, onSpellcheckRuntimeChange } from './spellcheckRuntime'
 
-/**
- * Spec 020 (2026-08-07): the JS whole-document spellchecker as a ProseMirror
- * plugin. Marks misspelled ranges with the `mm-spelling-error` inline
- * decoration (wavy-red underline in CSS) and owns the right-click correction
- * menu (suggestions from nspell + add-to-dictionary).
- *
- * The check runs on open (the whole document) and, debounced, after each edit.
- * Code blocks are skipped (spec edge case: code regions are not spellchecked).
- */
+
 
 export interface SpellingMenuState {
   x: number
@@ -34,22 +26,16 @@ export const spellcheckKey = new PluginKey<SpellcheckPluginState>('mm-spellcheck
 
 const RECOMPUTE_DEBOUNCE_MS = 120
 const MAX_SUGGESTIONS = 5
-/** Spec 033 (contract C3): the initial whole-document pass is deferred to idle
- *  time with this upper bound, so no spellcheck work runs synchronously inside
- *  editor construction or the staging window of a same-tab open. Marks arrive a
- *  beat after presentation (sanctioned by the spec assumption) but always
- *  within the bound under normal conditions. */
+
 const INITIAL_PASS_IDLE_TIMEOUT_MS = 2_000
 
-/** Nodes whose text is never spellchecked (code regions, formulas). */
+
 function isSkippedNode(node: PMNode): boolean {
   const name = node.type.name
   return name === 'code_block' || name === 'fence' || name === 'math'
 }
 
-/** Inline code is a MARK in Milkdown's commonmark preset — the schema names it
- *  `inlineCode` (with an older `n` id) — so a text node inside `` `code` ``
- *  carries it and must be skipped too. */
+
 const INLINE_CODE_MARKS = new Set(['inlineCode', 'n'])
 
 function isInlineCodeText(node: PMNode): boolean {
@@ -140,10 +126,6 @@ export function spellcheckPlugin(onMenu: (menu: SpellingMenuState | null) => voi
         }, RECOMPUTE_DEBOUNCE_MS)
       }
 
-      // Spec 033 (FR-004, contract C3): the initial whole-document pass runs at
-      // idle time instead of immediately after mount — it must never block
-      // presentation of the incoming document. jsdom (unit tests) lacks
-      // requestIdleCallback; the timeout fallback keeps the deferral semantics.
       const hasIdleApi = typeof window.requestIdleCallback === 'function'
       const runInitialPass = () => {
         idleId = null
@@ -224,7 +206,7 @@ function handleContextMenu(
         // Notify every editor + re-check now; persist in main (the local set
         // is authoritative for this session).
         updateSpellcheckRuntime({ customWords: spellcheckRuntime.customWords })
-        window.api.addSpellcheckWord(wordKey).catch(() => { /* non-critical */ })
+        window.api.addSpellcheckWord(wordKey).catch(() => {  })
       }
       applyDecorations(view)
       onMenu(null)

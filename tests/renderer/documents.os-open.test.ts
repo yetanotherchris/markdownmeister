@@ -4,9 +4,9 @@ import type { EditingSession } from '../../src/renderer/state/documents'
 import { createSession } from './helpers'
 
 /**
- * Spec 006 (research R8): detached files (`path: null`) carry a `canonicalPath`
- * (the realpath main supplied) so FR-007 — "activate the existing tab, never
- * create a duplicate" — holds outside the workspace too.
+ * Detached files (`path: null`) carry a `canonicalPath`
+ * (the realpath main supplied) so FR-007, "activate the existing tab, never
+ * create a duplicate", holds outside the workspace too.
  */
 
 interface OsFileLike {

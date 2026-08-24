@@ -16,7 +16,7 @@ import {
  * bundled Hunspell dictionaries (nspell) running in the renderer. Misspelled
  * words get the `mm-spelling-error` decoration (wavy-red underline) and the
  * right-click correction menu is the renderer's own DOM menu
- * (`[data-testid="spelling-menu"]`) — so unlike the earlier native-engine spec,
+ * (`[data-testid="spelling-menu"]`), so unlike the earlier native-engine spec,
  * nothing here needs main-process stubs; the tests drive the real DOM.
  */
 

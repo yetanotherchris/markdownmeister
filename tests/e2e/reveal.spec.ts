@@ -7,8 +7,8 @@ import { launchApp, closeAppSafely, openFolder } from './launch'
 /**
  * Spec 015 suite (contracts/reveal.md): the explorer context menu reveals a
  * workspace file or folder in the OS file manager. Files go through
- * `shell.showItemInFolder` (parent folder, file highlighted — FR-001/004);
- * folders through `shell.openPath` (the folder itself — FR-002). The OS calls
+ * `shell.showItemInFolder` (parent folder, file highlighted, FR-001/004);
+ * folders through `shell.openPath` (the folder itself, FR-002). The OS calls
  * are stubbed in main and their arguments recorded; errors surface as a quiet
  * footer note with the session untouched (FR-006).
  */
@@ -107,7 +107,7 @@ test('US4 a missing target shows a quiet footer note and leaves the session unch
   await expect(window.locator('.document-title')).toContainText('alpha.md')
 
   // Write a fresh file, open its context menu, then delete it externally while
-  // the menu is still open: the reveal resolves AFTER the deletion, so main's
+  // the menu is still open: the reveal resolves after the deletion, so main's
   // existence check fails (FR-006 scenario 1).
   fs.writeFileSync(path.join(testFolder, 'gone.md'), '# Gone')
   await expect(window.getByRole('treeitem').getByText('gone.md')).toBeVisible()
@@ -115,7 +115,7 @@ test('US4 a missing target shows a quiet footer note and leaves the session unch
   fs.rmSync(path.join(testFolder, 'gone.md'), { force: true })
   await window.getByRole('menuitem', { name: await revealLabel() }).click()
 
-  // Quiet, in-context error — a footer note, no modal — and no OS call ran.
+  // Quiet, in-context error, a footer note, no modal, and no OS call ran.
   await expect(window.getByTestId('footer-note')).toBeVisible()
   expect(await shownCalls()).toEqual([])
   expect(await openedCalls()).toEqual([])

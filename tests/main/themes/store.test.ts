@@ -307,7 +307,7 @@ describe('listThemes discovery matrix', () => {
       } catch {
         // Windows without privilege cannot create file symlinks; a junction
         // (directory link) needs none and exercises the same regular-file
-        // filter (research E9).
+        // filter.
         try {
           fs.symlinkSync(outsideDir, linkPath, 'junction')
           created = true

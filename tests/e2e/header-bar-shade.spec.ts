@@ -54,7 +54,7 @@ const sidebarBg = () => bg(window.locator('.sidebar-panel'))
 const footerBg = () => bg(window.locator('.app-footer'))
 const sourceToolbarBg = () => bg(window.locator('.source-toolbar'))
 
-/** Sum the RGB channels of an `rgb(r, g, b)` string — "how light is it". */
+/** Sum the RGB channels of an `rgb(r, g, b)` string, "how light is it". */
 function channelSum(rgb: string): number {
   const m = /rgb\((\d+),\s*(\d+),\s*(\d+)\)/.exec(rgb)
   if (!m) throw new Error(`expected an rgb() color, got ${rgb}`)
@@ -89,7 +89,7 @@ test('FR-003/004 the active and inactive tab appearances are unchanged', async (
   // The active pill keeps its exact #EAEAEA background (FR-003).
   await expect.poll(pillBg).toBe('rgb(234, 234, 234)')
 
-  // An inactive tab stays transparent — no background was introduced (FR-004).
+  // An inactive tab stays transparent, no background was introduced (FR-004).
   expect(await bg(window.locator('.tab:not(.active)'))).toBe('rgba(0, 0, 0, 0)')
 })
 
@@ -119,7 +119,7 @@ test('FR-007 in dark mode the toolbar stays a step below the dark pill', async (
   // The dark pill stays #2D2D2D (FR-003 holds in dark mode).
   await expect.poll(pillBg).toBe('rgb(45, 45, 45)')
 
-  // FR-007: the toolbar is the dark --mm-header — strictly darker than the
+  // FR-007: the toolbar is the dark --mm-header, strictly darker than the
   // pill.
   await expect.poll(toolbarBg).toBe('rgb(38, 38, 38)')
   expect(channelSum(await toolbarBg())).toBeLessThan(channelSum('rgb(45, 45, 45)'))
@@ -128,7 +128,7 @@ test('FR-007 in dark mode the toolbar stays a step below the dark pill', async (
   await expect.poll(headerBg).toBe('rgb(31, 31, 31)')
 
   // FR-006: still distinct from the canvas. Spec 016 (user decision 2026-08-07):
-  // the editor theme owns the canvas — the default Rustic canvas stays warm
+  // the editor theme owns the canvas, the default Rustic canvas stays warm
   // #fdf6e3 in dark mode, so the dark toolbar (#262626) remains clearly distinct.
   await expect.poll(canvasBg).toBe('rgb(253, 246, 227)')
   expect(channelSum(await toolbarBg())).toBeLessThan(channelSum('rgb(253, 246, 227)'))

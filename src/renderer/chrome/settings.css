@@ -1,10 +1,3 @@
-/* Spec 012 settings dialog (co-located with chrome/SettingsDialog.tsx; split
- * from App.css in the 017 restructure). Spec 008: wider two-area sidebar
- * layout and Tailwind-style pill switches. */
-
-/* Spec 012: the settings dialog — a modal overlay over the whole window. The
-   grey palette variables (spec 010) style it; it never touches the document
-   session underneath (FR-008). */
 .settings-dialog-overlay {
   position: fixed;
   inset: 0;
@@ -15,16 +8,10 @@
   z-index: 100;
 }
 
-/* Spec 008 FR-001: wider than the previous 360px modal so the sidebar and the
-   content panel both fit comfortably at desktop widths. Constrained to the
-   viewport (FR-001 / edge case 1) with an internal scroll for the panel. */
 .settings-dialog {
   width: 640px;
   max-width: calc(100vw - 32px);
-  /* Spec 028 follow-up (2026-08-10): the Theme area is taller than General, so
-     switching areas used to resize the dialog (314px vs 434px at 640px width).
-     Pin a minimum height at the taller area's height so the dialog stays the
-     same size whichever area is shown; .settings-main scrolls if content grows. */
+
   min-height: 440px;
   max-height: calc(100vh - 32px);
   display: flex;
@@ -66,8 +53,6 @@
   background: var(--mm-surface-secondary);
 }
 
-/* Spec 008 FR-002/003: a persistent left sidebar next to the content panel.
-   The sidebar does not shrink away; the panel takes the remaining width. */
 .settings-dialog-layout {
   display: flex;
   min-height: 0;
@@ -84,7 +69,6 @@
   border-right: 1px solid var(--mm-border);
 }
 
-/* Spec 008 FR-004: the active entry is visually distinct (accent tinted). */
 .settings-nav-button {
   appearance: none;
   border: none;
@@ -148,8 +132,6 @@
   background: var(--mm-surface);
 }
 
-/* Spec 036 FR-010: the quiet indication that some theme files were rejected —
-   muted, non-modal, naming the files so the user can repair them. */
 .settings-theme-invalid-note {
   margin: 4px 8px 0;
   font-size: 12px;
@@ -180,9 +162,6 @@
   opacity: 0.5;
 }
 
-/* Spec 008 FR-006: Tailwind-style pill switches. The native checkbox stays
-   semantic and focusable but visually hidden; the track and knob render the
-   toggle. The knob slides and the track tints on the checked state. */
 .settings-switch {
   display: flex;
   align-items: center;
@@ -247,9 +226,6 @@
   line-height: 1.3;
 }
 
-/* Spec 037: the read-only About area rows. The label holds a fixed column;
-   values wrap within the dialog flow (edge case: very long revision hashes
-   must never clip) and stay user-selectable so they can be copied in full. */
 .settings-about-row {
   display: flex;
   align-items: baseline;
@@ -273,8 +249,6 @@
   user-select: text;
 }
 
-/* The repository URL behaves like a link; activating it hands off to the OS
-   browser via the named preload operation — never an in-app navigation. */
 .settings-about-link {
   appearance: none;
   border: none;
@@ -346,8 +320,6 @@
   filter: brightness(1.1);
 }
 
-/* Spec 008 edge case: at very narrow window widths the sidebar moves above the
-   panel as a horizontal row so the two never overlap or collapse. */
 @media (max-width: 480px) {
   .settings-dialog {
     width: calc(100vw - 32px);

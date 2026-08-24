@@ -2,18 +2,15 @@ import { test, expect, ElectronApplication, Page } from '@playwright/test'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-// The electron-free policy module (research R3) is importable anywhere; the
-// suites share its constant instead of re-declaring the URL independently.
 import { REPOSITORY_URL } from '../../src/main/buildInfo'
 import { closeAppSafely, launchApp, messageBoxCallCount, openSettingsDialog } from './launch'
 
 /**
- * Spec 037 suite: the About settings area. Covers the acceptance scenarios —
+ * Spec 037 suite: the About settings area. Covers the acceptance scenarios,
  * the nav entry last (FR-001), three read-only values with the true version
  * (FR-002), the exact-URL external hand-off recorded in main (FR-004), the
  * full-value clipboard round-trip (FR-006), the never-prompting stateless
- * close (FR-008), and the development placeholder forced through the
- * unpackaged MM_BUILD_COMMIT seam (FR-007, research R4).
+ * close (FR-008), and the development placeholder (FR-007).
  */
 
 let app: ElectronApplication
@@ -77,8 +74,7 @@ test('US1 the navigation ends with About and it shows only the three read-only v
   const box = dialog.getByTestId('settings-dialog')
   const nav = box.getByRole('navigation', { name: 'Settings areas' })
 
-  // FR-001 + placement assumption: About is listed last, after Markdown, and
-  // is not selected while General holds the initial selection.
+  // About starts unselected after the other settings areas.
   const entries = await nav.getByRole('button').allTextContents()
   expect(entries.map((label) => label.trim())).toEqual(['General', 'Theme', 'Markdown', 'About'])
   await expect(nav.getByRole('button', { name: 'General' })).toHaveAttribute('aria-pressed', 'true')
@@ -87,7 +83,7 @@ test('US1 the navigation ends with About and it shows only the three read-only v
   await nav.getByRole('button', { name: 'About' }).click()
   await expect(box.getByRole('group', { name: 'About' })).toBeVisible()
 
-  // FR-008: purely read-only information — no adjustable control renders.
+  // FR-008: purely read-only information, no adjustable control renders.
   expect(await box.locator('.settings-main input, .settings-main select').count()).toBe(0)
 })
 
@@ -102,10 +98,7 @@ test('US1 the repository URL and a revision identifier are both shown', async ()
   await openAboutArea()
 
   await expect(window.getByTestId('settings-about-repository')).toHaveText(REPOSITORY_URL)
-  // MM_BUILD_COMMIT is accepted verbatim (research R2/R4) — any non-blank
-  // string can surface here, so the assertion must not assume a 40-hex SHA.
-  // Assert only that an honest identifier rendered: non-empty, non-placeholder,
-  // and unpadded (tests review 2026-08-23).
+  // A revision may be any non-blank identifier rather than a full SHA.
   const revision = await window.getByTestId('settings-about-revision').textContent()
   expect(revision).toBeTruthy()
   expect(revision?.trim()).toBe(revision)
@@ -119,7 +112,7 @@ test('US2/FR-004 activating the repository URL hands the exact URL to the OS exa
   await window.getByTestId('settings-about-repository').click()
 
   // FR-004: exactly one external hand-off carrying the constant URL, and zero
-  // in-application side effects — the dialog stays put.
+  // in-application side effects, the dialog stays put.
   await expect.poll(() => openExternalCalls(app)).toEqual([REPOSITORY_URL])
   await expect(window.getByTestId('settings-dialog')).toBeVisible()
 })
@@ -132,10 +125,7 @@ test('US2/FR-004 repeated activation hands off exactly once per click with no du
   await link.click()
   await link.click()
 
-  // spec.md Edge Cases (specs/archive/037-settings-about-section/spec.md:51):
-  // each activation repeats the hand-off — two clicks, two identical URLs,
-  // and nothing inside the app duplicates (the dialog is still the sole
-  // surface, showing the same three rows).
+  // Each click sends one URL without changing the dialog.
   await expect.poll(() => openExternalCalls(app)).toEqual([REPOSITORY_URL, REPOSITORY_URL])
   await expect(window.getByTestId('settings-dialog')).toBeVisible()
   await expect(window.getByTestId('settings-about-repository')).toHaveText(REPOSITORY_URL)
@@ -159,10 +149,7 @@ test('FR-008 viewing About and closing the dialog never prompts about unsaved ch
   // No native box was raised merely by viewing and closing the area.
   expect(await messageBoxCallCount(app)).toBe(0)
 
-  // Quitting straight after must also go through unattended: the shared stub
-  // answers every native box with its safe "cancel" choice, so if ANY quit
-  // confirmation appeared the close would be prevented and this wait would
-  // time out. Its success therefore proves the quit was prompt-free.
+  // The dialog stub cancels prompts, so a prompt would prevent the close.
   await app.evaluate(({ BrowserWindow }) => {
     BrowserWindow.getAllWindows()[0].close()
   })
@@ -172,9 +159,7 @@ test('FR-008 viewing About and closing the dialog never prompts about unsaved ch
 test('FR-007 an unpackaged run forced into development mode shows the honest placeholder', async () => {
   await closeAppSafely(app)
 
-  // research R4: MM_BUILD_COMMIT is honoured only in unpackaged runs, so the
-  // built app can be driven to the no-metadata path without touching packaged
-  // behaviour. Empty string maps to null → the literal placeholder renders.
+  // An empty override exercises the development placeholder.
   ;({ app, window } = await launchApp(configDir, testFolder, undefined, {
     MM_BUILD_COMMIT: ''
   }))
@@ -188,9 +173,7 @@ test('FR-007 an unpackaged run forced into development mode shows the honest pla
 test('US1/FR-007 an odd revision override displays verbatim through the unpackaged seam', async () => {
   await closeAppSafely(app)
 
-  // research R2/R4: the override is taken verbatim — a tag, short SHA, or
-  // branch name must display exactly as provided, not only 40-hex hashes
-  // (tests review 2026-08-23).
+  // Non-SHA revision identifiers display unchanged.
   ;({ app, window } = await launchApp(configDir, testFolder, undefined, {
     MM_BUILD_COMMIT: 'v1.2.3-rc.1+odd'
   }))

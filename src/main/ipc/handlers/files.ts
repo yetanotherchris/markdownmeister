@@ -32,10 +32,6 @@ import {
   isAuthorizedRenderer
 } from './context'
 
-/**
- * File channels (US1/FR-005): open dialog, read, write, save dialog. Bodies
- * moved verbatim from the old handlers.ts.
- */
 export function registerFileHandlers(window: Electron.BrowserWindow, _ctx: typeof ctx): void {
   ipcMain.handle('file:openDialog', async (event): Promise<Result<OpenedFile | null>> => {
     if (!isAuthorizedRenderer(event, window)) return err('IO', 'Unauthorized renderer')
@@ -50,10 +46,6 @@ export function registerFileHandlers(window: Electron.BrowserWindow, _ctx: typeo
       }
 
       const opened = openFileFromPath(result.filePaths[0])
-      // FR-002: a markdown file successfully opened through the File menu is a
-      // recent file. FR-013: explorer opens use file:read and never record.
-      // The stored path is realpath-canonical so a symlink/case spelling of an
-      // already-recorded file does not duplicate the entry (FR-006).
       recordRecent(
         canonicalPath(
           opened.path ? path.resolve(ctx.workspaceRoot!, opened.path) : result.filePaths[0]
@@ -177,8 +169,6 @@ export function registerFileHandlers(window: Electron.BrowserWindow, _ctx: typeo
           kind === 'directory'
             ? mkdir(ctx.workspaceRoot!, parentPath, name)
             : createFile(ctx.workspaceRoot!, parentPath, name)
-        // FR-037: the creation is ours — suppress the watcher so the tree is
-        // not double-fed the event (the renderer applies it directly).
         const resolved = resolveWithinRoot(ctx.workspaceRoot!, entry.path)
         ctx.workspaceState?.suppressWatch(resolved.resolved)
         return entry
@@ -197,11 +187,6 @@ export function registerFileHandlers(window: Electron.BrowserWindow, _ctx: typeo
       ensureString(fromPath, 'fromPath')
       ensureString(toPath, 'toPath')
       return withWorkspace(() => {
-        // FR-037: suppress both endpoints (plus subtrees via prefix matching)
-        // so a move/rename the user performed in the app is not reported back
-        // as an external change to its own open documents. The canonical path
-        // plus the lexical target cover case-only renames, where realpath
-        // canonicalises the case and chokidar may report either spelling.
         const fromResolved = resolveWithinRoot(ctx.workspaceRoot!, fromPath)
         const toResolved = resolveWithinRoot(ctx.workspaceRoot!, toPath)
         ctx.workspaceState?.suppressWatch(fromResolved.resolved)
@@ -222,17 +207,12 @@ export function registerFileHandlers(window: Electron.BrowserWindow, _ctx: typeo
       const { path: p, permanent } = args as { path: string; permanent?: unknown }
       ensureString(p, 'path')
 
-      // The contract is `permanent?: boolean`. Any other value must be
-      // rejected: a truthy non-boolean (e.g. `{}` or `1`) would otherwise
-      // take the unrecoverable permanent-delete path past the renderer's
-      // double confirmation.
       if (permanent !== undefined && typeof permanent !== 'boolean') {
         return err('IO', 'permanent must be a boolean')
       }
 
       if (!ctx.workspaceRoot) return err('NO_WORKSPACE', 'No workspace is open')
       const resolved = resolveWithinRoot(ctx.workspaceRoot, p)
-      // FR-037: the deletion is ours — do not report it back as external.
       ctx.workspaceState?.suppressWatch(resolved.resolved)
       const receipt = await trashEntry(ctx.workspaceRoot, p, permanent)
       return ok(receipt)
@@ -255,11 +235,6 @@ export function registerFileHandlers(window: Electron.BrowserWindow, _ctx: typeo
     }
   })
 
-  // Spec 015 (US1/US2, FR-001/002/005): reveal a workspace item in the OS file
-  // manager. The relative path is resolved and containment-validated in main
-  // (resolveFile/resolveDirectory — the same helpers as every other entry
-  // operation, Principle II) BEFORE any OS call, so a missing or escaping path
-  // fails closed and the session is untouched (FR-006).
   ipcMain.handle('entry:reveal', async (event, args: unknown): Promise<Result<null>> => {
     if (!isAuthorizedRenderer(event, window)) return err('IO', 'Unauthorized renderer')
     try {
@@ -275,12 +250,9 @@ export function registerFileHandlers(window: Electron.BrowserWindow, _ctx: typeo
       })
       if (!resolved.ok) return resolved
       if (kind === 'file') {
-        // Opens the parent folder with the file selected/highlighted (FR-004).
         shell.showItemInFolder(resolved.value)
         return ok(null)
       }
-      // Opens the folder itself (FR-002). openPath resolves to an error string
-      // on failure (FR-006).
       const openError = await shell.openPath(resolved.value)
       if (openError) {
         throw Object.assign(new Error(openError), { code: 'IO' as const })

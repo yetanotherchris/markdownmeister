@@ -13,27 +13,15 @@ import { instancePool } from '../editor/instancePool'
 import { reconfigureAll } from '../editor/markdownSyntaxRuntime'
 import type { MarkdownSyntaxOptions } from '../editor/markdownSyntaxOptions'
 
-/**
- * Spec 012/013/016/036: the settings-dialog state the composition root owns —
- * the open flag (single instance), the editor theme (a theme-file name since
- * spec 036), the app theme choice (spec 013), their apply-and-persist
- * handlers, the delivered theme definitions, and the effective `data-theme`
- * mode. Seeded from the caches main.tsx preloads before the first render; each
- * selection persists through the existing settings store + IPC.
- *
- * Spec 016 (FR-003/US1 S4): the editor theme is applied ONLY when the dialog's
- * Save button commits it (the dialog stages the selection locally); the app
- * theme keeps its apply-immediately behavior (spec 013).
- */
 export function useSettingsState(): {
   settingsOpen: boolean
   setSettingsOpen: (open: boolean) => void
-  /** Spec 036: the stored theme name (a theme-file stem). */
+
   editorTheme: string
   handleEditorThemeChange: (theme: string) => void
-  /** Spec 036: the discovered editor theme files, refreshed on demand. */
+
   editorThemes: EditorThemeDefinition[]
-  /** Spec 036 FR-010: rejected theme file names, for the quiet indication. */
+
   invalidThemeFileNames: string[]
   refreshEditorThemes: () => Promise<void>
   spellcheckEnabled: boolean
@@ -52,13 +40,9 @@ export function useSettingsState(): {
 } {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [editorTheme, setEditorTheme] = useState<string>(getSettings().editorTheme)
-  // Spec 036: the delivered theme definitions (preloaded by main.tsx); the
-  // settings dialog refreshes them on every open (FR-012).
   const [editorThemes, setEditorThemes] = useState<EditorThemeDefinition[]>(
     getEditorThemes().themes
   )
-  // Spec 036 FR-010: the rejected file names ride along with the same payload
-  // and refresh cycle; the dialog renders them as a quiet, non-modal note.
   const [invalidThemeFileNames, setInvalidThemeFileNames] = useState<string[]>(
     getEditorThemes().invalidNames
   )
@@ -92,12 +76,6 @@ export function useSettingsState(): {
   )
   const themeMode = useEffectiveTheme(themeChoice)
 
-  // Spec 016/036, FR-003/FR-004: commit the editor theme (persist + apply).
-  // Called by the dialog's Save button with a theme-file name; the visual
-  // switch flows through `editorTheme` → resolveEditorAppearance → the inline
-  // `--mm-theme-*` variables. The persisted value reaches main for validation
-  // via updateSettings. Colours and typeface come from the theme FILE now —
-  // nothing else is written (spec 036 FR-008).
   const handleEditorThemeChange = useCallback((theme: string) => {
     setEditorTheme(theme)
     updateSettings({ editorTheme: theme })
@@ -106,10 +84,6 @@ export function useSettingsState(): {
     })
   }, [])
 
-  // Spec 013: apply the theme immediately and persist (FR-006, FR-008). The
-  // visual switch flows through `themeChoice` → `useEffectiveTheme` (the
-  // `data-theme` attribute); the persisted override reaches main for the native
-  // chrome (src/main/theme.ts). The local state keeps the dialog's radio in sync.
   const handleThemeChange = useCallback((choice: ThemeChoice) => {
     setThemeChoice(choice)
     const override = themeOverrideFromChoice(choice)
@@ -119,10 +93,6 @@ export function useSettingsState(): {
     })
   }, [])
 
-  // Spec 020 FR-006/US4: apply the spellcheck choice immediately and persist.
-  // The session-side switch flows through the IPC (applied in main's
-  // settings:update handler); the DOM attribute switch flows through
-  // `spellcheckEnabled` → the editor components' spellcheck props.
   const handleSpellcheckChange = useCallback((enabled: boolean) => {
     setSpellcheckEnabled(enabled)
     updateSettings({ spellcheckEnabled: enabled })
@@ -131,8 +101,6 @@ export function useSettingsState(): {
     })
   }, [])
 
-  // Spec 020 (2026-08-07): apply the chosen spellchecker language immediately
-  // and persist it. `null` = the platform/system default (applied in main).
   const handleSpellcheckLanguageChange = useCallback((language: SpellcheckLanguage | null) => {
     setSpellcheckLanguage(language)
     updateSettings({ spellcheckLanguage: language })
@@ -141,8 +109,6 @@ export function useSettingsState(): {
     })
   }, [])
 
-  // Spec 008 FR-008: apply the explorer file-opening preference immediately and
-  // persist it. The explorer open decision reads the cached value at open time.
   const handleFileOpenBehaviorChange = useCallback((behavior: FileOpenBehavior) => {
     setFileOpenBehavior(behavior)
     updateSettings({ fileOpenBehavior: behavior })
@@ -151,11 +117,6 @@ export function useSettingsState(): {
     })
   }, [])
 
-  // Spec 030 (FR-003..FR-012): apply a markdown syntax toggle immediately and
-  // persist it. The settings cache is updated synchronously, then the merged
-  // six-field snapshot is pushed into every live editor so all open tabs
-  // re-parse (research R5/R6, FR-010/011). The re-parse never touches dirty
-  // state, undo history, cursor, or scroll (suppressed in markdownSyntaxRuntime).
   const handleMarkdownOptionChange = useCallback(
     (patch: Partial<MarkdownSyntaxOptions>) => {
       const next = { ...markdownOptions, ...patch }

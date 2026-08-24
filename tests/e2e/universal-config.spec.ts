@@ -11,7 +11,7 @@ import { launchApp, closeAppSafely } from './launch'
  * there, and the directory is created on write. `USERPROFILE`/`HOME` are
  * redirected to a temp home so the real universal path and migration are
  * exercised without `MM_CONFIG_DIR` and without touching the developer's
- * profile (research R4).
+ * profile.
  */
 
 let app: ElectronApplication
@@ -42,7 +42,7 @@ test.beforeAll(async () => {
 test.beforeEach(async () => {
   tempHome = fs.mkdtempSync(path.join(os.tmpdir(), 'mm-universal-home-'))
   // Electron needs its profile structure to exist under a redirected home or it
-  // crashes at startup (verified locally); pre-create it so the redirect works.
+  // crashes at startup; pre-create it so the redirect works.
   fs.mkdirSync(path.join(tempHome, 'AppData', 'Roaming', 'markdownmeister'), { recursive: true })
   fs.mkdirSync(path.join(tempHome, 'AppData', 'Local', 'markdownmeister'), { recursive: true })
   fs.mkdirSync(path.join(tempHome, '.config', 'markdownmeister'), { recursive: true })
@@ -87,7 +87,7 @@ test('US1/SC-001 a fresh install writes config to ~/.config/markdownmeister', as
 
 test('US2/SC-002/003 an existing appData config is migrated on launch', async () => {
   test.skip(process.platform === 'linux', 'Linux legacy and universal config paths are identical')
-  // Seed the legacy location BEFORE launch: the migration runs at startup.
+  // Seed the legacy location before launch so startup migrates it.
   const legacy = legacyConfigPath()
   fs.mkdirSync(path.dirname(legacy), { recursive: true })
   fs.writeFileSync(

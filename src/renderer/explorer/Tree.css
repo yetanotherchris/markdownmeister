@@ -16,7 +16,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  /* Horizontal padding +3 then +7 px each side (user decisions 2026-08-06). */
+
   padding: 4px 18px;
   cursor: pointer;
   font-size: 13px;
@@ -32,12 +32,7 @@
   background: var(--mm-active-tab);
 }
 
-/* Keyboard focus must stay visible on the tree itself (FR-013, WCAG 2.4.7).
-   react-arborist gives the [role=tree] container the tree's single Tab stop
-   and roving-focuses the rows (tabIndex -1), so both need a ring: the
-   container when it is tabbed into, and the focused row during arrow-key
-   navigation (selection does NOT follow focus — selecting opens a file, so
-   arrow navigation must not open documents; the ring is the focus indicator). */
+
 [role='tree']:focus-visible,
 [role='treeitem']:focus-visible {
   outline: 2px solid #4a90d9;
@@ -63,7 +58,7 @@
   color: var(--mm-text-secondary);
 }
 
-/* Keyboard focus on the expand/collapse control must stay visible (FR-013). */
+
 .tree-node-toggle:focus-visible {
   outline: 2px solid #4a90d9;
   outline-offset: 1px;
@@ -74,8 +69,7 @@
   line-height: 1;
   display: inline-flex;
   color: var(--mm-muted);
-  /* A little breathing room around the file/folder icon (user decision
-     2026-08-06). */
+
   padding: 0 3px;
 }
 
@@ -102,7 +96,7 @@
   color: var(--mm-text);
 }
 
-/* Keyboard focus on the rename field must stay visible (WCAG 2.4.7). */
+
 .tree-node-input:focus-visible {
   outline: 2px solid #4a90d9;
   outline-offset: 1px;
@@ -122,8 +116,7 @@
 
 .context-menu-title {
   padding: 4px 10px;
-  /* Spec 013: tokenized — the light value (#767676 ≈ 4.6:1 on white at 12px)
-     meets WCAG 1.4.3 AA; the dark value is the darker --mm-muted. */
+
   color: var(--mm-muted);
   font-size: 12px;
   overflow: hidden;

@@ -22,16 +22,11 @@ function loadManifest(): ScoopManifest {
 
 describe('scoop manifest uniqueness', () => {
   it('is the only tracked file named markdownmeister.json (case-insensitive)', () => {
-    // The repo doubles as a scoop bucket; scoop recurses over the whole
-    // bucket directory when resolving manifests, so a second file with this
-    // name makes it parse both at once — breaking version comparison and
-    // silently disabling update detection (phase 41). Full incident notes:
-    // tests/main/channelIsolation.test.ts.
+    // Scoop scans the bucket for manifests. A second file with this name is
+    // interpreted as another manifest.
     //
-    // Tracked files are exactly what a fresh bucket clone contains — what
-    // scoop actually scans — so git ls-files models that precisely while
-    // ignoring untracked build output by construction. Case-insensitive to
-    // match NTFS and scoop's own -Filter behaviour.
+    // `git ls-files` represents a fresh clone and excludes local build output.
+    // Match case-insensitively because Scoop's file filter does the same.
     const repoRoot = path.resolve(__dirname, '..', '..')
     const tracked = execFileSync('git', ['ls-files', '-z'], {
       cwd: repoRoot,

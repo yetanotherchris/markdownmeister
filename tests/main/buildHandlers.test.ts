@@ -7,7 +7,7 @@ import { REPOSITORY_URL } from '../../src/main/buildInfo'
  * shape). The electron module is mocked so the REAL registration and
  * authorization code runs while `ipcMain.handle` is captured and
  * `shell.openExternal` recorded. This is the first vi.mock use in tests/main
- * (research R8): the authorization guard lives inline in the handlers, exactly
+ * The authorization guard runs inline in the handlers while
  * like every other channel, so exercising it requires the module boundary.
  */
 
@@ -137,7 +137,7 @@ describe('registerBuildHandlers (spec 037 contracts/preload.md)', () => {
 
   it('build:openRepository returns the typed IO envelope when shell.openExternal throws', async () => {
     // contracts/preload.md: `{ ok: false, code: 'IO', message }` if the OS
-    // call throws — the rejection must surface as a Result, never crash.
+    // call throws, the rejection must surface as a Result, never crash.
     mocks.openExternal.mockRejectedValueOnce(new Error('EACCES: operation not permitted'))
     const result = (await handlerFor('build:openRepository')(eventFor(window, true))) as {
       ok: boolean

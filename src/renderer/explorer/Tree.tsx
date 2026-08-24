@@ -23,29 +23,22 @@ interface TreeProps {
   pendingEditId: string | null
   /** Rename committed; resolve true when applied (false keeps the old name). */
   onRename: (node: TreeNode, newName: string) => Promise<boolean>
-  /** Inline edit ended without a commit (Escape or blur). */
+
   onEditingCancelled: (id: string) => void
   onDeleteRequest: (node: TreeNode) => void
   onCreateRequest: (parent: TreeNode | null, kind: EntryKind) => void
   onMove: (id: string, targetParentId: string) => void
-  /** Spec 002 (US7): "Open" in a file's context menu — visual counterpart of
-   *  "View source" (FR-022). */
+
   onOpen: (path: string) => void
-  /** Spec 002: "View source" in a file's context menu (FR-004). */
+
   onViewSource: (path: string) => void
-  /** Spec 015: "Reveal in Explorer/Finder" — open the item's location in the
-   *  OS file manager (FR-001/002/003). */
+
   onReveal: (node: TreeNode) => void
-  /** Spec 024 (FR-005): explicitly open a file in a NEW tab (middle-click),
-   *  bypassing the replace-clean-tab behaviour. */
+
   onOpenNewTab: (node: TreeNode) => void
-  /** Spec 029: a click on a FILE row resolved into a gesture. Single-click
-   *  follows the file-opening preference (same-tab: deferred by the double-click
-   *  window); double-click always opens a new tab. The row is the sole mouse
-   *  open path for files — `node.handleClick` is not called for them. */
+
   onFileOpen: (node: TreeNode, gesture: FileOpenGesture) => void
-  /** Spec 002 (US004): imperative handle the app uses to open parents and
-   *  scroll a node into view (explorer active-file highlight). */
+
   apiRef?: React.MutableRefObject<TreeApi<TreeNode> | null> | null
 }
 
@@ -95,20 +88,11 @@ function RenameInput({ node }: { node: NodeApi<TreeNode> }) {
       defaultValue={node.data.name}
       aria-label={label}
       draggable={false}
-      // The row's select/activate handlers fire on every click and dispatch a
-      // tree re-render; react-arborist keys rows by node id, so rows survive
-      // re-renders, but the input must not hand its mouse interactions to the
-      // row: keep them inside the field so caret placement and text selection
-      // are not hijacked by row handlers or native drags.
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
       onContextMenu={(e) => e.stopPropagation()}
       onBlur={(e) => {
-        // Focus leaving the field does not cancel the edit (Enter/Escape are
-        // the only exits — plan.md Phase 6 decisions). Only reclaim focus when
-        // it moved inside the tree or the context menu portal; a dialog, the
-        // toolbar, or a tab must not be yanked back.
         if (!node.isEditing) return
         const next = e.relatedTarget as HTMLElement | null
         if (next && (next.closest('.tree-container') || next.closest('.context-menu'))) {
@@ -127,11 +111,6 @@ function RenameInput({ node }: { node: NodeApi<TreeNode> }) {
 function TreeNode({ node, style, dragHandle, onRowContextMenu }: TreeNodeProps) {
   const isDir = node.data.kind === 'directory'
 
-  // Spec 029: click routing lives on the ROW (TreeRow.handleRowClick /
-  // handleRowDoubleClick) so files resolve single vs double via the gesture
-  // path and directories toggle. This inner div must not re-open files: its
-  // old onDoubleClick={node.activate} fired handleTreeActivate immediately,
-  // bypassing the deferral. Selection still reaches the row via bubbling.
   return (
     <div
       ref={dragHandle}
@@ -148,14 +127,6 @@ function TreeNode({ node, style, dragHandle, onRowContextMenu }: TreeNodeProps) 
           type="button"
           className="tree-node-toggle"
           aria-label={node.isOpen ? 'Collapse' : 'Expand'}
-          // The chevron is a mouse/screen-reader affordance, not a keyboard
-          // tab stop: react-arborist's container owns the tree's single Tab
-          // stop and its Tab handler skips everything inside the tree (its
-          // getFocusable filters out contained elements). Keyboard toggling
-          // happens on the focused row (Space / ArrowRight / ArrowLeft), so
-          // this button is removed from the tab order rather than leaving a
-          // phantom stop its FR-013 ring can never reach. Mouse clicks still
-          // focus it; :focus-visible does not match mouse-initiated focus.
           tabIndex={-1}
           onClick={(e) => {
             e.stopPropagation()
@@ -183,9 +154,9 @@ interface TreeRowProps extends RowRendererProps<TreeNode> {
   onKeyboardMenu: (node: TreeNode, x: number, y: number) => void
   onRenameKey: (node: TreeNode) => void
   onDeleteKey: (node: TreeNode) => void
-  /** Spec 024: middle-click opens the file in a new tab. */
+
   onOpenNewTab: (node: TreeNode) => void
-  /** Spec 029: click gesture on a file row (single vs double). */
+
   onFileOpen: (node: TreeNode, gesture: FileOpenGesture) => void
 }
 
@@ -215,13 +186,6 @@ function TreeRow({ node, attrs, innerRef, children, onKeyboardMenu, onRenameKey,
     }
   }
 
-  // Spec 029: file rows route clicks through the file-open gesture so a
-  // double-click can be recognised from the first click (FR-003). `node.select()`
-  // preserves selection; `node.handleClick` is NOT called for files because it
-  // fires `activate()` on every click and would open the file immediately,
-  // bypassing the deferral. Directories select on click and toggle on the
-  // completing click of a double-click (US3/FR-006); `e.detail` is the detector
-  // for both (a `dblclick` event is not reliably delivered, R1).
   const handleRowClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button !== 0) return
     if (isOpenableFile(node.data)) {
@@ -249,8 +213,6 @@ function TreeRow({ node, attrs, innerRef, children, onKeyboardMenu, onRenameKey,
       onClick={handleRowClick}
       onKeyDown={onKeyDown}
       onAuxClick={(e) => {
-        // Spec 024 FR-005: middle-click opens a FILE in a new tab, bypassing
-        // the replace-clean-tab behaviour. Directories are not openable.
         if (e.button === 1 && node.data.kind === 'file') {
           e.preventDefault()
           onOpenNewTab(node.data)
@@ -296,9 +258,6 @@ export default function Tree({
   }, [pendingEditId])
 
   const startEditing = useCallback(async (id: string) => {
-    // One edit at a time: a second call (e.g. the deferred create-flow timer
-    // racing a context-menu Rename on the same node) must not resolve the
-    // first edit as cancelled and trash a placeholder mid-edit.
     if (editingInFlightRef.current) return
     editingInFlightRef.current = true
     try {
@@ -307,7 +266,7 @@ export default function Tree({
         // The node exists in the data but its parent is closed in arborist's
         // own visibility state (create flow). Opening the parent fires our
         // onToggle, which lazy-loads the folder if needed and then leaves the
-        // already-loaded data alone — see App.handleTreeToggle.
+        // already-loaded data alone, see App.handleTreeToggle.
         const parent = parentPathOf(id)
         if (parent) treeRef.current?.open(parent)
         for (let i = 0; i < 20 && !node; i++) {
@@ -316,9 +275,6 @@ export default function Tree({
         }
       }
       if (!node) {
-        // The node never became visible (slow expand). For a placeholder this
-        // removes it instead of leaving it on disk under its generated name;
-        // for any other id the callback is a no-op.
         onEditingCancelled(id)
         setEditingId((current) => (current === id ? null : current))
         return
@@ -423,7 +379,7 @@ export default function Tree({
   }, [])
 
   // Stable render callbacks: fresh identities on every Tree render would make
-  // react-arborist remount every visible row (perf M1) — rows are keyed by
+  // react-arborist remount every visible row (perf M1), rows are keyed by
   // node id, but component-type identity changes force full remounts.
   const renderNode = useCallback((nodeProps: NodeRendererProps<TreeNode>) => (
     <TreeNode
@@ -447,8 +403,6 @@ export default function Tree({
     parentNode: NodeApi<TreeNode>
     dragNodes: NodeApi<TreeNode>[]
   }) => {
-    // The internal root node (drop on empty space) is a valid
-    // destination; everything else must be a directory.
     if (!parentNode.isRoot && parentNode.data.kind !== 'directory') return true
     return dragNodes.some(dn =>
       parentNode.isRoot ? false : treeWouldMoveIntoOwnDescendant(dn.id, parentNode.data.id)
@@ -475,7 +429,6 @@ export default function Tree({
     </button>
   )
 
-  // Spec 015 FR-003: the reveal action is named after the OS file manager.
   const revealLabel =
     window.api.platform === 'darwin'
       ? 'Reveal in Finder'

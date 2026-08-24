@@ -12,11 +12,7 @@ interface SidebarPanelLike {
   collapse(): void
 }
 
-/**
- * Sidebar layout (US1/FR-002, spec 010): explorer visibility + width
- * persistence. The never-persist-a-0-width rule, the mount guard against the
- * transient size-0, and the explicit-visibility persistence live here.
- */
+
 export function useSidebarLayout(opts: {
   sidebarPanelRef: { current: SidebarPanelLike | null }
   explorerRestoreDoneRef: React.MutableRefObject<boolean>
@@ -38,11 +34,6 @@ export function useSidebarLayout(opts: {
         }, 1000)
       }
       setExplorerCollapsed(collapsed)
-      // Never persist a collapsed (0) width. Writing 0 would change the Panel's
-      // `defaultSize` prop, which re-runs its registration effect and replaces
-      // the panel object — wiping the library's `expandToSize` so a toggle-expand
-      // snaps to minSize instead of the previous width (spec 010 US2 scenario 2,
-      // verified 2026-08-05). The collapsed visibility is persisted separately.
       if (collapsed) {
         if (explorerRestoreDoneRef.current) {
           updateSettings({ explorerVisible: false })
@@ -56,14 +47,6 @@ export function useSidebarLayout(opts: {
       window.api.updateSettings({ sidebarWidth: size.asPercentage }).catch(() => {
         /* ignore */
       })
-      // A non-collapsed panel IS visible, so persist true unconditionally. Main's
-      // settings merge reads the CURRENT state from disk, so two updates inside
-      // the 500 ms debounce window clobber each other (the sidebarWidth-only
-      // write above would otherwise resurrect a stale persisted "hidden" choice —
-      // the exact race that broke the reveal-on-open restart e2e, review
-      // 2026-08-06). The launch-time restore was removed the same day; the mount
-      // guard above still suppresses the transient size-0 from persisting a fake
-      // collapse.
       updateSettings({ explorerVisible: true })
       window.api.updateSettings({ explorerVisible: true }).catch(() => {
         /* ignore */
@@ -72,10 +55,6 @@ export function useSidebarLayout(opts: {
     [expandTimerRef, explorerRestoreDoneRef, expandingRef, setExplorerCollapsed]
   )
 
-  // Spec 010, US2: the explorer toggle collapses/expands the sidebar panel
-  // (FR-005). The panel only exists while a workspace is open; the button is
-  // disabled otherwise (spec edge case). The choice is persisted explicitly so
-  // it does not depend on a resize event firing (FR-007).
   const handleToggleExplorer = useCallback(() => {
     const panel = sidebarPanelRef.current
     if (!panel) return

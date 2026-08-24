@@ -9,7 +9,7 @@ import remarkMath from 'remark-math'
 import { markdownSyntaxRemark, DEFAULT_MARKDOWN_SYNTAX_OPTIONS } from '../../src/renderer/editor/markdownSyntaxOptions'
 
 /**
- * Spec 033 (research R1, contract C1 precondition): the reconfigure skip guard
+ * Spec 033: the reconfigure skip guard
  * relies on Crepe's stock pipeline being extension-equivalent to the
  * swapped-with-defaults composer. This test proves the equivalence directly:
  * every round-trip fixture parsed+serialized under BOTH pipelines produces
@@ -21,7 +21,7 @@ const FIXTURE_DIR = path.resolve(__dirname, '../fixtures/roundtrip')
 
 function stockPipeline() {
   // What a freshly constructed Crepe editor uses: remark-parse +
-  // remark-stringify + remark-gfm + remark-math (research R1).
+  // remark-stringify, remark-gfm, and remark-math.
   return unified().use(remarkParse).use(remarkStringify).use(remarkGFM).use(remarkMath)
 }
 

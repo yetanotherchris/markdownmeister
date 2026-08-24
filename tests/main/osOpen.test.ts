@@ -6,7 +6,7 @@ import * as os from 'os'
 
 /**
  * Spec 006 adversarial suite (constitution V): OS-supplied paths are untrusted
- * (Principle II), so classification must fail closed — never classify an
+ * (Principle II), so classification must fail closed, never classify an
  * unavailable, unreadable, wrong-type, or unsupported-extension target as
  * openable, and never leak the path itself into a failure message (FR-011).
  */
@@ -97,7 +97,7 @@ describe('classifyOsTarget', () => {
     try {
       fs.symlinkSync(path.join(dir, 'does-not-exist.md'), link)
     } catch {
-      // Symlink creation may need privileges on Windows — skip if unsupported.
+      // Symlink creation may need privileges on Windows, skip if unsupported.
       return
     }
     const result = classifyOsTarget(link)

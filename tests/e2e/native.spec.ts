@@ -54,7 +54,7 @@ test.describe('US1 native tree icons', () => {
     await expect(alphaRow.locator('.tree-node-icon svg')).toBeVisible()
     await expect(alphaRow.getByRole('button', { name: 'Expand' })).toHaveCount(0)
 
-    // The icons are genuinely distinct — a folder glyph is not a file glyph (a
+    // The icons are genuinely distinct, a folder glyph is not a file glyph (a
     // regression that rendered one identical icon everywhere must fail here).
     const folderIcon = await subRow.locator('.tree-node-icon svg').innerHTML()
     const fileIcon = await alphaRow.locator('.tree-node-icon svg').innerHTML()
@@ -75,7 +75,7 @@ test.describe('US1 native tree icons', () => {
 
     // react-arborist gives the [role=tree] container the tree's single Tab
     // stop; focusing it roving-focuses the first row. Keyboard toggling happens
-    // on the row (Space), not on the chevron button (which is mouse/SR-only —
+    // on the row (Space), not on the chevron button (which is mouse/SR-only,
     // the container's Tab handler skips elements inside the tree).
     await window.getByRole('tree').focus()
     await expect
@@ -89,7 +89,7 @@ test.describe('US1 native tree icons', () => {
     await window.keyboard.press('Space')
 
     // The focused row carries a visible focus ring (the row that would otherwise
-    // be silently focus-moved with no indicator — WCAG 2.4.7). Poll: the
+    // be silently focus-moved with no indicator, WCAG 2.4.7). Poll: the
     // `:focus-visible` keyboard modality applies right after the key press, and
     // under a loaded suite the window may not hold OS focus for a moment.
     await expect
@@ -128,7 +128,7 @@ test.describe('US2 chrome action buttons use icons', () => {
     expect(toggleIcon).toBe(1)
     expect(newIcon).toBe(1)
 
-    // The chrome glyphs are genuinely distinct (Bars3 vs Squares2X2 vs Plus) —
+    // The chrome glyphs are genuinely distinct (Bars3 vs Squares2X2 vs Plus),
     // an "every button renders the same icon" regression must fail here.
     const menuSvg = await window
       .getByRole('button', { name: 'Open menu' })
@@ -174,7 +174,7 @@ test.describe('US3 status footer', () => {
     await expect(window.locator('.app-footer .document-title')).toContainText('beta.md')
 
     // Editing marks the footer's document label dirty (existing .document-title
-    // contract, now in the footer — FR-011 keeps it out of the header).
+    // contract, now in the footer, FR-011 keeps it out of the header).
     await openFile('alpha.md')
     await expect(window.locator('.app-footer .document-title')).toContainText('alpha.md')
     await window.locator('[contenteditable="true"]:visible').first().click()
@@ -184,7 +184,7 @@ test.describe('US3 status footer', () => {
 
   test('US3 footer right shows the workspace full path', async () => {
     await openFolder()
-    // The footer shows the resolved path of the opened folder (research R-Path).
+    // The footer shows the opened folder path.
     const resolved = fs.realpathSync(testFolder)
     await expect(window.getByTestId('footer-workspace')).toHaveText(resolved)
     // The full path is also the hover tooltip.

@@ -3,7 +3,7 @@ import { isOpenableFile } from '../../src/renderer/explorer/openGesture'
 
 /**
  * Spec 029 (contracts/file-open-gesture.md), 2026-08-21 amendment: the
- * deferral decision was removed — every open commits immediately, so only the
+ * deferral decision was removed, every open commits immediately, so only the
  * pure routing helpers remain.
  */
 

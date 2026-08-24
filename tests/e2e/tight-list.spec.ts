@@ -59,8 +59,8 @@ test('a tight nested bullet list stays tight after an edit + save', async () => 
 
   const disk = await appendToItemAndSave('tight.md', 'Item one', ' appended')
 
-  // The editor normalizes the marker (`-` → `*`) but must NOT insert blank
-  // lines between the items — the sibling and nested items stay adjacent. The
+  // The editor normalizes the marker (`-` → `*`) but does not insert blank
+  // lines between the items, the sibling and nested items stay adjacent. The
   // trailing EOF blank line the editor emits after any edit is trimmed first.
   expect(disk.trimEnd()).toContain('* Item one appended\n  * Item two\n* Item three')
   expect(disk.trimEnd()).not.toContain('\n\n')

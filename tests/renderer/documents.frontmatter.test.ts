@@ -132,7 +132,7 @@ describe('documents reducer — save with frontmatter (spec 021)', () => {
   it('a frontmatter-only edit saves the raw untouched body, not the editor serialization', () => {
     // The file has no trailing newline in the body. After editing ONLY the
     // frontmatter in source view and returning to formatted, the save must
-    // write the raw body bytes — the editor's appended newline is not adopted.
+    // write the raw body bytes, the editor's appended newline is not adopted.
     const state = documentsReducer(createSession(), {
       type: 'OPEN_EXISTING',
       payload: { value: { path: 'f.md', name: 'f.md', content: '---\ntitle: a\n---\nbody', mtimeMs: 1, size: 17, view: 'source' } }
@@ -241,7 +241,7 @@ describe('documents reducer — source view with frontmatter (spec 021)', () => 
     expect(after.frontmatter).toBe('---\ntitle: z\n---\n')
     expect(after.content).toBe('# New body')
     expect(after.contentVersion).toBe(before.contentVersion + 1)
-    // baseline/dirty untouched — the document stays unsaved.
+    // baseline/dirty untouched, the document stays unsaved.
     expect(after.baseline).toBe(FRONTMATTER_FILE)
     expect(after.dirty).toBe(false)
   })

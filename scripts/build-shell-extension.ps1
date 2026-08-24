@@ -1,14 +1,3 @@
-# Spec 038: build the native shell extension (MarkdownMeisterShellExtension.dll)
-# that powers the Windows 11 first-level "Open in MarkdownMeister" folder entry.
-#
-# Requirements (documented, enforced by the checks below):
-#   - Visual Studio 2022 with the "Desktop development with C++" workload
-#   - Windows 11 SDK (10.0.22621 or newer)
-#   - CMake (Visual Studio's bundled copy is used when present; otherwise cmake
-#     must be on PATH)
-#
-# Usage: pwsh scripts/build-shell-extension.ps1 [-Configuration Release] [-Arch x64]
-# Output: native/shell-extension/out/<Configuration>/MarkdownMeisterShellExtension.dll
 param(
   [ValidateSet('Debug', 'Release')][string]$Configuration = 'Release',
   [ValidateSet('x64', 'arm64')][string]$Arch = 'x64'
@@ -28,7 +17,6 @@ The Microsoft Store workflow (.github/workflows/build-store.yml) provides these 
 "@
 }
 
-# --- locate Visual Studio 2022 via vswhere ----------------------------------
 $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
 if (-not (Test-Path -LiteralPath $vswhere)) {
   Fail 'vswhere.exe was not found (no Visual Studio installer detected).'
@@ -60,8 +48,6 @@ if (-not $cmakeCandidates) {
   Fail 'CMake was not found (neither the Visual Studio-bundled copy nor one on PATH).'
   exit 1
 }
-# Re-wrap in @() before indexing: a single pipeline result assigns as a bare
-# string, whose [0] would yield its first CHARACTER rather than the path.
 $cmake = @($cmakeCandidates)[0]
 
 # --- confirm a Windows 11 SDK is installed -----------------------------------
@@ -82,8 +68,6 @@ $sourceDir = Join-Path $PSScriptRoot '..\native\shell-extension'
 $buildDir = Join-Path $sourceDir "out\$Arch"
 New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
 
-# No explicit -G: let CMake pick the installed Visual Studio generator (works
-# for VS 2022 and newer), only pinning the target architecture.
 & $cmake -S $sourceDir -B $buildDir -A $Arch
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 

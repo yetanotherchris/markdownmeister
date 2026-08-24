@@ -33,7 +33,7 @@ describe('documents reducer', () => {
     it('is pure: a double-invoked OPEN_NEW (React StrictMode) burns no numbers', () => {
       // StrictMode calls the reducer twice with the same state and keeps one
       // result. A counter side-effect inside createEmpty would produce
-      // Untitled-2, Untitled-4, Untitled-6 — the reducer must be pure.
+      // Untitled-2, Untitled-4, Untitled-6, the reducer must be pure.
       const state = createSession()
       const ignored = documentsReducer(state, { type: 'OPEN_NEW' })
       const kept = documentsReducer(state, { type: 'OPEN_NEW' })

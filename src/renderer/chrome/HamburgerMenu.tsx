@@ -14,33 +14,16 @@ function currentPlatform(): Platform {
 interface HamburgerMenuProps {
   /** The shared renderer command bus (handleMenuCommand from useMenuCommands). */
   onCommand: (command: MenuCommand) => void
-  /** Spec 012 FR-001: open the settings dialog from the "main menu" (the
-   *  hamburger replaced the native menu in spec 010). */
+
   onOpenSettings: () => void
 }
 
-/**
- * Spec 010 (FR-001/002/004, US4): the React hamburger dropdown that replaces the
- * native menu bar. A React UI (user decision 2026-08-05), not an OS-native
- * `Menu.popup()`. Real `<button role="menuitem">` rows for keyboard access
- * (FR-009); closes on outside click and Escape (US4 scenario 2).
- */
+
 export default function HamburgerMenu({ onCommand, onOpenSettings }: HamburgerMenuProps) {
   const [open, setOpen] = useState(false)
   const [recentItems, setRecentItems] = useState<RecentItem[]>([])
-  // True once the most recent getRecentItems() resolved. The submenu renders
-  // only after the load so it never flashes a stale "No Recent Items" and the
-  // DOM deterministically reflects the loaded history (e2e reads it directly).
   const [recentLoaded, setRecentLoaded] = useState(false)
-  // True when the most recent load FAILED (e.g. FR-011: broken config). The
-  // list is then unknown, so the Clear action must still be offered — "No
-  // Recent Items" is reserved for a confirmed-empty history.
   const [recentError, setRecentError] = useState(false)
-  // Whether the Recent Items submenu (a parent menuitem, like the native
-  // `File > Recent Items`) is expanded. `submenuOpenRef` mirrors the state so
-  // the click handler always reads the freshest value — hovering the parent
-  // opens the submenu, and the click that follows must not see a stale
-  // "closed" closure and toggle it shut (a hover→click race).
   const [submenuOpen, setSubmenuOpen] = useState(false)
   const submenuOpenRef = useRef(false)
   const setSubmenuOpenSync = useCallback((value: boolean) => {
@@ -69,8 +52,6 @@ export default function HamburgerMenu({ onCommand, onOpenSettings }: HamburgerMe
     triggerRef.current?.focus()
   }, [setSubmenuOpenSync])
 
-  // Open the Recent Items submenu, refreshing the list first so it mirrors the
-  // native menu's on-open rebuild (spec 004 FR-014, spec 010).
   const openRecentSubmenu = useCallback(() => {
     loadRecent()
     setSubmenuOpenSync(true)
@@ -88,8 +69,6 @@ export default function HamburgerMenu({ onCommand, onOpenSettings }: HamburgerMe
     }
   }, [open, loadRecent, setSubmenuOpenSync])
 
-  // Outside click closes the dropdown (US4 scenario 2). The submenu must be
-  // collapsed too (review 2026-08-06), else the next open auto-expands it.
   useEffect(() => {
     if (!open) return
     const onPointerDown = (e: PointerEvent) => {
@@ -102,8 +81,6 @@ export default function HamburgerMenu({ onCommand, onOpenSettings }: HamburgerMe
     return () => document.removeEventListener('pointerdown', onPointerDown)
   }, [open, setSubmenuOpenSync])
 
-  // Escape closes the submenu first (focus returning to its parent item), then
-  // the whole dropdown, then returns focus to the trigger (FR-009).
   useEffect(() => {
     if (!open) return
     const onKeyDown = (e: KeyboardEvent) => {
@@ -121,14 +98,12 @@ export default function HamburgerMenu({ onCommand, onOpenSettings }: HamburgerMe
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [open, submenuOpen])
 
-  // On open, move focus into the menu (FR-009).
   useEffect(() => {
     if (!open) return
     const first = menuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')
     first?.focus()
   }, [open])
 
-  // When the Recent Items submenu opens, move focus into it (FR-009).
   useEffect(() => {
     if (!open || !submenuOpen) return
     const first = submenuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')
@@ -179,9 +154,6 @@ export default function HamburgerMenu({ onCommand, onOpenSettings }: HamburgerMe
               aria-haspopup="menu"
               aria-expanded={submenuOpen}
               onClick={() => {
-                // Open if closed. Hovering already opened it (onMouseEnter),
-                // so a click is never a "close" — Escape and outside clicks
-                // close, mirroring a native submenu parent.
                 if (!submenuOpenRef.current) openRecentSubmenu()
               }}
               onMouseEnter={openRecentSubmenu}

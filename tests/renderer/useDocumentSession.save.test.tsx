@@ -9,7 +9,7 @@ import type { DocumentsAction, EditingSession, DocumentState } from '../../src/r
 /**
  * Spec 033 (contract C2): SAVE_SUCCESS moves `editorBaseline` without a
  * remount, so the recorded document identity must be cleared at both save
- * dispatch sites — otherwise the dirty fast path could prove cleanliness
+ * dispatch sites, otherwise the dirty fast path could prove cleanliness
  * against a baseline that no longer exists (Principle III hazard).
  */
 
