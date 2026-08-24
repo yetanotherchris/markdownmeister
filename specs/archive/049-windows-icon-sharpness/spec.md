@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-24
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "The ico file seems to be pixelated on windows."
 
