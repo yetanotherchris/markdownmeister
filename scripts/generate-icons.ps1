@@ -11,7 +11,7 @@
 #   resources/icon.ico                multi-resolution Windows icon (PNG-encoded entries)
 #   resources/icon.icns               macOS ic07/ic08/ic09/ic10 chunks (PNG-encoded)
 #   resources/icon.png                512x512 convenience master for electron-builder
-#   resources/icons/{16,24,32,48,64,128,256,512}.png
+#   resources/icons/{16,20,24,32,40,48,64,96,128,256,512}.png
 #
 # Do not write generated icons to build/, which is ignored by Git.
 param(
@@ -23,8 +23,12 @@ $ErrorActionPreference = 'Stop'
 
 Add-Type -AssemblyName System.Drawing
 
-$LadderSizes = @(16, 24, 32, 48, 64, 128, 256, 512)
-$IcoSizes = @(16, 24, 32, 48, 64, 128, 256)
+# The ladder and the ICO frame list share every size below 512 so each ICO
+# payload stays a byte copy of its committed ladder file. The intermediates
+# (20, 40, 96) exist because Windows shells request those exact sizes at
+# fractional display scales and in Explorer's large-icons view.
+$LadderSizes = @(16, 20, 24, 32, 40, 48, 64, 96, 128, 256, 512)
+$IcoSizes = @(16, 20, 24, 32, 40, 48, 64, 96, 128, 256)
 $IcnsChunks = @(
     @{ Type = 'ic07'; Size = 128 },
     @{ Type = 'ic08'; Size = 256 },
