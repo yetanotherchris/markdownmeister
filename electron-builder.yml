@@ -36,6 +36,11 @@ extraResources:
 win:
   artifactName: markdownmeister-${version}-windows-${arch}.${ext}
   icon: resources/icon.ico
+  # The multi-size container ships beside the exe so the running window can
+  # hand the OS native-size frames (spec 049 FR-003).
+  extraResources:
+    - from: resources/icon.ico
+      to: icon.ico
   target:
     - target: nsis
       arch: [x64]
