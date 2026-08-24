@@ -1,51 +1,48 @@
 # Icon provenance
 
-Where the MarkdownMeister product icon comes from, how every committed asset relates to it, and how to regenerate the set. Companion to `specs/archive/039-product-icon/` (spec 039).
+Where the MarkdownMeister product icon comes from, how every committed asset relates to it, and how to regenerate the set. Companion to `specs/archive/043-new-logo/` (spec 043); the asset formats and consumers were established by spec 039.
 
 ## The artwork
 
-A minimal geometric mark: a dark navy rounded-square tile carrying a single light "M" drawn as one continuous polyline stroke with round caps and joins.
+A dark navy rounded-square tile with a cream border ring, carrying a cream "M" monogram drawn as a continuous stroke. Designed to hold contrast on light and dark system surfaces alike; transparency is true alpha throughout. Render verification on real OS surfaces is manual (quickstart.md checklist).
 
-- **Tile**: vertical linear gradient `#26314E` → `#131A2B`, inset 8.5% from the canvas edge, corner radius 22.5% of the canvas — proportions that survive macOS squircle masking and Windows square-with-transparency treatment alike.
-- **Mark**: five-point polyline `(0.295,0.705) (0.295,0.335) (0.500,0.575) (0.705,0.335) (0.705,0.705)` in `#F9FAFC`, stroke width 7.8% of the canvas — an "M" whose two valleys keep it legible when rasterised at 16×16.
-- **Backgrounds**: designed for light *and* dark chrome — the dark tile is chosen to hold contrast on light surfaces and the light stroke to stay legible on dark ones. Render verification on real OS surfaces is manual (quickstart.md checklist); transparency is true alpha throughout.
+The master is `assets/icon/master.png`, committed verbatim at its native 1254×1254 (square, 8-bit RGBA, lossless). There is no vector source; the raster is canonical.
 
-The canonical editable source is `assets/icon/master.svg`; every raster asset is generated from the same geometry constants (mirrored in the generator script), so no platform receives a hand-redrawn variant.
+## Adoption record
 
-## Production route status (FR-005 deferral)
-
-Spec 039's FR-005 directed that the artwork be produced with AI image generation (Gemini "Nano Banana" or Grok) with a human selecting among candidates before commit. **That route was deferred by explicit maintainer authorization on 2026-08-23.** The artwork was instead authored directly by the ox-alpha model as the minimal geometric mark described above, meeting FR-006 (16×16 recognisability, light/dark legibility) and FR-008 (no third-party or protected imagery — the mark is original geometry with no reference product).
-
-If the generation pass runs later:
-
-1. Generate candidates with prompts along these lines, iterating on output:
-   - "Minimal flat app icon, dark navy (#26314E→#131A2B gradient) rounded square tile on transparent background, single continuous white 'M' letterform drawn as one thick polyline stroke with round caps, geometric, calm, no text, no shadow, vector style"
-   - Variants: stroke weight (6–10%), tile radius (20–25%), mark position.
-2. A human selects one candidate; reject anything resembling an existing product logo (FR-008 review step).
-3. Commit the selected candidate as `assets/icon/master.svg` + re-render the raster set per the derivation chain below; replace this section with the session record (prompts, candidates, selection).
+The artwork was supplied by the maintainer as `new-logo.png` and adopted verbatim as the master on 2026-08-24 (spec 043), replacing the previous minimal-geometry mark and its SVG-based derivation. The maintainer selected the artwork; no generation or candidate-selection step remains in scope. The earlier deferral record for an AI-generation session (spec 039 FR-005) is closed by this adoption.
 
 ## Derivation chain
 
 ```text
-assets/icon/master.svg          canonical editable geometry (hand-maintained)
-        │  identical geometry constants mirrored in the script
+assets/icon/master.png            canonical artwork (maintainer-supplied, committed verbatim)
+        │  high-quality bicubic downsampling
         ▼
-scripts/generate-icon-master.ps1   zero-dependency GDI+ renderer
-        ├─► assets/icon/master.png            1024×1024 RGBA lossless master
-        ├─► resources/icon.ico                ICO: PNG entries 16–256 (256 stored as byte 0)
-        ├─► resources/icon.icns               ICNS: chunks ic07/ic08/ic09/ic10 (128–1024)
+scripts/generate-icons.ps1        zero-dependency GDI+ derivation
+        ├─► resources/icons/NxN.png           ladder: 16,24,32,48,64,128,256,512
         ├─► resources/icon.png                512×512 convenience master (runtime window icon)
-        └─► resources/icons/NxN.png           ladder: 16,24,32,48,64,128,256,512
+        ├─► resources/icon.ico                ICO: PNG entries 16–256 (256 stored as byte 0)
+        └─► resources/icon.icns               ICNS: ic07/ic08/ic09/ic10 (128/256/512 ladder
+                                              entries; ic10 a true 1024×1024 downsample)
+docs/site/assets/icon.png         byte copy of the 256 ladder entry (website icon)
 ```
 
-Consumers: electron-builder (`win.icon`, `mac.icon`, `linux.icon`), the BrowserWindow window icon (`resources/icon.png` via extraResources), and the Linux desktop-entry mechanism (copies what it finds inside the AppImage). Never edit derived assets by hand; change the SVG + script constants together and regenerate everything at once so no platform drifts (FR-007). A unit-test block in `tests/main/iconAssets.test.ts` guards this sync rule by comparing the SVG's parsed geometry against the script's mirrored constants.
+Consumers: electron-builder (`win.icon`, `mac.icon`, `linux.icon`), the BrowserWindow window icon (`resources/icon.png` via extraResources), the Linux desktop-entry mechanism (copies what it finds inside the AppImage), and the website asset copy. Never edit derived assets by hand; replace `assets/icon/master.png` and regenerate everything at once so no platform drifts (FR-004).
+
+The script validates the master before deriving (square, at least 1024×1024, 8-bit RGBA, parsed from raw bytes) and never writes the master itself.
 
 ## Regeneration
 
 From the repository root (PowerShell 7):
 
 ```powershell
-pwsh -File scripts/generate-icon-master.ps1
+pwsh -File scripts/generate-icons.ps1
 ```
 
-Re-running reproduces **structurally equivalent** assets: identical dimensions, colour types (RGBA), ICO directory shape, and ICNS chunk layout. PNG bytes may differ between runs because GDI+ encoder output is not byte-stable; dimensional/structural equivalence is the contract (spec SC-005), which is exactly what the unit tests in `tests/main/iconAssets.test.ts` assert.
+Then refresh the website copy:
+
+```powershell
+Copy-Item resources/icons/256x256.png docs/site/assets/icon.png
+```
+
+Re-running reproduces **structurally equivalent** assets: identical dimensions, colour types (RGBA), ICO directory shape, and ICNS chunk layout. PNG bytes may differ between runs because GDI+ encoder output is not byte-stable; dimensional/structural equivalence is the contract (spec 039 SC-005), which is exactly what the unit tests in `tests/main/iconAssets.test.ts` assert.

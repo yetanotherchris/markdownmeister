@@ -3,8 +3,8 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 /**
- * Spec 039 (FR-001/FR-002/FR-007): structural verification of the committed
- * icon assets. These formats fail silently, a wrong dimension byte, a missing
+ * Specs 039/043 (FR-001/FR-002/FR-004): structural verification of the
+ * committed icon assets. These formats fail silently, a wrong dimension byte, a missing
  * small entry, or a truncated ICNS chunk ships invisibly until some launcher
  * surface renders garbage, so the leading binary structures are parsed here
  * in pure TypeScript against the committed files.
@@ -74,11 +74,11 @@ describe('PNG ladder (resources/icons)', () => {
 })
 
 describe('master artwork (assets/icon/master.png)', () => {
-  it('is exactly 1024x1024 RGBA lossless PNG', () => {
+  it('is the adopted 1254x1254 RGBA lossless PNG at its native size', () => {
     const bytes = fs.readFileSync(masterPngPath)
     const ihdr = parsePngIhdr(bytes)
-    expect(ihdr.width).toBe(1024)
-    expect(ihdr.height).toBe(1024)
+    expect(ihdr.width).toBe(1254)
+    expect(ihdr.height).toBe(1254)
     expect(ihdr.bitDepth).toBe(8)
     expect(ihdr.colourType).toBe(6)
   })
@@ -219,105 +219,5 @@ describe('macOS bundled icon (resources/icon.icns)', () => {
     expect(ihdr.width).toBe(size)
     expect(ihdr.height).toBe(size)
     expect(ihdr.colourType).toBe(6)
-  })
-
-  it('carries the committed master artwork verbatim as its largest chunk body', () => {
-    // The largest ICNS payload matches the master image.
-    const chunks = readChunks(fs.readFileSync(icnsPath))
-    const ic10 = chunks.find((chunk) => chunk.type === 'ic10')
-    if (!ic10) throw new Error('missing ic10 chunk')
-    expect(Buffer.from(ic10.body).equals(fs.readFileSync(masterPngPath))).toBe(true)
-  })
-})
-
-describe('geometry parity: assets/icon/master.svg <-> generator constants (FR-007)', () => {
-  const svg = fs.readFileSync(path.join(repoRoot, 'assets', 'icon', 'master.svg'), 'utf8')
-  const script = fs.readFileSync(path.join(repoRoot, 'scripts', 'generate-icon-master.ps1'), 'utf8')
-
-  /** Attributes of the first element with the given tag name (may span lines). */
-  function tagAttrs(name: string): Record<string, string> {
-    const match = svg.match(new RegExp(`<${name}\\b([^>]*)>`))
-    if (!match) throw new Error(`master.svg has no <${name}> element`)
-    const attrs: Record<string, string> = {}
-    for (const attr of match[1].matchAll(/([a-zA-Z][a-zA-Z0-9-]*)="([^"]*)"/g))
-      attrs[attr[1]] = attr[2]
-    return attrs
-  }
-
-  function psNumber(constName: string): number {
-    const match = script.match(new RegExp(`\\$${constName}\\s*=\\s*([0-9.]+)`))
-    if (!match) throw new Error(`generate-icon-master.ps1 is missing $${constName}`)
-    return Number(match[1])
-  }
-
-  function psRgbHex(constName: string): string {
-    const match = script.match(
-      new RegExp(
-        `\\$${constName}\\s*=\\s*\\[System\\.Drawing\\.Color\\]::FromArgb\\(255, (\\d+), (\\d+), (\\d+)\\)`
-      )
-    )
-    if (!match) throw new Error(`generate-icon-master.ps1 is missing $${constName}`)
-    return `#${match
-      .slice(1, 4)
-      .map((c) => Number(c).toString(16).padStart(2, '0'))
-      .join('')}`
-  }
-
-  const viewBox = svg.match(/viewBox="0 0 (\d+) (\d+)"/)
-  if (!viewBox) throw new Error('master.svg is missing its viewBox')
-  const canvas = Number(viewBox[1])
-  const rect = tagAttrs('rect')
-  const gradient = tagAttrs('linearGradient')
-  const polyline = tagAttrs('polyline')
-
-  // The script mirrors the SVG ratios rounded to 3 decimals; half that quantum
-  // is the comparison tolerance.
-  const TOL = 5e-4
-  const tileWidthRatio = 1 - 2 * psNumber('TileInsetRatio')
-
-  it('mirrors the tile inset, width and corner radius', () => {
-    expect(Math.abs(Number(rect.x) / canvas - psNumber('TileInsetRatio'))).toBeLessThan(TOL)
-    expect(Math.abs(Number(rect.width) / canvas - tileWidthRatio)).toBeLessThan(TOL)
-    expect(Math.abs(Number(rect.rx) / canvas - psNumber('TileRadiusRatio'))).toBeLessThan(TOL)
-  })
-
-  it('mirrors the vertical gradient span', () => {
-    expect(gradient.x1).toBe(gradient.x2)
-    expect(Math.abs(Number(gradient.y1) / canvas - psNumber('TileInsetRatio'))).toBeLessThan(TOL)
-    expect(
-      Math.abs((Number(gradient.y2) - Number(gradient.y1)) / canvas - tileWidthRatio)
-    ).toBeLessThan(TOL)
-  })
-
-  it('mirrors every mark vertex of the polyline', () => {
-    const block = script.match(/\$MarkPoints\s*=\s*@([\s\S]*?)\n\)/)
-    if (!block) throw new Error('generate-icon-master.ps1 is missing $MarkPoints')
-    const marks = [...block[1].matchAll(/X\s*=\s*([0-9.]+);\s*Y\s*=\s*([0-9.]+)/g)].map((m) => ({
-      x: Number(m[1]),
-      y: Number(m[2])
-    }))
-    const vertices = polyline.points
-      .trim()
-      .split(/\s+/)
-      .map((pair) => pair.split(',').map(Number))
-    expect(vertices).toHaveLength(marks.length)
-    for (let i = 0; i < marks.length; i++) {
-      expect(Math.abs(vertices[i][0] / canvas - marks[i].x)).toBeLessThan(TOL)
-      expect(Math.abs(vertices[i][1] / canvas - marks[i].y)).toBeLessThan(TOL)
-    }
-  })
-
-  it('mirrors the stroke width ratio', () => {
-    expect(
-      Math.abs(Number(polyline['stroke-width']) / canvas - psNumber('StrokeWidthRatio'))
-    ).toBeLessThan(TOL)
-  })
-
-  it('mirrors every colour exactly', () => {
-    const stops = [...svg.matchAll(/stop-color="(#[0-9A-Fa-f]{6})"/g)].map((m) => m[1])
-    expect(stops).toHaveLength(2)
-    expect(psRgbHex('TileTopColor').toLowerCase()).toBe(stops[0].toLowerCase())
-    expect(psRgbHex('TileBottomColor').toLowerCase()).toBe(stops[1].toLowerCase())
-    expect(psRgbHex('MarkColor').toLowerCase()).toBe(polyline.stroke.toLowerCase())
   })
 })
