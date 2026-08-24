@@ -2,14 +2,12 @@ import { isWithinOrEqual } from './workspace'
 import { splitFrontmatter, joinFrontmatter } from '../domain/frontmatter'
 import type { OpenedFile } from '../../shared/ipc-contract'
 
-
 export function markdownSame(a: string, b: string): boolean {
   const normalize = (s: string) => s.replace(/\r\n/g, '\n')
   const A = normalize(a)
   const B = normalize(b)
   return A === B || A === `${B}\n` || B === `${A}\n`
 }
-
 
 export function editorMatchesContent(live: string, content: string): boolean {
   const L = live.replace(/\r\n/g, '\n')
@@ -56,7 +54,6 @@ export interface EditingSession {
   activeId: string | null
   untitledCounter: number
 }
-
 
 export function createEmpty(counter: number): DocumentState {
   const id = `untitled-${counter}`
@@ -123,7 +120,6 @@ export function openFile(opened: {
   }
 }
 
-
 interface OpenExistingPayload {
   value: OpenedFile & { view?: 'formatted' | 'source' }
   mode?: 'replace' | 'new'
@@ -161,7 +157,6 @@ export type DocumentsAction =
   | { type: 'EXTERNAL_CHANGE'; payload: { path: string; kind: 'changed' | 'removed' } }
   | { type: 'SET_VIEW'; payload: { id: string; view: 'formatted' | 'source' } }
   | { type: 'REFRESH_FROM_SOURCE'; payload: { id: string; content: string } }
-
 
 export function handleOpenNew(state: EditingSession): EditingSession {
   const counter = state.untitledCounter + 1
@@ -595,7 +590,6 @@ export function getDirtyDocuments(state: EditingSession): DocumentState[] {
 
 export type CloseDecision = 'prompt' | 'close'
 
-
 export function planClose(state: EditingSession, id: string): CloseDecision {
   const doc = state.documents.find((d) => d.id === id)
   if (!doc) return 'close'
@@ -603,7 +597,6 @@ export function planClose(state: EditingSession, id: string): CloseDecision {
 }
 
 export type QuitDecision = 'prompt' | 'quit'
-
 
 export function planQuit(state: EditingSession): QuitDecision {
   return hasDirtyDocuments(state) ? 'prompt' : 'quit'

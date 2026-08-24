@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { BuildInfo } from '../../shared/ipc-contract'
 
-
 export function useBuildInfo(): BuildInfo | null {
   const [buildInfo, setBuildInfo] = useState<BuildInfo | null>(null)
   useEffect(() => {

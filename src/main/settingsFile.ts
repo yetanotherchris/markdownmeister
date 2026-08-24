@@ -5,7 +5,6 @@ import { MARKDOWN_SYNTAX_DEFAULTS } from '../shared/markdownSyntaxDefaults'
 import { isValidEditorThemeName } from './themes/validate'
 import { atomicWrite } from './fs/atomicWrite'
 
-
 export const DEFAULTS: Settings = {
   sidebarWidth: 30,
   themeOverride: null,
@@ -29,9 +28,7 @@ export function readConfigFile(filePath: string): Record<string, unknown> {
   }
 }
 
-
 const SPELLCHECK_LANGUAGES: readonly SpellcheckLanguage[] = ['en-GB', 'en-US']
-
 
 const FILE_OPEN_BEHAVIORS: readonly FileOpenBehavior[] = ['same-tab', 'new-tab']
 
@@ -42,8 +39,6 @@ function isSpellcheckLanguage(value: unknown): value is SpellcheckLanguage {
 function isFileOpenBehavior(value: unknown): value is FileOpenBehavior {
   return typeof value === 'string' && (FILE_OPEN_BEHAVIORS as readonly string[]).includes(value)
 }
-
-
 
 function validateSettings(raw: unknown): Settings {
   if (!raw || typeof raw !== 'object') return { ...DEFAULTS }
@@ -92,7 +87,6 @@ function validateSettings(raw: unknown): Settings {
   }
 }
 
-
 export function mergeSettingsPatch(current: Settings, patch: Partial<Settings>): Settings {
   return {
     sidebarWidth:
@@ -136,7 +130,6 @@ export function mergeSettingsPatch(current: Settings, patch: Partial<Settings>):
   }
 }
 
-
 export function validateSettingsPatch(patch: unknown): void {
   if (!patch || typeof patch !== 'object') {
     throw Object.assign(new Error('Settings must be an object'), { code: 'IO' as const })
@@ -174,11 +167,9 @@ export function loadSettingsFile(filePath: string): Settings {
   return validateSettings(readConfigFile(filePath).settings)
 }
 
-
 export function hasSettingsKey(filePath: string): boolean {
   return 'settings' in readConfigFile(filePath)
 }
-
 
 export function migrateLegacySettingsFile(configPath: string, legacyPath: string): Settings | null {
   if (hasSettingsKey(configPath) || configPath === legacyPath) return null
@@ -210,7 +201,6 @@ export function migrateLegacySettingsFile(configPath: string, legacyPath: string
   return migrated
 }
 
-
 export function writeSettingsFile(filePath: string, settings: Settings): void {
   const current = readConfigFile(filePath)
   const updated = { ...current, settings }
@@ -218,7 +208,6 @@ export function writeSettingsFile(filePath: string, settings: Settings): void {
   fs.mkdirSync(dir, { recursive: true })
   atomicWrite(filePath, JSON.stringify(updated, null, 2), 0o600)
 }
-
 
 export function materialiseDefaultSettings(
   filePath: string,

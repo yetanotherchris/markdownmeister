@@ -1,6 +1,5 @@
 import * as path from 'path'
 
-
 export function windowIconPath(options: {
   platform: NodeJS.Platform
   isPackaged: boolean

@@ -48,7 +48,6 @@ export interface DocumentSessionApi {
   isDirtyLive: (doc: DocumentState) => boolean
 }
 
-
 export function useDocumentSession(opts: {
   dispatch: React.Dispatch<DocumentsAction>
   sessionRef: React.MutableRefObject<EditingSession>

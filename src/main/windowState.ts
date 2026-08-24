@@ -1,16 +1,10 @@
 import { screen } from 'electron'
 import type { BrowserWindow } from 'electron'
 import { recentItemsConfigPath } from './recentItemsPath'
-import {
-  loadWindowStateFile,
-  snapshotToState,
-  writeWindowStateFile
-} from './windowStateFile'
+import { loadWindowStateFile, snapshotToState, writeWindowStateFile } from './windowStateFile'
 import type { WindowState } from './windowStateFile'
 import { resolveLaunchState } from './windowStateFit'
 import type { Rect } from './windowStateFit'
-
-
 
 function windowStatePath(): string {
   return recentItemsConfigPath()
@@ -19,7 +13,6 @@ function windowStatePath(): string {
 function workAreas(): Rect[] {
   return screen.getAllDisplays().map((d) => d.workArea)
 }
-
 
 export function loadWindowState(): WindowState | null {
   return loadWindowStateFile(windowStatePath())
@@ -30,7 +23,6 @@ export function resolveLaunchBounds(): { bounds: Rect; isMaximized: boolean } {
   return resolveLaunchState(loadWindowState(), workAreas())
 }
 
-
 let pendingState: WindowState | null = null
 
 let writeTimer: ReturnType<typeof setTimeout> | null = null
@@ -39,6 +31,7 @@ function writeState(state: WindowState): void {
   try {
     writeWindowStateFile(windowStatePath(), state)
   } catch {
+    // Window-state persistence is optional.
   }
 }
 
@@ -60,7 +53,6 @@ function scheduleWrite(state: WindowState): void {
   }, 500)
 }
 
-
 export function flushWindowState(): void {
   if (writeTimer) {
     clearTimeout(writeTimer)
@@ -73,7 +65,6 @@ export function flushWindowState(): void {
   }
 }
 
-
 function capture(win: BrowserWindow): void {
   const state = snapshotToState({
     bounds: win.getNormalBounds(),
@@ -82,7 +73,6 @@ function capture(win: BrowserWindow): void {
   })
   if (state) scheduleWrite(state)
 }
-
 
 export function trackWindowState(win: BrowserWindow): void {
   win.on('move', () => capture(win))

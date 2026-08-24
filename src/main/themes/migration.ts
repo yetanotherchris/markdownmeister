@@ -12,8 +12,6 @@ import {
 import { atomicWrite } from '../fs/atomicWrite'
 import { readConfigFile } from '../settingsFile'
 
-
-
 export interface LegacyThemeFields {
   editorTheme: unknown
   editorFont: unknown
@@ -39,7 +37,6 @@ const COLOR_TOKEN_KEYS: readonly (keyof EditorColors)[] = [
   'code'
 ]
 
-
 function isLegacyEditorColors(value: unknown): value is EditorColors {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false
   const record = value as Record<string, unknown>
@@ -53,7 +50,6 @@ function isLegacyEditorColors(value: unknown): value is EditorColors {
 function samePalette(a: EditorColors, b: EditorColors): boolean {
   return COLOR_TOKEN_KEYS.every((key) => a[key].toLowerCase() === b[key].toLowerCase())
 }
-
 
 export function matchDefaultThemeStem(
   colors: EditorColors,
@@ -82,7 +78,6 @@ function readLegacySettings(configPath: string): LegacyThemeFields | null {
     editorColors: record.editorColors
   }
 }
-
 
 function persistSelectionAndStripLegacy(configPath: string, themeName: string): void {
   const current = readConfigFile(configPath)

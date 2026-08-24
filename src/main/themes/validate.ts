@@ -1,7 +1,5 @@
 import type { EditorColors } from '../../shared/ipc-contract'
 
-
-
 export interface ParsedThemeFile {
   typeface: string
   light: EditorColors
@@ -9,7 +7,6 @@ export interface ParsedThemeFile {
 }
 
 export type ParsedThemeFileResult = { ok: true; theme: ParsedThemeFile } | { ok: false }
-
 
 export const MAX_THEME_FILE_BYTES = 1_000_000
 
@@ -29,7 +26,6 @@ const COLOR_TOKEN_KEYS: readonly (keyof EditorColors)[] = [
   'code'
 ]
 
-
 function hasControlCharacters(text: string): boolean {
   for (const character of text) {
     const code = character.codePointAt(0) ?? 0
@@ -38,13 +34,11 @@ function hasControlCharacters(text: string): boolean {
   return false
 }
 
-
 export function isValidEditorThemeName(name: string): boolean {
   if (name.length === 0 || name.length > MAX_THEME_NAME_LENGTH) return false
   if (name.includes('/') || name.includes('\\')) return false
   return !hasControlCharacters(name)
 }
-
 
 export function themeStemOf(fileName: string): string | null {
   if (fileName.startsWith('.')) return null

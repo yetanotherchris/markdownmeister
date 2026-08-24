@@ -9,19 +9,16 @@ import type { MarkdownSyntaxOptions } from '../editor/markdownSyntaxOptions'
 import AboutArea from './AboutArea'
 import './settings.css'
 
-
 export const THEME_CHOICES: { value: ThemeChoice; label: string }[] = [
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
   { value: 'system', label: 'System default' }
 ]
 
-
 export const SPELLCHECK_LANGUAGE_CHOICES: { value: SpellcheckLanguage; label: string }[] = [
   { value: 'en-GB', label: 'English (United Kingdom)' },
   { value: 'en-US', label: 'English (United States)' }
 ]
-
 
 export type SettingsArea = 'general' | 'theme' | 'markdown' | 'about'
 
@@ -33,7 +30,6 @@ export const SETTINGS_AREAS: { value: SettingsArea; label: string }[] = [
 ]
 
 interface SettingsDialogProps {
-
   editorThemes: EditorThemeDefinition[]
 
   invalidThemeFileNames: string[]
@@ -63,7 +59,6 @@ interface SettingsDialogProps {
   onVisualCodeHighlightingChange: (enabled: boolean) => void
   onClose: () => void
 }
-
 
 export default function SettingsDialog({
   editorThemes,

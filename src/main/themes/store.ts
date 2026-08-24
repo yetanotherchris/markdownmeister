@@ -8,8 +8,6 @@ import {
 import { atomicWrite } from '../fs/atomicWrite'
 import { MAX_THEME_FILE_BYTES, parseThemeFile, themeStemOf } from './validate'
 
-
-
 /** A theme delivered to the renderer (contracts/preload.md). */
 export interface DiscoveredTheme {
   name: string
@@ -28,11 +26,9 @@ function themeFilePath(dir: string, stem: string): string {
   return path.join(dir, `${stem}.json`)
 }
 
-
 export function ensureThemesDirectory(dir: string): void {
   fs.mkdirSync(dir, { recursive: true })
 }
-
 
 export function seedMissingDefaultThemes(dir: string): void {
   for (const stem of DEFAULT_EDITOR_THEME_STEMS) {
@@ -49,7 +45,6 @@ function byName(a: { name: string }, b: { name: string }): number {
   if (a.name > b.name) return 1
   return 0
 }
-
 
 export function resolveCaseCollisions(
   candidates: {

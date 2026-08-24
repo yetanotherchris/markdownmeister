@@ -1,6 +1,3 @@
-
-
-
 .app-container[data-editor-theme] .milkdown {
   --crepe-color-surface-low: var(--mm-theme-surface, #fcefce);
   --crepe-color-on-surface: var(--mm-theme-foreground, #201b13);
@@ -53,7 +50,6 @@
   --crepe-font-title: Georgia, 'Times New Roman', 'Noto Serif', serif;
 }
 
-
 .app-container[data-editor-theme='rustic-serif'] .milkdown .milkdown-top-bar,
 .app-container[data-editor-theme='monotone-serif'] .milkdown .milkdown-top-bar {
   --crepe-font-default:
@@ -90,7 +86,6 @@
   --crepe-font-title: Arial, 'Helvetica Neue', Helvetica, sans-serif;
 }
 
-
 .app-container[data-editor-theme='scholarly'] .milkdown h1,
 .app-container[data-editor-theme='scholarly'] .milkdown h2,
 .app-container[data-editor-theme='scholarly'] .milkdown h3,
@@ -99,7 +94,6 @@
 .app-container[data-editor-theme='scholarly'] .milkdown h6 {
   color: #00b0e9;
 }
-
 
 .app-container[data-editor-theme='monotone'][data-theme='light'] .milkdown {
   --crepe-color-background: #ffffff;
@@ -150,7 +144,6 @@
     'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
 }
 
-
 .app-container[data-editor-theme='monotone-serif'][data-theme='light'] .milkdown {
   --crepe-color-background: #ffffff;
   --crepe-color-on-background: #000000;
@@ -194,7 +187,6 @@
   --crepe-font-default: Georgia, 'Times New Roman', 'Noto Serif', serif;
   --crepe-font-title: Georgia, 'Times New Roman', 'Noto Serif', serif;
 }
-
 
 .app-container[data-editor-theme][data-theme] .milkdown {
   --crepe-color-background: var(--mm-theme-background, #fdf6e3);

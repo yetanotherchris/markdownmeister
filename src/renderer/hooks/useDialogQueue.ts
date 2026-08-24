@@ -19,7 +19,6 @@ export interface DialogQueue {
   showOperationError: (message: string) => Promise<void>
 }
 
-
 export function useDialogQueue(sessionRef: React.MutableRefObject<EditingSession>): DialogQueue {
   const dialogInFlightRef = useRef(false)
   // An operation-failed prompt queued while another prompt is up.

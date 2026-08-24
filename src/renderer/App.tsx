@@ -46,7 +46,6 @@ const initialSession: EditingSession = {
   untitledCounter: 0
 }
 
-
 export default function App() {
   const [session, dispatch] = useReducer(documentsReducer, initialSession)
   const [workspace, dispatchWorkspace] = useReducer(workspaceReducer, initialWorkspaceState)
@@ -103,9 +102,7 @@ export default function App() {
           updateSpellcheckRuntime({ customWords: merged })
         }
       })
-      .catch(() => {
-
-      })
+      .catch(() => {})
     return () => {
       alive = false
     }

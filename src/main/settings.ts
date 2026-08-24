@@ -14,11 +14,9 @@ import { ctx } from './ipc/handlers/context'
 
 export { DEFAULTS }
 
-
 function settingsPath(): string {
   return recentItemsConfigPath()
 }
-
 
 function legacySettingsPath(): string {
   const override = process.env.MM_CONFIG_DIR
@@ -27,7 +25,6 @@ function legacySettingsPath(): string {
   }
   return path.join(app.getPath('userData'), 'settings.json')
 }
-
 
 let currentSettings: Settings | null = null
 
@@ -44,7 +41,6 @@ export function loadSettings(): Settings {
   if (!currentSettings) currentSettings = loadFromDisk()
   return currentSettings
 }
-
 
 function validateAndMerge(patch: Partial<Settings>): Settings {
   return mergeSettingsPatch(loadSettings(), patch)
@@ -71,10 +67,10 @@ export function saveSettings(settings: Settings): void {
       writeSettingsFile(settingsPath(), settings)
       writeTimer = null
     } catch {
+      // A later settings change retries the deferred write.
     }
   }, 500)
 }
-
 
 export function flushSettings(): void {
   if (writeTimer) {
@@ -83,10 +79,10 @@ export function flushSettings(): void {
     try {
       writeSettingsFile(settingsPath(), currentSettings ?? loadFromDisk())
     } catch {
+      // Keep the in-memory settings when persistence is unavailable.
     }
   }
 }
-
 
 export function adoptRepairedEditorTheme(themeName: string): void {
   if (!currentSettings || currentSettings.editorTheme === themeName) return

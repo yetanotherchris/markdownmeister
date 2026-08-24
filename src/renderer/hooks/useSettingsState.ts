@@ -13,7 +13,6 @@ import { instancePool } from '../editor/instancePool'
 import { reconfigureAll } from '../editor/markdownSyntaxRuntime'
 import type { MarkdownSyntaxOptions } from '../editor/markdownSyntaxOptions'
 
-
 export function useSettingsState(): {
   settingsOpen: boolean
   setSettingsOpen: (open: boolean) => void

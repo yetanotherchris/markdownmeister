@@ -25,10 +25,7 @@ import {
   isAuthorizedRenderer
 } from './context'
 
-
 export function registerWorkspaceHandlers(window: Electron.BrowserWindow, _ctx: typeof ctx): void {
-
-
   ipcMain.handle(
     'workspace:prepareFolderOpen',
     async (event, args: unknown): Promise<Result<WorkspaceInfo | null>> => {
@@ -149,7 +146,6 @@ export function registerWorkspaceHandlers(window: Electron.BrowserWindow, _ctx: 
   })
 }
 
-
 function prepareFolderFromRealPath(realRootPath: string): Result<WorkspaceInfo> {
   const stat = fs.statSync(realRootPath)
   if (!stat.isDirectory()) {
@@ -165,7 +161,6 @@ function prepareFolderFromRealPath(realRootPath: string): Result<WorkspaceInfo> 
   }
   return ok({ path: realRootPath, name, entries })
 }
-
 
 export function prepareFolderFromOsPath(absolutePath: string): Result<WorkspaceInfo | null> {
   if (ctx.pendingFolderOpen) {

@@ -3,7 +3,6 @@ import type { BuildInfo, Result } from '../../../shared/ipc-contract'
 import { REPOSITORY_URL, currentBuildInfo } from '../../buildInfo'
 import { ctx, err, isAuthorizedRenderer, ok } from './context'
 
-
 export function registerBuildHandlers(window: Electron.BrowserWindow, _ctx: typeof ctx): void {
   ipcMain.handle('build:getInfo', (event): Result<BuildInfo> => {
     if (!isAuthorizedRenderer(event, window)) return err('IO', 'Unauthorized renderer')

@@ -65,9 +65,7 @@ export interface DocumentChangeEvent {
   kind: 'changed' | 'removed'
 }
 
-
 export type RecentKind = 'file' | 'folder'
-
 
 export interface RecentItem {
   path: string
@@ -76,11 +74,9 @@ export interface RecentItem {
   lastOpenedAt: number
 }
 
-
 export interface RecentItemsWarning {
   message: string
 }
-
 
 export type NativeDialogRequest =
   | { kind: 'unsaved-close'; documentTitle: string; error?: string }
@@ -92,7 +88,6 @@ export type NativeDialogRequest =
   | { kind: 'permanent-delete'; targetName: string; detail: string; cleanToCloseTitles: string[] }
   | { kind: 'delete-blocked'; targetName: string; blockerTitles: string[] }
   | { kind: 'operation-failed'; message: string }
-
 
 export type NativeDialogDecision =
   | 'save'
@@ -117,15 +112,12 @@ export type MenuCommand =
   | 'new-file'
   | { type: 'open-recent'; path: string; kind: RecentKind }
 
-
 export type OsOpenRequest =
   | { kind: 'file'; file: OpenedFile }
   | { kind: 'folder'; info: WorkspaceInfo }
   | { kind: 'failed'; message: string }
 
-
 export type SpellcheckLanguage = 'en-GB' | 'en-US'
-
 
 export interface EditorColors {
   background: string
@@ -136,7 +128,6 @@ export interface EditorColors {
   code: string
 }
 
-
 export interface EditorThemeDefinition {
   name: string
   typeface: string
@@ -144,12 +135,10 @@ export interface EditorThemeDefinition {
   dark: EditorColors
 }
 
-
 export interface EditorThemesList {
   themes: EditorThemeDefinition[]
   invalidNames: string[]
 }
-
 
 export type FileOpenBehavior = 'same-tab' | 'new-tab'
 
@@ -182,7 +171,6 @@ export interface Settings {
   visualCodeHighlighting: boolean
 }
 
-
 export interface BuildInfo {
   version: string
   revision: string | null
@@ -190,7 +178,6 @@ export interface BuildInfo {
 }
 
 export interface DesktopApi {
-
   platform: NodeJS.Platform
 
   prepareFolderOpen(path?: string): Promise<Result<WorkspaceInfo | null>>

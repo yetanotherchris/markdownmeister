@@ -22,9 +22,6 @@ import type {
   RecentKind
 } from '../../../shared/ipc-contract'
 
-
-
-
 export interface PendingFolderOpen {
   root: string
   name: string
@@ -163,7 +160,6 @@ export function validateShape(
   }
 }
 
-
 export function isRecentEntry(path_: string, kind: RecentKind): boolean {
   return loadRecentItems(recentItemsConfigPath()).some((i) => i.path === path_ && i.kind === kind)
 }
@@ -197,7 +193,6 @@ export function removeRecent(path_: string, kind: RecentKind): void {
     reportRecentItemsWarning(e, 'save')
   }
 }
-
 
 export function canonicalPath(p: string): string {
   try {

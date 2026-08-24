@@ -1,8 +1,5 @@
 import type { BuildInfo } from '../shared/ipc-contract'
 
-
-
-
 export const REPOSITORY_URL = 'https://github.com/yetanotherchris/markdownmeister'
 
 // Replaced textually by electron-vite's `define` at build time
@@ -10,7 +7,6 @@ export const REPOSITORY_URL = 'https://github.com/yetanotherchris/markdownmeiste
 // i.e. a JSON string literal or the literal `null`. Absent (undefined) under
 // vitest, which embeddedRevision()'s typeof guard degrades to `null`.
 declare const __BUILD_COMMIT__: string | null | undefined
-
 
 export function resolveBuildRevision(
   envValue: string | undefined,
@@ -20,12 +16,10 @@ export function resolveBuildRevision(
   return runGitFallback()
 }
 
-
 export function normalizeRevision(raw: unknown): string | null {
   if (typeof raw !== 'string') return null
   return raw.trim() === '' ? null : raw
 }
-
 
 export function effectiveRevision(
   embedded: unknown,
@@ -37,7 +31,6 @@ export function effectiveRevision(
   }
   return normalizeRevision(embedded)
 }
-
 
 export function embeddedRevision(): string | null {
   return typeof __BUILD_COMMIT__ === 'undefined' ? null : normalizeRevision(__BUILD_COMMIT__)

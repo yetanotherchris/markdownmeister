@@ -32,7 +32,6 @@ import {
   isAuthorizedRenderer
 } from './context'
 
-
 export function registerFileHandlers(window: Electron.BrowserWindow, _ctx: typeof ctx): void {
   ipcMain.handle('file:openDialog', async (event): Promise<Result<OpenedFile | null>> => {
     if (!isAuthorizedRenderer(event, window)) return err('IO', 'Unauthorized renderer')

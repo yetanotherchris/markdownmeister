@@ -2,7 +2,6 @@ import { BrowserWindow, ipcMain } from 'electron'
 import type { Result } from '../../../shared/ipc-contract'
 import { err, ok, ctx, isAuthorizedRenderer, validateShape } from './context'
 
-
 export function registerAppHandlers(window: BrowserWindow, _ctx: typeof ctx): void {
   setupWindowCloseHandler(window)
 

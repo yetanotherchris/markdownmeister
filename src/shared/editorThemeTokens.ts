@@ -1,14 +1,10 @@
 import type { EditorColors } from './ipc-contract'
 
-
-
-
 export type EditorTypefaceChoice = 'serif' | 'sans-serif'
 
 export const SANS_TYPEFACE =
   "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif"
 export const SERIF_TYPEFACE = "Georgia, 'Times New Roman', 'Noto Serif', serif"
-
 
 export function fontStackFor(font: EditorTypefaceChoice): string {
   return font === 'serif' ? SERIF_TYPEFACE : SANS_TYPEFACE
@@ -92,7 +88,6 @@ export const DEFAULT_EDITOR_THEME_FILES: Record<string, DefaultThemeFileContents
   }
 }
 
-
 export const DEFAULT_EDITOR_THEME_STEMS: readonly string[] = [
   'rustic',
   'rustic-serif',
@@ -101,12 +96,9 @@ export const DEFAULT_EDITOR_THEME_STEMS: readonly string[] = [
   'monotone-serif'
 ]
 
-
 export const DEFAULT_EDITOR_THEME_NAME = 'rustic'
 
-
 export const MIGRATED_CUSTOM_THEME_FILE = 'migrated-custom.json'
-
 
 export const DEFAULT_THEME_LEGACY_CHOICES: Record<string, EditorTypefaceChoice> = {
   rustic: 'sans-serif',
@@ -115,6 +107,5 @@ export const DEFAULT_THEME_LEGACY_CHOICES: Record<string, EditorTypefaceChoice> 
   monotone: 'sans-serif',
   'monotone-serif': 'serif'
 }
-
 
 export const EMERGENCY_EDITOR_THEME: DefaultThemeFileContents = RUSTIC_FILE

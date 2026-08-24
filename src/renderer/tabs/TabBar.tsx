@@ -10,7 +10,6 @@ interface TabBarProps {
   onNew: () => void
 }
 
-
 export default function TabBar({ documents, activeId, onActivate, onClose, onNew }: TabBarProps) {
   return (
     <div className="tab-bar" role="tablist" aria-label="Open documents">

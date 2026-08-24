@@ -2,7 +2,6 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as crypto from 'crypto'
 
-
 export function atomicWrite(filePath: string, content: string, mode?: number): void {
   const dir = path.dirname(filePath)
   const base = path.basename(filePath)

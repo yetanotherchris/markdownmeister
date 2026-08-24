@@ -6,9 +6,6 @@ import { themesDir } from '../../themes/path'
 import { loadSettings, updateSettings } from '../../settings'
 import { ctx, ok, err, sanitizeError, isAuthorizedRenderer } from './context'
 
-
-
-
 export function unresolvedSelectionRepair(
   themes: { name: string }[],
   storedSelection: string

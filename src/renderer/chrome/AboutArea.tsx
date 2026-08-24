@@ -2,14 +2,12 @@ import type { ReactElement } from 'react'
 import { REPOSITORY_URL } from '../../main/buildInfo'
 import { useBuildInfo } from '../hooks/useBuildInfo'
 
-
 export default function AboutArea(): ReactElement {
   const buildInfo = useBuildInfo()
 
   const handleCopyRevision = (): void => {
     if (!buildInfo || buildInfo.revision === null) return
-    navigator.clipboard.writeText(buildInfo.revision).catch(() => {
-    })
+    navigator.clipboard.writeText(buildInfo.revision).catch(() => {})
   }
 
   const handleOpenRepository = (): void => {

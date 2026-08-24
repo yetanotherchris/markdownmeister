@@ -6,7 +6,6 @@ import { validateSettingsPatch, DEFAULTS } from '../../settingsFile'
 import type { Result, Settings } from '../../../shared/ipc-contract'
 import { ctx, ok, err, sanitizeError, isAuthorizedRenderer } from './context'
 
-
 export function registerSettingsHandlers(window: Electron.BrowserWindow, _ctx: typeof ctx): void {
   ipcMain.handle('settings:get', (event): Result<Settings> => {
     if (!isAuthorizedRenderer(event, window)) return err('IO', 'Unauthorized renderer')

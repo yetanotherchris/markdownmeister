@@ -5,8 +5,6 @@ import type {
 } from '../../shared/ipc-contract'
 import { EMERGENCY_EDITOR_THEME } from '../../shared/editorThemeTokens'
 
-
-
 let cached: EditorThemeDefinition[] = []
 let cachedInvalidNames: string[] = []
 
@@ -24,7 +22,6 @@ export async function loadEditorThemesFromMain(): Promise<void> {
   if (result.ok) updateEditorThemes(result.value)
 }
 
-
 export function paletteForMode(theme: EditorThemeDefinition, mode: 'light' | 'dark'): EditorColors {
   return mode === 'dark' ? theme.dark : theme.light
 }
@@ -35,7 +32,6 @@ export interface ResolvedEditorAppearance {
   palette: EditorColors
   typeface: string
 }
-
 
 export function resolveEditorAppearance(
   name: string,
