@@ -21,6 +21,13 @@ import * as path from 'node:path'
  * compared exactly. Whitespace/key-order churn passes by JSON semantics by
  * design; the two scripts above carry the whitespace guarantee.
  *
+ * The baseline copy is named scoop-manifest-baseline.json, NOT
+ * markdownmeister.json: this repo doubles as a scoop bucket, and scoop's
+ * manifest lookup recurses over the whole bucket directory. A second file
+ * with that name makes scoop parse both manifests at once, which breaks its
+ * version comparison ("Cannot convert value to type System.String") and
+ * silently disables update detection for the app (phase 41).
+ *
  * NOTE: the volatile-value normalisation covers architecture["64bit"] only.
  * Adding an arm64 block to the manifest means extending the loop below in the
  * same commit, or the release bot will break this test on every tag.
@@ -64,7 +71,7 @@ describe('channel isolation baseline (SC-003)', () => {
       return parsed
     }
     expect(normaliseVolatile(readRepo('markdownmeister.json'))).toEqual(
-      normaliseVolatile(readBaseline('markdownmeister.json'))
+      normaliseVolatile(readBaseline('scoop-manifest-baseline.json'))
     )
   })
 
