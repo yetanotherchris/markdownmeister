@@ -16,7 +16,7 @@ The Editor Theme section's radio list becomes one dropdown populated from the al
 
 **Storage**: None new (selection persistence unchanged).
 
-**Testing**: Vitest unit updates for the dialog contract; Playwright e2e migration across five suites that exercise theme selection through radios today, reusing existing helpers and the spellcheck selector's interaction precedent.
+**Testing**: Vitest unit updates for the dialog contract; Playwright e2e migration across four suites that exercise theme selection through radios today, reusing existing helpers and the spellcheck selector's interaction precedent.
 
 **Target Platform**: All desktop platforms.
 
@@ -24,7 +24,7 @@ The Editor Theme section's radio list becomes one dropdown populated from the al
 
 **Constraints**: FR-003 staging semantics must not drift; FR-004 requires an honest no-selection state; keep the fieldset accessibility name used by shared e2e helpers.
 
-**Scale/Scope**: One component edit plus CSS reuse, one unit-test rewrite, five e2e specs updated. No main-process changes.
+**Scale/Scope**: One component edit plus CSS reuse, one unit-test rewrite, four e2e specs updated. No main-process changes.
 
 ## Constitution Check
 

@@ -34,7 +34,7 @@ Date: 2026-08-24. Every claim verified against this worktree during planning; th
 
 **Decision**: Ship the .ico as an extraResource so the packaged app can load it at runtime on Windows.
 
-**Evidence**: Today only `icon.png` ships (`electron-builder.yml:30-34`); the .ico exists in-repo but not inside packages. Adding it to extraResources plus pointing `windowIconPath` at it on win32 (packaged) and at the repo copy (dev) completes the chain; darwin stays undefined (`windowIcon.ts:10`). `tests/main/windowIcon.test.ts` covers path selection and needs the win32 expectation updated.
+**Evidence**: Today only `icon.png` ships (`electron-builder.yml:30-34`); the .ico exists in-repo but not inside packages. Adding it to extraResources plus pointing `windowIconPath` at it on win32 (packaged) and at the repo copy (dev) completes the chain; darwin stays undefined (`windowIcon.ts:9`). `tests/main/windowIcon.test.ts` covers path selection and needs the win32 expectation updated.
 
 ## References
 
