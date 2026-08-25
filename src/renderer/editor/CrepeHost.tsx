@@ -3,7 +3,6 @@ import type { Crepe } from '@milkdown/crepe'
 import { CrepeFeature } from '@milkdown/crepe'
 import { editorViewCtx } from '@milkdown/kit/core'
 import { $prose } from '@milkdown/kit/utils'
-import { TextSelection } from '@milkdown/kit/prose/state'
 import type { EditorView } from '@milkdown/kit/prose/view'
 import { javascript } from '@codemirror/lang-javascript'
 import { LanguageDescription } from '@codemirror/language'
@@ -13,6 +12,7 @@ import { tightListPlugins } from './tightList'
 import { spellcheckPlugin, type SpellingMenuState } from './spellcheckPlugin'
 import { reconfigureEditor, isReconfigureSuppressed } from './markdownSyntaxRuntime'
 import { recordParse, recordIncomingSerialization, endOpen } from './openPerformance'
+import { planCursorRestore } from './cursorRestore'
 import {
   markdownSyntaxInputRuleGate,
   setMarkdownSyntaxGateOptions
@@ -94,9 +94,16 @@ export default function CrepeHost({
   function applyCursorState(view: EditorView | null) {
     if (!view || !restoreCursor) return
     const { cursorOffset, scrollTop } = restoreCursor
-    if (cursorOffset > 0) {
-      const pos = Math.min(cursorOffset, view.state.doc.content.size)
-      view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, pos)))
+    const plan = planCursorRestore(view.state.doc, cursorOffset)
+    if (plan) {
+      const tr = view.state.tr.setSelection(plan.selection)
+      if (plan.clamped) {
+        // The document changed underneath the stored offset; reveal the
+        // restored caret instead of applying the stale scroll position.
+        view.dispatch(tr.scrollIntoView())
+        return
+      }
+      view.dispatch(tr)
     }
     if (scrollTop > 0 && scrollElementRef.current) {
       scrollElementRef.current.scrollTop = scrollTop
