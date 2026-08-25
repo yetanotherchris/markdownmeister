@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { Schema } from '@milkdown/kit/prose/model'
 import type { Node as PMNode } from '@milkdown/kit/prose/model'
-import { planCursorRestore } from '../../src/renderer/editor/cursorRestore'
+import type { Selection } from '@milkdown/kit/prose/state'
+import type { EditorView } from '@milkdown/kit/prose/view'
+import { planCursorRestore, applyCursorRestore } from '../../src/renderer/editor/cursorRestore'
 
 const schema = new Schema({
   nodes: {
@@ -55,5 +57,85 @@ describe('planCursorRestore (spec 044 D3)', () => {
     expect(plan!.clamped).toBe(true)
     const $pos = doc.resolve(plan!.selection.head)
     expect($pos.parent.inlineContent).toBe(true)
+  })
+})
+
+describe('applyCursorRestore', () => {
+  interface FakeTr {
+    selection?: Selection
+    scrolledIntoView?: boolean
+  }
+
+  /** Minimal view double: every `state.tr` access yields a fresh chainable
+   *  transaction recorder; dispatch collects them in order. */
+  function fakeView(doc: PMNode): {
+    view: EditorView
+    dispatched: FakeTr[]
+    scrollElement: HTMLElement
+  } {
+    const dispatched: FakeTr[] = []
+    const view = {
+      state: {
+        doc,
+        get tr() {
+          const recorded: FakeTr = {}
+          const chain = recorded as FakeTr & {
+            setSelection: (selection: Selection) => typeof chain
+            scrollIntoView: () => typeof chain
+          }
+          chain.setSelection = (selection) => {
+            recorded.selection = selection
+            return chain
+          }
+          chain.scrollIntoView = () => {
+            recorded.scrolledIntoView = true
+            return chain
+          }
+          return chain
+        }
+      },
+      dispatch(tr: FakeTr) {
+        dispatched.push(tr)
+      }
+    } as unknown as EditorView
+    return { view, dispatched, scrollElement: document.createElement('div') }
+  }
+
+  it('reveals the caret when the stored offset cannot host a selection', () => {
+    const doc = buildDoc()
+    const { view, dispatched, scrollElement } = fakeView(doc)
+    scrollElement.scrollTop = 40
+
+    applyCursorRestore(view, { cursorOffset: 5, scrollTop: 140 }, scrollElement)
+
+    expect(dispatched).toHaveLength(1)
+    expect(dispatched[0].selection).toBeDefined()
+    expect(doc.resolve(dispatched[0].selection!.head).parent.inlineContent).toBe(true)
+    // The reveal intent is the scrollIntoView flag on the dispatched
+    // transaction; the stale scroll value is skipped on this path.
+    expect(dispatched[0].scrolledIntoView).toBe(true)
+    expect(scrollElement.scrollTop).toBe(40)
+  })
+
+  it('reveals instead of scrolling when the offset is clamped past the document end', () => {
+    const doc = buildDoc()
+    const { view, dispatched, scrollElement } = fakeView(doc)
+
+    applyCursorRestore(view, { cursorOffset: doc.content.size + 100, scrollTop: 90 }, scrollElement)
+
+    expect(dispatched[0].scrolledIntoView).toBe(true)
+    expect(scrollElement.scrollTop).toBe(0)
+  })
+
+  it('applies an exact offset plainly and reapplies the recorded scroll', () => {
+    const doc = buildDoc()
+    const { view, dispatched, scrollElement } = fakeView(doc)
+
+    applyCursorRestore(view, { cursorOffset: 2, scrollTop: 120 }, scrollElement)
+
+    expect(dispatched).toHaveLength(1)
+    expect(dispatched[0].scrolledIntoView).toBeUndefined()
+    expect(dispatched[0].selection!.head).toBe(2)
+    expect(scrollElement.scrollTop).toBe(120)
   })
 })

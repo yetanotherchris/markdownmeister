@@ -12,7 +12,7 @@ import { tightListPlugins } from './tightList'
 import { spellcheckPlugin, type SpellingMenuState } from './spellcheckPlugin'
 import { reconfigureEditor, isReconfigureSuppressed } from './markdownSyntaxRuntime'
 import { recordParse, recordIncomingSerialization, endOpen } from './openPerformance'
-import { planCursorRestore } from './cursorRestore'
+import { applyCursorRestore } from './cursorRestore'
 import {
   markdownSyntaxInputRuleGate,
   setMarkdownSyntaxGateOptions
@@ -93,21 +93,7 @@ export default function CrepeHost({
 
   function applyCursorState(view: EditorView | null) {
     if (!view || !restoreCursor) return
-    const { cursorOffset, scrollTop } = restoreCursor
-    const plan = planCursorRestore(view.state.doc, cursorOffset)
-    if (plan) {
-      const tr = view.state.tr.setSelection(plan.selection)
-      if (plan.clamped) {
-        // The document changed underneath the stored offset; reveal the
-        // restored caret instead of applying the stale scroll position.
-        view.dispatch(tr.scrollIntoView())
-        return
-      }
-      view.dispatch(tr)
-    }
-    if (scrollTop > 0 && scrollElementRef.current) {
-      scrollElementRef.current.scrollTop = scrollTop
-    }
+    applyCursorRestore(view, restoreCursor, scrollElementRef.current)
   }
 
   function captureCursorState(): CursorState {
