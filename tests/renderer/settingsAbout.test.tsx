@@ -92,6 +92,8 @@ function baseProps(): DialogProps {
     onMarkdownOptionChange: vi.fn(),
     visualCodeHighlighting: true,
     onVisualCodeHighlightingChange: vi.fn(),
+    formattingBarVisible: true,
+    onFormattingBarVisibleChange: vi.fn(),
     onClose: vi.fn()
   }
 }

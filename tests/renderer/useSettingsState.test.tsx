@@ -27,6 +27,8 @@ interface StubPatch {
   taskLists?: boolean
   math?: boolean
   autolink?: boolean
+  visualCodeHighlighting?: boolean
+  formattingBarVisible?: boolean
 }
 function stubApi(): void {
   const calls: StubPatch[] = []
@@ -233,6 +235,26 @@ describe('useSettingsState (spec 016)', () => {
         autolink: true
       }
     ])
+  })
+
+  it('seeds formattingBarVisible from the cache with the visible default', () => {
+    updateSettings({ formattingBarVisible: false })
+    const { read } = renderHook()
+    expect(read().formattingBarVisible).toBe(false)
+    updateSettings({ formattingBarVisible: true })
+    const { read: readFresh } = renderHook()
+    expect(readFresh().formattingBarVisible).toBe(true)
+  })
+
+  it('handleFormattingBarVisibleChange updates local state, the cache, and the IPC', () => {
+    const { read } = renderHook()
+    act(() => {
+      read().handleFormattingBarVisibleChange(false)
+    })
+    expect(read().formattingBarVisible).toBe(false)
+    expect(getSettings().formattingBarVisible).toBe(false)
+    const calls = (globalThis as unknown as { __apiCalls: StubPatch[] }).__apiCalls
+    expect(calls).toEqual([{ formattingBarVisible: false }])
   })
 })
 

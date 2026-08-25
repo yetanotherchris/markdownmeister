@@ -169,6 +169,8 @@ export interface Settings {
   autolink: boolean
 
   visualCodeHighlighting: boolean
+
+  formattingBarVisible: boolean
 }
 
 export interface BuildInfo {

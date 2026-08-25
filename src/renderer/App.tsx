@@ -72,6 +72,8 @@ export default function App() {
     handleMarkdownOptionChange,
     visualCodeHighlighting,
     handleVisualCodeHighlightingChange,
+    formattingBarVisible,
+    handleFormattingBarVisibleChange,
     themeChoice,
     handleThemeChange,
     themeMode
@@ -291,6 +293,7 @@ export default function App() {
       data-theme={themeMode}
       data-editor-serif={isSerifTypeface(resolvedAppearance.typeface) ? 'true' : 'false'}
       data-visual-code-highlighting={visualCodeHighlighting ? 'on' : 'off'}
+      data-formatting-bar={formattingBarVisible ? 'on' : 'off'}
       style={fileThemeVars}
     >
       {}
@@ -417,6 +420,8 @@ export default function App() {
           onMarkdownOptionChange={handleMarkdownOptionChange}
           visualCodeHighlighting={visualCodeHighlighting}
           onVisualCodeHighlightingChange={handleVisualCodeHighlightingChange}
+          formattingBarVisible={formattingBarVisible}
+          onFormattingBarVisibleChange={handleFormattingBarVisibleChange}
           onClose={() => setSettingsOpen(false)}
         />
       )}

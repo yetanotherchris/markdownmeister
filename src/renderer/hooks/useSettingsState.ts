@@ -34,6 +34,8 @@ export function useSettingsState(): {
   handleMarkdownOptionChange: (patch: Partial<MarkdownSyntaxOptions>) => void
   visualCodeHighlighting: boolean
   handleVisualCodeHighlightingChange: (enabled: boolean) => void
+  formattingBarVisible: boolean
+  handleFormattingBarVisibleChange: (visible: boolean) => void
   themeChoice: ThemeChoice
   handleThemeChange: (choice: ThemeChoice) => void
   themeMode: 'light' | 'dark'
@@ -70,6 +72,9 @@ export function useSettingsState(): {
   }))
   const [visualCodeHighlighting, setVisualCodeHighlighting] = useState(
     getSettings().visualCodeHighlighting
+  )
+  const [formattingBarVisible, setFormattingBarVisible] = useState(
+    getSettings().formattingBarVisible
   )
   const [themeChoice, setThemeChoice] = useState<ThemeChoice>(() =>
     themeChoiceFromOverride(getSettings().themeOverride)
@@ -138,6 +143,14 @@ export function useSettingsState(): {
     })
   }, [])
 
+  const handleFormattingBarVisibleChange = useCallback((visible: boolean) => {
+    setFormattingBarVisible(visible)
+    updateSettings({ formattingBarVisible: visible })
+    window.api.updateSettings({ formattingBarVisible: visible }).catch(() => {
+      /* ignore */
+    })
+  }, [])
+
   return {
     settingsOpen,
     setSettingsOpen,
@@ -156,6 +169,8 @@ export function useSettingsState(): {
     handleMarkdownOptionChange,
     visualCodeHighlighting,
     handleVisualCodeHighlightingChange,
+    formattingBarVisible,
+    handleFormattingBarVisibleChange,
     themeChoice,
     handleThemeChange,
     themeMode
