@@ -264,3 +264,33 @@ describe('About holds no staged state (spec 037 FR-008)', () => {
     expect(props.onClose).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('Editor Theme dropdown placeholder (spec 047 FR-004)', () => {
+  it('shows the disabled no-selection sentinel when the committed name matches no theme', async () => {
+    const props = baseProps()
+    props.editorTheme = 'vanished'
+    renderDialog(props)
+
+    await clickButton('Theme')
+    const select = container.querySelector<HTMLSelectElement>('select[data-testid="editor-theme"]')
+    if (!select) throw new Error('editor-theme select missing')
+    expect(select.value).toBe('')
+    const sentinel = select.querySelector<HTMLOptionElement>('option[value=""]')
+    expect(sentinel?.textContent).toBe('No matching theme')
+    expect(sentinel?.disabled).toBe(true)
+    // Only the two discovered themes are offered besides the sentinel.
+    expect(select.querySelectorAll('option')).toHaveLength(3)
+  })
+
+  it('saving without choosing a theme commits nothing while the placeholder is shown', async () => {
+    const props = baseProps()
+    props.editorTheme = 'vanished'
+    renderDialog(props)
+
+    await clickButton('Theme')
+    await clickButton('Save')
+
+    expect(props.onEditorThemeSave).not.toHaveBeenCalled()
+    expect(props.onClose).toHaveBeenCalledTimes(1)
+  })
+})

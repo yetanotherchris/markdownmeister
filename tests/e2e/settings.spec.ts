@@ -3,6 +3,7 @@ import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 import {
+  chooseEditorTheme,
   closeAppSafely,
   launchApp,
   openHamburger,
@@ -84,11 +85,6 @@ async function focusedElement(): Promise<string> {
  *  checkbox cannot be `.check()`ed, Playwright needs a visible target). */
 async function clickSwitch(dialog: Locator, label: string): Promise<void> {
   await dialog.locator('.settings-switch', { hasText: label }).click()
-}
-
-/** Stage an editor theme through the dropdown (spec 047). */
-function chooseEditorTheme(dialog: Page, theme: string): Promise<void> {
-  return dialog.getByTestId('editor-theme').selectOption(theme)
 }
 
 test('US1 the hamburger opens a Settings dialog with a General sidebar selected by default', async () => {

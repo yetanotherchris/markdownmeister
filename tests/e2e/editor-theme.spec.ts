@@ -3,6 +3,7 @@ import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 import {
+  chooseEditorTheme,
   closeAppSafely,
   launchApp,
   openSettingsDialog,
@@ -92,11 +93,6 @@ async function setOsColorScheme(scheme: 'light' | 'dark' | 'no-preference'): Pro
   await window.emulateMedia({ colorScheme: scheme })
 }
 
-/** Stage an editor theme through the dropdown (spec 047). */
-async function chooseEditorTheme(dialog: Page, theme: string): Promise<void> {
-  await dialog.getByTestId('editor-theme').selectOption(theme)
-}
-
 test('US1 the Editor Theme dropdown lists all five themes alphabetically', async () => {
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)
@@ -104,6 +100,8 @@ test('US1 the Editor Theme dropdown lists all five themes alphabetically', async
 
   const group = dialog.getByRole('group', { name: 'Editor Theme' })
   await expect(group).toBeVisible()
+  // The control carries its accessible label for assistive technology.
+  await expect(dialog.getByRole('combobox', { name: 'Theme', exact: true })).toBeVisible()
   const select = dialog.getByTestId('editor-theme')
   const names = await select.evaluate((el) =>
     Array.from(el.querySelectorAll('option')).map((option) => option.value)

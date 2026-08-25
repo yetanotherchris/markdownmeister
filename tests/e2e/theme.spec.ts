@@ -2,7 +2,14 @@ import { test, expect, ElectronApplication, Page } from '@playwright/test'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { closeAppSafely, launchApp, openSettingsDialog, openFile, openThemeArea } from './launch'
+import {
+  chooseEditorTheme,
+  closeAppSafely,
+  launchApp,
+  openSettingsDialog,
+  openFile,
+  openThemeArea
+} from './launch'
 
 /**
  * Spec 013 theme suite (contracts/renderer.md §E2e): the Theme setting's three
@@ -146,7 +153,7 @@ test('FR-010 the default Rustic canvas keeps its palette in dark mode; Monotone 
   await expect.poll(editorBackground).toBe('rgb(253, 246, 227)') // canvas stays warm
 
   // Monotone follows the app theme: dark → white text on a black canvas.
-  await dialog.getByRole('radio', { name: 'monotone', exact: true }).check()
+  await chooseEditorTheme(dialog, 'monotone')
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
   await expect.poll(editorBackground).toBe('rgb(0, 0, 0)')

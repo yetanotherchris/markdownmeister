@@ -3,7 +3,14 @@ import type { Locator } from '@playwright/test'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { closeAppSafely, launchApp, openFile, openSettingsDialog, openThemeArea } from './launch'
+import {
+  chooseEditorTheme,
+  closeAppSafely,
+  launchApp,
+  openFile,
+  openSettingsDialog,
+  openThemeArea
+} from './launch'
 
 /**
  * Spec 028 suite (contracts/renderer.md): two carry-over visual fixes.
@@ -54,11 +61,6 @@ test.afterAll(async () => {
 /** The 24px code-bracket-square outline path. */
 const CODE_BRACKET_SQUARE_D =
   'M14.25 9.75 16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0 0 20.25 18V6A2.25 2.25 0 0 0 18 3.75H6A2.25 2.25 0 0 0 3.75 6v12A2.25 2.25 0 0 0 6 20.25Z'
-
-/** Stage an editor theme through the dropdown (spec 047). */
-async function chooseEditorTheme(dialog: Page, theme: string): Promise<void> {
-  await dialog.getByTestId('editor-theme').selectOption(theme)
-}
 
 /** The dark-blue token. */
 async function viewSourceColour(): Promise<string> {

@@ -3,6 +3,7 @@ import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 import {
+  chooseEditorTheme,
   closeAppSafely,
   launchApp,
   openSettingsDialog,
@@ -61,11 +62,6 @@ async function persistedEditorTheme(): Promise<string | undefined> {
   const configPath = path.join(configDir, 'config.json')
   if (!fs.existsSync(configPath)) return undefined
   return JSON.parse(fs.readFileSync(configPath, 'utf-8')).settings?.editorTheme
-}
-
-/** Stage an editor theme through the dropdown (spec 047). */
-async function chooseEditorTheme(dialog: Page, theme: string): Promise<void> {
-  await dialog.getByTestId('editor-theme').selectOption(theme)
 }
 
 /** A Crepe canvas custom property as computed on .milkdown. */

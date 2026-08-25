@@ -76,6 +76,11 @@ export async function openThemeArea(window: Page): Promise<void> {
   await expect(window.getByRole('group', { name: 'Editor Theme' })).toBeVisible()
 }
 
+/** Stage an editor theme through the dropdown (spec 047). */
+export async function chooseEditorTheme(dialog: Page, theme: string): Promise<void> {
+  await dialog.getByTestId('editor-theme').selectOption(theme)
+}
+
 /** Match a submenu label against a query the way the native menu helper did:
  *  exact, either-as-substring, or the path basenames agree. A full-path query
  *  must match a shortened label, and a tail query a full label. */
