@@ -24,6 +24,7 @@ import { useWorkspaceFolder } from './hooks/useWorkspaceFolder'
 import { useSidebarLayout } from './hooks/useSidebarLayout'
 import { useSettingsState } from './hooks/useSettingsState'
 import EditorPanel from './editor/EditorPanel'
+import EditorErrorBoundary from './editor/EditorErrorBoundary'
 import SpellingMenu from './editor/SpellingMenu'
 import type { SpellingMenuState } from './editor/spellcheckPlugin'
 import { updateSpellcheckRuntime, spellcheckRuntime } from './editor/spellcheckRuntime'
@@ -368,21 +369,26 @@ export default function App() {
                 </div>
               ) : (
                 session.documents.map((doc) => (
-                  <EditorPanel
+                  <EditorErrorBoundary
                     key={doc.panelId}
-                    document={doc}
-                    isActive={doc.id === session.activeId}
-                    markdownOptions={markdownOptions}
-                    spellcheckEnabled={spellcheckEnabled}
-                    onSpellingMenu={setSpellMenu}
-                    onContentChange={sessionApi.handleContentChange}
-                    onBaselineCapture={sessionApi.handleBaselineCapture}
-                    onStagedEditorReady={sessionApi.handleStagedEditorReady}
-                    onCursorState={sessionApi.handleCursorState}
-                    onSourceContext={sessionApi.handleSourceContext}
-                    onRequestViewSource={source.handleShowSource}
-                    onReturnToFormatted={source.handleReturnToFormatted}
-                  />
+                    title={doc.title}
+                    onReload={() => void sessionApi.reloadDocument(doc)}
+                  >
+                    <EditorPanel
+                      document={doc}
+                      isActive={doc.id === session.activeId}
+                      markdownOptions={markdownOptions}
+                      spellcheckEnabled={spellcheckEnabled}
+                      onSpellingMenu={setSpellMenu}
+                      onContentChange={sessionApi.handleContentChange}
+                      onBaselineCapture={sessionApi.handleBaselineCapture}
+                      onStagedEditorReady={sessionApi.handleStagedEditorReady}
+                      onCursorState={sessionApi.handleCursorState}
+                      onSourceContext={sessionApi.handleSourceContext}
+                      onRequestViewSource={source.handleShowSource}
+                      onReturnToFormatted={source.handleReturnToFormatted}
+                    />
+                  </EditorErrorBoundary>
                 ))
               )}
             </div>
