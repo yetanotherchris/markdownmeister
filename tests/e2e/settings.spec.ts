@@ -2,7 +2,14 @@ import { test, expect, ElectronApplication, Page, Locator } from '@playwright/te
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { closeAppSafely, launchApp, openHamburger, openSettingsDialog, openThemeArea } from './launch'
+import {
+  chooseEditorTheme,
+  closeAppSafely,
+  launchApp,
+  openHamburger,
+  openSettingsDialog,
+  openThemeArea
+} from './launch'
 
 /**
  * Spec 008/016 settings suite (contracts/settings-ui.md §E2e): the Settings
@@ -68,7 +75,8 @@ async function focusedElement(): Promise<string> {
   return window.evaluate(() => {
     const el = document.activeElement as HTMLElement | null
     if (!el) return ''
-    if (el.hasAttribute('name')) return `${el.tagName.toLowerCase()}[name=${el.getAttribute('name')}]`
+    if (el.hasAttribute('name'))
+      return `${el.tagName.toLowerCase()}[name=${el.getAttribute('name')}]`
     return `${el.tagName.toLowerCase()}:${(el.textContent ?? '').trim()}`
   })
 }
@@ -119,17 +127,24 @@ test('US1 switching to Theme shows only the theme areas and highlights the entry
 
   // FR-004: the selected state moved to the Theme entry.
   await expect(nav.getByRole('button', { name: 'Theme' })).toHaveAttribute('aria-pressed', 'true')
-  await expect(nav.getByRole('button', { name: 'General' })).toHaveAttribute('aria-pressed', 'false')
+  await expect(nav.getByRole('button', { name: 'General' })).toHaveAttribute(
+    'aria-pressed',
+    'false'
+  )
 
   // The app Theme group (spec 013) has exactly three options.
   await expect(box.getByRole('group', { name: 'Theme', exact: true })).toBeVisible()
-  await expect(box.getByRole('group', { name: 'Theme', exact: true }).getByRole('radio')).toHaveCount(3)
+  await expect(
+    box.getByRole('group', { name: 'Theme', exact: true }).getByRole('radio')
+  ).toHaveCount(3)
 
-  // The Editor Theme group (spec 016) lists exactly five options (FR-001).
+  // The Editor Theme dropdown (spec 016/047) lists exactly the five options.
   const themeGroup = box.getByRole('group', { name: 'Editor Theme' })
-  await expect(themeGroup.getByRole('radio')).toHaveCount(5)
-  await expect(themeGroup.getByRole('radio', { name: 'rustic', exact: true })).toBeVisible()
-  await expect(themeGroup.getByRole('radio', { name: 'scholarly', exact: true })).toBeVisible()
+  await expect(themeGroup).toBeVisible()
+  const names = await dialog
+    .getByTestId('editor-theme')
+    .evaluate((el) => Array.from(el.querySelectorAll('option')).map((option) => option.value))
+  expect(names).toEqual(['monotone', 'monotone-serif', 'rustic', 'rustic-serif', 'scholarly'])
 })
 
 test('US1 the General area has pill switches for spellcheck and the file preference', async () => {
@@ -165,7 +180,11 @@ test('US1 General settings persist immediately and survive a restart', async () 
   ;({ app, window } = await launchApp(configDir, testFolder))
   await openFile()
   const reopened = await openSettingsDialog(window)
-  await expect(reopened.getByTestId('settings-dialog').getByRole('checkbox', { name: 'Open files in a new tab' })).toBeChecked()
+  await expect(
+    reopened
+      .getByTestId('settings-dialog')
+      .getByRole('checkbox', { name: 'Open files in a new tab' })
+  ).toBeChecked()
 })
 
 test('US1 S2/S3 selecting a theme and pressing Save applies it and persists it', async () => {
@@ -175,7 +194,7 @@ test('US1 S2/S3 selecting a theme and pressing Save applies it and persists it',
 
   const dialog = await openSettingsDialog(window)
   await openThemeArea(dialog)
-  await dialog.getByRole('radio', { name: 'scholarly', exact: true }).check()
+  await chooseEditorTheme(dialog, 'scholarly')
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
 
@@ -191,7 +210,7 @@ test('US1 S4 closing without Save leaves the theme at the last committed value',
   await openFile()
   const dialog = await openSettingsDialog(window)
   await openThemeArea(dialog)
-  await dialog.getByRole('radio', { name: 'monotone', exact: true }).check()
+  await chooseEditorTheme(dialog, 'monotone')
   // Close with the X, the staged selection is discarded.
   await dialog.getByRole('button', { name: 'Close settings' }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
@@ -204,27 +223,28 @@ test('US2/FR-005 reopening the dialog shows General and the committed theme sele
   await openFile()
   let dialog = await openSettingsDialog(window)
   await openThemeArea(dialog)
-  await dialog.getByRole('radio', { name: 'rustic-serif', exact: true }).check()
+  await chooseEditorTheme(dialog, 'rustic-serif')
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
 
   dialog = await openSettingsDialog(window)
   const box = dialog.getByTestId('settings-dialog')
   // FR-005: every mount starts on General.
-  await expect(box.getByRole('navigation', { name: 'Settings areas' }).getByRole('button', { name: 'General' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(
+    box.getByRole('navigation', { name: 'Settings areas' }).getByRole('button', { name: 'General' })
+  ).toHaveAttribute('aria-pressed', 'true')
   await expect(box.getByRole('group', { name: 'Editor Theme' })).toHaveCount(0)
 
   // The committed theme is shown once the Theme area is open (FR-007).
   await openThemeArea(dialog)
-  await expect(dialog.getByRole('radio', { name: 'rustic-serif', exact: true })).toBeChecked()
-  await expect(dialog.getByRole('radio', { name: 'rustic', exact: true })).not.toBeChecked()
+  await expect(dialog.getByTestId('editor-theme')).toHaveValue('rustic-serif')
 })
 
 test('US2 the theme choice survives a restart', async () => {
   await openFile()
   const dialog = await openSettingsDialog(window)
   await openThemeArea(dialog)
-  await dialog.getByRole('radio', { name: 'monotone-serif', exact: true }).check()
+  await chooseEditorTheme(dialog, 'monotone-serif')
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect.poll(() => persistedSetting<string>('editorTheme')).toBe('monotone-serif')
 
@@ -235,7 +255,7 @@ test('US2 the theme choice survives a restart', async () => {
   await openFile()
   const reopened = await openSettingsDialog(window)
   await openThemeArea(reopened)
-  await expect(reopened.getByRole('radio', { name: 'monotone-serif', exact: true })).toBeChecked()
+  await expect(reopened.getByTestId('editor-theme')).toHaveValue('monotone-serif')
 })
 
 test('US4 the dialog never discards or alters the open document', async () => {
@@ -248,7 +268,7 @@ test('US4 the dialog never discards or alters the open document', async () => {
 
   const dialog = await openSettingsDialog(window)
   await openThemeArea(dialog)
-  await dialog.getByRole('radio', { name: 'scholarly', exact: true }).check()
+  await chooseEditorTheme(dialog, 'scholarly')
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
 
@@ -280,17 +300,18 @@ test('FR-007 the dialog is keyboard-accessible (open, navigate, close)', async (
   await window.keyboard.press('Enter')
   await expect(window.getByTestId('settings-dialog')).toBeVisible()
 
-  // Arrow keys within the Editor Theme group change the staged selection (the
+  // Keyboard operation of the Editor Theme dropdown stages a selection (the
   // canvas does not change until Save).
   const dialog = window.getByTestId('settings-dialog')
   const nav = dialog.getByRole('navigation', { name: 'Settings areas' })
   await nav.getByRole('button', { name: 'Theme' }).focus()
   await window.keyboard.press('Enter')
   await expect(dialog.getByRole('group', { name: 'Editor Theme' })).toBeVisible()
-  const themeGroup = dialog.getByRole('group', { name: 'Editor Theme' })
-  await themeGroup.getByRole('radio', { name: 'rustic', exact: true }).focus()
+  const select = dialog.getByTestId('editor-theme')
+  await expect(select).toHaveValue('rustic')
+  await select.focus()
   await window.keyboard.press('ArrowDown')
-  await expect(themeGroup.getByRole('radio', { name: 'rustic-serif', exact: true })).toBeChecked()
+  await expect(select).toHaveValue('rustic-serif')
   // Staged only, the canvas is still the default Rustic.
   await expect(window.locator('.app-container')).toHaveAttribute('data-editor-theme', 'rustic')
 
@@ -323,7 +344,12 @@ test('FR-007 the focus trap covers the sidebar, switches, and footer buttons', a
     expect(active).not.toBe('')
     const inDialog = await box.evaluate((el) => el.contains(document.activeElement))
     expect(inDialog).toBe(true)
-    if (active.startsWith('input[name=spellcheck]') || active.startsWith('input[name=file-open-behavior]') || active.startsWith('input[name=developer-tools]')) seenSwitch = true
+    if (
+      active.startsWith('input[name=spellcheck]') ||
+      active.startsWith('input[name=file-open-behavior]') ||
+      active.startsWith('input[name=developer-tools]')
+    )
+      seenSwitch = true
     if (active.startsWith('select')) seenSelect = true
   }
   // The spellcheck language select and at least one switch were reachable.
@@ -336,9 +362,9 @@ test('FR-006 a missing config opens with Rustic default and a change writes a va
   await openFile()
   const dialog = await openSettingsDialog(window)
   await openThemeArea(dialog)
-  await expect(dialog.getByRole('radio', { name: 'rustic', exact: true })).toBeChecked()
+  await expect(dialog.getByTestId('editor-theme')).toHaveValue('rustic')
 
-  await dialog.getByRole('radio', { name: 'rustic-serif', exact: true }).check()
+  await chooseEditorTheme(dialog, 'rustic-serif')
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect.poll(() => persistedSetting<string>('editorTheme')).toBe('rustic-serif')
   // The written config is valid JSON and still carries recentItems.
@@ -355,7 +381,7 @@ test('FR-006 a malformed config still opens the dialog with Rustic default', asy
   // Open the dialog first so another action does not rewrite the malformed file.
   const dialog = await openSettingsDialog(window)
   await openThemeArea(dialog)
-  await expect(dialog.getByRole('radio', { name: 'rustic', exact: true })).toBeChecked()
+  await expect(dialog.getByTestId('editor-theme')).toHaveValue('rustic')
   const contents = fs.readFileSync(configPath, 'utf-8')
   expect(contents === '{ not json' || JSON.parse(contents).windowState !== undefined).toBe(true)
 })
@@ -406,8 +432,7 @@ test('the dialog keeps a stable height across General and Theme areas', async ()
   const dialog = await openSettingsDialog(window)
   const box = dialog.getByTestId('settings-dialog')
 
-  const height = async () =>
-    box.evaluate((el) => Math.round(el.getBoundingClientRect().height))
+  const height = async () => box.evaluate((el) => Math.round(el.getBoundingClientRect().height))
 
   const generalHeight = await height()
   await box.getByRole('button', { name: 'Theme', exact: true }).click()

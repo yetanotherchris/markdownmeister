@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-24
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "In the settings, theme page, 'Editor themes' there should be a drop down of the themes instead of radio boxes. This should be populated from the json files in the themes directory in the config directory."
 

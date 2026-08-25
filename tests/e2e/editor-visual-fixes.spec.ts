@@ -4,6 +4,7 @@ import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 import {
+  chooseEditorTheme,
   closeAppSafely,
   launchApp,
   openFile,
@@ -36,7 +37,10 @@ test.beforeAll(async () => {
   fs.writeFileSync(path.join(testFolder, 'single.md'), 'x')
   fs.writeFileSync(
     path.join(testFolder, 'long.md'),
-    Array.from({ length: 80 }, (_, i) => `Line ${i} with enough body text to fill the editor.`).join('\n')
+    Array.from(
+      { length: 80 },
+      (_, i) => `Line ${i} with enough body text to fill the editor.`
+    ).join('\n')
   )
 })
 
@@ -160,7 +164,7 @@ test('US1 changing the editor theme re-paints the full-height canvas (no residua
 
   const dialog = await openSettingsDialog(window)
   await openThemeArea(window)
-  await dialog.getByRole('radio', { name: 'scholarly', exact: true }).check()
+  await chooseEditorTheme(dialog, 'scholarly')
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
 
@@ -188,7 +192,7 @@ test('US1 dark mode + Monotone fills the editor with the dark canvas colour', as
   const dialog = await openSettingsDialog(window)
   await openThemeArea(window)
   await dialog.getByRole('radio', { name: 'Dark', exact: true }).check()
-  await dialog.getByRole('radio', { name: 'monotone', exact: true }).check()
+  await chooseEditorTheme(dialog, 'monotone')
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
 
@@ -212,8 +216,12 @@ test('US1 a custom theme fills the editor with its canvas colour', async () => {
         editorTheme: 'rustic',
         editorFont: 'serif',
         editorColors: {
-          background: '#2b2b2b', foreground: '#e6e6e6', accent: '#3794ff',
-          surface: '#1f1f1f', outline: '#6e6e6e', code: '#ff9d00'
+          background: '#2b2b2b',
+          foreground: '#e6e6e6',
+          accent: '#3794ff',
+          surface: '#1f1f1f',
+          outline: '#6e6e6e',
+          code: '#ff9d00'
         }
       }
     }),
@@ -227,7 +235,11 @@ test('US1 a custom theme fills the editor with its canvas colour', async () => {
     'migrated-custom'
   )
   await expect
-    .poll(() => window.locator('.milkdown').evaluate((el) => getComputedStyle(el).getPropertyValue('--crepe-color-background').trim()))
+    .poll(() =>
+      window
+        .locator('.milkdown')
+        .evaluate((el) => getComputedStyle(el).getPropertyValue('--crepe-color-background').trim())
+    )
     .toBe('#2b2b2b')
   await expect.poll(canvasFillRatio).toBeGreaterThanOrEqual(0.99)
   await expect.poll(editorColourAtBottom).toBe('rgb(43, 43, 43)')
@@ -261,7 +273,7 @@ test('US1 every preset theme fills the editor with its own canvas colour', async
   for (const theme of themes) {
     const dialog = await openSettingsDialog(window)
     await openThemeArea(window)
-    await dialog.getByRole('radio', { name: theme.name, exact: true }).check()
+    await chooseEditorTheme(dialog, theme.name)
     await dialog.getByRole('button', { name: 'Save' }).click()
     await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
 
