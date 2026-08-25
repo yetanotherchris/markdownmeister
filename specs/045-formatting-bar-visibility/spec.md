@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-24
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "There should be a new markdown setting to set the visibility of header (formatting) bar in the visual editor - visible or not not visible."
 
