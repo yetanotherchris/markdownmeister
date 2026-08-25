@@ -3,9 +3,7 @@ import { markdownSame } from '../state/documents'
 import { joinFrontmatter } from './frontmatter'
 import { recordOutgoingSerialization } from '../editor/openPerformance'
 
-
 export type MarkdownAccessor = (documentId: string) => string | null
-
 
 export type DocRefAccessor = (documentId: string) => unknown
 
@@ -16,7 +14,6 @@ export function getLiveContent(doc: DocumentState, getMarkdown: MarkdownAccessor
   if (doc.editorState !== 'live') return null
   return getMarkdown(doc.id)
 }
-
 
 export function isDirtyLive(
   doc: DocumentState,
@@ -36,7 +33,6 @@ export function isDirtyLive(
   return !markdownSame(live, doc.editorBaseline)
 }
 
-
 export function getContentToSave(doc: DocumentState, getMarkdown: MarkdownAccessor): string {
   if (doc.view === 'source') return joinFrontmatter(doc.frontmatter, doc.content)
   if (isDirtyLive(doc, getMarkdown)) {
@@ -49,11 +45,35 @@ export function getContentToSave(doc: DocumentState, getMarkdown: MarkdownAccess
   return joinFrontmatter(doc.frontmatter, doc.content)
 }
 
-
 export function shouldFlushLive(doc: DocumentState, getMarkdown: MarkdownAccessor): boolean {
   if (doc.view === 'source') return false
   const live = getLiveContent(doc, getMarkdown)
   if (live === null || markdownSame(live, doc.content)) return false
   if (!doc.dirty) return false
   return true
+}
+
+export type SwitchCapture = { kind: 'unchanged' } | { kind: 'captured'; content: string }
+
+/** Switch-time capture (spec 044 D1): entering the source view locks editor
+ *  emissions, so any edit still inside the listener debounce window would be
+ *  dropped. The store must already hold the editor's bytes before the lock;
+ *  the baseline-doc identity fast path keeps clean documents from paying for
+ *  a serialisation on every switch. */
+export function planSwitchCapture(
+  doc: DocumentState,
+  getMarkdown: MarkdownAccessor,
+  getLiveDoc?: DocRefAccessor,
+  getBaselineDoc?: DocRefAccessor
+): SwitchCapture {
+  if (doc.editorState !== 'live') return { kind: 'unchanged' }
+  if (doc.view === 'source') return { kind: 'unchanged' }
+  if (getLiveDoc && getBaselineDoc) {
+    const live = getLiveDoc(doc.id)
+    if (live !== undefined && live === getBaselineDoc(doc.id)) return { kind: 'unchanged' }
+  }
+  const live = getMarkdown(doc.id)
+  if (live === null || markdownSame(live, doc.content)) return { kind: 'unchanged' }
+  recordOutgoingSerialization()
+  return { kind: 'captured', content: live }
 }

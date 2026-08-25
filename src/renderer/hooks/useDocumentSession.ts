@@ -8,7 +8,9 @@ import {
   getLiveContent as domainGetLiveContent,
   isDirtyLive as domainIsDirtyLive,
   getContentToSave as domainGetContentToSave,
-  shouldFlushLive as domainShouldFlushLive
+  shouldFlushLive as domainShouldFlushLive,
+  planSwitchCapture as domainPlanSwitchCapture,
+  type SwitchCapture
 } from '../domain/dirty'
 import { dirtyDocumentsToSave, shouldRePromptForFailedSave } from '../domain/quit'
 import type { DialogQueue } from './useDialogQueue'
@@ -22,6 +24,7 @@ export interface DocumentSessionApi {
   reloadDocument: (doc: DocumentState, force?: boolean) => Promise<void>
   handleQuitRequest: () => Promise<void>
   flushLiveContent: () => void
+  captureContentForSwitch: (id: string) => void
   handleContentChange: (id: string, content: string) => void
   handleBaselineCapture: (id: string, baseline: string) => void
   handleStagedEditorReady: (id: string) => void
@@ -91,6 +94,27 @@ export function useDocumentSession(opts: {
       }
     }
   }, [dispatch, getMarkdown, sessionRef])
+
+  const captureContentForSwitch = useCallback(
+    (id: string): void => {
+      const doc = sessionRef.current.documents.find((d) => d.id === id)
+      if (!doc) return
+      let capture: SwitchCapture
+      try {
+        capture = domainPlanSwitchCapture(doc, getMarkdown, getLiveDoc, getBaselineDoc)
+      } catch (error) {
+        // Serialisation can throw on documents containing nodes the active
+        // processor cannot express (spec 044 R5). The switch continues on the
+        // stored bytes instead of wedging or blanking the surface.
+        console.error('Live content capture failed before switching views', error)
+        return
+      }
+      if (capture.kind === 'captured') {
+        dispatch({ type: 'UPDATE_CONTENT', payload: { id, content: capture.content } })
+      }
+    },
+    [dispatch, getBaselineDoc, getLiveDoc, getMarkdown, sessionRef]
+  )
 
   const saveDocumentNow = useCallback(
     async (doc: DocumentState, forceDialog = false): Promise<SaveResult> => {
@@ -440,6 +464,7 @@ export function useDocumentSession(opts: {
     reloadDocument,
     handleQuitRequest,
     flushLiveContent,
+    captureContentForSwitch,
     handleContentChange,
     handleBaselineCapture,
     handleStagedEditorReady,
