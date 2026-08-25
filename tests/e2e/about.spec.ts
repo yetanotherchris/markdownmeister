@@ -94,6 +94,26 @@ test('US1/FR-002 the displayed version equals the running application version', 
   await expect(window.getByTestId('settings-about-version')).toHaveText(runtimeVersion)
 })
 
+test('the About rows carry zero horizontal padding, aligning labels with the heading', async () => {
+  await openAboutArea()
+
+  // Three rows render under the default launch: Version, Repository URL, Revision.
+  const rows = window.locator('.settings-about-row')
+  await expect(rows).toHaveCount(3)
+  const horizontalPaddings = await rows.evaluateAll((elements) =>
+    elements.map((element) => {
+      const style = getComputedStyle(element)
+      return { left: style.paddingLeft, right: style.paddingRight }
+    })
+  )
+
+  expect(horizontalPaddings).toEqual([
+    { left: '0px', right: '0px' },
+    { left: '0px', right: '0px' },
+    { left: '0px', right: '0px' }
+  ])
+})
+
 test('US1 the repository URL and a revision identifier are both shown', async () => {
   await openAboutArea()
 

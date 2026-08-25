@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-24
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "In settings -> about, there is padding for version, repository url etc. that need removing so it aligns with the 'About' header."
 
