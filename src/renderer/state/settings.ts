@@ -11,7 +11,8 @@ const defaults: Settings = {
   fileOpenBehavior: 'same-tab',
   ...MARKDOWN_SYNTAX_DEFAULTS,
   visualCodeHighlighting: true,
-  formattingBarVisible: true
+  formattingBarVisible: true,
+  wordWrap: false
 }
 
 let cached: Settings = { ...defaults }

@@ -15,7 +15,8 @@ export const DEFAULTS: Settings = {
   fileOpenBehavior: 'same-tab',
   ...MARKDOWN_SYNTAX_DEFAULTS,
   visualCodeHighlighting: true,
-  formattingBarVisible: true
+  formattingBarVisible: true,
+  wordWrap: false
 }
 
 /** Read the whole shared config file, tolerantly: `{}` when missing or invalid.
@@ -88,7 +89,8 @@ function validateSettings(raw: unknown): Settings {
     formattingBarVisible:
       typeof parsed.formattingBarVisible === 'boolean'
         ? parsed.formattingBarVisible
-        : DEFAULTS.formattingBarVisible
+        : DEFAULTS.formattingBarVisible,
+    wordWrap: typeof parsed.wordWrap === 'boolean' ? parsed.wordWrap : DEFAULTS.wordWrap
   }
 }
 
@@ -135,7 +137,8 @@ export function mergeSettingsPatch(current: Settings, patch: Partial<Settings>):
     formattingBarVisible:
       typeof patch.formattingBarVisible === 'boolean'
         ? patch.formattingBarVisible
-        : current.formattingBarVisible
+        : current.formattingBarVisible,
+    wordWrap: typeof patch.wordWrap === 'boolean' ? patch.wordWrap : current.wordWrap
   }
 }
 
@@ -164,7 +167,8 @@ export function validateSettingsPatch(patch: unknown): void {
     'math',
     'autolink',
     'visualCodeHighlighting',
-    'formattingBarVisible'
+    'formattingBarVisible',
+    'wordWrap'
   ] as const
   for (const key of markdownBooleans) {
     if (key in record && typeof record[key] !== 'boolean') {
@@ -200,7 +204,8 @@ export function migrateLegacySettingsFile(configPath: string, legacyPath: string
     'math',
     'autolink',
     'visualCodeHighlighting',
-    'formattingBarVisible'
+    'formattingBarVisible',
+    'wordWrap'
   ]
   if (!known.some((k) => k in legacy)) return null
   const migrated = validateSettings(legacy)

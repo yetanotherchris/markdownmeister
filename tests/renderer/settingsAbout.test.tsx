@@ -94,6 +94,8 @@ function baseProps(): DialogProps {
     onVisualCodeHighlightingChange: vi.fn(),
     formattingBarVisible: true,
     onFormattingBarVisibleChange: vi.fn(),
+    wordWrap: false,
+    onWordWrapChange: vi.fn(),
     onClose: vi.fn()
   }
 }

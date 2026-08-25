@@ -29,6 +29,7 @@ interface StubPatch {
   autolink?: boolean
   visualCodeHighlighting?: boolean
   formattingBarVisible?: boolean
+  wordWrap?: boolean
 }
 function stubApi(): void {
   const calls: StubPatch[] = []
@@ -255,6 +256,23 @@ describe('useSettingsState (spec 016)', () => {
     expect(getSettings().formattingBarVisible).toBe(false)
     const calls = (globalThis as unknown as { __apiCalls: StubPatch[] }).__apiCalls
     expect(calls).toEqual([{ formattingBarVisible: false }])
+  })
+
+  it('seeds wordWrap from the cache with the disabled default', () => {
+    updateSettings({ wordWrap: true })
+    const { read } = renderHook()
+    expect(read().wordWrap).toBe(true)
+  })
+
+  it('handleWordWrapChange updates local state, the cache, and the IPC', () => {
+    const { read } = renderHook()
+    act(() => {
+      read().handleWordWrapChange(true)
+    })
+    expect(read().wordWrap).toBe(true)
+    expect(getSettings().wordWrap).toBe(true)
+    const calls = (globalThis as unknown as { __apiCalls: StubPatch[] }).__apiCalls
+    expect(calls).toEqual([{ wordWrap: true }])
   })
 })
 

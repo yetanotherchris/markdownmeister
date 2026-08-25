@@ -36,6 +36,8 @@ export function useSettingsState(): {
   handleVisualCodeHighlightingChange: (enabled: boolean) => void
   formattingBarVisible: boolean
   handleFormattingBarVisibleChange: (visible: boolean) => void
+  wordWrap: boolean
+  handleWordWrapChange: (enabled: boolean) => void
   themeChoice: ThemeChoice
   handleThemeChange: (choice: ThemeChoice) => void
   themeMode: 'light' | 'dark'
@@ -76,6 +78,7 @@ export function useSettingsState(): {
   const [formattingBarVisible, setFormattingBarVisible] = useState(
     getSettings().formattingBarVisible
   )
+  const [wordWrap, setWordWrap] = useState(getSettings().wordWrap)
   const [themeChoice, setThemeChoice] = useState<ThemeChoice>(() =>
     themeChoiceFromOverride(getSettings().themeOverride)
   )
@@ -151,6 +154,14 @@ export function useSettingsState(): {
     })
   }, [])
 
+  const handleWordWrapChange = useCallback((enabled: boolean) => {
+    setWordWrap(enabled)
+    updateSettings({ wordWrap: enabled })
+    window.api.updateSettings({ wordWrap: enabled }).catch(() => {
+      /* ignore */
+    })
+  }, [])
+
   return {
     settingsOpen,
     setSettingsOpen,
@@ -171,6 +182,8 @@ export function useSettingsState(): {
     handleVisualCodeHighlightingChange,
     formattingBarVisible,
     handleFormattingBarVisibleChange,
+    wordWrap,
+    handleWordWrapChange,
     themeChoice,
     handleThemeChange,
     themeMode
