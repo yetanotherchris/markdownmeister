@@ -463,13 +463,17 @@ test.describe('US7 explorer context-menu Open', () => {
 
 test.describe('Spec 044 reliable source switching', () => {
   /**
-   * Types `text` at the document end and activates View source within the
-   * editor's 200 ms emission debounce window. One macrotask is yielded after
-   * the keystroke so the editor ingests the DOM change into its document,
-   * like a human typing and immediately clicking code mode.
+   * Performs one edit at the document end through the live DOM and activates
+   * View source inside the editor's 200 ms emission debounce window: `type`
+   * inserts text via execCommand, `newSection` presses Enter through the
+   * editor's keymap. One macrotask is yielded after the edit so the editor
+   * ingests the DOM change into its document, like a human typing and
+   * immediately clicking code mode.
    */
-  async function typeAtEndAndOpenSourceInSameTick(text: string): Promise<void> {
-    await window.evaluate(async (payload) => {
+  async function editAtEndAndOpenSource(
+    edit: { kind: 'type'; text: string } | { kind: 'newSection' }
+  ): Promise<void> {
+    await window.evaluate(async (edit) => {
       const pm = document.querySelector('.ProseMirror') as HTMLElement | null
       const button = document.querySelector(
         'button[aria-label="View source"]'
@@ -482,40 +486,21 @@ test.describe('Spec 044 reliable source switching', () => {
       range.collapse(false)
       selection.removeAllRanges()
       selection.addRange(range)
-      document.execCommand('insertText', false, payload)
+      if (edit.kind === 'type') {
+        document.execCommand('insertText', false, edit.text)
+      } else {
+        const enter = new KeyboardEvent('keydown', {
+          key: 'Enter',
+          code: 'Enter',
+          bubbles: true,
+          cancelable: true
+        })
+        document.activeElement.dispatchEvent(enter)
+      }
       await new Promise((resolve) => setTimeout(resolve, 25))
       // Crepe's top-bar items run on pointerdown, not click.
       button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }))
-    }, text)
-  }
-
-  /** Adds a new empty section at the document end (Enter through the editor's
-   *  keymap) and opens the source view inside the debounce window. */
-  async function newSectionAndOpenSourceInSameTick(): Promise<void> {
-    await window.evaluate(async () => {
-      const pm = document.querySelector('.ProseMirror') as HTMLElement | null
-      const button = document.querySelector(
-        'button[aria-label="View source"]'
-      ) as HTMLButtonElement | null
-      if (!pm || !button) throw new Error('editor or View source control not found')
-      pm.focus()
-      const selection = window.getSelection()
-      const range = document.createRange()
-      range.selectNodeContents(pm)
-      range.collapse(false)
-      selection.removeAllRanges()
-      selection.addRange(range)
-      const enter = new KeyboardEvent('keydown', {
-        key: 'Enter',
-        code: 'Enter',
-        bubbles: true,
-        cancelable: true
-      })
-      document.activeElement.dispatchEvent(enter)
-      await new Promise((resolve) => setTimeout(resolve, 25))
-      // Crepe's top-bar items run on pointerdown, not click.
-      button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }))
-    })
+    }, edit)
   }
 
   async function sourceText(): Promise<string> {
@@ -557,7 +542,7 @@ test.describe('Spec 044 reliable source switching', () => {
   test('text typed immediately before switching is present in the source view (FR-003)', async () => {
     await openFolder()
     await openFile('alpha.md')
-    await typeAtEndAndOpenSourceInSameTick('RACE-TYPED-044')
+    await editAtEndAndOpenSource({ kind: 'type', text: 'RACE-TYPED-044' })
     await expect(window.getByTestId('source-view')).toBeVisible()
     const text = await sourceText()
     expect(text).toContain('RACE-TYPED-044')
@@ -568,7 +553,7 @@ test.describe('Spec 044 reliable source switching', () => {
     fs.writeFileSync(path.join(testFolder, 'list-end.md'), original)
     await openFolder()
     await openFile('list-end.md')
-    await newSectionAndOpenSourceInSameTick()
+    await editAtEndAndOpenSource({ kind: 'newSection' })
     await expect(window.getByTestId('source-view')).toBeVisible()
     const text = await sourceText()
     // The pre-fix failure is an exact match with the stored bytes: the
@@ -579,17 +564,23 @@ test.describe('Spec 044 reliable source switching', () => {
     expect(text.length).toBeGreaterThan(original.length)
   })
 
-  test('clicking at the document end then immediately viewing source completes and stays responsive (US1)', async () => {
+  test('clicking at the document end then viewing source completes and responds to input (US1)', async () => {
     await openFolder()
     await openFile('alpha.md')
     const box = await window.locator('[contenteditable="true"]').boundingBox()
     await window.mouse.click(box.x + box.width / 2, box.y + box.height - 10)
     await getViewSourceButton().click()
     await expect(window.getByTestId('source-view')).toBeVisible()
-    expect(await window.evaluate(() => 40 + 2)).toBe(42)
     await window.getByRole('button', { name: /Back to visual editing/ }).click()
     await expect(window.getByTestId('source-view')).toHaveCount(0)
     await expect(window.locator('.ProseMirror:visible')).toBeVisible()
+
+    // Real input rather than an evaluate ping: the returned surface must
+    // accept a click, ingest typed text, and show the dirty marker.
+    await window.locator('.ProseMirror:visible').click()
+    await window.keyboard.type('RESPONSIVE-AFTER-SOURCE')
+    await expect(window.locator('.ProseMirror:visible')).toContainText('RESPONSIVE-AFTER-SOURCE')
+    await expect(window.locator('.document-title')).toContainText('\u2022')
   })
 
   test('twenty consecutive toggles complete without a progressive wedge (SC-003)', async () => {
@@ -598,15 +589,23 @@ test.describe('Spec 044 reliable source switching', () => {
     fs.writeFileSync(path.join(testFolder, 'big.md'), lines.join('\n'))
     await openFolder()
     await openFile('big.md')
+    const toggleDurations: number[] = []
     for (let i = 0; i < 20; i++) {
-      await typeAtEndAndOpenSourceInSameTick(` x${i}`)
+      const startedAt = Date.now()
+      await editAtEndAndOpenSource({ kind: 'type', text: ` x${i}` })
       await expect(window.getByTestId('source-view')).toBeVisible()
       if (i < 19) {
         await window.getByRole('button', { name: /Back to visual editing/ }).click()
         await expect(window.getByTestId('source-view')).toHaveCount(0)
       }
+      toggleDurations.push(Date.now() - startedAt)
     }
-    expect(await window.evaluate(() => 1 + 1)).toBe(2)
+    // Deliberately loose 3x bound: CI jitter dwarfs a real leak, so this only
+    // fails on gross accumulation across repeated switches.
+    const mean = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length
+    expect(mean(toggleDurations.slice(-5))).toBeLessThanOrEqual(
+      mean(toggleDurations.slice(0, 5)) * 3
+    )
   })
 
   test('an unedited round trip restores the caret offset and scroll position (FR-004)', async () => {
