@@ -53,6 +53,7 @@ export default function SourceView({
   const onChangeRef = useRef(onChange)
   const onContextChangeRef = useRef(onContextChange)
   const wasActiveRef = useRef(isActive)
+  const appliedWrapRef = useRef(wordWrap)
   onChangeRef.current = onChange
   onContextChangeRef.current = onContextChange
 
@@ -120,7 +121,8 @@ export default function SourceView({
 
   useEffect(() => {
     const view = viewRef.current
-    if (!view) return
+    if (!view || appliedWrapRef.current === wordWrap) return
+    appliedWrapRef.current = wordWrap
     view.dispatch({ effects: wrapCompartment.reconfigure(wordWrap ? EditorView.lineWrapping : []) })
   }, [wordWrap])
 

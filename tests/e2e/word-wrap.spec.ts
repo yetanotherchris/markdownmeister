@@ -186,6 +186,8 @@ test('SC-005 typing into a large wrapped document stays responsive', async () =>
   await window.keyboard.type('WRAPPED ', { delay: 10 })
   const elapsed = Date.now() - started
   await expect(source).toContainText('WRAPPED')
-  // Generous ceiling: ten keystrokes through a wrapped 10k-line buffer.
-  expect(elapsed).toBeLessThan(10000)
+  // Ten keystrokes through a wrapped 10k-line buffer; a ceiling far below this
+  // proved flaky under CI load, but anything perceptible per keystroke still
+  // fails it decisively.
+  expect(elapsed).toBeLessThan(3000)
 })
