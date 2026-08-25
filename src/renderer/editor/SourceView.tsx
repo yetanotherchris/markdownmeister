@@ -32,7 +32,6 @@ function sourceContext(view: EditorView): {
   }
 }
 
-
 export default function SourceView({
   value,
   onChange,
@@ -46,6 +45,7 @@ export default function SourceView({
 }: SourceViewProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  const frameRef = useRef<number | null>(null)
   const onChangeRef = useRef(onChange)
   const onContextChangeRef = useRef(onContextChange)
   const wasActiveRef = useRef(isActive)
@@ -58,6 +58,16 @@ export default function SourceView({
     const captureContext = (view: EditorView) => {
       const context = sourceContext(view)
       onContextChangeRef.current(context.selectionAnchor, context.selectionHead, context.scrollTop)
+    }
+    // Scroll events fire per frame while scrolling; each context capture
+    // dispatches a store update that re-renders the whole app, so they are
+    // coalesced to one capture per animation frame (last value wins).
+    const scheduleContextCapture = (view: EditorView) => {
+      if (frameRef.current !== null) return
+      frameRef.current = window.requestAnimationFrame(() => {
+        frameRef.current = null
+        captureContext(view)
+      })
     }
     const state = EditorState.create({
       doc: value,
@@ -84,9 +94,13 @@ export default function SourceView({
     const view = new EditorView({ state, parent: hostRef.current })
     viewRef.current = view
     view.scrollDOM.scrollTop = scrollTop
-    view.scrollDOM.addEventListener('scroll', () => captureContext(view), { passive: true })
+    view.scrollDOM.addEventListener('scroll', () => scheduleContextCapture(view), { passive: true })
 
     return () => {
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current)
+        frameRef.current = null
+      }
       captureContext(view)
       view.destroy()
       viewRef.current = null
