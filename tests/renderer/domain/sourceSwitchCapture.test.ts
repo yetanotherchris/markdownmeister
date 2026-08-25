@@ -81,14 +81,8 @@ describe('planSwitchCapture (spec 044 D1)', () => {
   it('takes the identity fast path with zero serialisations when the live doc matches the baseline', () => {
     const a = accessor('# Hi\n')
     const docRef = { marker: true }
-    expect(
-      planSwitchCapture(
-        makeDoc(),
-        a.fn,
-        () => docRef,
-        () => docRef
-      )
-    ).toEqual({
+    const { getLiveDoc, getBaselineDoc } = identity(docRef, docRef)
+    expect(planSwitchCapture(makeDoc(), a.fn, getLiveDoc, getBaselineDoc)).toEqual({
       kind: 'unchanged'
     })
     expect(getOpenPerformanceCounters().outgoingSerializations).toBe(0)
