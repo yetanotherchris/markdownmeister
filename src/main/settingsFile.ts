@@ -14,7 +14,8 @@ export const DEFAULTS: Settings = {
   spellcheckLanguage: null,
   fileOpenBehavior: 'same-tab',
   ...MARKDOWN_SYNTAX_DEFAULTS,
-  visualCodeHighlighting: true
+  visualCodeHighlighting: true,
+  formattingBarVisible: true
 }
 
 /** Read the whole shared config file, tolerantly: `{}` when missing or invalid.
@@ -83,7 +84,11 @@ function validateSettings(raw: unknown): Settings {
     visualCodeHighlighting:
       typeof parsed.visualCodeHighlighting === 'boolean'
         ? parsed.visualCodeHighlighting
-        : DEFAULTS.visualCodeHighlighting
+        : DEFAULTS.visualCodeHighlighting,
+    formattingBarVisible:
+      typeof parsed.formattingBarVisible === 'boolean'
+        ? parsed.formattingBarVisible
+        : DEFAULTS.formattingBarVisible
   }
 }
 
@@ -126,7 +131,11 @@ export function mergeSettingsPatch(current: Settings, patch: Partial<Settings>):
     visualCodeHighlighting:
       typeof patch.visualCodeHighlighting === 'boolean'
         ? patch.visualCodeHighlighting
-        : current.visualCodeHighlighting
+        : current.visualCodeHighlighting,
+    formattingBarVisible:
+      typeof patch.formattingBarVisible === 'boolean'
+        ? patch.formattingBarVisible
+        : current.formattingBarVisible
   }
 }
 
@@ -154,7 +163,8 @@ export function validateSettingsPatch(patch: unknown): void {
     'taskLists',
     'math',
     'autolink',
-    'visualCodeHighlighting'
+    'visualCodeHighlighting',
+    'formattingBarVisible'
   ] as const
   for (const key of markdownBooleans) {
     if (key in record && typeof record[key] !== 'boolean') {
@@ -189,7 +199,8 @@ export function migrateLegacySettingsFile(configPath: string, legacyPath: string
     'taskLists',
     'math',
     'autolink',
-    'visualCodeHighlighting'
+    'visualCodeHighlighting',
+    'formattingBarVisible'
   ]
   if (!known.some((k) => k in legacy)) return null
   const migrated = validateSettings(legacy)

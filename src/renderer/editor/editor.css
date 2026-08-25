@@ -238,6 +238,9 @@
   font-weight: inherit !important;
 }
 
+.app-container[data-formatting-bar='off'] .milkdown .milkdown-top-bar {
+  display: none;
+}
 .source-textarea:focus-visible {
   outline: 2px solid var(--mm-muted);
   outline-offset: -2px;

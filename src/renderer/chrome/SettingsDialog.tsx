@@ -57,6 +57,8 @@ interface SettingsDialogProps {
   onMarkdownOptionChange: (patch: Partial<MarkdownSyntaxOptions>) => void
   visualCodeHighlighting: boolean
   onVisualCodeHighlightingChange: (enabled: boolean) => void
+  formattingBarVisible: boolean
+  onFormattingBarVisibleChange: (visible: boolean) => void
   onClose: () => void
 }
 
@@ -78,6 +80,8 @@ export default function SettingsDialog({
   onMarkdownOptionChange,
   visualCodeHighlighting,
   onVisualCodeHighlightingChange,
+  formattingBarVisible,
+  onFormattingBarVisibleChange,
   onClose
 }: SettingsDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -261,6 +265,17 @@ export default function SettingsDialog({
                     />
                     <span className="settings-switch-track" aria-hidden="true" />
                     <span className="settings-switch-text">Syntax highlight code blocks</span>
+                  </label>
+                  <label className="settings-switch">
+                    <input
+                      type="checkbox"
+                      className="settings-switch-input"
+                      name="formatting-bar-visible"
+                      checked={formattingBarVisible}
+                      onChange={(e) => onFormattingBarVisibleChange(e.target.checked)}
+                    />
+                    <span className="settings-switch-track" aria-hidden="true" />
+                    <span className="settings-switch-text">Show the formatting bar</span>
                   </label>
                   <label className="settings-switch">
                     <input

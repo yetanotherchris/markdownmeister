@@ -10,7 +10,8 @@ const defaults: Settings = {
   spellcheckLanguage: null,
   fileOpenBehavior: 'same-tab',
   ...MARKDOWN_SYNTAX_DEFAULTS,
-  visualCodeHighlighting: true
+  visualCodeHighlighting: true,
+  formattingBarVisible: true
 }
 
 let cached: Settings = { ...defaults }

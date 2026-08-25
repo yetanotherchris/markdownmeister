@@ -83,7 +83,8 @@ describe('loadSettingsFile', () => {
       taskLists: true,
       math: true,
       autolink: true,
-      visualCodeHighlighting: true
+      visualCodeHighlighting: true,
+      formattingBarVisible: true
     })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
@@ -371,7 +372,8 @@ describe('loadSettingsFile', () => {
       taskLists: true,
       math: true,
       autolink: true,
-      visualCodeHighlighting: true
+      visualCodeHighlighting: true,
+      formattingBarVisible: true
     })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
@@ -394,7 +396,8 @@ describe('writeSettingsFile (shared config, spec 012 FR-002)', () => {
       taskLists: true,
       math: true,
       autolink: true,
-      visualCodeHighlighting: false
+      visualCodeHighlighting: false,
+      formattingBarVisible: false
     })
     expect(loadSettingsFile(file)).toEqual({
       sidebarWidth: 25,
@@ -410,7 +413,8 @@ describe('writeSettingsFile (shared config, spec 012 FR-002)', () => {
       taskLists: true,
       math: true,
       autolink: true,
-      visualCodeHighlighting: false
+      visualCodeHighlighting: false,
+      formattingBarVisible: false
     })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
@@ -489,7 +493,8 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
       taskLists: true,
       math: true,
       autolink: true,
-      visualCodeHighlighting: true
+      visualCodeHighlighting: true,
+      formattingBarVisible: true
     })
     // The values are now in config.json (read back through the shared file).
     expect(loadSettingsFile(configPath)).toEqual(migrated)
@@ -871,5 +876,41 @@ describe('visualCodeHighlighting (spec 031)', () => {
     ).toBe(false)
     expect(() => validateSettingsPatch({ visualCodeHighlighting: false })).not.toThrow()
     expect(() => validateSettingsPatch({ visualCodeHighlighting: 'off' })).toThrow()
+  })
+})
+
+describe('formattingBarVisible (spec 045)', () => {
+  it('defaults to visible and recovers from a malformed on-disk value', () => {
+    const file = tempSettingsFile(JSON.stringify({ settings: { formattingBarVisible: 'no' } }))
+    expect(DEFAULTS.formattingBarVisible).toBe(true)
+    expect(loadSettingsFile(file).formattingBarVisible).toBe(true)
+    fs.rmSync(path.dirname(file), { recursive: true, force: true })
+  })
+
+  it('leaves other settings untouched when recovering a malformed value', () => {
+    const file = tempSettingsFile(
+      JSON.stringify({ settings: { sidebarWidth: 44, formattingBarVisible: null } })
+    )
+    const loaded = loadSettingsFile(file)
+    expect(loaded.formattingBarVisible).toBe(true)
+    expect(loaded.sidebarWidth).toBe(44)
+    fs.rmSync(path.dirname(file), { recursive: true, force: true })
+  })
+
+  it('persists a valid setting and strictly rejects a malformed IPC patch', () => {
+    expect(mergeSettingsPatch(DEFAULTS, { formattingBarVisible: false }).formattingBarVisible).toBe(
+      false
+    )
+    expect(() => validateSettingsPatch({ formattingBarVisible: false })).not.toThrow()
+    expect(() => validateSettingsPatch({ formattingBarVisible: 'hidden' })).toThrow()
+  })
+
+  it('migrates the key from a legacy settings file', () => {
+    const configPath = tempSettingsFile(JSON.stringify({ recentItems: [] }))
+    const legacyPath = path.join(path.dirname(configPath), 'settings.json')
+    fs.writeFileSync(legacyPath, JSON.stringify({ formattingBarVisible: false }))
+    const migrated = migrateLegacySettingsFile(configPath, legacyPath)
+    expect(migrated?.formattingBarVisible).toBe(false)
+    fs.rmSync(path.dirname(configPath), { recursive: true, force: true })
   })
 })
