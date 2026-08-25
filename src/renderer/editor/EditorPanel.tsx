@@ -14,17 +14,26 @@ interface EditorPanelProps {
   isActive: boolean
   markdownOptions: MarkdownSyntaxOptions
   spellcheckEnabled: boolean
+  wordWrap: boolean
   onSpellingMenu: (menu: SpellingMenuState | null) => void
   onContentChange: (id: string, content: string) => void
   onBaselineCapture: (id: string, baseline: string) => void
   onStagedEditorReady: (id: string) => void
   onCursorState: (id: string, cursorOffset: number, scrollTop: number) => void
-  onSourceContext: (id: string, selectionAnchor: number, selectionHead: number, scrollTop: number) => void
+  onSourceContext: (
+    id: string,
+    selectionAnchor: number,
+    selectionHead: number,
+    scrollTop: number
+  ) => void
   onRequestViewSource: (id: string) => void
   onReturnToFormatted: (id: string) => void
 }
 
-interface DocumentHostProps extends Omit<EditorPanelProps, 'document' | 'isActive' | 'onStagedEditorReady'> {
+interface DocumentHostProps extends Omit<
+  EditorPanelProps,
+  'document' | 'isActive' | 'onStagedEditorReady'
+> {
   document: DocumentState
   isActive: boolean
   staged?: boolean
@@ -37,6 +46,7 @@ function DocumentHost({
   staged = false,
   markdownOptions,
   spellcheckEnabled,
+  wordWrap,
   onSpellingMenu,
   onContentChange,
   onBaselineCapture,
@@ -105,6 +115,7 @@ function DocumentHost({
           onReturnToFormatted={() => onReturnToFormatted(document.id)}
           isActive={isActive}
           spellcheckEnabled={spellcheckEnabled}
+          wordWrap={wordWrap}
           selectionAnchor={document.sourceSelectionAnchor}
           selectionHead={document.sourceSelectionHead}
           scrollTop={document.sourceScrollTop}

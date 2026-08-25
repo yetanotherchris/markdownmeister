@@ -171,6 +171,8 @@ export interface Settings {
   visualCodeHighlighting: boolean
 
   formattingBarVisible: boolean
+
+  wordWrap: boolean
 }
 
 export interface BuildInfo {

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Annotation, EditorSelection, EditorState } from '@codemirror/state'
+import { Annotation, Compartment, EditorSelection, EditorState } from '@codemirror/state'
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { markdown } from '@codemirror/lang-markdown'
 import { yamlFrontmatter } from '@codemirror/lang-yaml'
@@ -12,6 +12,7 @@ interface SourceViewProps {
   /** Focus the source surface only when this tab is actually visible. */
   isActive: boolean
   spellcheckEnabled: boolean
+  wordWrap: boolean
   selectionAnchor: number
   selectionHead: number
   scrollTop: number
@@ -19,6 +20,8 @@ interface SourceViewProps {
 }
 
 const externalContentUpdate = Annotation.define<boolean>()
+
+const wrapCompartment = new Compartment()
 
 function sourceContext(view: EditorView): {
   selectionAnchor: number
@@ -38,6 +41,7 @@ export default function SourceView({
   onReturnToFormatted,
   isActive,
   spellcheckEnabled,
+  wordWrap,
   selectionAnchor,
   selectionHead,
   scrollTop,
@@ -49,6 +53,7 @@ export default function SourceView({
   const onChangeRef = useRef(onChange)
   const onContextChangeRef = useRef(onContextChange)
   const wasActiveRef = useRef(isActive)
+  const appliedWrapRef = useRef(wordWrap)
   onChangeRef.current = onChange
   onContextChangeRef.current = onContextChange
 
@@ -75,6 +80,7 @@ export default function SourceView({
       extensions: [
         yamlFrontmatter({ content: markdown() }),
         syntaxHighlighting(defaultHighlightStyle),
+        wrapCompartment.of(wordWrap ? EditorView.lineWrapping : []),
         EditorView.contentAttributes.of({
           'aria-label': 'Markdown source',
           class: 'source-textarea',
@@ -112,6 +118,13 @@ export default function SourceView({
     if (!view) return
     view.contentDOM.spellcheck = spellcheckEnabled
   }, [spellcheckEnabled])
+
+  useEffect(() => {
+    const view = viewRef.current
+    if (!view || appliedWrapRef.current === wordWrap) return
+    appliedWrapRef.current = wordWrap
+    view.dispatch({ effects: wrapCompartment.reconfigure(wordWrap ? EditorView.lineWrapping : []) })
+  }, [wordWrap])
 
   useEffect(() => {
     const view = viewRef.current

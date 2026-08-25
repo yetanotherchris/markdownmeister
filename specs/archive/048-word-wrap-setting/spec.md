@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-24
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "add 'wordwrap enable/disable' under settings/markdown and view source."
 

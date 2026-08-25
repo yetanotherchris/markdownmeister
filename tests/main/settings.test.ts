@@ -84,7 +84,8 @@ describe('loadSettingsFile', () => {
       math: true,
       autolink: true,
       visualCodeHighlighting: true,
-      formattingBarVisible: true
+      formattingBarVisible: true,
+      wordWrap: false
     })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
@@ -373,7 +374,8 @@ describe('loadSettingsFile', () => {
       math: true,
       autolink: true,
       visualCodeHighlighting: true,
-      formattingBarVisible: true
+      formattingBarVisible: true,
+      wordWrap: false
     })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
@@ -397,7 +399,8 @@ describe('writeSettingsFile (shared config, spec 012 FR-002)', () => {
       math: true,
       autolink: true,
       visualCodeHighlighting: false,
-      formattingBarVisible: false
+      formattingBarVisible: false,
+      wordWrap: false
     })
     expect(loadSettingsFile(file)).toEqual({
       sidebarWidth: 25,
@@ -414,7 +417,8 @@ describe('writeSettingsFile (shared config, spec 012 FR-002)', () => {
       math: true,
       autolink: true,
       visualCodeHighlighting: false,
-      formattingBarVisible: false
+      formattingBarVisible: false,
+      wordWrap: false
     })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
@@ -494,7 +498,8 @@ describe('migrateLegacySettingsFile (spec 012, one-time migration)', () => {
       math: true,
       autolink: true,
       visualCodeHighlighting: true,
-      formattingBarVisible: true
+      formattingBarVisible: true,
+      wordWrap: false
     })
     // The values are now in config.json (read back through the shared file).
     expect(loadSettingsFile(configPath)).toEqual(migrated)
@@ -911,6 +916,38 @@ describe('formattingBarVisible (spec 045)', () => {
     fs.writeFileSync(legacyPath, JSON.stringify({ formattingBarVisible: false }))
     const migrated = migrateLegacySettingsFile(configPath, legacyPath)
     expect(migrated?.formattingBarVisible).toBe(false)
+    fs.rmSync(path.dirname(configPath), { recursive: true, force: true })
+  })
+})
+
+describe('wordWrap (spec 048)', () => {
+  it('defaults to disabled and recovers from a malformed on-disk value', () => {
+    const file = tempSettingsFile(JSON.stringify({ settings: { wordWrap: 'yes' } }))
+    expect(DEFAULTS.wordWrap).toBe(false)
+    expect(loadSettingsFile(file).wordWrap).toBe(false)
+    fs.rmSync(path.dirname(file), { recursive: true, force: true })
+  })
+
+  it('leaves other settings untouched when recovering a malformed value', () => {
+    const file = tempSettingsFile(JSON.stringify({ settings: { sidebarWidth: 44, wordWrap: 3 } }))
+    const loaded = loadSettingsFile(file)
+    expect(loaded.wordWrap).toBe(false)
+    expect(loaded.sidebarWidth).toBe(44)
+    fs.rmSync(path.dirname(file), { recursive: true, force: true })
+  })
+
+  it('persists a valid setting and strictly rejects a malformed IPC patch', () => {
+    expect(mergeSettingsPatch(DEFAULTS, { wordWrap: true }).wordWrap).toBe(true)
+    expect(() => validateSettingsPatch({ wordWrap: true })).not.toThrow()
+    expect(() => validateSettingsPatch({ wordWrap: 'on' })).toThrow()
+  })
+
+  it('migrates the key from a legacy settings file', () => {
+    const configPath = tempSettingsFile(JSON.stringify({ recentItems: [] }))
+    const legacyPath = path.join(path.dirname(configPath), 'settings.json')
+    fs.writeFileSync(legacyPath, JSON.stringify({ wordWrap: true }))
+    const migrated = migrateLegacySettingsFile(configPath, legacyPath)
+    expect(migrated?.wordWrap).toBe(true)
     fs.rmSync(path.dirname(configPath), { recursive: true, force: true })
   })
 })

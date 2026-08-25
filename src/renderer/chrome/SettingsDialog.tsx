@@ -59,6 +59,8 @@ interface SettingsDialogProps {
   onVisualCodeHighlightingChange: (enabled: boolean) => void
   formattingBarVisible: boolean
   onFormattingBarVisibleChange: (visible: boolean) => void
+  wordWrap: boolean
+  onWordWrapChange: (enabled: boolean) => void
   onClose: () => void
 }
 
@@ -82,6 +84,8 @@ export default function SettingsDialog({
   onVisualCodeHighlightingChange,
   formattingBarVisible,
   onFormattingBarVisibleChange,
+  wordWrap,
+  onWordWrapChange,
   onClose
 }: SettingsDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -276,6 +280,17 @@ export default function SettingsDialog({
                     />
                     <span className="settings-switch-track" aria-hidden="true" />
                     <span className="settings-switch-text">Show the formatting bar</span>
+                  </label>
+                  <label className="settings-switch">
+                    <input
+                      type="checkbox"
+                      className="settings-switch-input"
+                      name="word-wrap"
+                      checked={wordWrap}
+                      onChange={(e) => onWordWrapChange(e.target.checked)}
+                    />
+                    <span className="settings-switch-track" aria-hidden="true" />
+                    <span className="settings-switch-text">Wrap long lines in source view</span>
                   </label>
                   <label className="settings-switch">
                     <input

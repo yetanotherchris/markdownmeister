@@ -74,6 +74,8 @@ export default function App() {
     handleVisualCodeHighlightingChange,
     formattingBarVisible,
     handleFormattingBarVisibleChange,
+    wordWrap,
+    handleWordWrapChange,
     themeChoice,
     handleThemeChange,
     themeMode
@@ -382,6 +384,7 @@ export default function App() {
                       isActive={doc.id === session.activeId}
                       markdownOptions={markdownOptions}
                       spellcheckEnabled={spellcheckEnabled}
+                      wordWrap={wordWrap}
                       onSpellingMenu={setSpellMenu}
                       onContentChange={sessionApi.handleContentChange}
                       onBaselineCapture={sessionApi.handleBaselineCapture}
@@ -422,6 +425,8 @@ export default function App() {
           onVisualCodeHighlightingChange={handleVisualCodeHighlightingChange}
           formattingBarVisible={formattingBarVisible}
           onFormattingBarVisibleChange={handleFormattingBarVisibleChange}
+          wordWrap={wordWrap}
+          onWordWrapChange={handleWordWrapChange}
           onClose={() => setSettingsOpen(false)}
         />
       )}
