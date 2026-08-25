@@ -63,6 +63,11 @@ async function persistedEditorTheme(): Promise<string | undefined> {
   return JSON.parse(fs.readFileSync(configPath, 'utf-8')).settings?.editorTheme
 }
 
+/** Stage an editor theme through the dropdown (spec 047). */
+async function chooseEditorTheme(dialog: Page, theme: string): Promise<void> {
+  await dialog.getByTestId('editor-theme').selectOption(theme)
+}
+
 /** A Crepe canvas custom property as computed on .milkdown. */
 async function canvasTokenNamed(token: string): Promise<string> {
   return window
@@ -129,7 +134,7 @@ test('US1 selecting a theme persists across a relaunch with the same configDir',
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)
   await openThemeArea(window)
-  await dialog.getByRole('radio', { name: 'scholarly', exact: true }).check()
+  await chooseEditorTheme(dialog, 'scholarly')
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect.poll(persistedEditorTheme).toBe('scholarly')
 
@@ -142,7 +147,7 @@ test('US1 selecting a theme persists across a relaunch with the same configDir',
   // The dialog still shows it staged (FR-006).
   const reopened = await openSettingsDialog(window)
   await openThemeArea(window)
-  await expect(reopened.getByRole('radio', { name: 'scholarly', exact: true })).toBeChecked()
+  await expect(reopened.getByTestId('editor-theme')).toHaveValue('scholarly')
 })
 
 test('US3 editing a token in a theme file applies on the next settings open (SC-003)', async () => {
@@ -158,7 +163,7 @@ test('US3 editing a token in a theme file applies on the next settings open (SC-
   // Reopening the dialog refreshes discovery (FR-012) and the applied colours.
   const dialog = await openSettingsDialog(window)
   await openThemeArea(window)
-  await expect(dialog.getByRole('radio', { name: 'rustic', exact: true })).toBeChecked()
+  await expect(dialog.getByTestId('editor-theme')).toHaveValue('rustic')
   await expect.poll(canvasToken).toBe('#ff0000')
 
   // Restoring the original valid value re-syncs rendering at the next open
@@ -179,7 +184,7 @@ test('US3 editing monotone.json recolours the canvas (file tokens beat the prese
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)
   await openThemeArea(window)
-  await dialog.getByRole('radio', { name: 'monotone', exact: true }).check()
+  await chooseEditorTheme(dialog, 'monotone')
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect.poll(canvasToken).toBe('#ffffff')
 
@@ -200,7 +205,7 @@ test('US4 a well-formed added file appears at the next dialog open and can be se
 
   const dialog = await openSettingsDialog(window)
   await openThemeArea(window)
-  await dialog.getByRole('radio', { name: 'midnight', exact: true }).check()
+  await chooseEditorTheme(dialog, 'midnight')
   await dialog.getByRole('button', { name: 'Save' }).click()
 
   await expect(window.locator('.app-container')).toHaveAttribute('data-editor-theme', 'midnight')
@@ -213,7 +218,7 @@ test('US4/FR-013 deleting the selected theme falls back silently and repairs the
   writeThemeFile('midnight.json', MIDNIGHT)
   let dialog = await openSettingsDialog(window)
   await openThemeArea(window)
-  await dialog.getByRole('radio', { name: 'midnight', exact: true }).check()
+  await chooseEditorTheme(dialog, 'midnight')
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect.poll(persistedEditorTheme).toBe('midnight')
 
@@ -269,11 +274,14 @@ test('US5 malformed files are ignored quietly while valid themes keep working', 
 
     const dialog = await openSettingsDialog(window)
     await openThemeArea(window)
+    const values = await dialog
+      .getByTestId('editor-theme')
+      .evaluate((el) => Array.from(el.querySelectorAll('option')).map((option) => option.value))
     for (const absent of ['broken', 'half', 'badcolor', 'evil']) {
-      await expect(dialog.getByRole('radio', { name: absent, exact: true })).toHaveCount(0)
+      expect(values).not.toContain(absent)
     }
     // All five defaults remain available and selectable (FR-010).
-    await expect(dialog.getByRole('radio', { name: 'rustic', exact: true })).toBeVisible()
+    expect(values).toContain('rustic')
     // FR-010: the rejections are still indicated, quietly, non-modally.
     const note = dialog.locator('.settings-theme-invalid-note')
     await expect(note).toBeVisible()
@@ -325,7 +333,7 @@ test('US3/FR-009 legacy custom-colour config migrates into migrated-custom.json'
 
   const dialog = await openSettingsDialog(window)
   await openThemeArea(window)
-  await expect(dialog.getByRole('radio', { name: 'migrated-custom', exact: true })).toBeChecked()
+  await expect(dialog.getByTestId('editor-theme')).toHaveValue('migrated-custom')
   // Idempotent: no duplicate artifacts appear.
   expect(fs.readdirSync(THEMES_DIR()).filter((f) => f.startsWith('migrated'))).toEqual([
     'migrated-custom.json'
@@ -379,7 +387,7 @@ test('US2 monotone switches palettes live on an appearance toggle; a static defa
   const dialog = await openSettingsDialog(window)
   await openThemeArea(window)
   await dialog.getByRole('radio', { name: 'System default', exact: true }).check()
-  await dialog.getByRole('radio', { name: 'monotone', exact: true }).check()
+  await chooseEditorTheme(dialog, 'monotone')
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(window.locator('.app-container')).toHaveAttribute('data-theme', 'light')
   await expect.poll(canvasToken).toBe('#ffffff')
@@ -395,7 +403,7 @@ test('US2 monotone switches palettes live on an appearance toggle; a static defa
   // A static default ships identical sets: switching changes nothing (S3).
   const dialog2 = await openSettingsDialog(window)
   await openThemeArea(window)
-  await dialog2.getByRole('radio', { name: 'rustic', exact: true }).check()
+  await chooseEditorTheme(dialog2, 'rustic')
   await dialog2.getByRole('button', { name: 'Save' }).click()
   await expect.poll(canvasToken).toBe('#fdf6e3')
   await window.emulateMedia({ colorScheme: 'dark' })

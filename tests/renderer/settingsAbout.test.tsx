@@ -249,12 +249,11 @@ describe('About holds no staged state (spec 037 FR-008)', () => {
     renderDialog(props)
 
     await clickButton('Theme')
-    const scholarly = container.querySelector<HTMLInputElement>(
-      'input[name="editor-theme"][value="scholarly"]'
-    )
-    if (!scholarly) throw new Error('scholarly radio missing')
+    const select = container.querySelector<HTMLSelectElement>('select[data-testid="editor-theme"]')
+    if (!select) throw new Error('editor-theme select missing')
     await act(async () => {
-      scholarly.click()
+      select.value = 'scholarly'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
     })
 
     await clickButton('About')

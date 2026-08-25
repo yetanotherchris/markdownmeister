@@ -374,21 +374,29 @@ export default function SettingsDialog({
                 </fieldset>
                 <fieldset className="settings-fieldset">
                   <legend className="settings-legend">Editor Theme</legend>
-                  {editorThemes.map((option) => (
-                    <label key={option.name} className="settings-radio">
-                      <input
-                        type="radio"
-                        name="editor-theme"
-                        value={option.name}
-                        checked={draftEditorTheme === option.name}
-                        onChange={() => {
-                          draftTouchedRef.current = true
-                          setDraftEditorTheme(option.name)
-                        }}
-                      />
-                      <span>{option.name}</span>
-                    </label>
-                  ))}
+                  <label className="settings-select-label" htmlFor="editor-theme">
+                    <span>Theme</span>
+                    <select
+                      id="editor-theme"
+                      data-testid="editor-theme"
+                      value={draftEditorTheme ?? ''}
+                      onChange={(e) => {
+                        draftTouchedRef.current = true
+                        setDraftEditorTheme(e.target.value)
+                      }}
+                    >
+                      {draftEditorTheme === null && (
+                        <option value="" disabled>
+                          No matching theme
+                        </option>
+                      )}
+                      {editorThemes.map((option) => (
+                        <option key={option.name} value={option.name}>
+                          {option.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   {invalidThemeFileNames.length > 0 && (
                     <p className="settings-theme-invalid-note">
                       Unreadable theme files ignored: {invalidThemeFileNames.join(', ')}
