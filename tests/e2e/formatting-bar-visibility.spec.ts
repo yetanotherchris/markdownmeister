@@ -2,7 +2,13 @@ import { test, expect, ElectronApplication, Page } from '@playwright/test'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { closeAppSafely, launchApp, openFile, openSettingsDialog } from './launch'
+import {
+  closeAppSafely,
+  launchApp,
+  messageBoxCallCount,
+  openFile,
+  openSettingsDialog
+} from './launch'
 
 /**
  * Spec 045 suite: formatting bar visibility. Covers the two-state control in
@@ -202,6 +208,8 @@ test('FR-006 a malformed stored value falls back to visible quietly', async () =
     JSON.stringify({ settings: { sidebarWidth: 44, formattingBarVisible: 'nope' } })
   )
   ;({ app, window } = await launchApp(configDir, testFolder))
+  // Quietly (SC-004) means no native error dialog on the malformed value.
+  expect(await messageBoxCallCount(app)).toBe(0)
 
   await openFile(window, 'alpha.md')
   await expect(window.locator('.milkdown-top-bar')).toBeVisible()
