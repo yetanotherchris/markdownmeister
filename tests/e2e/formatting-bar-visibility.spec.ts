@@ -62,10 +62,19 @@ async function closeDialog(): Promise<void> {
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
 }
 
-async function barCenter(): Promise<{ x: number; y: number }> {
+async function barGeometry(): Promise<{ x: number; y: number; width: number; height: number }> {
   const box = await window.locator('.milkdown-top-bar').boundingBox()
   if (!box) throw new Error('formatting bar has no box while visible')
-  return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+  return box
+}
+
+/** Viewport-relative top edge of the first element matching `selector`. */
+function rectTop(selector: string): Promise<number> {
+  return window.evaluate((sel) => {
+    const el = document.querySelector(sel)
+    if (!el) throw new Error(`${sel} not found`)
+    return el.getBoundingClientRect().top
+  }, selector)
 }
 
 test('US1 the Markdown area offers a two-state switch defaulting to visible', async () => {
@@ -98,32 +107,68 @@ test('US2 hiding removes the bar from layout and clicks reach the document benea
   await openFile(window, 'alpha.md')
   const bar = window.locator('.milkdown-top-bar')
   await expect(bar).toBeVisible()
-  const center = await barCenter()
+
+  // Measure everything the hide must change before anything moves.
+  const formerBar = await barGeometry()
+  const proseTopBefore = await rectTop('.ProseMirror')
+  const headerTopBefore = await rectTop('.header-bar')
 
   const dialog = await openMarkdownArea()
-  await toggleFormattingBar(dialog)
+
+  // Park focus on a formatting button underneath the dialog, then flip the
+  // switch with a synthetic click: unlike a real click it does not move
+  // focus, so the bar disappears while its own button still holds focus.
+  await bar.getByRole('button').first().focus()
+  const focusBeforeHide = await window.evaluate(() =>
+    Boolean(document.activeElement?.closest('.milkdown-top-bar'))
+  )
+  expect(focusBeforeHide).toBe(true)
+  await formattingBarSwitch(dialog).evaluate((el) => (el as HTMLInputElement).click())
+  await expect(formattingBarSwitch(dialog)).not.toBeChecked()
   await closeDialog()
 
   await expect(bar).toBeHidden()
-  const box = await bar.boundingBox()
-  expect(box).toBeNull()
+  expect(await bar.boundingBox()).toBeNull()
 
-  // The point where the bar used to sit now delivers hits to the writing
-  // surface, not to a ghost of the bar.
-  const hit = await window.evaluate(
+  // Zero reserved height, SC-005: the point at the top of the former bar slot
+  // now hits the writing surface itself, not merely something that is not the
+  // bar.
+  const hitChain = await window.evaluate(
     ([x, y]) => {
-      const el = document.elementFromPoint(x, y)
-      return el ? el.className.toString() : ''
+      const classes: string[] = []
+      for (let node = document.elementFromPoint(x, y); node; node = node.parentElement) {
+        classes.push(node.className.toString())
+      }
+      return classes.join(' ')
     },
-    [center.x, center.y]
+    [formerBar.x + formerBar.width / 2, formerBar.y + 2]
   )
-  expect(hit).not.toContain('top-bar')
+  expect(hitChain).toContain('ProseMirror')
+  expect(hitChain).not.toContain('top-bar')
+
+  // The writing surface climbed up by the bar's height while the header stayed
+  // put, so the freed space went into the editing area.
+  const proseTopAfter = await rectTop('.ProseMirror')
+  const collapsed = proseTopBefore - proseTopAfter
+  expect(Math.abs(collapsed - formerBar.height)).toBeLessThanOrEqual(3)
+  expect(Math.abs((await rectTop('.header-bar')) - headerTopBefore)).toBeLessThanOrEqual(3)
+
+  // Focus evicted from the removed bar lands somewhere sane, not nowhere.
+  const focusState = await window.evaluate(() => {
+    const active = document.activeElement
+    return {
+      inBar: Boolean(active && active.closest('.milkdown-top-bar')),
+      placed: active === document.body || Boolean(active && active.closest('.app-container'))
+    }
+  })
+  expect(focusState.inBar).toBe(false)
+  expect(focusState.placed).toBe(true)
 
   // Tabbing from the document never lands inside the removed bar.
   await window.locator('.ProseMirror').click()
   for (let i = 0; i < 12; i++) await window.keyboard.press('Tab')
-  const focusInBar = await window.evaluate(
-    () => document.activeElement?.closest('.milkdown-top-bar') !== null
+  const focusInBar = await window.evaluate(() =>
+    Boolean(document.activeElement && document.activeElement.closest('.milkdown-top-bar'))
   )
   expect(focusInBar).toBe(false)
 })
