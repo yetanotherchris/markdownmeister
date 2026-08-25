@@ -18,15 +18,17 @@ Date: 2026-08-24. Every claim was verified against this worktree during planning
 
 **Alternatives considered**:
 
-- *Replay queued emissions after unlock* - keeps two sources of truth racing and needs ordering machinery for a problem solved by reading current bytes once at switch time. Rejected.
-- *Remove the emission lock* - would let late emissions overwrite source-view edits arriving through the store; the lock is correct once the pre-switch capture makes drops harmless. Rejected.
-- *Force a flush from a listener-side timer* - still timing-based and racy against click latency. Rejected.
+- _Replay queued emissions after unlock_ - keeps two sources of truth racing and needs ordering machinery for a problem solved by reading current bytes once at switch time. Rejected.
+- _Remove the emission lock_ - would let late emissions overwrite source-view edits arriving through the store; the lock is correct once the pre-switch capture makes drops harmless. Rejected.
+- _Force a flush from a listener-side timer_ - still timing-based and racy against click latency. Rejected.
 
 ## R3 - Position restore today: captured on deactivation, zeroed by the refresh path
 
 **Decision**: Keep offsets across the refresh path instead of zeroing them, and make selection restoration throw-safe.
 
 **Evidence**: Deactivating the visual editor captures `{ cursorOffset, scrollTop }` into the store (`CrepeHost.tsx:106-113`, dispatch via `useDocumentSession.ts:354-359`, reducer `documents.ts:379-390`). Restoration exists in `applyCursorState` (`CrepeHost.tsx:94-104`): clamps the offset with `Math.min`, sets a TextSelection, reapplies scrollTop, but skips everything when values are 0 and performs no scroll-into-view. `REFRESH_FROM_SOURCE` deliberately zeroes both fields (`documents.ts:519-520`, asserted at `tests/renderer/documents.view.test.ts:125-166`), which is why every source-edit round trip lands at the top today. Two hazards need handling: `TextSelection.create` throws RangeError when the stored offset resolves inside a non-text location of the freshly parsed document (`CrepeHost.tsx:99`), and the init effect only guards `crepe.create()` with try/catch (`CrepeHost.tsx:169-175`), leaving later steps as unhandled rejections.
+
+Correction (2026-08-25): verified against the bundled prosemirror-state, `TextSelection.create` does not throw RangeError at a non-text position; it emits a one-time console warning and returns a selection whose parent lacks inline content, leaving a broken selection. The shipped guard is therefore an explicit `inlineContent` check with a `near()` fallback rather than a try/catch.
 
 ## R4 - Secondary jank amplifier: per-frame store dispatches while scrolling the source view
 

@@ -30,7 +30,7 @@
 - [x] 5.1 New `src/renderer/editor/EditorErrorBoundary.tsx` (quiet message + Reload that resets the boundary and reloads the document without discarding edits)
 - [x] 5.2 Wrap each document panel in `App.tsx`; guard serialisation on the toggle path in `captureContentForSwitch`
 - [x] 5.3 Minimal styles for `.editor-error`
-- [x] 5.4 Verify: `npm run typecheck`, boundary renders message on a thrown render error (unit smoke via existing patterns)
+- [x] 5.4 Verify: `npm run typecheck`; boundary render-error smoke covered by `tests/renderer/editorErrorBoundary.test.tsx`; switch-path serializer-guard smoke covered by `tests/renderer/sourceViewSerializerGuard.test.tsx`
 
 ## Phase 6: Scroll-capture hygiene (D5, FR-001 responsiveness)
 

@@ -516,9 +516,9 @@ export function handleRefreshFromSource(
             frontmatter,
             content: body,
             editorBaseline: body,
-            // Spec 044 D2: the stored caret offset and scroll survive the
-            // refresh so returning from a source edit restores position
-            // (clamped by applyCursorState) instead of resetting to the top.
+            // The stored caret offset and scroll survive the refresh so
+            // returning from a source edit restores position (clamped by
+            // applyCursorState) instead of resetting to the top.
             contentVersion: d.contentVersion + 1
           }
         : d

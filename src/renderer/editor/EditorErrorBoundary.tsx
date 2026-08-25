@@ -11,9 +11,9 @@ interface EditorErrorBoundaryState {
   failed: boolean
 }
 
-/** Last-resort guard around one document's editor subtree (spec 044 D4). A
- *  failure during a view switch must leave a usable surface and a quiet,
- *  actionable message instead of blanking or hanging the window. */
+/** Last-resort guard around one document's editor subtree. A failure during a
+ *  view switch must leave a usable surface and a quiet, actionable message
+ *  instead of blanking or hanging the window. */
 export default class EditorErrorBoundary extends Component<
   EditorErrorBoundaryProps,
   EditorErrorBoundaryState

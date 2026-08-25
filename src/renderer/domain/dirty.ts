@@ -55,7 +55,7 @@ export function shouldFlushLive(doc: DocumentState, getMarkdown: MarkdownAccesso
 
 export type SwitchCapture = { kind: 'unchanged' } | { kind: 'captured'; content: string }
 
-/** Switch-time capture (spec 044 D1): entering the source view locks editor
+/** Switch-time capture: entering the source view locks editor
  *  emissions, so any edit still inside the listener debounce window would be
  *  dropped. The store must already hold the editor's bytes before the lock;
  *  the baseline-doc identity fast path keeps clean documents from paying for
