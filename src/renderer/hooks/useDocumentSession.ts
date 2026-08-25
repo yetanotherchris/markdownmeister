@@ -87,8 +87,17 @@ export function useDocumentSession(opts: {
       // A source-view document's text lives in the store (raw bytes); its
       // mounted editor serializes the stale pre-source-edit content, so
       // flushing it would clobber the edits the user made in source.
-      if (!domainShouldFlushLive(doc, getMarkdown)) continue
-      const live = getMarkdown(doc.id)
+      let live: string | null
+      try {
+        if (!domainShouldFlushLive(doc, getMarkdown)) continue
+        live = getMarkdown(doc.id)
+      } catch (error) {
+        // Serialisation can throw on documents containing nodes the active
+        // processor cannot express. Keeping the stored bytes lets the view
+        // switch finish instead of aborting the whole handler.
+        console.error('Live content capture failed before switching views', error)
+        continue
+      }
       if (live !== null) {
         dispatch({ type: 'UPDATE_CONTENT', payload: { id: doc.id, content: live } })
       }
@@ -104,8 +113,8 @@ export function useDocumentSession(opts: {
         capture = domainPlanSwitchCapture(doc, getMarkdown, getLiveDoc, getBaselineDoc)
       } catch (error) {
         // Serialisation can throw on documents containing nodes the active
-        // processor cannot express (spec 044 R5). The switch continues on the
-        // stored bytes instead of wedging or blanking the surface.
+        // processor cannot express. The switch continues on the stored bytes
+        // instead of wedging or blanking the surface.
         console.error('Live content capture failed before switching views', error)
         return
       }

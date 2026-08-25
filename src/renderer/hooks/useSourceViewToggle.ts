@@ -48,7 +48,16 @@ export function useSourceViewToggle(opts: {
     (id: string) => {
       const doc = sessionRef.current.documents.find((d) => d.id === id)
       if (!doc) return
-      const live = getLiveContent(doc)
+      let live: string | null
+      try {
+        live = getLiveContent(doc)
+      } catch (error) {
+        // Serialisation can throw on documents containing nodes the active
+        // processor cannot express. Falling back to the stored bytes keeps the
+        // return to formatted editing from stranding the tab in source view.
+        console.error('Live content capture failed before returning to formatted editing', error)
+        live = null
+      }
       // editorMatchesContent (not markdownSame) decides the no-op round trip:
       // only the editor's single appended trailing newline is "unchanged", so a
       // blank line typed at EOF in source is not silently dropped, while a
