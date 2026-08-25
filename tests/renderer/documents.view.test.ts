@@ -122,7 +122,7 @@ describe('documents reducer', () => {
       expect(document.dirty).toBe(false)
     })
 
-    it('REFRESH_FROM_SOURCE replaces content, resets cursor/scroll, bumps version, keeps dirty', () => {
+    it('REFRESH_FROM_SOURCE replaces content, bumps version, keeps dirty, retains cursor/scroll', () => {
       let state = documentsReducer(createSession(), {
         type: 'OPEN_EXISTING',
         payload: { value: { path: 'f.md', name: 'f.md', content: 'x', mtimeMs: 1, size: 1 } }
@@ -145,8 +145,10 @@ describe('documents reducer', () => {
       expect(after.content).toBe('*edited* raw')
       expect(after.baseline).toBe('x')
       expect(after.dirty).toBe(true)
-      expect(after.cursorOffset).toBe(0)
-      expect(after.scrollTop).toBe(0)
+      // Spec 044 D2: offsets survive the refresh so position restores on
+      // return instead of every source-edit round trip landing at the top.
+      expect(after.cursorOffset).toBe(42)
+      expect(after.scrollTop).toBe(137)
       expect(after.contentVersion).toBe(before.contentVersion + 1)
     })
 
