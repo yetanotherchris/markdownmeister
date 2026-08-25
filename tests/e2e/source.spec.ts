@@ -473,6 +473,11 @@ test.describe('Spec 044 reliable source switching', () => {
   async function editAtEndAndOpenSource(
     edit: { kind: 'type'; text: string } | { kind: 'newSection' }
   ): Promise<void> {
+    // The top bar mounts after the ProseMirror surface, so both must be
+    // awaited through Playwright's retry before the raw evaluate below runs;
+    // a same-tick query otherwise throws on slower runners.
+    await expect(window.locator('.ProseMirror:visible')).toBeVisible()
+    await expect(getViewSourceButton()).toBeVisible()
     await window.evaluate(async (edit) => {
       const pm = document.querySelector('.ProseMirror') as HTMLElement | null
       const button = document.querySelector(
