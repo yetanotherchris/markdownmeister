@@ -94,7 +94,7 @@ test('US1/FR-002 the displayed version equals the running application version', 
   await expect(window.getByTestId('settings-about-version')).toHaveText(runtimeVersion)
 })
 
-test('US1/FR-001 the About rows carry zero horizontal padding, aligning labels with the heading', async () => {
+test('the About rows carry zero horizontal padding, aligning labels with the heading', async () => {
   await openAboutArea()
 
   // Three rows render under the default launch: Version, Repository URL, Revision.
