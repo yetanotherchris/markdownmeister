@@ -14,29 +14,50 @@ export interface SourceViewToggleApi {
   handleOpen: (path: string) => void
 }
 
-
 export function useSourceViewToggle(opts: {
   dispatch: React.Dispatch<DocumentsAction>
   sessionRef: React.MutableRefObject<EditingSession>
-  session: Pick<DocumentSessionApi, 'flushLiveContent' | 'getLiveContent' | 'isDirtyLive' | 'handleActivate' | 'handleNew' | 'openFileFromExplorer'>
+  session: Pick<
+    DocumentSessionApi,
+    | 'flushLiveContent'
+    | 'captureContentForSwitch'
+    | 'getLiveContent'
+    | 'isDirtyLive'
+    | 'handleActivate'
+    | 'handleNew'
+    | 'openFileFromExplorer'
+  >
   enforcePoolCap: (activeId: string | null) => void
 }): SourceViewToggleApi {
   const { dispatch, sessionRef, session, enforcePoolCap } = opts
-  const { flushLiveContent, getLiveContent, openFileFromExplorer } = session
+  const { flushLiveContent, captureContentForSwitch, getLiveContent, openFileFromExplorer } =
+    session
 
   const handleShowSource = useCallback(
     (id: string) => {
       flushLiveContent()
+      // Capture synchronously before the lock: edits inside the listener
+      // debounce window would otherwise be dropped, not deferred.
+      captureContentForSwitch(id)
       dispatch({ type: 'SET_VIEW', payload: { id, view: 'source' } })
     },
-    [dispatch, flushLiveContent]
+    [dispatch, flushLiveContent, captureContentForSwitch]
   )
 
   const handleReturnToFormatted = useCallback(
     (id: string) => {
-      const doc = sessionRef.current.documents.find(d => d.id === id)
+      const doc = sessionRef.current.documents.find((d) => d.id === id)
       if (!doc) return
-      const live = getLiveContent(doc)
+      let live: string | null
+      try {
+        live = getLiveContent(doc)
+      } catch (error) {
+        // Serialisation can throw on documents containing nodes the active
+        // processor cannot express. Falling back to the stored bytes keeps the
+        // return to formatted editing from stranding the tab in source view.
+        console.error('Live content capture failed before returning to formatted editing', error)
+        live = null
+      }
       // editorMatchesContent (not markdownSame) decides the no-op round trip:
       // only the editor's single appended trailing newline is "unchanged", so a
       // blank line typed at EOF in source is not silently dropped, while a
@@ -58,12 +79,13 @@ export function useSourceViewToggle(opts: {
   const openPathInSource = useCallback(
     async (path: string): Promise<string | null> => {
       const existing = sessionRef.current.documents.find(
-        d => d.path === path && d.editorState !== 'evicted'
+        (d) => d.path === path && d.editorState !== 'evicted'
       )
       if (existing) {
         session.handleActivate(existing.id)
         if (existing.view !== 'source') {
           flushLiveContent()
+          captureContentForSwitch(existing.id)
           dispatch({ type: 'SET_VIEW', payload: { id: existing.id, view: 'source' } })
         }
         enforcePoolCap(existing.id)
@@ -79,7 +101,7 @@ export function useSourceViewToggle(opts: {
       enforcePoolCap(sessionRef.current.activeId)
       return read.value.path ?? read.value.name
     },
-    [dispatch, enforcePoolCap, flushLiveContent, sessionRef, session]
+    [dispatch, enforcePoolCap, flushLiveContent, captureContentForSwitch, sessionRef, session]
   )
 
   const handleViewSource = useCallback(
@@ -92,7 +114,7 @@ export function useSourceViewToggle(opts: {
   const openPathInFormatted = useCallback(
     async (path: string): Promise<void> => {
       const existing = sessionRef.current.documents.find(
-        d => d.path === path && d.editorState !== 'evicted'
+        (d) => d.path === path && d.editorState !== 'evicted'
       )
       if (existing) {
         session.handleActivate(existing.id)

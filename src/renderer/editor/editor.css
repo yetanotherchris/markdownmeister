@@ -22,7 +22,6 @@
   flex-direction: column;
 }
 
-
 .editor-host > div {
   min-height: 100%;
 }
@@ -31,33 +30,27 @@
   min-height: 100%;
 }
 
-
 .editor-host.has-source {
   overflow: hidden;
 }
-
 
 .editor-host .milkdown .ProseMirror {
   padding: 16px 48px;
 }
 
-
 .milkdown .milkdown-top-bar {
   background: var(--mm-header);
 }
 
-
 .milkdown .milkdown-top-bar .top-bar-inner > .top-bar-item:last-child {
   border-radius: 4px;
 }
-
 
 .milkdown .milkdown-top-bar .top-bar-inner > .top-bar-item:last-child svg {
   color: var(--mm-view-source);
   stroke: var(--mm-view-source);
   fill: none;
 }
-
 
 .editor-host .milkdown .ProseMirror {
   line-height: 1.6;
@@ -97,12 +90,10 @@
   margin: 4px 0;
 }
 
-
 .editor-host .milkdown .ProseMirror li p {
   margin: 0;
   padding: 0;
 }
-
 
 .editor-host .milkdown .milkdown-list-item-block li .label-wrapper,
 .editor-host .milkdown .milkdown-list-item-block li .label-wrapper .label {
@@ -128,11 +119,9 @@
   margin: 0 0 16px;
 }
 
-
 .editor-host .milkdown .ProseMirror span[data-type='html'][data-value^='<!--'] {
   display: none;
 }
-
 
 .milkdown svg g[clip-path] {
   clip-path: none;
@@ -143,6 +132,30 @@
   pointer-events: none;
 }
 
+.editor-error {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  color: var(--mm-muted);
+}
+
+.editor-error button {
+  padding: 5px 12px;
+  border: 1px solid var(--mm-border);
+  border-radius: 6px;
+  background: var(--mm-bg);
+  color: var(--mm-text);
+  cursor: pointer;
+}
+
+.editor-error button:hover {
+  background: var(--mm-surface-secondary);
+}
 
 .source-view {
   position: absolute;
@@ -219,13 +232,11 @@
   outline-offset: -2px;
 }
 
-
 .app-container[data-visual-code-highlighting='off'] .milkdown-code-block .cm-content span {
   color: inherit !important;
   font-style: inherit !important;
   font-weight: inherit !important;
 }
-
 
 .source-textarea:focus-visible {
   outline: 2px solid var(--mm-muted);
@@ -246,7 +257,6 @@
     animation: none;
   }
 }
-
 
 .mm-spelling-error {
   text-decoration: underline wavy #d0021b;

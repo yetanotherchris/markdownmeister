@@ -516,8 +516,9 @@ export function handleRefreshFromSource(
             frontmatter,
             content: body,
             editorBaseline: body,
-            cursorOffset: 0,
-            scrollTop: 0,
+            // The stored caret offset and scroll survive the refresh so
+            // returning from a source edit restores position (clamped by
+            // applyCursorState) instead of resetting to the top.
             contentVersion: d.contentVersion + 1
           }
         : d

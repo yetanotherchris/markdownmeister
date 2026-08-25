@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-24
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description (two related reports, consolidated by user direction): "There is a bug currently where if you add a new section in the visual editor (click in at the bottom of the document), then click code mode, the visual editor freezes. The only workaround is to press CTRL+S and close the tab. The bug happens when you just scroll down the page and click 'view source'." and "The visual editor should go to the caret position/vertical position of the document that the visual editor is on."
 

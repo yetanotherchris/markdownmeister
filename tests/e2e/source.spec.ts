@@ -459,6 +459,203 @@ test.describe('US7 explorer context-menu Open', () => {
   })
 })
 
+// ---------- Spec 044: reliable source view switching ----------
+
+test.describe('Spec 044 reliable source switching', () => {
+  /**
+   * Performs one edit at the document end through the live DOM and activates
+   * View source inside the editor's 200 ms emission debounce window: `type`
+   * inserts text via execCommand, `newSection` presses Enter through the
+   * editor's keymap. One macrotask is yielded after the edit so the editor
+   * ingests the DOM change into its document, like a human typing and
+   * immediately clicking code mode.
+   */
+  async function editAtEndAndOpenSource(
+    edit: { kind: 'type'; text: string } | { kind: 'newSection' }
+  ): Promise<void> {
+    await window.evaluate(async (edit) => {
+      const pm = document.querySelector('.ProseMirror') as HTMLElement | null
+      const button = document.querySelector(
+        'button[aria-label="View source"]'
+      ) as HTMLButtonElement | null
+      if (!pm || !button) throw new Error('editor or View source control not found')
+      pm.focus()
+      const selection = window.getSelection()
+      const range = document.createRange()
+      range.selectNodeContents(pm)
+      range.collapse(false)
+      selection.removeAllRanges()
+      selection.addRange(range)
+      if (edit.kind === 'type') {
+        document.execCommand('insertText', false, edit.text)
+      } else {
+        const enter = new KeyboardEvent('keydown', {
+          key: 'Enter',
+          code: 'Enter',
+          bubbles: true,
+          cancelable: true
+        })
+        document.activeElement.dispatchEvent(enter)
+      }
+      await new Promise((resolve) => setTimeout(resolve, 25))
+      // Crepe's top-bar items run on pointerdown, not click.
+      button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }))
+    }, edit)
+  }
+
+  async function sourceText(): Promise<string> {
+    return window.locator('.source-textarea').evaluate((el) =>
+      Array.from(el.querySelectorAll('.cm-line'))
+        .map((line) => line.textContent)
+        .join('\n')
+    )
+  }
+
+  interface CaretSnapshot {
+    blockIndex: number
+    offset: number
+    scrollTop: number
+  }
+
+  /** Reads the visual caret as (top-level block index, intra-block character
+   *  offset) plus the pane scroll, all through DOM evaluation. */
+  async function readVisualCaret(): Promise<CaretSnapshot> {
+    return window.evaluate(() => {
+      const host = document.querySelector('.editor-host:not(.has-source)') as HTMLElement | null
+      const pm = host?.querySelector('.ProseMirror')
+      const sel = window.getSelection()
+      if (!host || !pm || !sel || sel.anchorNode === null) throw new Error('no visual selection')
+      const blocks = Array.from(pm.children)
+      let block: Node | null = sel.anchorNode
+      while (block && block.parentNode !== pm) block = block.parentNode
+      const range = document.createRange()
+      range.selectNodeContents(block as Node)
+      range.setEnd(sel.anchorNode, sel.anchorOffset)
+      return {
+        blockIndex: blocks.indexOf(block as Element),
+        offset: range.toString().length,
+        scrollTop: host.scrollTop
+      }
+    })
+  }
+
+  test('text typed immediately before switching is present in the source view (FR-003)', async () => {
+    await openFolder()
+    await openFile('alpha.md')
+    await editAtEndAndOpenSource({ kind: 'type', text: 'RACE-TYPED-044' })
+    await expect(window.getByTestId('source-view')).toBeVisible()
+    const text = await sourceText()
+    expect(text).toContain('RACE-TYPED-044')
+  })
+
+  test('a new section added at the document end survives an immediate switch (US2)', async () => {
+    const original = '# List end\n\nBody line.\n\n- only item'
+    fs.writeFileSync(path.join(testFolder, 'list-end.md'), original)
+    await openFolder()
+    await openFile('list-end.md')
+    await editAtEndAndOpenSource({ kind: 'newSection' })
+    await expect(window.getByTestId('source-view')).toBeVisible()
+    const text = await sourceText()
+    // The pre-fix failure is an exact match with the stored bytes: the
+    // inserted section never reached the source view. The editor may
+    // serialize the new empty section in its own canonical form, so only its
+    // presence is asserted.
+    expect(text).toContain('only item')
+    expect(text.length).toBeGreaterThan(original.length)
+  })
+
+  test('clicking at the document end then viewing source completes and responds to input (US1)', async () => {
+    await openFolder()
+    await openFile('alpha.md')
+    const box = await window.locator('[contenteditable="true"]').boundingBox()
+    await window.mouse.click(box.x + box.width / 2, box.y + box.height - 10)
+    await getViewSourceButton().click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
+    await window.getByRole('button', { name: /Back to visual editing/ }).click()
+    await expect(window.getByTestId('source-view')).toHaveCount(0)
+    await expect(window.locator('.ProseMirror:visible')).toBeVisible()
+
+    // Real input rather than an evaluate ping: the returned surface must
+    // accept a click, ingest typed text, and show the dirty marker.
+    await window.locator('.ProseMirror:visible').click()
+    await window.keyboard.type('RESPONSIVE-AFTER-SOURCE')
+    await expect(window.locator('.ProseMirror:visible')).toContainText('RESPONSIVE-AFTER-SOURCE')
+    await expect(window.locator('.document-title')).toContainText('\u2022')
+  })
+
+  test('twenty consecutive toggles complete without a progressive wedge (SC-003)', async () => {
+    test.setTimeout(240_000)
+    const lines = Array.from({ length: 10_000 }, (_, i) => `Paragraph ${i} of the big document.`)
+    fs.writeFileSync(path.join(testFolder, 'big.md'), lines.join('\n'))
+    await openFolder()
+    await openFile('big.md')
+    const toggleDurations: number[] = []
+    for (let i = 0; i < 20; i++) {
+      const startedAt = Date.now()
+      await editAtEndAndOpenSource({ kind: 'type', text: ` x${i}` })
+      await expect(window.getByTestId('source-view')).toBeVisible()
+      if (i < 19) {
+        await window.getByRole('button', { name: /Back to visual editing/ }).click()
+        await expect(window.getByTestId('source-view')).toHaveCount(0)
+      }
+      toggleDurations.push(Date.now() - startedAt)
+    }
+    // Deliberately loose 3x bound: CI jitter dwarfs a real leak, so this only
+    // fails on gross accumulation across repeated switches.
+    const mean = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length
+    expect(mean(toggleDurations.slice(-5))).toBeLessThanOrEqual(
+      mean(toggleDurations.slice(0, 5)) * 3
+    )
+  })
+
+  test('an unedited round trip restores the caret offset and scroll position (FR-004)', async () => {
+    const lines = Array.from({ length: 60 }, (_, i) => `Block ${i} of the restore document.`)
+    fs.writeFileSync(path.join(testFolder, 'restore.md'), lines.join('\n'))
+    await openFolder()
+    await openFile('restore.md')
+    await window.locator('[contenteditable="true"] p', { hasText: 'Block 30' }).click()
+    await window.keyboard.press('End')
+    await window.evaluate(() => {
+      ;(document.querySelector('.editor-host') as HTMLElement).scrollTop = 140
+    })
+    const before = await readVisualCaret()
+
+    await getViewSourceButton().click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
+    await window.getByRole('button', { name: /Back to visual editing/ }).click()
+    await expect(window.getByTestId('source-view')).toHaveCount(0)
+
+    const after = await readVisualCaret()
+    expect(after).toEqual(before)
+  })
+
+  test('an edited round trip lands the caret at a clamped valid offset, not the start (FR-005)', async () => {
+    const lines = Array.from({ length: 60 }, (_, i) => `Block ${i} of the clamp document.`)
+    fs.writeFileSync(path.join(testFolder, 'clamp.md'), lines.join('\n'))
+    await openFolder()
+    await openFile('clamp.md')
+    await window.locator('[contenteditable="true"] p', { hasText: 'Block 45' }).click()
+    await window.keyboard.press('End')
+    await getViewSourceButton().click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
+
+    // Shrink the document far below the stored caret offset.
+    await window.getByTestId('source-textarea').fill('# Tiny')
+    await window.getByRole('button', { name: /Back to visual editing/ }).click()
+    await expect(window.getByTestId('source-view')).toHaveCount(0)
+
+    const atStart = await window.evaluate(() => {
+      const pm = document.querySelector('.ProseMirror')
+      const sel = window.getSelection()
+      const first = pm ? pm.firstElementChild : null
+      if (!first || !sel || sel.anchorNode === null) return false
+      return first.contains(sel.anchorNode) && sel.anchorOffset === 0 && sel.isCollapsed
+    })
+    expect(atStart).toBe(false)
+    await expect(window.locator('.ProseMirror:visible')).toBeVisible()
+  })
+})
+
 // ---------- Edges ----------
 
 test.describe('Edges', () => {
