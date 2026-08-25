@@ -77,3 +77,5 @@ Full evidence in [research.md](research.md).
 ## Complexity Tracking
 
 > No constitution violations. Deferred item recorded honestly: possible small-size resampling improvement (D3) is intentionally not decided here; it requires the manual DPI matrix outcome from SC-001 before any re-decision, per the evidence-first practice.
+>
+> Implementation deviation: the plan's package.json edit (appending touched files to scripts.format:check) was not needed, because every file this spec touched was already on that list; no new files were created outside specs/.

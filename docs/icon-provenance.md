@@ -19,17 +19,23 @@ assets/icon/master.png            canonical artwork (maintainer-supplied, commit
         │  high-quality bicubic downsampling
         ▼
 scripts/generate-icons.ps1        zero-dependency GDI+ derivation
-        ├─► resources/icons/NxN.png           ladder: 16,24,32,48,64,128,256,512
-        ├─► resources/icon.png                512×512 convenience master (runtime window icon)
-        ├─► resources/icon.ico                ICO: PNG entries 16–256 (256 stored as byte 0)
+        ├─► resources/icons/NxN.png           ladder: 16,20,24,32,40,48,64,96,128,256,512
+        ├─► resources/icon.png                512×512 convenience master (Linux runtime window icon)
+        ├─► resources/icon.ico                ICO: PNG frames 16–256 (256 stored as byte 0)
         └─► resources/icon.icns               ICNS: ic07/ic08/ic09/ic10 (128/256/512 ladder
                                               entries; ic10 a true 1024×1024 downsample)
 docs/site/assets/icon.png         byte copy of the 256 ladder entry (website icon)
 ```
 
-Consumers: electron-builder (`win.icon`, `mac.icon`, `linux.icon`), the BrowserWindow window icon (`resources/icon.png` via extraResources), the Linux desktop-entry mechanism (copies what it finds inside the AppImage), and the website asset copy. Never edit derived assets by hand; replace `assets/icon/master.png` and regenerate everything at once so no platform drifts (FR-004).
+Consumers: electron-builder (`win.icon`, `mac.icon`, `linux.icon`), the BrowserWindow window icon (on Windows the multi-size `resources/icon.ico` shipped via extraResources; on Linux the `resources/icon.png` copy), the Linux desktop-entry mechanism (copies what it finds inside the AppImage), and the website asset copy. Never edit derived assets by hand; replace `assets/icon/master.png` and regenerate everything at once so no platform drifts (FR-004).
 
 The script validates the master before deriving (square, at least 1024×1024, 8-bit RGBA, parsed from raw bytes) and never writes the master itself.
+
+## The Windows frame ladder
+
+The .ico embeds one frame per size from 16 through 256 with no gaps: 16, 20, 24, 32, 40, 48, 64, 96, 128, and 256. Every frame is a byte copy of its committed ladder entry in `resources/icons/`, which is what the structural tests assert. Spec 049 added the 20, 40, and 96 intermediates because Windows shells request those exact sizes: taskbar and Alt-Tab imagery scales with display DPI, so common fractional settings such as 125% and 150% land between the old ladder points, and Explorer's large-icons view asks for 96 directly. When a requested size falls between available frames the shell picks a smaller frame and stretches it upward, which is the pixelation this ladder removes.
+
+The resampling procedure itself did not change in spec 049: every size still derives from the master in a single high-quality bicubic draw, applied identically to all sizes.
 
 ## Regeneration
 

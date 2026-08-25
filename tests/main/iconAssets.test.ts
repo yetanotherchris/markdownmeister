@@ -3,7 +3,7 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 /**
- * Specs 039/043 (FR-001/FR-002/FR-004): structural verification of the
+ * Specs 039/043/049 (FR-001/FR-002/FR-004): structural verification of the
  * committed icon assets. These formats fail silently, a wrong dimension byte, a missing
  * small entry, or a truncated ICNS chunk ships invisibly until some launcher
  * surface renders garbage, so the leading binary structures are parsed here
@@ -22,7 +22,8 @@ const siteIconPath = path.join(repoRoot, 'docs', 'site', 'assets', 'icon.png')
 const icoPath = path.join(repoRoot, 'resources', 'icon.ico')
 const icnsPath = path.join(repoRoot, 'resources', 'icon.icns')
 
-const LADDER_SIZES = [16, 24, 32, 48, 64, 128, 256, 512] as const
+const LADDER_SIZES = [16, 20, 24, 32, 40, 48, 64, 96, 128, 256, 512] as const
+const ICO_SIZES = [16, 20, 24, 32, 40, 48, 64, 96, 128, 256] as const
 
 interface PngIhdr {
   width: number
@@ -122,12 +123,17 @@ describe('Windows multi-resolution icon (resources/icon.ico)', () => {
     return { count, entries }
   }
 
-  it('has a well-formed header: reserved=0, type=1 (icon), seven images', () => {
+  it('has a well-formed header: reserved=0, type=1 (icon), ten images', () => {
     const { count } = readDirectory(fs.readFileSync(icoPath))
-    expect(count).toBe(7)
+    expect(count).toBe(10)
   })
 
-  it.each([16, 24, 32, 48, 64, 128, 256])('declares a %i px entry', (size) => {
+  it('embeds exactly the FR-002 frame ladder in ascending order (spec 049 coverage gate)', () => {
+    const { entries } = readDirectory(fs.readFileSync(icoPath))
+    expect(entries.map((entry) => entry.declaredWidth)).toEqual([...ICO_SIZES])
+  })
+
+  it.each(ICO_SIZES)('declares a %i px entry', (size) => {
     const { entries } = readDirectory(fs.readFileSync(icoPath))
     const entry = entries.find((candidate) => candidate.declaredWidth === size)
     expect(entry, `an ICO directory entry of ${size}px should exist`).toBeDefined()
