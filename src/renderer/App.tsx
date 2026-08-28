@@ -385,6 +385,7 @@ export default function App() {
                       markdownOptions={markdownOptions}
                       spellcheckEnabled={spellcheckEnabled}
                       wordWrap={wordWrap}
+                      onWordWrapChange={handleWordWrapChange}
                       onSpellingMenu={setSpellMenu}
                       onContentChange={sessionApi.handleContentChange}
                       onBaselineCapture={sessionApi.handleBaselineCapture}
@@ -425,8 +426,6 @@ export default function App() {
           onVisualCodeHighlightingChange={handleVisualCodeHighlightingChange}
           formattingBarVisible={formattingBarVisible}
           onFormattingBarVisibleChange={handleFormattingBarVisibleChange}
-          wordWrap={wordWrap}
-          onWordWrapChange={handleWordWrapChange}
           onClose={() => setSettingsOpen(false)}
         />
       )}

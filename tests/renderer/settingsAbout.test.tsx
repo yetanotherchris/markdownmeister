@@ -5,18 +5,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // of a suite-local redeclaration that could silently drift.
 import { REPOSITORY_URL } from '../../src/main/buildInfo'
 import SettingsDialog, { SETTINGS_AREAS } from '../../src/renderer/chrome/SettingsDialog'
-import type {
-  BuildInfo,
-  EditorColors,
-  EditorThemeDefinition,
-  MarkdownSyntaxOptions
-} from '../../src/shared/ipc-contract'
+import type { MarkdownSyntaxOptions } from '../../src/renderer/editor/markdownSyntaxOptions'
+import type { BuildInfo, EditorColors, EditorThemeDefinition } from '../../src/shared/ipc-contract'
 
 /**
  * Spec 037 (FR-001..FR-008): the About area joins the settings navigation LAST,
- * shows three read-only values, and contributes no staged state, visiting it
- * can neither stage anything nor disturb the editor-theme draft the dialog
- * already manages (statelessness both ways).
+ * shows two read-only values after spec 050, and contributes no staged state;
+ * visiting it can neither stage anything nor disturb the editor-theme draft
+ * the dialog already manages (statelessness both ways).
+ *
+ * Spec 050 pares the panel down to the bare version value plus the repository
+ * row, and moves the word wrap control out of the Markdown area entirely.
  */
 
 let currentBuildInfo: BuildInfo
@@ -27,8 +26,6 @@ function stubApi(): void {
   } as unknown as typeof window.api
 }
 
-const writeText = vi.fn<(text: string) => Promise<void>>()
-
 beforeEach(() => {
   currentBuildInfo = {
     version: '9.9.9',
@@ -36,11 +33,6 @@ beforeEach(() => {
     repositoryUrl: REPOSITORY_URL
   }
   stubApi()
-  writeText.mockReset()
-  Object.defineProperty(navigator, 'clipboard', {
-    value: { writeText },
-    configurable: true
-  })
 })
 
 afterEach(() => {
@@ -94,8 +86,6 @@ function baseProps(): DialogProps {
     onVisualCodeHighlightingChange: vi.fn(),
     formattingBarVisible: true,
     onFormattingBarVisibleChange: vi.fn(),
-    wordWrap: false,
-    onWordWrapChange: vi.fn(),
     onClose: vi.fn()
   }
 }
@@ -152,35 +142,45 @@ describe('SETTINGS_AREAS registration order (spec 008 FR-002, spec 037 Assumptio
   })
 })
 
-describe('the About area (spec 037 US1)', () => {
-  it('shows the three read-only values and no adjustable controls', async () => {
+describe('the About area (spec 037 US1, spec 050 US1)', () => {
+  it('shows the bare version value and the repository row with no revision content', async () => {
     renderDialog()
     await clickButton('About')
 
+    // FR-001: the version stands alone, with no "Version" label before it.
     const values = Array.from(container.querySelectorAll('.settings-about-value')).map((el) =>
       el.textContent?.trim()
     )
-    expect(values).toEqual(['9.9.9', 'abc123def4567890'])
+    expect(values).toEqual(['9.9.9'])
+    expect(container.textContent).not.toContain('Version')
 
+    // FR-002: the repository row is untouched.
+    const labels = Array.from(container.querySelectorAll('.settings-about-label')).map((el) =>
+      el.textContent?.trim()
+    )
+    expect(labels).toEqual(['Repository URL'])
     const link = container.querySelector<HTMLButtonElement>('.settings-about-link')
     expect(link?.textContent?.trim()).toBe(REPOSITORY_URL)
 
-    // FR-001/FR-008: read-only information, no checkbox, select, or radio.
+    // FR-003: no revision identifier, label, or copy control anywhere.
+    expect(container.querySelector('[data-testid="settings-about-revision"]')).toBeNull()
+    expect(container.querySelector('[data-testid="settings-about-copy"]')).toBeNull()
+    expect(container.textContent).not.toContain('Revision')
+    expect(container.textContent).not.toContain('Copy')
+    expect(container.textContent).not.toContain('development build')
+
+    // FR-004: read-only information, no checkbox, select, or radio.
     expect(container.querySelectorAll('.settings-main input, .settings-main select')).toHaveLength(
       0
     )
   })
 
-  it('renders the development-build placeholder when the revision is null (FR-007)', async () => {
-    currentBuildInfo = { ...currentBuildInfo, revision: null }
+  it('shows no revision content even when the build carries revision metadata', async () => {
     renderDialog()
     await clickButton('About')
-
-    const values = Array.from(container.querySelectorAll('.settings-about-value')).map((el) =>
-      el.textContent?.trim()
-    )
-    expect(values).toEqual(['9.9.9', 'development build'])
+    expect(container.querySelector('[data-testid="settings-about-revision"]')).toBeNull()
     expect(buttons().some((b) => b.textContent?.trim() === 'Copy')).toBe(false)
+    expect(container.textContent).not.toContain(currentBuildInfo.revision ?? '')
   })
 
   it('keeps the repository link usable when getBuildInfo resolves a failure (review 2026-08-23)', async () => {
@@ -192,7 +192,7 @@ describe('the About area (spec 037 US1)', () => {
     await clickButton('About')
 
     // The link is a constant needing no fetched data, it must stay usable;
-    // only the version/revision rows degrade, showing no fabricated values.
+    // only the version row degrades, showing no fabricated values.
     const link = container.querySelector<HTMLButtonElement>('.settings-about-link')
     expect(link?.textContent?.trim()).toBe(REPOSITORY_URL)
     expect(container.querySelectorAll('.settings-about-value')).toHaveLength(0)
@@ -209,28 +209,45 @@ describe('the About area (spec 037 US1)', () => {
     expect(link?.textContent?.trim()).toBe(REPOSITORY_URL)
     expect(container.querySelectorAll('.settings-about-value')).toHaveLength(0)
   })
+})
 
-  it('copies the full untruncated revision to the clipboard (US2/FR-006)', async () => {
-    writeText.mockResolvedValue(undefined)
+describe('the Markdown area without word wrap (spec 050 FR-008)', () => {
+  it('renders no word wrap control and keeps the remaining switches', async () => {
     renderDialog()
-    await clickButton('About')
-    await clickButton('Copy')
+    await clickButton('Markdown')
 
-    expect(writeText).toHaveBeenCalledTimes(1)
-    expect(writeText).toHaveBeenCalledWith('abc123def4567890')
+    expect(container.querySelector('input[name="word-wrap"]')).toBeNull()
+    expect(container.textContent).not.toContain('Wrap long lines')
+
+    const switchTexts = Array.from(container.querySelectorAll('.settings-switch-text')).map((el) =>
+      el.textContent?.trim()
+    )
+    expect(switchTexts).toEqual([
+      'Syntax highlight code blocks',
+      'Show the formatting bar',
+      'Convert single line breaks to hard breaks',
+      'Strikethrough formatting (~~text~~)',
+      'Tables formatting (| column |)',
+      'Task list checkboxes (- [ ] / - [x])',
+      'Math and LaTeX expressions ($...$ and $$...$$)',
+      'Automatic link detection for URLs and emails'
+    ])
   })
+})
 
-  it('degrades silently when the clipboard write is denied (edge case)', async () => {
-    writeText.mockRejectedValue(new Error('denied'))
+describe('the editor theme dropdown without a visible label (spec 050 FR-006)', () => {
+  it('keeps a programmatic name after the visible "Theme" label is removed', async () => {
     renderDialog()
-    await clickButton('About')
+    await clickButton('Theme')
 
-    const copy = buttonByLabel('Copy')
-    await act(async () => {
-      copy.click()
-    })
-
-    expect(writeText).toHaveBeenCalledTimes(1)
+    const select = container.querySelector<HTMLSelectElement>('select[data-testid="editor-theme"]')
+    if (!select) throw new Error('editor-theme select missing')
+    expect(select.getAttribute('aria-label')).toBe('Theme')
+    // The section legend names the group; no stray visible "Theme" label remains.
+    const fieldset = select.closest('fieldset')
+    const legend = fieldset?.querySelector('.settings-legend')?.textContent
+    expect(legend).toBe('Editor Theme')
+    expect(fieldset?.querySelector('label')).toBeNull()
   })
 })
 

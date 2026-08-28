@@ -59,8 +59,6 @@ interface SettingsDialogProps {
   onVisualCodeHighlightingChange: (enabled: boolean) => void
   formattingBarVisible: boolean
   onFormattingBarVisibleChange: (visible: boolean) => void
-  wordWrap: boolean
-  onWordWrapChange: (enabled: boolean) => void
   onClose: () => void
 }
 
@@ -84,8 +82,6 @@ export default function SettingsDialog({
   onVisualCodeHighlightingChange,
   formattingBarVisible,
   onFormattingBarVisibleChange,
-  wordWrap,
-  onWordWrapChange,
   onClose
 }: SettingsDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -285,17 +281,6 @@ export default function SettingsDialog({
                     <input
                       type="checkbox"
                       className="settings-switch-input"
-                      name="word-wrap"
-                      checked={wordWrap}
-                      onChange={(e) => onWordWrapChange(e.target.checked)}
-                    />
-                    <span className="settings-switch-track" aria-hidden="true" />
-                    <span className="settings-switch-text">Wrap long lines in source view</span>
-                  </label>
-                  <label className="settings-switch">
-                    <input
-                      type="checkbox"
-                      className="settings-switch-input"
                       name="markdown-hard-breaks"
                       checked={markdownOptions.hardBreaks}
                       onChange={(e) => onMarkdownOptionChange({ hardBreaks: e.target.checked })}
@@ -389,29 +374,28 @@ export default function SettingsDialog({
                 </fieldset>
                 <fieldset className="settings-fieldset">
                   <legend className="settings-legend">Editor Theme</legend>
-                  <label className="settings-select-label" htmlFor="editor-theme">
-                    <span>Theme</span>
-                    <select
-                      id="editor-theme"
-                      data-testid="editor-theme"
-                      value={draftEditorTheme ?? ''}
-                      onChange={(e) => {
-                        draftTouchedRef.current = true
-                        setDraftEditorTheme(e.target.value)
-                      }}
-                    >
-                      {draftEditorTheme === null && (
-                        <option value="" disabled>
-                          No matching theme
-                        </option>
-                      )}
-                      {editorThemes.map((option) => (
-                        <option key={option.name} value={option.name}>
-                          {option.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <select
+                    id="editor-theme"
+                    className="settings-select-standalone"
+                    data-testid="editor-theme"
+                    aria-label="Theme"
+                    value={draftEditorTheme ?? ''}
+                    onChange={(e) => {
+                      draftTouchedRef.current = true
+                      setDraftEditorTheme(e.target.value)
+                    }}
+                  >
+                    {draftEditorTheme === null && (
+                      <option value="" disabled>
+                        No matching theme
+                      </option>
+                    )}
+                    {editorThemes.map((option) => (
+                      <option key={option.name} value={option.name}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
                   {invalidThemeFileNames.length > 0 && (
                     <p className="settings-theme-invalid-note">
                       Unreadable theme files ignored: {invalidThemeFileNames.join(', ')}

@@ -182,7 +182,8 @@
   flex-shrink: 0;
 }
 
-.source-return {
+.source-return,
+.source-word-wrap {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -195,8 +196,19 @@
   cursor: pointer;
 }
 
-.source-return:hover {
+.source-return:hover,
+.source-word-wrap:hover {
   background: var(--mm-surface-secondary);
+}
+
+.source-word-wrap {
+  margin-left: auto;
+}
+
+.source-word-wrap[aria-pressed='true'] {
+  background: var(--mm-accent);
+  border-color: var(--mm-accent);
+  color: var(--mm-bg);
 }
 
 .source-editor-host {
