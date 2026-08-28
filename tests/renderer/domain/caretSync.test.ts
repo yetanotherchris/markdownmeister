@@ -153,7 +153,8 @@ describe('planVisualRestore', () => {
   const restoreFor = (offset: number) =>
     planVisualRestore({ displayedText: FRONTMATTER_DOC, caretOffset: offset })
 
-  const blockStart = (index: number) => FRONTMATTER_LENGTH + buildBlockTable(FRONTMATTER_DOC)!.blocks[index].startOffset
+  const blockStart = (index: number) =>
+    FRONTMATTER_LENGTH + buildBlockTable(FRONTMATTER_DOC)!.blocks[index].startOffset
 
   it('maps a frontmatter caret to the start of the body', () => {
     expect(restoreFor(0)).toEqual({ blockIndex: 0, blockCount: 5 })

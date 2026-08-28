@@ -3,7 +3,11 @@ import { Schema } from '@milkdown/kit/prose/model'
 import type { Node as PMNode } from '@milkdown/kit/prose/model'
 import type { Selection } from '@milkdown/kit/prose/state'
 import type { EditorView } from '@milkdown/kit/prose/view'
-import { planCursorRestore, planBlockRestore, applyCursorRestore } from '../../src/renderer/editor/cursorRestore'
+import {
+  planCursorRestore,
+  planBlockRestore,
+  applyCursorRestore
+} from '../../src/renderer/editor/cursorRestore'
 
 const schema = new Schema({
   nodes: {

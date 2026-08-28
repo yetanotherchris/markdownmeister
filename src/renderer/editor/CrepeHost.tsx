@@ -102,7 +102,11 @@ export default function CrepeHost({
   function applyCursorState(view: EditorView | null) {
     if (!view) return
     if (cursorSync) {
-      const selection = planBlockRestore(view.state.doc, cursorSync.blockIndex, cursorSync.blockCount)
+      const selection = planBlockRestore(
+        view.state.doc,
+        cursorSync.blockIndex,
+        cursorSync.blockCount
+      )
       if (selection) {
         // The mapped caret is revealed rather than paired with a stored
         // scroll, and reported consumed so later activations keep whatever

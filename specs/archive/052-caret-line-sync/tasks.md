@@ -29,11 +29,11 @@
 
 ## Phase 5: E2E scenarios
 
-- [ ] 5.1 Write `tests/e2e/caret-sync.spec.ts`: visual caret in a mid-document paragraph maps to a line of that paragraph in source (FR-001); caret in a heading/list/quote/code block maps into that block (FR-002); round trip without touching the source caret restores the visual caret and scroll exactly (FR-003); moving the source caret to a distant block maps the visual caret into that block (FR-004); editing in source keeps the edit and lands in the caret's block (FR-004)
-- [ ] 5.2 Build and run: `npm run test:e2e -- caret-sync`, iterate to green without weakening path or data-loss guarantees
+- [x] 5.1 Write `tests/e2e/caret-sync.spec.ts`: visual caret in a mid-document paragraph maps to a line of that paragraph in source (FR-001); caret in a heading/list/quote/code block maps into that block (FR-002); round trip without touching the source caret restores the visual caret and scroll exactly (FR-003); moving the source caret to a distant block maps the visual caret into that block (FR-004); editing in source keeps the edit and lands in the caret's block (FR-004)
+- [x] 5.2 Build and run: `npm run test:e2e -- caret-sync`, iterate to green without weakening path or data-loss guarantees
 
 ## Phase 6: Full verification and archive
 
-- [ ] 6.1 `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:e2e`
-- [ ] 6.2 Append new files to `scripts.format:check`; `npx prettier --check` touched files
-- [ ] 6.3 Archive: `git mv specs/052-caret-line-sync specs/archive/052-caret-line-sync`, set Status Archived
+- [x] 6.1 `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:e2e`
+- [x] 6.2 Append new files to `scripts.format:check`; `npx prettier --check` touched files
+- [x] 6.3 Archive: `git mv specs/052-caret-line-sync specs/archive/052-caret-line-sync`, set Status Archived

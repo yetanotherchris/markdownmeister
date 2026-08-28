@@ -30,7 +30,6 @@ export class InstancePool {
     this.instances.delete(documentId)
   }
 
-
   setBaselineDoc(documentId: string, docRef: unknown): void {
     const entry = this.instances.get(documentId)
     if (entry) entry.baselineDoc = docRef
@@ -39,7 +38,6 @@ export class InstancePool {
   getBaselineDoc(documentId: string): unknown {
     return this.instances.get(documentId)?.baselineDoc
   }
-
 
   clearBaselineDoc(documentId: string): void {
     const entry = this.instances.get(documentId)
@@ -85,14 +83,12 @@ export class InstancePool {
     return entry.editor.getMarkdown()
   }
 
-
   forEach(fn: (editor: Crepe) => void): void {
     this.instances.forEach((entry) => fn(entry.editor))
   }
 
-
   evictLRU(dirtyDocuments: DocumentState[], activeId: string | null): string | null {
-    const dirtyIds = new Set(dirtyDocuments.map(d => d.id))
+    const dirtyIds = new Set(dirtyDocuments.map((d) => d.id))
     let oldest: InstanceEntry | null = null
 
     for (const entry of this.instances.values()) {

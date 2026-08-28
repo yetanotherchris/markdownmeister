@@ -2,11 +2,7 @@ import { useCallback } from 'react'
 import type { DocumentsAction, EditingSession } from '../state/documents'
 import { editorMatchesContent } from '../state/documents'
 import { joinFrontmatter } from '../domain/frontmatter'
-import {
-  planReturnRestore,
-  planSourceSeed,
-  type SourceSeed
-} from '../domain/caretSync'
+import { planReturnRestore, planSourceSeed, type SourceSeed } from '../domain/caretSync'
 import { instancePool } from '../editor/instancePool'
 import type { DocumentSessionApi } from './useDocumentSession'
 
@@ -47,8 +43,7 @@ export function useSourceViewToggle(opts: {
     (id: string, displayedText: string | null): void => {
       const doc = sessionRef.current.documents.find((d) => d.id === id)
       if (!doc) return
-      const effectiveText =
-        displayedText ?? joinFrontmatter(doc.frontmatter, doc.content)
+      const effectiveText = displayedText ?? joinFrontmatter(doc.frontmatter, doc.content)
       const geometry = displayedText ? instancePool.getSelectionGeometry(id) : null
       const mapped =
         displayedText && geometry
@@ -168,7 +163,15 @@ export function useSourceViewToggle(opts: {
       enforcePoolCap(sessionRef.current.activeId)
       return read.value.path ?? read.value.name
     },
-    [dispatch, enforcePoolCap, flushLiveContent, captureContentForSwitch, seedSourceContext, sessionRef, session]
+    [
+      dispatch,
+      enforcePoolCap,
+      flushLiveContent,
+      captureContentForSwitch,
+      seedSourceContext,
+      sessionRef,
+      session
+    ]
   )
 
   const handleViewSource = useCallback(
