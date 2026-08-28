@@ -13,6 +13,7 @@ interface SourceViewProps {
   isActive: boolean
   spellcheckEnabled: boolean
   wordWrap: boolean
+  onWordWrapChange: (enabled: boolean) => void
   selectionAnchor: number
   selectionHead: number
   scrollTop: number
@@ -42,6 +43,7 @@ export default function SourceView({
   isActive,
   spellcheckEnabled,
   wordWrap,
+  onWordWrapChange,
   selectionAnchor,
   selectionHead,
   scrollTop,
@@ -168,6 +170,17 @@ export default function SourceView({
           onClick={onReturnToFormatted}
         >
           ← Visual Editing
+        </button>
+        <button
+          type="button"
+          className="source-word-wrap"
+          data-testid="source-word-wrap"
+          title="Word Wrap"
+          aria-label="Word Wrap"
+          aria-pressed={wordWrap}
+          onClick={() => onWordWrapChange(!wordWrap)}
+        >
+          Word Wrap
         </button>
       </div>
       <div ref={hostRef} className="source-editor-host" />

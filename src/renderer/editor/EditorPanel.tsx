@@ -15,6 +15,7 @@ interface EditorPanelProps {
   markdownOptions: MarkdownSyntaxOptions
   spellcheckEnabled: boolean
   wordWrap: boolean
+  onWordWrapChange: (enabled: boolean) => void
   onSpellingMenu: (menu: SpellingMenuState | null) => void
   onContentChange: (id: string, content: string) => void
   onBaselineCapture: (id: string, baseline: string) => void
@@ -47,6 +48,7 @@ function DocumentHost({
   markdownOptions,
   spellcheckEnabled,
   wordWrap,
+  onWordWrapChange,
   onSpellingMenu,
   onContentChange,
   onBaselineCapture,
@@ -126,6 +128,7 @@ function DocumentHost({
           isActive={isActive}
           spellcheckEnabled={spellcheckEnabled}
           wordWrap={wordWrap}
+          onWordWrapChange={onWordWrapChange}
           selectionAnchor={document.sourceSelectionAnchor}
           selectionHead={document.sourceSelectionHead}
           scrollTop={document.sourceScrollTop}
