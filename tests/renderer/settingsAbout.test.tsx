@@ -10,9 +10,9 @@ import type { BuildInfo, EditorColors, EditorThemeDefinition } from '../../src/s
 
 /**
  * Spec 037 (FR-001..FR-008): the About area joins the settings navigation LAST,
- * shows three read-only values, and contributes no staged state, visiting it
- * can neither stage anything nor disturb the editor-theme draft the dialog
- * already manages (statelessness both ways).
+ * shows two read-only values after spec 050, and contributes no staged state;
+ * visiting it can neither stage anything nor disturb the editor-theme draft
+ * the dialog already manages (statelessness both ways).
  *
  * Spec 050 pares the panel down to the bare version value plus the repository
  * row, and moves the word wrap control out of the Markdown area entirely.
@@ -180,6 +180,7 @@ describe('the About area (spec 037 US1, spec 050 US1)', () => {
     await clickButton('About')
     expect(container.querySelector('[data-testid="settings-about-revision"]')).toBeNull()
     expect(buttons().some((b) => b.textContent?.trim() === 'Copy')).toBe(false)
+    expect(container.textContent).not.toContain(currentBuildInfo.revision ?? '')
   })
 
   it('keeps the repository link usable when getBuildInfo resolves a failure (review 2026-08-23)', async () => {

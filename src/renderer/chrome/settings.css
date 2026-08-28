@@ -149,7 +149,8 @@
   color: var(--mm-text);
 }
 
-.settings-select-label select {
+.settings-select-label select,
+.settings-select-standalone {
   background: var(--mm-surface-secondary);
   color: var(--mm-text);
   border: 1px solid var(--mm-border);
@@ -164,12 +165,6 @@
 
 .settings-select-standalone {
   margin: 6px 8px;
-  background: var(--mm-surface-secondary);
-  color: var(--mm-text);
-  border: 1px solid var(--mm-border);
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 13px;
 }
 
 .settings-switch {
@@ -345,8 +340,8 @@
 .settings-nav-button:focus-visible,
 .settings-radio:focus-within,
 .settings-select-label select:focus-visible,
-.settings-about-link:focus-visible,
-.settings-about-copy:focus-visible {
+.settings-select-standalone:focus-visible,
+.settings-about-link:focus-visible {
   outline: 2px solid var(--mm-accent);
   outline-offset: 1px;
 }

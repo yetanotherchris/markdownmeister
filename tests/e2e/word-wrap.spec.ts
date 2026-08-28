@@ -75,18 +75,45 @@ test('FR-009 the toggle sits at the far right of the header bar, back button far
     const backRect = back.getBoundingClientRect()
     const toggleRect = toggle.getBoundingClientRect()
     return {
+      barLeft: barRect.left,
       backLeft: backRect.left,
       toggleLeft: toggleRect.left,
       toggleRightGap: barRect.right - toggleRect.right,
       leftGap: toggleRect.left - backRect.right
     }
   })
-  expect(positions).not.toBeNull()
-  // The toggle starts right of the back button and hugs the bar's right edge.
-  expect(positions!.toggleLeft).toBeGreaterThan(positions!.backLeft)
-  expect(positions!.leftGap).toBeGreaterThan(0)
-  expect(positions!.toggleRightGap).toBeLessThanOrEqual(17)
+  if (!positions) throw new Error('toolbar buttons missing')
+  // 16px toolbar padding plus a 1px rounding tolerance.
+  const edgeTolerance = 17
+  // The back button hugs the left edge, the toggle starts right of it and
+  // hugs the right edge.
+  expect(positions.backLeft - positions.barLeft).toBeLessThanOrEqual(edgeTolerance)
+  expect(positions.toggleLeft).toBeGreaterThan(positions.backLeft)
+  expect(positions.leftGap).toBeGreaterThan(0)
+  expect(positions.toggleRightGap).toBeLessThanOrEqual(edgeTolerance)
 })
+
+/** The toggle's resolved background colour, for the pressed-state check. */
+async function toggleBackground(): Promise<string> {
+  return wordWrapToggle().evaluate((element) => getComputedStyle(element).backgroundColor)
+}
+
+/** The accent colour the pressed style keys on, resolved to rgb(). */
+async function accentBackground(): Promise<string> {
+  return window
+    .locator('.source-view')
+    .evaluate((surface) => getComputedStyle(surface).getPropertyValue('--mm-accent').trim())
+    .then((accent) => {
+      return window.evaluate((hex) => {
+        const probe = document.createElement('span')
+        probe.style.color = hex
+        document.body.appendChild(probe)
+        const rgb = getComputedStyle(probe).color
+        probe.remove()
+        return rgb
+      }, accent)
+    })
+}
 
 test('FR-010/FR-012 the toggle communicates its state and defaults to off', async () => {
   await openSourceView('alpha.md')
@@ -128,12 +155,64 @@ test('US1 enabling wraps lines inside the pane immediately, without reopening', 
   await openSourceView('alpha.md')
   await expect.poll(sourceOverflows).toBe(true)
 
+  const unpressed = await toggleBackground()
   await toggleWordWrap()
 
-  await expect.poll(sourceOverflows).toBe(false)
+  // SC-005: the presentation changes within one second (the flip is
+  // synchronous, so a generous default poll timeout would hide a stall).
+  await expect.poll(sourceOverflows, { timeout: 1000 }).toBe(false)
   // The visible state matches the applied state (FR-010).
   await expect(wordWrapToggle()).toHaveAttribute('aria-pressed', 'true')
+  expect(await toggleBackground()).not.toBe(unpressed)
+  expect(await toggleBackground()).toBe(await accentBackground())
   // The same source surface is still the live editing area.
+  await expect(window.getByTestId('source-textarea')).toBeVisible()
+})
+
+test('FR-010 the toggle is operable from the keyboard', async () => {
+  await openSourceView('alpha.md')
+  await expect.poll(sourceOverflows).toBe(true)
+
+  await wordWrapToggle().focus()
+  await window.keyboard.press('Enter')
+  await expect.poll(sourceOverflows, { timeout: 1000 }).toBe(false)
+  await expect(wordWrapToggle()).toHaveAttribute('aria-pressed', 'true')
+
+  await window.keyboard.press('Space')
+  await expect.poll(sourceOverflows, { timeout: 1000 }).toBe(true)
+  await expect(wordWrapToggle()).toHaveAttribute('aria-pressed', 'false')
+})
+
+test('FR-011 the choice applies to a source view opened later in the same session', async () => {
+  await openSourceView('alpha.md')
+  await toggleWordWrap()
+  await expect.poll(sourceOverflows, { timeout: 1000 }).toBe(false)
+
+  // Return to the visual editor and open the other document's source view.
+  await window.getByRole('button', { name: 'Back to visual editing' }).click()
+  await expect(window.getByTestId('source-view')).toHaveCount(0)
+  await openSourceView('token.md')
+
+  await expect.poll(sourceOverflows, { timeout: 1000 }).toBe(false)
+  await expect(wordWrapToggle()).toHaveAttribute('aria-pressed', 'true')
+})
+
+test('US1 edge case toggling wrap on while scrolled far right resets sanely', async () => {
+  await openSourceView('alpha.md')
+  await expect.poll(sourceOverflows).toBe(true)
+
+  await window.locator('.source-view .cm-scroller').evaluate((el) => {
+    el.scrollLeft = el.scrollWidth
+  })
+  await toggleWordWrap()
+
+  // The horizontal offset becomes meaningless and resets rather than erroring;
+  // the view stays usable and the surface keeps responding.
+  const scrollLeft = await window.locator('.source-view .cm-scroller').evaluate((el) => {
+    el.scrollLeft = el.scrollWidth
+    return el.scrollLeft
+  })
+  expect(scrollLeft).toBe(0)
   await expect(window.getByTestId('source-textarea')).toBeVisible()
 })
 
@@ -143,7 +222,7 @@ test('US1 unbroken tokens break within the pane when wrap is enabled', async () 
   await expect.poll(sourceOverflows).toBe(false)
 })
 
-test('US2 toggling mid-edit preserves text, dirty state, and the typing position', async () => {
+test('US2 toggling mid-edit preserves text, dirty state, selection, and the typing position', async () => {
   await openSourceView('alpha.md')
   const source = window.getByTestId('source-textarea')
 
@@ -154,18 +233,34 @@ test('US2 toggling mid-edit preserves text, dirty state, and the typing position
   const alphaTab = window.getByRole('tab', { name: /alpha\.md/ })
   await expect(alphaTab.locator('.tab-dirty')).toBeVisible()
 
+  // A live selection spanning a word must keep its exact coverage.
+  await window.keyboard.press('Control+Home')
+  await window.keyboard.press('Shift+Control+ArrowRight')
+  const selectionBefore = await window.evaluate(() => {
+    const selection = document.getSelection()
+    return { text: selection?.toString() ?? '', anchor: selection?.anchorOffset ?? -1 }
+  })
+  expect(selectionBefore.text.length).toBeGreaterThan(0)
+
   await toggleWordWrap()
 
-  // Text and dirty state survive the toggle.
+  // Text, dirty state, and the selection survive the toggle.
   await expect(source).toContainText('EDITED')
   await expect(alphaTab.locator('.tab-dirty')).toBeVisible()
+  const selectionAfter = await window.evaluate(() => {
+    const selection = document.getSelection()
+    return { text: selection?.toString() ?? '', anchor: selection?.anchorOffset ?? -1 }
+  })
+  expect(selectionAfter).toEqual(selectionBefore)
 
-  // Caret navigation and insertion still land where intended.
-  await source.click()
-  await window.keyboard.press('Control+Home')
-  await window.keyboard.type('START>> ')
+  // Typing continues exactly at the selection without any re-click, replacing it.
+  // The toggle click moved focus to the button; refocusing the editor surface
+  // restores the caret to the preserved selection without moving it.
+  const fullTextBefore = await source.textContent()
+  await source.focus()
+  await window.keyboard.type('X')
   const text = await source.textContent()
-  expect(text?.startsWith('START>> # Alpha')).toBe(true)
+  expect(text).toBe('X' + fullTextBefore!.slice(selectionBefore.text.length))
   await expect(alphaTab.locator('.tab-dirty')).toBeVisible()
 })
 

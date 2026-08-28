@@ -100,6 +100,18 @@ test('spec 050 FR-001 the version renders as a bare value with no Version label'
   expect(labels.map((label) => label.trim())).toEqual(['Repository URL'])
   const panel = window.getByRole('group', { name: 'About' })
   await expect(panel).not.toContainText('Version', { ignoreCase: true })
+
+  // The rows keep zero horizontal padding, aligning with the legend.
+  const horizontalPaddings = await rows.evaluateAll((elements) =>
+    elements.map((element) => {
+      const style = getComputedStyle(element)
+      return { left: style.paddingLeft, right: style.paddingRight }
+    })
+  )
+  expect(horizontalPaddings).toEqual([
+    { left: '0px', right: '0px' },
+    { left: '0px', right: '0px' }
+  ])
 })
 
 test('spec 050 FR-003 no revision identifier, label, or copy control appears', async () => {
@@ -169,6 +181,7 @@ test('spec 050 FR-003 a development run without revision metadata still shows ve
   await expect(window.getByTestId('settings-about-repository')).toHaveText(REPOSITORY_URL)
   const panel = window.getByRole('group', { name: 'About' })
   await expect(panel).not.toContainText('Revision')
+  await expect(panel).not.toContainText('development build')
   await expect(window.getByTestId('settings-about-revision')).toHaveCount(0)
 })
 

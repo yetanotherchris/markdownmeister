@@ -176,7 +176,6 @@ export default function SourceView({
           className="source-word-wrap"
           data-testid="source-word-wrap"
           title="Word Wrap"
-          aria-label="Word Wrap"
           aria-pressed={wordWrap}
           onClick={() => onWordWrapChange(!wordWrap)}
         >

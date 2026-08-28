@@ -182,7 +182,8 @@
   flex-shrink: 0;
 }
 
-.source-return {
+.source-return,
+.source-word-wrap {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -195,25 +196,13 @@
   cursor: pointer;
 }
 
-.source-return:hover {
+.source-return:hover,
+.source-word-wrap:hover {
   background: var(--mm-surface-secondary);
 }
 
 .source-word-wrap {
   margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  padding: 5px 12px;
-  border: 1px solid var(--mm-border);
-  border-radius: 6px;
-  background: var(--mm-bg);
-  font-size: 13px;
-  color: inherit;
-  cursor: pointer;
-}
-
-.source-word-wrap:hover {
-  background: var(--mm-surface-secondary);
 }
 
 .source-word-wrap[aria-pressed='true'] {

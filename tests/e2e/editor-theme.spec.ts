@@ -144,9 +144,9 @@ test('spec 050 FR-005/FR-006 the dropdown starts at the content edge with no vis
       midpoint: fieldsetRect.left + fieldsetRect.width / 2
     }
   })
-  expect(edges).not.toBeNull()
-  expect(edges!.selectLeft).toBeLessThan(edges!.midpoint)
-  expect(Math.abs(edges!.selectLeft - (edges!.legendLeft + 8))).toBeLessThanOrEqual(2)
+  if (!edges) throw new Error('editor theme fieldset missing')
+  expect(edges.selectLeft).toBeLessThan(edges.midpoint)
+  expect(Math.abs(edges.selectLeft - (edges.legendLeft + 8))).toBeLessThanOrEqual(2)
 })
 
 test('US1 S2/S3 selecting Scholarly and pressing Save re-themes the canvas and persists it', async () => {

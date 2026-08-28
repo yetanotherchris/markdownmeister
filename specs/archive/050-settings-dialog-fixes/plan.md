@@ -24,19 +24,19 @@ Three small, independent UI corrections. The About area drops the "Version" labe
 
 **Constraints**: FR-007 and FR-015 demand byte-for-byte behavioural identity for everything not named; the theme select must keep its accessible name (FR-006); the toggle must preserve text, selection, dirty state, and typing position (FR-013).
 
-**Scale/Scope**: Five production files edited, no new files; three e2e suites updated, one unit suite updated.
+**Scale/Scope**: Seven production files edited, no new files; three e2e suites and one unit suite updated.
 
 ## Constitution Check
 
-*GATE: renderer-only presentation change behind existing settings infrastructure.*
+_GATE: renderer-only presentation change behind existing settings infrastructure._
 
-| Principle | Impact |
-|-----------|--------|
-| I. Process Isolation Is Absolute | Honoured - no IPC, preload, or main-process changes; the toggle reuses the existing `updateSettings({ wordWrap })` operation |
-| II. Every Path Is Untrusted | None - no paths involved |
-| III. Never Lose The User's Words | Honoured - the toggle path cannot touch document text (compartment reconfigure only); existing mid-edit e2e scenarios are kept and re-pointed at the new control |
-| IV. Calm, Predictable Editing | Honoured - the toggle sits on the surface it affects, applies immediately and quietly, no dialogs or focus theft |
-| V. Test What Can Corrupt Or Escape | Honoured - editing-state preservation and malformed-preference recovery remain covered; coverage migrates with the control |
+| Principle                          | Impact                                                                                                                                                           |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| I. Process Isolation Is Absolute   | Honoured - no IPC, preload, or main-process changes; the toggle reuses the existing `updateSettings({ wordWrap })` operation                                     |
+| II. Every Path Is Untrusted        | None - no paths involved                                                                                                                                         |
+| III. Never Lose The User's Words   | Honoured - the toggle path cannot touch document text (compartment reconfigure only); existing mid-edit e2e scenarios are kept and re-pointed at the new control |
+| IV. Calm, Predictable Editing      | Honoured - the toggle sits on the surface it affects, applies immediately and quietly, no dialogs or focus theft                                                 |
+| V. Test What Can Corrupt Or Escape | Honoured - editing-state preservation and malformed-preference recovery remain covered; coverage migrates with the control                                       |
 
 All gates pass. No violations to track.
 
