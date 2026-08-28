@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-28
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User bug report, verbatim: "Open a file that's about 1000-2000 words. Scroll down, click in the visual editor. Click on 'view source'. The visual editor freezes. It can also show half of the code editor at the top as a visual glitch. The work around is to close the tab, so it's only the frame that's frozen not the whole app. I think trying to sync the caret in the two editor modes might be contributing."
 
