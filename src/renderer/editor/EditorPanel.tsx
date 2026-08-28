@@ -57,15 +57,6 @@ function DocumentHost({
   onReturnToFormatted
 }: DocumentHostProps) {
   const inSource = !staged && document.view === 'source'
-  // The source overlay is anchored at this container's content origin, so a
-  // scroll offset retained from the formatted view displaces it out of the
-  // viewport and exposes the inert visual editor. Child effects run first, so
-  // CrepeHost's leave-capture records the formatted scroll before this reset.
-  const hostRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!inSource) return
-    hostRef.current?.scrollTo(0, 0)
-  }, [inSource])
   const handleMarkdownUpdated = useCallback(
     (markdown: string) => onContentChange(document.id, markdown),
     [document.id, onContentChange]
@@ -94,6 +85,15 @@ function DocumentHost({
     },
     [document.id, onSourceContext]
   )
+  // The source overlay is anchored at this container's content origin, so a
+  // scroll offset retained from the formatted view displaces it out of the
+  // viewport and exposes the inert visual editor. Child effects run first, so
+  // CrepeHost's leave-capture records the formatted scroll before this reset.
+  const hostRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!inSource) return
+    hostRef.current?.scrollTo(0, 0)
+  }, [inSource])
 
   if (document.editorState === 'evicted') return <div className="editor-host evicted" />
 
