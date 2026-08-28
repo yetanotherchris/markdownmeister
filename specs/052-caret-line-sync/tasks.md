@@ -2,9 +2,9 @@
 
 ## Phase 1: Mapping domain (R2, R3, FR-001/002/005)
 
-- [ ] 1.1 Write unit tests `tests/renderer/domain/caretSync.test.ts`: block table spans (heading, paragraph, list, quote, code, frontmatter offset), top-level index at offset (boundary, doc end, empty), `planSourceSeed` (mapped anchor, count-mismatch fallback, empty body), `planVisualRestore` (frontmatter clamp, gap nearest with tie to following block, trailing clamp, mid-block), `planReturnRestore` (untouched exact, moved, edited)
-- [ ] 1.2 Implement `src/renderer/domain/caretSync.ts`: `buildBlockTable` (one remark parse of the displayed text, frontmatter length carried separately), `topLevelBlockIndex`, `planSourceSeed`, `planVisualRestore`, `planReturnRestore`; any failure returns null, never throws
-- [ ] 1.3 Verify: `npm run test -- caretSync`
+- [x] 1.1 Write unit tests `tests/renderer/domain/caretSync.test.ts`: block table spans (heading, paragraph, list, quote, code, frontmatter offset), top-level index at offset (boundary, doc end, empty), `planSourceSeed` (mapped anchor, count-mismatch fallback, empty body), `planVisualRestore` (frontmatter clamp, gap nearest with tie to following block, trailing clamp, mid-block), `planReturnRestore` (untouched exact, moved, edited)
+- [x] 1.2 Implement `src/renderer/domain/caretSync.ts`: `buildBlockTable` (one remark parse of the displayed text, frontmatter length carried separately), `topLevelBlockIndex`, `planSourceSeed`, `planVisualRestore`, `planReturnRestore`; any failure returns null, never throws
+- [x] 1.3 Verify: `npm run test -- caretSync`
 
 ## Phase 2: State support (R4, FR-003/004/006/007)
 
