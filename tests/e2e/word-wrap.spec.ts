@@ -5,11 +5,13 @@ import * as path from 'path'
 import { closeAppSafely, launchApp, openFile } from './launch'
 
 /**
- * Spec 048 suite: source view word wrap. Covers the two-state Markdown-area
- * control (FR-001), today's behaviour when off (FR-002), wrapped presentation
- * when on (FR-003), immediate application to open source views (FR-004),
- * mid-edit safety (FR-005), persistence and malformed-value recovery (FR-006),
- * and a typing-latency smoke on a large wrapped document (SC-005).
+ * Spec 048 suite, migrated by spec 050 to the source view's header-bar toggle:
+ * the two-state control defaulting off (FR-012), today's behaviour when off,
+ * wrapped presentation when on, immediate application to open source views
+ * (FR-011), mid-edit safety (FR-013), persistence and malformed-value
+ * recovery, the far-right header-bar position and visible state (FR-009,
+ * FR-010), absence from Settings (FR-008), an untouched visual editor
+ * (FR-014), and a typing-latency smoke on a large wrapped document (SC-005).
  */
 
 let app: ElectronApplication
@@ -40,28 +42,12 @@ test.afterAll(async () => {
   fs.rmSync(testFolder, { recursive: true, force: true })
 })
 
-async function openMarkdownArea(): Promise<Page> {
-  await window.getByRole('button', { name: 'Open menu' }).click()
-  await window.getByRole('menuitem', { name: 'Settings…' }).click()
-  const dialog = window.getByTestId('settings-dialog')
-  await dialog.waitFor()
-  await dialog
-    .getByRole('navigation', { name: 'Settings areas' })
-    .getByRole('button', { name: 'Markdown' })
-    .click()
-  await expect(dialog.getByRole('group', { name: 'Markdown', exact: true })).toBeVisible()
-  return window
-}
-
-function wordWrapSwitch(dialog: Page): ReturnType<Page['getByRole']> {
-  return dialog.getByRole('checkbox', { name: 'Wrap long lines in source view' })
+function wordWrapToggle(): ReturnType<Page['getByTestId']> {
+  return window.getByTestId('source-word-wrap')
 }
 
 async function toggleWordWrap(): Promise<void> {
-  const dialog = await openMarkdownArea()
-  await dialog.locator('.settings-switch', { hasText: 'Wrap long lines in source view' }).click()
-  await window.keyboard.press('Escape')
-  await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
+  await wordWrapToggle().click()
 }
 
 /** Whether the CodeMirror scroller overflows horizontally right now. */
@@ -77,9 +63,55 @@ async function openSourceView(name: string): Promise<void> {
   await expect(window.getByTestId('source-view')).toBeVisible()
 }
 
-test('US1 the Markdown area offers a two-state switch defaulting to off', async () => {
-  const dialog = await openMarkdownArea()
-  await expect(wordWrapSwitch(dialog)).not.toBeChecked()
+test('FR-009 the toggle sits at the far right of the header bar, back button far left', async () => {
+  await openSourceView('alpha.md')
+
+  const bar = window.locator('.source-toolbar')
+  const positions = await bar.evaluate((toolbar) => {
+    const back = toolbar.querySelector<HTMLButtonElement>('.source-return')
+    const toggle = toolbar.querySelector<HTMLButtonElement>('.source-word-wrap')
+    if (!back || !toggle) return null
+    const barRect = toolbar.getBoundingClientRect()
+    const backRect = back.getBoundingClientRect()
+    const toggleRect = toggle.getBoundingClientRect()
+    return {
+      backLeft: backRect.left,
+      toggleLeft: toggleRect.left,
+      toggleRightGap: barRect.right - toggleRect.right,
+      leftGap: toggleRect.left - backRect.right
+    }
+  })
+  expect(positions).not.toBeNull()
+  // The toggle starts right of the back button and hugs the bar's right edge.
+  expect(positions!.toggleLeft).toBeGreaterThan(positions!.backLeft)
+  expect(positions!.leftGap).toBeGreaterThan(0)
+  expect(positions!.toggleRightGap).toBeLessThanOrEqual(17)
+})
+
+test('FR-010/FR-012 the toggle communicates its state and defaults to off', async () => {
+  await openSourceView('alpha.md')
+
+  const toggle = wordWrapToggle()
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+  await expect(toggle).toHaveText('Word Wrap')
+})
+
+test('FR-008 the Settings Markdown area no longer offers word wrap', async () => {
+  await window.getByRole('button', { name: 'Open menu' }).click()
+  await window.getByRole('menuitem', { name: 'Settings…' }).click()
+  const dialog = window.getByTestId('settings-dialog')
+  await dialog.waitFor()
+  await dialog
+    .getByRole('navigation', { name: 'Settings areas' })
+    .getByRole('button', { name: 'Markdown' })
+    .click()
+  await expect(dialog.getByRole('group', { name: 'Markdown', exact: true })).toBeVisible()
+
+  await expect(dialog.locator('input[name="word-wrap"]')).toHaveCount(0)
+  await expect(dialog.getByText('Wrap long lines in source view')).toHaveCount(0)
+  // The remaining Markdown-area switches are intact.
+  await expect(dialog.getByText('Syntax highlight code blocks')).toBeVisible()
+  await expect(dialog.getByText('Show the formatting bar')).toBeVisible()
 })
 
 test('US1 disabling matches today: long lines overflow with horizontal scrolling', async () => {
@@ -99,6 +131,8 @@ test('US1 enabling wraps lines inside the pane immediately, without reopening', 
   await toggleWordWrap()
 
   await expect.poll(sourceOverflows).toBe(false)
+  // The visible state matches the applied state (FR-010).
+  await expect(wordWrapToggle()).toHaveAttribute('aria-pressed', 'true')
   // The same source surface is still the live editing area.
   await expect(window.getByTestId('source-textarea')).toBeVisible()
 })
@@ -153,9 +187,11 @@ test('US1 the choice persists across a restart', async () => {
 
   await openSourceView('alpha.md')
   await expect.poll(sourceOverflows).toBe(false)
+  // The restored state is visible on the toggle itself.
+  await expect(wordWrapToggle()).toHaveAttribute('aria-pressed', 'true')
 })
 
-test('FR-006 a malformed stored value falls back to disabled quietly', async () => {
+test('FR-012 a malformed stored value falls back to disabled quietly', async () => {
   await closeAppSafely(app)
   fs.writeFileSync(
     path.join(configDir, 'config.json'),
@@ -165,9 +201,24 @@ test('FR-006 a malformed stored value falls back to disabled quietly', async () 
 
   await openSourceView('alpha.md')
   await expect.poll(sourceOverflows).toBe(true)
+  await expect(wordWrapToggle()).toHaveAttribute('aria-pressed', 'false')
+})
 
-  const dialog = await openMarkdownArea()
-  await expect(wordWrapSwitch(dialog)).not.toBeChecked()
+test('FR-014 the visual editor never gains horizontal scrolling from wrap', async () => {
+  await openSourceView('alpha.md')
+  await toggleWordWrap()
+  await expect.poll(sourceOverflows).toBe(false)
+
+  await window.getByRole('button', { name: 'Back to visual editing' }).click()
+  await expect(window.getByTestId('source-view')).toHaveCount(0)
+
+  const overflows = await window
+    .locator('.milkdown')
+    .first()
+    .evaluate((el) => {
+      return el.scrollWidth > el.clientWidth + 1
+    })
+  expect(overflows).toBe(false)
 })
 
 test('SC-005 typing into a large wrapped document stays responsive', async () => {

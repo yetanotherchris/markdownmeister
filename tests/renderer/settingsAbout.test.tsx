@@ -6,11 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { REPOSITORY_URL } from '../../src/main/buildInfo'
 import SettingsDialog, { SETTINGS_AREAS } from '../../src/renderer/chrome/SettingsDialog'
 import type { MarkdownSyntaxOptions } from '../../src/renderer/editor/markdownSyntaxOptions'
-import type {
-  BuildInfo,
-  EditorColors,
-  EditorThemeDefinition
-} from '../../src/shared/ipc-contract'
+import type { BuildInfo, EditorColors, EditorThemeDefinition } from '../../src/shared/ipc-contract'
 
 /**
  * Spec 037 (FR-001..FR-008): the About area joins the settings navigation LAST,

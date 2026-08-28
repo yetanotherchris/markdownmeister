@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-28
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "the about page in the settings needs to remove the labels except e.g. repository url, and also remove the revision. Settings -> Editor theme - the drop down is right aligned but should be left aligned. no 'Theme' label is needed. The word wrap feature should be removed from settings and put as a button in the 'view source' view on the far right side of the header bar."
 

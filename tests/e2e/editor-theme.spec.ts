@@ -109,6 +109,46 @@ test('US1 the Editor Theme dropdown lists all five themes alphabetically', async
   expect(names).toEqual(['monotone', 'monotone-serif', 'rustic', 'rustic-serif', 'scholarly'])
 })
 
+test('spec 050 FR-005/FR-006 the dropdown starts at the content edge with no visible Theme label', async () => {
+  await openFile(window, 'alpha.md')
+  const dialog = await openSettingsDialog(window)
+  await openThemeArea(window)
+
+  const group = dialog.getByRole('group', { name: 'Editor Theme' })
+  const select = dialog.getByTestId('editor-theme')
+
+  // No visible "Theme" label row wraps the select anymore (the wrapping label
+  // element is gone; the section legend is the only heading).
+  await expect(group.locator('label')).toHaveCount(0)
+  const groupText = await group.evaluate((fieldset) => {
+    const legend = fieldset.querySelector('.settings-legend')
+    return legend === null
+      ? (fieldset.textContent ?? '')
+      : (fieldset.textContent ?? '').replace(legend.textContent ?? '', '')
+  })
+  expect(groupText).not.toContain('Theme')
+
+  // The select's left edge sits at the section's content start (the same 8px
+  // inset every settings row uses), not pushed to the right of a label row.
+  const edges = await select.evaluate((element) => {
+    const fieldset = element.closest('fieldset')
+    if (!fieldset) return null
+    const selectRect = element.getBoundingClientRect()
+    const fieldsetRect = fieldset.getBoundingClientRect()
+    const legend = fieldset.querySelector('.settings-legend')
+    const legendLeft = legend ? legend.getBoundingClientRect().left : fieldsetRect.left
+    return {
+      selectLeft: selectRect.left,
+      fieldsetLeft: fieldsetRect.left,
+      legendLeft,
+      midpoint: fieldsetRect.left + fieldsetRect.width / 2
+    }
+  })
+  expect(edges).not.toBeNull()
+  expect(edges!.selectLeft).toBeLessThan(edges!.midpoint)
+  expect(Math.abs(edges!.selectLeft - (edges!.legendLeft + 8))).toBeLessThanOrEqual(2)
+})
+
 test('US1 S2/S3 selecting Scholarly and pressing Save re-themes the canvas and persists it', async () => {
   await openFile(window, 'alpha.md')
   const dialog = await openSettingsDialog(window)

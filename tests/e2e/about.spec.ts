@@ -6,11 +6,11 @@ import { REPOSITORY_URL } from '../../src/main/buildInfo'
 import { closeAppSafely, launchApp, messageBoxCallCount, openSettingsDialog } from './launch'
 
 /**
- * Spec 037 suite: the About settings area. Covers the acceptance scenarios,
- * the nav entry last (FR-001), three read-only values with the true version
- * (FR-002), the exact-URL external hand-off recorded in main (FR-004), the
- * full-value clipboard round-trip (FR-006), the never-prompting stateless
- * close (FR-008), and the development placeholder (FR-007).
+ * Spec 037 suite, pared down by spec 050: the About settings area. Covers the
+ * nav entry last (FR-001), the bare version value with no label (spec 050
+ * FR-001), the unchanged repository row and its exact-URL external hand-off
+ * (FR-002/FR-004), zero revision content regardless of build metadata (spec
+ * 050 FR-003), and the never-prompting stateless close (FR-008).
  */
 
 let app: ElectronApplication
@@ -65,11 +65,7 @@ async function openExternalCalls(target: ElectronApplication): Promise<string[]>
   })
 }
 
-async function clipboardText(target: ElectronApplication): Promise<string> {
-  return target.evaluate(({ clipboard }) => clipboard.readText())
-}
-
-test('US1 the navigation ends with About and it shows only the three read-only values', async () => {
+test('US1 the navigation ends with About and it shows only read-only values', async () => {
   const dialog = await openSettingsDialog(window)
   const box = dialog.getByTestId('settings-dialog')
   const nav = box.getByRole('navigation', { name: 'Settings areas' })
@@ -94,35 +90,28 @@ test('US1/FR-002 the displayed version equals the running application version', 
   await expect(window.getByTestId('settings-about-version')).toHaveText(runtimeVersion)
 })
 
-test('the About rows carry zero horizontal padding, aligning labels with the heading', async () => {
+test('spec 050 FR-001 the version renders as a bare value with no Version label', async () => {
   await openAboutArea()
 
-  // Three rows render under the default launch: Version, Repository URL, Revision.
+  // Two rows remain: the bare version and the labelled repository row.
   const rows = window.locator('.settings-about-row')
-  await expect(rows).toHaveCount(3)
-  const horizontalPaddings = await rows.evaluateAll((elements) =>
-    elements.map((element) => {
-      const style = getComputedStyle(element)
-      return { left: style.paddingLeft, right: style.paddingRight }
-    })
-  )
-
-  expect(horizontalPaddings).toEqual([
-    { left: '0px', right: '0px' },
-    { left: '0px', right: '0px' },
-    { left: '0px', right: '0px' }
-  ])
+  await expect(rows).toHaveCount(2)
+  const labels = await rows.locator('.settings-about-label').allTextContents()
+  expect(labels.map((label) => label.trim())).toEqual(['Repository URL'])
+  const panel = window.getByRole('group', { name: 'About' })
+  await expect(panel).not.toContainText('Version', { ignoreCase: true })
 })
 
-test('US1 the repository URL and a revision identifier are both shown', async () => {
+test('spec 050 FR-003 no revision identifier, label, or copy control appears', async () => {
   await openAboutArea()
 
+  const panel = window.getByRole('group', { name: 'About' })
+  await expect(panel).not.toContainText('Revision')
+  await expect(panel).not.toContainText('Copy')
+  await expect(panel).not.toContainText('development build')
+  await expect(window.getByTestId('settings-about-revision')).toHaveCount(0)
+  await expect(window.getByTestId('settings-about-copy')).toHaveCount(0)
   await expect(window.getByTestId('settings-about-repository')).toHaveText(REPOSITORY_URL)
-  // A revision may be any non-blank identifier rather than a full SHA.
-  const revision = await window.getByTestId('settings-about-revision').textContent()
-  expect(revision).toBeTruthy()
-  expect(revision?.trim()).toBe(revision)
-  expect(revision).not.toBe('development build')
 })
 
 test('US2/FR-004 activating the repository URL hands the exact URL to the OS exactly once', async () => {
@@ -151,16 +140,6 @@ test('US2/FR-004 repeated activation hands off exactly once per click with no du
   await expect(window.getByTestId('settings-about-repository')).toHaveText(REPOSITORY_URL)
 })
 
-test('US2/FR-006 copying the revision yields the complete displayed value', async () => {
-  await openAboutArea()
-
-  const displayed = await window.getByTestId('settings-about-revision').textContent()
-  await window.getByTestId('settings-about-copy').click()
-
-  // The renderer write is asynchronous; poll main's clipboard until it lands.
-  await expect.poll(() => clipboardText(app)).toBe(displayed)
-})
-
 test('FR-008 viewing About and closing the dialog never prompts about unsaved changes', async () => {
   await openAboutArea()
   await window.getByRole('button', { name: 'Close settings' }).click()
@@ -176,28 +155,32 @@ test('FR-008 viewing About and closing the dialog never prompts about unsaved ch
   await app.waitForEvent('close', { timeout: 8000 })
 })
 
-test('FR-007 an unpackaged run forced into development mode shows the honest placeholder', async () => {
+test('spec 050 FR-003 a development run without revision metadata still shows version and repository', async () => {
   await closeAppSafely(app)
 
-  // An empty override exercises the development placeholder.
+  // An empty override exercises the unpackaged development path.
   ;({ app, window } = await launchApp(configDir, testFolder, undefined, {
     MM_BUILD_COMMIT: ''
   }))
   await openAboutArea()
 
-  await expect(window.getByTestId('settings-about-revision')).toHaveText('development build')
-  await expect(window.getByTestId('settings-about-copy')).toHaveCount(0)
+  const runtimeVersion = await app.evaluate(({ app: electronApp }) => electronApp.getVersion())
+  await expect(window.getByTestId('settings-about-version')).toHaveText(runtimeVersion)
   await expect(window.getByTestId('settings-about-repository')).toHaveText(REPOSITORY_URL)
+  const panel = window.getByRole('group', { name: 'About' })
+  await expect(panel).not.toContainText('Revision')
+  await expect(window.getByTestId('settings-about-revision')).toHaveCount(0)
 })
 
-test('US1/FR-007 an odd revision override displays verbatim through the unpackaged seam', async () => {
+test('spec 050 FR-003 an odd revision override never surfaces anywhere in the panel', async () => {
   await closeAppSafely(app)
 
-  // Non-SHA revision identifiers display unchanged.
   ;({ app, window } = await launchApp(configDir, testFolder, undefined, {
     MM_BUILD_COMMIT: 'v1.2.3-rc.1+odd'
   }))
   await openAboutArea()
 
-  await expect(window.getByTestId('settings-about-revision')).toHaveText('v1.2.3-rc.1+odd')
+  const panel = window.getByRole('group', { name: 'About' })
+  await expect(panel).not.toContainText('v1.2.3-rc.1+odd')
+  await expect(window.getByTestId('settings-about-revision')).toHaveCount(0)
 })
