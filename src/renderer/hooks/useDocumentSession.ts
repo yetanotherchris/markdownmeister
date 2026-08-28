@@ -4,6 +4,7 @@ import { planClose } from '../state/documents'
 import type { OpenedFile } from '../../shared/ipc-contract'
 import { instancePool } from '../editor/instancePool'
 import { getSettings } from '../state/settings'
+import { joinFrontmatter } from '../domain/frontmatter'
 import {
   getLiveContent as domainGetLiveContent,
   isDirtyLive as domainIsDirtyLive,
@@ -24,7 +25,9 @@ export interface DocumentSessionApi {
   reloadDocument: (doc: DocumentState, force?: boolean) => Promise<void>
   handleQuitRequest: () => Promise<void>
   flushLiveContent: () => void
-  captureContentForSwitch: (id: string) => void
+  /** Captures the editor's bytes into the store and returns the text the
+   *  source view will display, or null when serialization failed. */
+  captureContentForSwitch: (id: string) => string | null
   handleContentChange: (id: string, content: string) => void
   handleBaselineCapture: (id: string, baseline: string) => void
   handleStagedEditorReady: (id: string) => void
@@ -105,9 +108,9 @@ export function useDocumentSession(opts: {
   }, [dispatch, getMarkdown, sessionRef])
 
   const captureContentForSwitch = useCallback(
-    (id: string): void => {
+    (id: string): string | null => {
       const doc = sessionRef.current.documents.find((d) => d.id === id)
-      if (!doc) return
+      if (!doc) return null
       let capture: SwitchCapture
       try {
         capture = domainPlanSwitchCapture(doc, getMarkdown, getLiveDoc, getBaselineDoc)
@@ -116,11 +119,13 @@ export function useDocumentSession(opts: {
         // processor cannot express. The switch continues on the stored bytes
         // instead of wedging or blanking the surface.
         console.error('Live content capture failed before switching views', error)
-        return
+        return null
       }
       if (capture.kind === 'captured') {
         dispatch({ type: 'UPDATE_CONTENT', payload: { id, content: capture.content } })
       }
+      const body = capture.kind === 'captured' ? capture.content : doc.content
+      return joinFrontmatter(doc.frontmatter, body)
     },
     [dispatch, getBaselineDoc, getLiveDoc, getMarkdown, sessionRef]
   )

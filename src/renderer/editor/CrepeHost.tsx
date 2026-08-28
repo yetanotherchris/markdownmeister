@@ -12,7 +12,7 @@ import { tightListPlugins } from './tightList'
 import { spellcheckPlugin, type SpellingMenuState } from './spellcheckPlugin'
 import { reconfigureEditor, isReconfigureSuppressed } from './markdownSyntaxRuntime'
 import { recordParse, recordIncomingSerialization, endOpen } from './openPerformance'
-import { applyCursorRestore } from './cursorRestore'
+import { applyCursorRestore, planBlockRestore } from './cursorRestore'
 import {
   markdownSyntaxInputRuleGate,
   setMarkdownSyntaxGateOptions
@@ -34,6 +34,10 @@ interface CrepeHostProps {
 
   onSpellingMenu: (menu: SpellingMenuState | null) => void
   restoreCursor?: CursorState
+  /** A mapped caret restore from the source caret's block, applied ahead of
+   *  the stored offset and reported through onCursorSyncApplied once. */
+  cursorSync?: { blockIndex: number; blockCount: number } | null
+  onCursorSyncApplied?: () => void
   onMarkdownUpdated: (markdown: string) => void
   onReady: (editor: Crepe) => void
 
@@ -64,6 +68,8 @@ export default function CrepeHost({
   markdownOptions,
   onSpellingMenu,
   restoreCursor,
+  cursorSync,
+  onCursorSyncApplied,
   onMarkdownUpdated,
   onReady,
   onBaselineCapture,
@@ -81,6 +87,8 @@ export default function CrepeHost({
   lockedRef.current = locked
   const onSpellingMenuRef = useRef(onSpellingMenu)
   onSpellingMenuRef.current = onSpellingMenu
+  const onCursorSyncAppliedRef = useRef(onCursorSyncApplied)
+  onCursorSyncAppliedRef.current = onCursorSyncApplied
 
   function applyInert() {
     const onInert = lockedRef.current
@@ -92,8 +100,19 @@ export default function CrepeHost({
   }
 
   function applyCursorState(view: EditorView | null) {
-    if (!view || !restoreCursor) return
-    applyCursorRestore(view, restoreCursor, scrollElementRef.current)
+    if (!view) return
+    if (cursorSync) {
+      const selection = planBlockRestore(view.state.doc, cursorSync.blockIndex, cursorSync.blockCount)
+      if (selection) {
+        // The mapped caret is revealed rather than paired with a stored
+        // scroll, and reported consumed so later activations keep whatever
+        // position the user works from next.
+        view.dispatch(view.state.tr.setSelection(selection).scrollIntoView())
+        onCursorSyncAppliedRef.current?.()
+        return
+      }
+    }
+    if (restoreCursor) applyCursorRestore(view, restoreCursor, scrollElementRef.current)
   }
 
   function captureCursorState(): CursorState {

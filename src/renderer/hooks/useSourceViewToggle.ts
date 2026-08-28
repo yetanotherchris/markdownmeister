@@ -2,6 +2,11 @@ import { useCallback } from 'react'
 import type { DocumentsAction, EditingSession } from '../state/documents'
 import { editorMatchesContent } from '../state/documents'
 import { joinFrontmatter } from '../domain/frontmatter'
+import {
+  planReturnRestore,
+  planSourceSeed,
+  type SourceSeed
+} from '../domain/caretSync'
 import { instancePool } from '../editor/instancePool'
 import type { DocumentSessionApi } from './useDocumentSession'
 
@@ -33,15 +38,53 @@ export function useSourceViewToggle(opts: {
   const { flushLiveContent, captureContentForSwitch, getLiveContent, openFileFromExplorer } =
     session
 
+  /** Records the context the source view is about to open with. When the
+   *  live editor's caret resolves to a block of the displayed text (the
+   *  counts must correlate), the seed is the mapped line start and the
+   *  destination reveals it; otherwise the stored context is kept and the
+   *  switch behaves exactly as before. */
+  const seedSourceContext = useCallback(
+    (id: string, displayedText: string | null): void => {
+      const doc = sessionRef.current.documents.find((d) => d.id === id)
+      if (!doc) return
+      const geometry = displayedText ? instancePool.getSelectionGeometry(id) : null
+      const mapped =
+        displayedText && geometry
+          ? planSourceSeed({
+              displayedText,
+              childSizes: geometry.childSizes,
+              caretOffset: geometry.caretOffset
+            })
+          : null
+      const seed: SourceSeed = mapped ?? {
+        anchor: doc.sourceSelectionAnchor,
+        head: doc.sourceSelectionHead,
+        reveal: false
+      }
+      dispatch({
+        type: 'SEED_SOURCE_CONTEXT',
+        payload: {
+          id,
+          selectionAnchor: mapped ? mapped.anchor : doc.sourceSelectionAnchor,
+          selectionHead: mapped ? mapped.head : doc.sourceSelectionHead,
+          scrollTop: doc.sourceScrollTop,
+          seed
+        }
+      })
+    },
+    [dispatch, sessionRef]
+  )
+
   const handleShowSource = useCallback(
     (id: string) => {
       flushLiveContent()
       // Capture synchronously before the lock: edits inside the listener
       // debounce window would otherwise be dropped, not deferred.
-      captureContentForSwitch(id)
+      const displayed = captureContentForSwitch(id)
+      seedSourceContext(id, displayed)
       dispatch({ type: 'SET_VIEW', payload: { id, view: 'source' } })
     },
-    [dispatch, flushLiveContent, captureContentForSwitch]
+    [dispatch, flushLiveContent, captureContentForSwitch, seedSourceContext]
   )
 
   const handleReturnToFormatted = useCallback(
@@ -64,12 +107,27 @@ export function useSourceViewToggle(opts: {
       // pristine file that Crepe merely normalized still skips the remount.
       // The comparison is against the BODY (`content`), frontmatter changes
       // alone leave the body untouched, so they do not force a remount.
-      if (live === null || !editorMatchesContent(live, doc.content)) {
-        instancePool.clearBaselineDoc(id)
+      const edited = live === null || !editorMatchesContent(live, doc.content)
+      const displayed = joinFrontmatter(doc.frontmatter, doc.content)
+      // A null plan covers both exact-restore cases: an untouched caret, and
+      // a mapping that found nothing confident to map to. Positioning only;
+      // content, dirty, and undo are untouched by the seed comparison.
+      const plan = planReturnRestore({
+        seed: doc.sourceSeed ?? null,
+        finalAnchor: doc.sourceSelectionAnchor,
+        finalHead: doc.sourceSelectionHead,
+        edited,
+        displayedText: displayed
+      })
+      if (plan) {
         dispatch({
-          type: 'REFRESH_FROM_SOURCE',
-          payload: { id, content: joinFrontmatter(doc.frontmatter, doc.content) }
+          type: 'PRIME_VISUAL_CARET',
+          payload: { id, blockIndex: plan.blockIndex, blockCount: plan.blockCount }
         })
+      }
+      if (edited) {
+        instancePool.clearBaselineDoc(id)
+        dispatch({ type: 'REFRESH_FROM_SOURCE', payload: { id, content: displayed } })
       }
       dispatch({ type: 'SET_VIEW', payload: { id, view: 'formatted' } })
     },
@@ -85,7 +143,8 @@ export function useSourceViewToggle(opts: {
         session.handleActivate(existing.id)
         if (existing.view !== 'source') {
           flushLiveContent()
-          captureContentForSwitch(existing.id)
+          const displayed = captureContentForSwitch(existing.id)
+          seedSourceContext(existing.id, displayed)
           dispatch({ type: 'SET_VIEW', payload: { id: existing.id, view: 'source' } })
         }
         enforcePoolCap(existing.id)
@@ -101,7 +160,7 @@ export function useSourceViewToggle(opts: {
       enforcePoolCap(sessionRef.current.activeId)
       return read.value.path ?? read.value.name
     },
-    [dispatch, enforcePoolCap, flushLiveContent, captureContentForSwitch, sessionRef, session]
+    [dispatch, enforcePoolCap, flushLiveContent, captureContentForSwitch, seedSourceContext, sessionRef, session]
   )
 
   const handleViewSource = useCallback(

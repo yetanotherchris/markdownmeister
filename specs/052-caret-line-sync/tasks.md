@@ -20,12 +20,12 @@
 
 ## Phase 4: Switch wiring (R1, R4, R5)
 
-- [ ] 4.1 `instancePool.getSelectionGeometry`: live selection anchor plus top-level child sizes without serializing
-- [ ] 4.2 `useDocumentSession.captureContentForSwitch` returns the text the source view will display (captured or stored), null when serialization fails
-- [ ] 4.3 `useSourceViewToggle`: seed the source context on both entry paths (mapped when the pool provides geometry and the parse correlates, stored otherwise); on return, apply `planReturnRestore` and dispatch PRIME before any refresh, preserving today's refresh decision
-- [ ] 4.4 `SourceView`: optional reveal that scrolls the seeded caret into view on mount or first activation instead of applying the stored scroll
-- [ ] 4.5 `CrepeHost` applies a primed block restore ahead of the stored offset and reports consumption; `EditorPanel` and `App` pass the sync fields and clear the prime
-- [ ] 4.6 Verify: `npm run typecheck` and `npm run lint`
+- [x] 4.1 `instancePool.getSelectionGeometry`: live selection anchor plus top-level child sizes without serializing
+- [x] 4.2 `useDocumentSession.captureContentForSwitch` returns the text the source view will display (captured or stored), null when serialization fails
+- [x] 4.3 `useSourceViewToggle`: seed the source context on both entry paths (mapped when the pool provides geometry and the parse correlates, stored otherwise); on return, apply `planReturnRestore` and dispatch PRIME before any refresh, preserving today's refresh decision
+- [x] 4.4 `SourceView`: optional reveal that scrolls the seeded caret into view on mount or first activation instead of applying the stored scroll
+- [x] 4.5 `CrepeHost` applies a primed block restore ahead of the stored offset and reports consumption; `EditorPanel` and `App` pass the sync fields and clear the prime
+- [x] 4.6 Verify: `npm run typecheck` and `npm run lint`
 
 ## Phase 5: E2E scenarios
 

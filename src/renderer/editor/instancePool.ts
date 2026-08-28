@@ -60,6 +60,23 @@ export class InstancePool {
     }
   }
 
+  /** The live selection anchor and top-level child sizes the caret mapping
+   *  correlates on, or null when no readable view exists. Reading structure
+   *  does not serialize the document. */
+  getSelectionGeometry(documentId: string): { caretOffset: number; childSizes: number[] } | null {
+    const entry = this.instances.get(documentId)
+    if (!entry) return null
+    try {
+      const view = entry.editor.editor.action((ctx) => ctx.get(editorViewCtx))
+      const doc = view.state.doc
+      const childSizes: number[] = []
+      doc.forEach((child) => childSizes.push(child.nodeSize))
+      return { caretOffset: view.state.selection.anchor, childSizes }
+    } catch {
+      return null
+    }
+  }
+
   getMarkdown(documentId: string): string | null {
     const entry = this.instances.get(documentId)
     if (!entry) return null
