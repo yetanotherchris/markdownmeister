@@ -65,6 +65,8 @@ A user working in the source view ("view source") finds a word wrap toggle as th
 5. **Given** the Settings dialog's Markdown area, **When** inspected, **Then** no word wrap control exists, and every other Markdown-area control is present and unchanged.
 6. **Given** a wrap state chosen, **When** the application restarts, **Then** the same state is in effect; a fresh installation starts with wrap off.
 7. **Given** the toggle, **When** operated from the keyboard or a screen reader, **Then** it is reachable, activatable, and announced with its name and current on/off state.
+8. **Given** unsaved edits, a selection, or a mid-document caret in the source view, **When** wrap is toggled either way, **Then** the edited text, the selection's coverage, the tab's dirty state, and the position where typing continues are all unchanged; only line presentation changes.
+9. **Given** wrap toggled in either direction, **When** the user returns to the visual editor, **Then** the visual editor flows text within the pane exactly as before and has gained no horizontal scrolling.
 
 ---
 
