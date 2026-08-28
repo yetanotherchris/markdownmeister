@@ -84,13 +84,13 @@ test.describe('source view after scrolling the formatted editor', () => {
       height: number
     }
     await window.mouse.click(hostBox.x + hostBox.width / 2, hostBox.y + hostBox.height / 2)
-    const target = await window.evaluate(() => {
+    const onSourceSurface = await window.evaluate(() => {
       const host = document.querySelector('.editor-host.has-source') as HTMLElement
       const box = host.getBoundingClientRect()
       const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
-      return hit ? hit.className : ''
+      return hit?.closest('[data-testid="source-textarea"]') != null
     })
-    expect(target).toContain('source-textarea')
+    expect(onSourceSurface).toBe(true)
 
     // The visible surface must accept typed input (not a wedged frame).
     await window.keyboard.type('RESPONSIVE-AFTER-SCROLL')
