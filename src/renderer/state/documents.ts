@@ -88,7 +88,7 @@ export function createEmpty(counter: number): DocumentState {
     contentVersion: 0,
     revision: 0,
     view: 'formatted',
-    sourceSeed: { anchor: 0, head: 0, reveal: false }
+    sourceSeed: { anchor: 0, head: 0, reveal: false, textLength: 0 }
   }
 }
 
@@ -127,7 +127,7 @@ export function openFile(opened: {
     contentVersion: 0,
     revision: 0,
     view: opened.view ?? 'formatted',
-    sourceSeed: { anchor: 0, head: 0, reveal: false }
+    sourceSeed: { anchor: 0, head: 0, reveal: false, textLength: opened.content.length }
   }
 }
 
@@ -223,7 +223,8 @@ export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload
             next.sourceSeed = {
               anchor: d.sourceSelectionAnchor,
               head: d.sourceSelectionHead,
-              reveal: false
+              reveal: false,
+              textLength: d.frontmatter.length + d.content.length
             }
           }
           return next
@@ -402,7 +403,12 @@ export function handleEvict(state: EditingSession, id: string): EditingSession {
             // A primed restore is stale across eviction, and the seed must not
             // reveal on a remount that was not preceded by a switch.
             cursorSync: undefined,
-            sourceSeed: { anchor: d.sourceSelectionAnchor, head: d.sourceSelectionHead, reveal: false }
+            sourceSeed: {
+              anchor: d.sourceSelectionAnchor,
+              head: d.sourceSelectionHead,
+              reveal: false,
+              textLength: d.frontmatter.length + d.content.length
+            }
           }
         : d
     )
@@ -481,7 +487,12 @@ export function handleReload(
             contentVersion: d.contentVersion + 1,
             revision: (d.revision ?? 0) + 1,
             cursorSync: undefined,
-            sourceSeed: { anchor: 0, head: 0, reveal: false }
+            sourceSeed: {
+              anchor: 0,
+              head: 0,
+              reveal: false,
+              textLength: frontmatter.length + body.length
+            }
           }
         : d
     )

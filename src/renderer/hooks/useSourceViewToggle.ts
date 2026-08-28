@@ -47,6 +47,8 @@ export function useSourceViewToggle(opts: {
     (id: string, displayedText: string | null): void => {
       const doc = sessionRef.current.documents.find((d) => d.id === id)
       if (!doc) return
+      const effectiveText =
+        displayedText ?? joinFrontmatter(doc.frontmatter, doc.content)
       const geometry = displayedText ? instancePool.getSelectionGeometry(id) : null
       const mapped =
         displayedText && geometry
@@ -59,7 +61,8 @@ export function useSourceViewToggle(opts: {
       const seed: SourceSeed = mapped ?? {
         anchor: doc.sourceSelectionAnchor,
         head: doc.sourceSelectionHead,
-        reveal: false
+        reveal: false,
+        textLength: effectiveText.length
       }
       dispatch({
         type: 'SEED_SOURCE_CONTEXT',
@@ -109,14 +112,19 @@ export function useSourceViewToggle(opts: {
       // alone leave the body untouched, so they do not force a remount.
       const edited = live === null || !editorMatchesContent(live, doc.content)
       const displayed = joinFrontmatter(doc.frontmatter, doc.content)
+      const seed = doc.sourceSeed ?? null
+      // A source edit is a change to the text the session opened with. The
+      // editor normalizing unchanged bytes also trips the refresh decision
+      // above, but that is not an edit and must not map the caret.
+      const sourceEdited = seed ? displayed.length !== seed.textLength : edited
       // A null plan covers both exact-restore cases: an untouched caret, and
       // a mapping that found nothing confident to map to. Positioning only;
       // content, dirty, and undo are untouched by the seed comparison.
       const plan = planReturnRestore({
-        seed: doc.sourceSeed ?? null,
+        seed,
         finalAnchor: doc.sourceSelectionAnchor,
         finalHead: doc.sourceSelectionHead,
-        edited,
+        edited: sourceEdited,
         displayedText: displayed
       })
       if (plan) {

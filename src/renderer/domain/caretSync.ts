@@ -20,11 +20,15 @@ export interface BlockTable {
 }
 
 /** A caret seed for the source view: the mapped offsets plus whether the
- *  destination should reveal the caret instead of applying a stored scroll. */
+ *  destination should reveal the caret instead of applying a stored scroll.
+ *  `textLength` is the displayed text's length at entry; the return path
+ *  compares it against the current length to tell a source edit from the
+ *  editor's own normalization of unchanged bytes. */
 export interface SourceSeed {
   anchor: number
   head: number
   reveal: boolean
+  textLength: number
 }
 
 /** A mapped visual-side restore: which top-level block of the visual
@@ -91,7 +95,7 @@ export function planSourceSeed(params: {
     table.frontmatterLength + table.blocks[index].startOffset,
     displayedText.length
   )
-  return { anchor, head: anchor, reveal: true }
+  return { anchor, head: anchor, reveal: true, textLength: displayedText.length }
 }
 
 /** Map a displayed-text caret offset back to a visual-side content block.

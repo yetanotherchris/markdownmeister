@@ -107,7 +107,12 @@ describe('planSourceSeed', () => {
       childSizes: [10, 200, 10, 10, 10],
       caretOffset: 50
     })
-    expect(seed).toEqual({ anchor: paragraphStart, head: paragraphStart, reveal: true })
+    expect(seed).toEqual({
+      anchor: paragraphStart,
+      head: paragraphStart,
+      reveal: true,
+      textLength: FRONTMATTER_DOC.length
+    })
   })
 
   it('places a caret at the document start on the first body block, past the frontmatter', () => {
@@ -185,7 +190,7 @@ describe('planReturnRestore', () => {
     finalAnchor: 40,
     finalHead: 40
   }
-  const seed = { anchor: 40, head: 40, reveal: true }
+  const seed = { anchor: 40, head: 40, reveal: true, textLength: FRONTMATTER_DOC.length }
 
   it('restores exactly when the source caret is untouched and nothing was edited', () => {
     expect(planReturnRestore({ ...base, seed, edited: false })).toBeNull()

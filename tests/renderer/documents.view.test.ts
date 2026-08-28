@@ -176,9 +176,19 @@ describe('documents reducer', () => {
 
     it('new and opened documents seed the initial source context at the top', () => {
       const opened = open()
-      expect(opened.documents[0].sourceSeed).toEqual({ anchor: 0, head: 0, reveal: false })
+      expect(opened.documents[0].sourceSeed).toEqual({
+        anchor: 0,
+        head: 0,
+        reveal: false,
+        textLength: 1
+      })
       const fresh = documentsReducer(createSession(), { type: 'OPEN_NEW' })
-      expect(fresh.documents[0].sourceSeed).toEqual({ anchor: 0, head: 0, reveal: false })
+      expect(fresh.documents[0].sourceSeed).toEqual({
+        anchor: 0,
+        head: 0,
+        reveal: false,
+        textLength: 0
+      })
     })
 
     it('SEED_SOURCE_CONTEXT writes selection, scroll, and seed without touching text or dirty', () => {
@@ -193,14 +203,14 @@ describe('documents reducer', () => {
           selectionAnchor: 12,
           selectionHead: 12,
           scrollTop: 30,
-          seed: { anchor: 12, head: 12, reveal: true }
+          seed: { anchor: 12, head: 12, reveal: true, textLength: 30 }
         }
       })
       const doc = state.documents[0]
       expect(doc.sourceSelectionAnchor).toBe(12)
       expect(doc.sourceSelectionHead).toBe(12)
       expect(doc.sourceScrollTop).toBe(30)
-      expect(doc.sourceSeed).toEqual({ anchor: 12, head: 12, reveal: true })
+      expect(doc.sourceSeed).toEqual({ anchor: 12, head: 12, reveal: true, textLength: 30 })
       expect(doc.content).toBe('y')
       expect(doc.dirty).toBe(true)
       expect(doc.revision).toBe(revisionBefore)
@@ -221,14 +231,15 @@ describe('documents reducer', () => {
           selectionAnchor: 7,
           selectionHead: 7,
           scrollTop: 0,
-          seed: { anchor: 7, head: 7, reveal: true }
+          seed: { anchor: 7, head: 7, reveal: true, textLength: 7 }
         }
       })
       expect(state.documents.find((d) => d.id === aId)?.sourceSeed?.anchor).toBe(7)
       expect(state.documents.find((d) => d.id === bId)?.sourceSeed).toEqual({
         anchor: 0,
         head: 0,
-        reveal: false
+        reveal: false,
+        textLength: 1
       })
     })
 
@@ -254,7 +265,7 @@ describe('documents reducer', () => {
           selectionAnchor: 9,
           selectionHead: 9,
           scrollTop: 0,
-          seed: { anchor: 9, head: 9, reveal: true }
+          seed: { anchor: 9, head: 9, reveal: true, textLength: 9 }
         }
       })
       state = documentsReducer(state, {
@@ -264,7 +275,7 @@ describe('documents reducer', () => {
       state = documentsReducer(state, { type: 'RELOAD', payload: { id, content: 'fresh' } })
       const doc = state.documents[0]
       expect(doc.cursorSync).toBeUndefined()
-      expect(doc.sourceSeed).toEqual({ anchor: 0, head: 0, reveal: false })
+      expect(doc.sourceSeed).toEqual({ anchor: 0, head: 0, reveal: false, textLength: 5 })
     })
 
     it('EVICT clears a primed sync and neutralizes the seed reveal', () => {
@@ -277,7 +288,7 @@ describe('documents reducer', () => {
           selectionAnchor: 9,
           selectionHead: 9,
           scrollTop: 0,
-          seed: { anchor: 9, head: 9, reveal: true }
+          seed: { anchor: 9, head: 9, reveal: true, textLength: 9 }
         }
       })
       state = documentsReducer(state, {
@@ -287,7 +298,7 @@ describe('documents reducer', () => {
       state = documentsReducer(state, { type: 'EVICT', payload: { id } })
       const doc = state.documents[0]
       expect(doc.cursorSync).toBeUndefined()
-      expect(doc.sourceSeed).toEqual({ anchor: 9, head: 9, reveal: false })
+      expect(doc.sourceSeed).toEqual({ anchor: 9, head: 9, reveal: false, textLength: 1 })
     })
 
     it('OPEN_EXISTING flipping an open tab to source re-seeds from the stored context', () => {
@@ -309,7 +320,7 @@ describe('documents reducer', () => {
       })
       const doc = state.documents[0]
       expect(doc.view).toBe('source')
-      expect(doc.sourceSeed).toEqual({ anchor: 4, head: 6, reveal: false })
+      expect(doc.sourceSeed).toEqual({ anchor: 4, head: 6, reveal: false, textLength: 1 })
       expect(doc.cursorSync).toBeUndefined()
     })
   })
