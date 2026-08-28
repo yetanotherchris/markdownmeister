@@ -221,6 +221,17 @@ AGENTS.md                         This file
   `electronApp.evaluate`; the tree/editor are driven with normal locators.
   The suite must pass before the implementation is declared complete,
   alongside `npm run lint`, `npm run typecheck`, and `npm run test`.
+- Generate standard English test document content with
+  [claudem-ipsum](https://github.com/zcaceres/claudem-ipsum)
+  (`npm install -g claudem-ipsum`, then for example
+  `claudem-ipsum 1500 > test-long.md` or
+  `claudem-ipsum 3 --unit paragraphs --seed demo`). Use it for placeholder
+  prose in manual testing, bug reproductions, and any fixture that just needs
+  ordinary filler text. Keep hand-writing content for tests that need exact
+  bytes or precise small fixtures (for example the round-trip fixtures and
+  inline e2e documents), and for constructs the generator does not produce
+  (frontmatter, code blocks, tables, task lists), and keep a `--seed` when
+  the document must be reproducible.
 - Every pull request description MUST end with a single line naming the model
   that generated it. Do not use a heading or section for this; it is the last
   line of the description. Use the form:
