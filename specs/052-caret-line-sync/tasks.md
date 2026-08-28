@@ -8,9 +8,9 @@
 
 ## Phase 2: State support (R4, FR-003/004/006/007)
 
-- [ ] 2.1 Extend `tests/renderer/documents.view.test.ts`: SEED_SOURCE_CONTEXT writes selection, scroll, and seed without touching dirty or revision; PRIME_VISUAL_CARET sets the mapped block; CLEAR_VISUAL_CARET consumes it; RELOAD and EVICT clear primed sync and neutralize the seed; openFile seeds the initial source context
-- [ ] 2.2 Implement in `src/renderer/state/documents.ts`: optional `sourceSeed` and `cursorSync` on `DocumentState`, three new actions, default seed on open/new, seed on the open-existing view flip to source, clear on RELOAD/EVICT
-- [ ] 2.3 Verify: `npm run test -- documents.view`
+- [x] 2.1 Extend `tests/renderer/documents.view.test.ts`: SEED_SOURCE_CONTEXT writes selection, scroll, and seed without touching dirty or revision; PRIME_VISUAL_CARET sets the mapped block; CLEAR_VISUAL_CARET consumes it; RELOAD and EVICT clear primed sync and neutralize the seed; openFile seeds the initial source context
+- [x] 2.2 Implement in `src/renderer/state/documents.ts`: optional `sourceSeed` and `cursorSync` on `DocumentState`, three new actions, default seed on open/new, seed on the open-existing view flip to source, clear on RELOAD/EVICT
+- [x] 2.3 Verify: `npm run test -- documents.view`
 
 ## Phase 3: Block-index caret restore (R5)
 
