@@ -227,9 +227,11 @@ AGENTS.md                         This file
   `claudem-ipsum 1500 > test-long.md` or
   `claudem-ipsum 3 --unit paragraphs --seed demo`). Use it for placeholder
   prose in manual testing, bug reproductions, and any fixture that just needs
-  ordinary filler text; hand-write content only for the constructs the
-  generator does not produce (frontmatter, code blocks, tables, task lists)
-  and keep a `--seed` when the document must be reproducible.
+  ordinary filler text. Keep hand-writing content for tests that need exact
+  bytes or precise small fixtures (for example the round-trip fixtures and
+  inline e2e documents), and for constructs the generator does not produce
+  (frontmatter, code blocks, tables, task lists), and keep a `--seed` when
+  the document must be reproducible.
 - Every pull request description MUST end with a single line naming the model
   that generated it. Do not use a heading or section for this; it is the last
   line of the description. Use the form:
