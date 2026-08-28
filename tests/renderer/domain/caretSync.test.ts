@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   buildBlockTable,
+  normalizeCaretText,
   topLevelBlockIndex,
   planSourceSeed,
   planVisualRestore,
@@ -67,6 +68,18 @@ describe('buildBlockTable', () => {
     const table = buildBlockTable('---\nnot frontmatter\n')
     expect(table).not.toBeNull()
     expect(table!.frontmatterLength).toBe(0)
+  })
+
+  it('maps CRLF documents in CodeMirror-normalized LF offset space', () => {
+    const crlf = FRONTMATTER_DOC.replace(/\n/g, '\r\n')
+    const table = buildBlockTable(crlf)!
+    const lf = normalizeCaretText(crlf)
+    // The offsets count LF bytes only: the raw string is longer by one CR
+    // per line, which CodeMirror strips when it creates its document.
+    const headingInLf = lf.indexOf('# Heading')
+    expect(table.blocks[0].startOffset).toBe(headingInLf - table.frontmatterLength)
+    expect(table.frontmatterLength).toBe('---\ntitle: sample\n---\n'.length)
+    expect(table.frontmatterLength).toBeLessThan(crlf.indexOf('# Heading'))
   })
 })
 
@@ -147,6 +160,21 @@ describe('planSourceSeed', () => {
       })
     ).toBeNull()
   })
+
+  it('seeds a CRLF document with a caret offset CodeMirror can actually use', () => {
+    const crlf = FRONTMATTER_DOC.replace(/\n/g, '\r\n')
+    const lf = normalizeCaretText(crlf)
+    const seed = planSourceSeed({
+      displayedText: crlf,
+      childSizes: [10, 200, 10, 10, 10],
+      caretOffset: 50
+    })
+    expect(seed).not.toBeNull()
+    // In raw-string space the anchor would land (line - 1) CR bytes past the
+    // paragraph start and drift off the target line in the editor.
+    expect(lf.slice(seed!.anchor, seed!.anchor + 5)).toBe('First')
+    expect(seed!.textLength).toBe(lf.length)
+  })
 })
 
 describe('planVisualRestore', () => {
@@ -182,6 +210,16 @@ describe('planVisualRestore', () => {
   it('returns null when the body has no blocks', () => {
     expect(planVisualRestore({ displayedText: '---\ntitle: x\n---\n', caretOffset: 0 })).toBeNull()
     expect(planVisualRestore({ displayedText: '', caretOffset: 0 })).toBeNull()
+  })
+
+  it('maps a CodeMirror-space caret offset back through a CRLF document', () => {
+    const crlf = FRONTMATTER_DOC.replace(/\n/g, '\r\n')
+    const lf = normalizeCaretText(crlf)
+    const paragraphStart = lf.indexOf('First paragraph line one')
+    expect(planVisualRestore({ displayedText: crlf, caretOffset: paragraphStart + 5 })).toEqual({
+      blockIndex: 1,
+      blockCount: 5
+    })
   })
 })
 

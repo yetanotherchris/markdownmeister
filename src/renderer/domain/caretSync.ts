@@ -41,8 +41,16 @@ export interface VisualRestorePlan {
 
 const parser = unified().use(remarkParse).use(remarkGfm).use(remarkMath)
 
+/** CodeMirror normalizes CR line endings when the source view creates its
+ *  document, so every character offset the mapping exchanges with the editor
+ *  lives in LF-normalized space; mdast positions would otherwise count the
+ *  CR bytes and drift one character per line. */
+export function normalizeCaretText(text: string): string {
+  return text.replace(/\r\n?/g, '\n')
+}
+
 export function buildBlockTable(displayedText: string): BlockTable | null {
-  const { frontmatter, body } = splitFrontmatter(displayedText)
+  const { frontmatter, body } = splitFrontmatter(normalizeCaretText(displayedText))
   let root: ReturnType<typeof parser.parse>
   try {
     root = parser.parse(body)
@@ -95,7 +103,12 @@ export function planSourceSeed(params: {
     table.frontmatterLength + table.blocks[index].startOffset,
     displayedText.length
   )
-  return { anchor, head: anchor, reveal: true, textLength: displayedText.length }
+  return {
+    anchor,
+    head: anchor,
+    reveal: true,
+    textLength: normalizeCaretText(displayedText).length
+  }
 }
 
 /** Map a displayed-text caret offset back to a visual-side content block.
@@ -107,11 +120,12 @@ export function planVisualRestore(params: {
   displayedText: string
   caretOffset: number
 }): VisualRestorePlan | null {
-  const { displayedText, caretOffset } = params
-  const table = buildBlockTable(displayedText)
+  const { caretOffset } = params
+  const text = normalizeCaretText(params.displayedText)
+  const table = buildBlockTable(text)
   if (!table || table.blocks.length === 0) return null
   const { blocks } = table
-  const offset = Math.min(Math.max(caretOffset, 0), displayedText.length) - table.frontmatterLength
+  const offset = Math.min(Math.max(caretOffset, 0), text.length) - table.frontmatterLength
   if (offset <= blocks[0].startOffset) return { blockIndex: 0, blockCount: blocks.length }
   const last = blocks.length - 1
   if (offset >= blocks[last].endOffset) return { blockIndex: last, blockCount: blocks.length }

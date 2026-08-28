@@ -70,3 +70,20 @@ export function applyCursorRestore(
     scrollElement.scrollTop = restoreCursor.scrollTop
   }
 }
+
+/** Bring a freshly placed caret into view by centering it in the scrollable
+ *  editor host. ProseMirror's transaction-level scrollIntoView targets the
+ *  view's own scrollDOM, which is not the element that actually scrolls in
+ *  this layout, so a mapped caret would otherwise be applied off screen. */
+export function revealCaretInView(
+  view: EditorView,
+  pos: number,
+  scrollElement: HTMLElement | null
+): void {
+  if (!scrollElement) return
+  const coords = view.coordsAtPos(pos)
+  if (!coords) return
+  const rect = scrollElement.getBoundingClientRect()
+  if (coords.top >= rect.top && coords.bottom <= rect.bottom) return
+  scrollElement.scrollTop += coords.top - rect.top - scrollElement.clientHeight / 2
+}

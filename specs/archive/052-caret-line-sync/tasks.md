@@ -37,3 +37,11 @@
 - [x] 6.1 `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:e2e`
 - [x] 6.2 Append new files to `scripts.format:check`; `npx prettier --check` touched files
 - [x] 6.3 Archive: `git mv specs/052-caret-line-sync specs/archive/052-caret-line-sync`, set Status Archived
+
+## Phase 7: Review fixes (findings from the five PR reviews)
+
+- [x] 7.1 Critical: map CRLF documents in CodeMirror's LF-normalized offset space (`normalizeCaretText` in caretSync.ts); seeded anchors and return offsets no longer drift one byte per line, and out-of-range anchors cannot throw in the source mount; unit tests for the CRLF offset spaces
+- [x] 7.2 Major: reveal the mapped caret in the visual host explicitly (`revealCaretInView`), since ProseMirror's transaction scrollIntoView does not reach the scrollable host in this layout; e2e now asserts the returned caret is on screen
+- [x] 7.3 Major: hook-level tests for the switch glue (`tests/renderer/sourceViewToggleSync.test.tsx`): mapped entry, count-mismatch fallback, untouched return, moved return, normalization-vs-edit distinction, edited return
+- [x] 7.4 Major/minor: e2e coverage for frontmatter entry and return (US1-3/US1-4/US3-2), a CRLF document, and a table block (FR-002)
+- [x] 7.5 Minor: consume a refused `cursorSync` prime so it cannot fire on a later activation; re-arm the SourceView reveal under StrictMode; simplify SEED_SOURCE_CONTEXT to carry only the seed; `storedSeed` helper; import the domain `VisualRestorePlan` type in CrepeHost; update research.md R5 to record the implemented shape

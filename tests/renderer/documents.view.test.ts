@@ -200,8 +200,6 @@ describe('documents reducer', () => {
         type: 'SEED_SOURCE_CONTEXT',
         payload: {
           id,
-          selectionAnchor: 12,
-          selectionHead: 12,
           scrollTop: 30,
           seed: { anchor: 12, head: 12, reveal: true, textLength: 30 }
         }
@@ -228,8 +226,6 @@ describe('documents reducer', () => {
         type: 'SEED_SOURCE_CONTEXT',
         payload: {
           id: aId,
-          selectionAnchor: 7,
-          selectionHead: 7,
           scrollTop: 0,
           seed: { anchor: 7, head: 7, reveal: true, textLength: 7 }
         }
@@ -262,8 +258,6 @@ describe('documents reducer', () => {
         type: 'SEED_SOURCE_CONTEXT',
         payload: {
           id,
-          selectionAnchor: 9,
-          selectionHead: 9,
           scrollTop: 0,
           seed: { anchor: 9, head: 9, reveal: true, textLength: 9 }
         }
@@ -285,8 +279,6 @@ describe('documents reducer', () => {
         type: 'SEED_SOURCE_CONTEXT',
         payload: {
           id,
-          selectionAnchor: 9,
-          selectionHead: 9,
           scrollTop: 0,
           seed: { anchor: 9, head: 9, reveal: true, textLength: 9 }
         }

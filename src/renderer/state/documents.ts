@@ -170,13 +170,7 @@ export type DocumentsAction =
   | { type: 'REFRESH_FROM_SOURCE'; payload: { id: string; content: string } }
   | {
       type: 'SEED_SOURCE_CONTEXT'
-      payload: {
-        id: string
-        selectionAnchor: number
-        selectionHead: number
-        scrollTop: number
-        seed: SourceSeed
-      }
+      payload: { id: string; scrollTop: number; seed: SourceSeed }
     }
   | { type: 'PRIME_VISUAL_CARET'; payload: { id: string; blockIndex: number; blockCount: number } }
   | { type: 'CLEAR_VISUAL_CARET'; payload: { id: string } }
@@ -220,12 +214,7 @@ export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload
             // on return starts from it. A primed restore is stale across a
             // fresh entry and dies here.
             next.cursorSync = undefined
-            next.sourceSeed = {
-              anchor: d.sourceSelectionAnchor,
-              head: d.sourceSelectionHead,
-              reveal: false,
-              textLength: d.frontmatter.length + d.content.length
-            }
+            next.sourceSeed = storedSeed(d)
           }
           return next
         })
@@ -403,12 +392,7 @@ export function handleEvict(state: EditingSession, id: string): EditingSession {
             // A primed restore is stale across eviction, and the seed must not
             // reveal on a remount that was not preceded by a switch.
             cursorSync: undefined,
-            sourceSeed: {
-              anchor: d.sourceSelectionAnchor,
-              head: d.sourceSelectionHead,
-              reveal: false,
-              textLength: d.frontmatter.length + d.content.length
-            }
+            sourceSeed: storedSeed(d)
           }
         : d
     )
@@ -562,23 +546,17 @@ export function handleSetView(
 
 export function handleSeedSourceContext(
   state: EditingSession,
-  payload: {
-    id: string
-    selectionAnchor: number
-    selectionHead: number
-    scrollTop: number
-    seed: SourceSeed
-  }
+  payload: { id: string; scrollTop: number; seed: SourceSeed }
 ): EditingSession {
-  const { id, selectionAnchor, selectionHead, scrollTop, seed } = payload
+  const { id, scrollTop, seed } = payload
   return {
     ...state,
     documents: state.documents.map((d) =>
       d.id === id
         ? {
             ...d,
-            sourceSelectionAnchor: selectionAnchor,
-            sourceSelectionHead: selectionHead,
+            sourceSelectionAnchor: seed.anchor,
+            sourceSelectionHead: seed.head,
             sourceScrollTop: Math.max(0, scrollTop),
             sourceSeed: seed
           }
@@ -606,6 +584,17 @@ export function handleClearVisualCaret(state: EditingSession, id: string): Editi
     documents: state.documents.map((d) =>
       d.id === id && d.cursorSync !== undefined ? { ...d, cursorSync: undefined } : d
     )
+  }
+}
+
+/** The seed for a source entry that had no mapping: the source view opens at
+ *  the stored context, so the return-path comparison starts from it. */
+function storedSeed(d: DocumentState): SourceSeed {
+  return {
+    anchor: d.sourceSelectionAnchor,
+    head: d.sourceSelectionHead,
+    reveal: false,
+    textLength: d.frontmatter.length + d.content.length
   }
 }
 

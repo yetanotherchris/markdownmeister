@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { Schema } from '@milkdown/kit/prose/model'
 import type { Node as PMNode } from '@milkdown/kit/prose/model'
 import type { Selection } from '@milkdown/kit/prose/state'
@@ -6,7 +6,8 @@ import type { EditorView } from '@milkdown/kit/prose/view'
 import {
   planCursorRestore,
   planBlockRestore,
-  applyCursorRestore
+  applyCursorRestore,
+  revealCaretInView
 } from '../../src/renderer/editor/cursorRestore'
 
 const schema = new Schema({
@@ -172,5 +173,51 @@ describe('applyCursorRestore', () => {
     expect(dispatched[0].scrolledIntoView).toBeUndefined()
     expect(dispatched[0].selection!.head).toBe(2)
     expect(scrollElement.scrollTop).toBe(120)
+  })
+})
+
+describe('revealCaretInView (spec 052)', () => {
+  function fakeView(coords: { top: number; bottom: number }): EditorView {
+    return {
+      coordsAtPos: () => coords
+    } as unknown as EditorView
+  }
+
+  function scrollElementWith(rect: { top: number; bottom: number }): HTMLElement {
+    const el = document.createElement('div')
+    Object.defineProperty(el, 'clientHeight', { value: rect.bottom - rect.top })
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+      top: rect.top,
+      bottom: rect.bottom,
+      left: 0,
+      right: 0,
+      width: 100,
+      height: rect.bottom - rect.top,
+      x: 0,
+      y: rect.top,
+      toJSON: () => ({})
+    } as DOMRect)
+    return el
+  }
+
+  it('centers an off-screen caret in the scrollable host', () => {
+    const el = scrollElementWith({ top: 100, bottom: 600 })
+    revealCaretInView(fakeView({ top: 2000, bottom: 2020 }), 5, el)
+    // 2000 - 100 - (500 / 2) = 1650
+    expect(el.scrollTop).toBe(1650)
+  })
+
+  it('leaves the scroll alone when the caret is already in view', () => {
+    const el = scrollElementWith({ top: 100, bottom: 600 })
+    revealCaretInView(fakeView({ top: 200, bottom: 220 }), 5, el)
+    expect(el.scrollTop).toBe(0)
+  })
+
+  it('does nothing without a scroll element or coordinates', () => {
+    expect(() => revealCaretInView(fakeView({ top: 2000, bottom: 2020 }), 5, null)).not.toThrow()
+    const el = scrollElementWith({ top: 100, bottom: 600 })
+    const blind = { coordsAtPos: () => null } as unknown as EditorView
+    expect(() => revealCaretInView(blind, 5, el)).not.toThrow()
+    expect(el.scrollTop).toBe(0)
   })
 })

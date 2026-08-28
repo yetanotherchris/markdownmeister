@@ -68,6 +68,9 @@ export default function SourceView({
 
   useEffect(() => {
     if (!hostRef.current) return
+    // Re-arm from the mount-time prop: StrictMode's discarded first mount
+    // consumes the reveal otherwise, losing it for the real surface in dev.
+    pendingRevealRef.current = reveal
 
     const captureContext = (view: EditorView) => {
       const context = sourceContext(view)

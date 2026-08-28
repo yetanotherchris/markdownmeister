@@ -19,14 +19,15 @@ Findings that resolve the plan's open questions, with the evidence and the rejec
 **Evidence**: The renderer already parses markdown through remark/micromark (package.json dependencies; the visual editor's ingest pipeline), and mdast nodes expose `position.start.line` and `position.end.line`. No new dependency is required. The table is a flat array of `{ startLine, endLine }` per top-level node plus the frontmatter's line span; a source line resolves to a block by binary search, a visual block index resolves to a line by table lookup.
 
 **Alternatives rejected**:
-- *Re-serialise block by block to count lines*: N serialisations per switch instead of one parse; no accuracy gain (the displayed text already exists).
-- *DOM geometry (pixel fraction between the two surfaces)*: viewport- and theme-dependent, breaks at any zoom or font difference, and untestable without a mounted editor; the parse approach is pure and unit-testable.
+
+- _Re-serialise block by block to count lines_: N serialisations per switch instead of one parse; no accuracy gain (the displayed text already exists).
+- _DOM geometry (pixel fraction between the two surfaces)_: viewport- and theme-dependent, breaks at any zoom or font difference, and untestable without a mounted editor; the parse approach is pure and unit-testable.
 
 ## R3. Correlation must be verified, with a silent fallback
 
 **Decision**: After computing the table, verify the parsed top-level child count equals the visual document's top-level child count. On mismatch (or any exception), skip the mapping for that switch and use today's stored-context behaviour.
 
-**Evidence**: The app's round trip is not byte-exact for every construct: Crepe normalises some input (for example bare URLs become bracketed links; archived spec 002 FR-12 documents the class), and the tight-list fixes (src/renderer/editor/tightList.ts) exist precisely because serialisation had edge cases. The switch-time capture guarantees the *text* matches the *editor output* (R1), which makes child-count correlation reliable in practice; where it fails, the spec's FR-005 requires degradation, not error.
+**Evidence**: The app's round trip is not byte-exact for every construct: Crepe normalises some input (for example bare URLs become bracketed links; archived spec 002 FR-12 documents the class), and the tight-list fixes (src/renderer/editor/tightList.ts) exist precisely because serialisation had edge cases. The switch-time capture guarantees the _text_ matches the _editor output_ (R1), which makes child-count correlation reliable in practice; where it fails, the spec's FR-005 requires degradation, not error.
 
 **Consequence**: Clamping chain for any failure: nearest block start, then body start, then today's behaviour. Mapping never throws out of the switch path.
 
@@ -37,16 +38,17 @@ Findings that resolve the plan's open questions, with the evidence and the rejec
 **Evidence**: The source view already reports every selection and scroll change upward through a coalesced context capture (src/renderer/editor/SourceView.tsx:63-76, 90-97) into `CAPTURE_SOURCE_CONTEXT` (src/renderer/state/documents.ts:392-410). Comparing the live values to the snapshot needs two new optional fields on `DocumentState` and no new listeners or plumbing; wiring a moved-flag through the editor's listener chain would add state transitions for information the comparison already yields.
 
 **Alternatives rejected**:
-- *Tracking a `moved` boolean from editor events*: redundant state that can desynchronise from the actual selection; the snapshot comparison cannot drift.
-- *Always mapping on return*: rejected at the spec level (breaks the exact unedited round trip, archived spec 044 FR-004); the hybrid is the specified behaviour.
+
+- _Tracking a `moved` boolean from editor events_: redundant state that can desynchronise from the actual selection; the snapshot comparison cannot drift.
+- _Always mapping on return_: rejected at the spec level (breaks the exact unedited round trip, archived spec 044 FR-004); the hybrid is the specified behaviour.
 
 ## R5. The mapped result flows through existing restore machinery
 
-**Decision**: On return, the mapped visual caret offset is written into the document state (the same `cursorOffset`/`scrollTop` fields the return path already restores from), so `applyCursorRestore` (src/renderer/editor/cursorRestore.ts:35-54) applies it unchanged, including clamping to a valid text position. Entering source, the mapped line-start offsets are written into the existing `sourceSelectionAnchor`/`sourceSelectionHead` fields.
+**Decision**: On return, the mapped restore rides the store as a primed plan (`cursorSync: { blockIndex, blockCount }`) rather than a precomputed offset: the destination editor resolves the block against its real document at restore time (`planBlockRestore`, boundary offset by child sizes, `TextSelection.near`), with the count check refusing the plan when the structures have drifted. Entering source, the mapped line-start offsets are written into the existing `sourceSelectionAnchor`/`sourceSelectionHead` fields via `SEED_SOURCE_CONTEXT`, and the entry snapshot (`sourceSeed`) rides the same action.
 
-**Evidence**: Both switch directions already pass through actions that carry caret payloads (`CAPTURE_EDITOR_STATE`, `CAPTURE_SOURCE_CONTEXT`, `REFRESH_FROM_SOURCE` deliberately retaining stored offsets, src/renderer/state/documents.ts:504-527). The sync therefore adds no new actions and no reducer-shape break; it only changes which values those fields hold at the moment of the switch.
+**Evidence**: Both switch directions already pass through actions that carry caret payloads (`CAPTURE_EDITOR_STATE`, `CAPTURE_SOURCE_CONTEXT`, `REFRESH_FROM_SOURCE` deliberately retaining stored offsets, src/renderer/state/documents.ts). The planned "no new actions, write into cursorOffset/scrollTop" shape turned out not to work for the return path: in the edited case the visual document does not exist until the refresh remount, so the offset cannot be computed at switch time; a block index is stable across the remount and cheap to verify. This deviates from the plan's original wording and is recorded here.
 
-**Consequence**: The reveal-on-screen behaviour (scroll to caret) comes free: the editors already reveal a freshly applied caret. Two new optional snapshot fields are the only state change.
+**Consequence**: The reveal-on-screen behaviour (scroll to caret) comes free: the editors already reveal a freshly applied caret. The state change is two new optional fields (`sourceSeed`, `cursorSync`) and three positioning-only actions.
 
 ## R6. Cost is one linear parse per switch, off the keystroke path
 
@@ -55,5 +57,6 @@ Findings that resolve the plan's open questions, with the evidence and the rejec
 **Evidence**: The switch already serialises the document (R1), which is the same order of cost as the parse. The constitution's calm-editing gate concerns the keystroke path, which is untouched. For 10,000-line documents the added work is one extra linear pass over text the switch already handles, well inside the imperceptibility budget (SC-005).
 
 **Alternatives rejected**:
-- *Persistent block table updated on edits*: state to keep consistent across every edit path (visual, source, reload, external change) for zero user-visible gain, since the switch recomputes from fresh text anyway.
-- *Character-exact position map*: explicitly out of scope per the spec's accuracy contract; roughly an order of magnitude more code for precision the user declined.
+
+- _Persistent block table updated on edits_: state to keep consistent across every edit path (visual, source, reload, external change) for zero user-visible gain, since the switch recomputes from fresh text anyway.
+- _Character-exact position map_: explicitly out of scope per the spec's accuracy contract; roughly an order of magnitude more code for precision the user declined.

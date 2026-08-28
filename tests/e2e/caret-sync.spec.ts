@@ -25,6 +25,14 @@ function buildLongDoc(): string {
     if (i === 14) {
       parts.push('```js', '// CODE-INNER fourteen', '```', ``)
     }
+    if (i === 16) {
+      parts.push(
+        `| TBLCOL header one | TBLCOL header two |`,
+        `| ----------------- | ----------------- |`,
+        `| TBLCELL alpha     | TBLCELL beta      |`,
+        ``
+      )
+    }
   }
   return parts.join('\n')
 }
@@ -106,6 +114,7 @@ interface VisualCaret {
   offset: number
   scrollTop: number
   blockText: string
+  visible: boolean
 }
 
 /** Reads the visual caret. The first DOM child of the ProseMirror surface is
@@ -126,11 +135,17 @@ async function readVisualCaret(): Promise<VisualCaret> {
     const range = document.createRange()
     range.selectNodeContents(block as Node)
     range.setEnd(selection.anchorNode, selection.anchorOffset)
+    const h = host.getBoundingClientRect()
+    const b = (block as HTMLElement).getBoundingClientRect()
+    // A horizontal scrollbar eats into the host's box, so the visible band
+    // ends above its border-box bottom.
+    const scrollbar = host.offsetHeight - host.clientHeight
     return {
       blockIndex: index,
       offset: range.toString().length,
       scrollTop: host.scrollTop,
-      blockText: (block as HTMLElement).textContent ?? ''
+      blockText: (block as HTMLElement).textContent ?? '',
+      visible: b.top >= h.top - 1 && b.bottom <= h.bottom - scrollbar + 1
     }
   })
 }
@@ -217,7 +232,8 @@ test.describe('caret line sync (spec 052)', () => {
       // The block is the mapping unit, so a caret in any list item maps to
       // the list's first line.
       { marker: 'QUOTE-TEXT', match: /QUOTE-TEXT/ },
-      { marker: 'CODE-INNER', match: /```/ }
+      { marker: 'CODE-INNER', match: /```/ },
+      { marker: 'TBLCELL alpha', match: /TBLCOL header one/ }
     ]
     for (const { marker, match } of cases) {
       await placeVisualCaret(marker)
@@ -235,7 +251,13 @@ test.describe('caret line sync (spec 052)', () => {
     await openFolder()
     const doc = buildLongDoc().replace(
       'PARA-12 paragraph text for section number 12.',
-      'PARA-12 paragraph text for section number 12.\n\n- LIST-ONE item one\n- LIST-TWO item two\n- LIST-THREE item three'
+      [
+        'PARA-12 paragraph text for section number 12.',
+        '',
+        '- LIST-ONE item one',
+        '- LIST-TWO item two',
+        '- LIST-THREE item three'
+      ].join('\n')
     )
     fs.writeFileSync(path.join(testFolder, 'list.md'), doc)
     await openFile('list.md')
@@ -244,6 +266,53 @@ test.describe('caret line sync (spec 052)', () => {
     await expect(window.getByTestId('source-view')).toBeVisible()
     const caret = await readSourceCaret()
     expect(caret.lineText).toContain('LIST-ONE')
+  })
+
+  test('frontmatter is skipped entering source and maps to the body start on return (US1, US3)', async () => {
+    await openFolder()
+    fs.writeFileSync(
+      path.join(testFolder, 'front.md'),
+      `---\ntitle: front-test\n---\n\n${buildLongDoc()}`
+    )
+    await openFile('front.md')
+    await placeVisualCaret('PARA-12')
+    await viewSourceButton().click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
+    const caret = await readSourceCaret()
+    expect(caret.lineText).toContain('PARA-12')
+    // The sync never places the source caret inside the frontmatter (US1-4).
+    expect(caret.lineText).not.toContain('title:')
+    expect(caret.lineIndex).toBeGreaterThan(3)
+
+    // A source caret parked in the frontmatter returns to the start of the
+    // body, its closest visual counterpart (US3-2). The reveal above scrolled
+    // the frontmatter out of the rendered viewport, so scroll back first.
+    await window.evaluate(() => {
+      const scroller = document.querySelector('.source-view .cm-scroller') as HTMLElement | null
+      if (scroller) scroller.scrollTop = 0
+    })
+    await window.waitForTimeout(80)
+    await window.locator('.source-view .cm-line', { hasText: 'title: front-test' }).click()
+    await window.waitForTimeout(80)
+    await returnButton().click()
+    await expect(window.getByTestId('source-view')).toHaveCount(0)
+    await expect(window.locator('.ProseMirror:visible')).toBeVisible()
+    await window.waitForTimeout(60)
+    const visual = await readVisualCaret()
+    expect(visual.blockIndex).toBe(0)
+    expect(visual.blockText).toContain('Heading 1')
+  })
+
+  test('a CRLF document maps by line, not by raw byte offset (FR-001)', async () => {
+    await openFolder()
+    fs.writeFileSync(path.join(testFolder, 'crlf.md'), buildLongDoc().replace(/\n/g, '\r\n'))
+    await openFile('crlf.md')
+    await placeVisualCaret('PARA-22')
+    await viewSourceButton().click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
+    const caret = await readSourceCaret()
+    expect(caret.lineText).toContain('PARA-22')
+    expect(caret.visible).toBe(true)
   })
 
   test('an untouched round trip restores the visual caret and scroll exactly (FR-003)', async () => {
@@ -290,6 +359,8 @@ test.describe('caret line sync (spec 052)', () => {
 
     const caret = await readVisualCaret()
     expect(caret.blockText).toContain('PARA-20')
+    // FR-004 requires the mapped caret to be revealed on screen.
+    expect(caret.visible).toBe(true)
   })
 
   test('editing in source preserves the edit and maps the return to the caret block (FR-004)', async () => {

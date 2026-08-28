@@ -2,7 +2,12 @@ import { useCallback } from 'react'
 import type { DocumentsAction, EditingSession } from '../state/documents'
 import { editorMatchesContent } from '../state/documents'
 import { joinFrontmatter } from '../domain/frontmatter'
-import { planReturnRestore, planSourceSeed, type SourceSeed } from '../domain/caretSync'
+import {
+  normalizeCaretText,
+  planReturnRestore,
+  planSourceSeed,
+  type SourceSeed
+} from '../domain/caretSync'
 import { instancePool } from '../editor/instancePool'
 import type { DocumentSessionApi } from './useDocumentSession'
 
@@ -43,7 +48,9 @@ export function useSourceViewToggle(opts: {
     (id: string, displayedText: string | null): void => {
       const doc = sessionRef.current.documents.find((d) => d.id === id)
       if (!doc) return
-      const effectiveText = displayedText ?? joinFrontmatter(doc.frontmatter, doc.content)
+      const effectiveText = normalizeCaretText(
+        displayedText ?? joinFrontmatter(doc.frontmatter, doc.content)
+      )
       const geometry = displayedText ? instancePool.getSelectionGeometry(id) : null
       const mapped =
         displayedText && geometry
@@ -61,13 +68,7 @@ export function useSourceViewToggle(opts: {
       }
       dispatch({
         type: 'SEED_SOURCE_CONTEXT',
-        payload: {
-          id,
-          selectionAnchor: mapped ? mapped.anchor : doc.sourceSelectionAnchor,
-          selectionHead: mapped ? mapped.head : doc.sourceSelectionHead,
-          scrollTop: doc.sourceScrollTop,
-          seed
-        }
+        payload: { id, scrollTop: doc.sourceScrollTop, seed }
       })
     },
     [dispatch, sessionRef]
@@ -106,7 +107,11 @@ export function useSourceViewToggle(opts: {
       // The comparison is against the BODY (`content`), frontmatter changes
       // alone leave the body untouched, so they do not force a remount.
       const edited = live === null || !editorMatchesContent(live, doc.content)
-      const displayed = joinFrontmatter(doc.frontmatter, doc.content)
+      const rawDisplayed = joinFrontmatter(doc.frontmatter, doc.content)
+      // The mapping and the edit comparison run on LF-normalized text (the
+      // space the source view's offsets live in); the refresh payload keeps
+      // the stored bytes untouched.
+      const displayed = normalizeCaretText(rawDisplayed)
       const seed = doc.sourceSeed ?? null
       // A source edit is a change to the text the session opened with. The
       // editor normalizing unchanged bytes also trips the refresh decision
@@ -130,7 +135,7 @@ export function useSourceViewToggle(opts: {
       }
       if (edited) {
         instancePool.clearBaselineDoc(id)
-        dispatch({ type: 'REFRESH_FROM_SOURCE', payload: { id, content: displayed } })
+        dispatch({ type: 'REFRESH_FROM_SOURCE', payload: { id, content: rawDisplayed } })
       }
       dispatch({ type: 'SET_VIEW', payload: { id, view: 'formatted' } })
     },
