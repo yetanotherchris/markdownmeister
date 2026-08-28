@@ -206,13 +206,19 @@ test('US1 edge case toggling wrap on while scrolled far right resets sanely', as
   })
   await toggleWordWrap()
 
-  // The horizontal offset becomes meaningless and resets rather than erroring;
-  // the view stays usable and the surface keeps responding.
-  const scrollLeft = await window.locator('.source-view .cm-scroller').evaluate((el) => {
-    el.scrollLeft = el.scrollWidth
-    return el.scrollLeft
-  })
-  expect(scrollLeft).toBe(0)
+  // CodeMirror re-measures asynchronously after the compartment change, so the
+  // wrapped geometry must be awaited before judging the horizontal offset.
+  await expect.poll(sourceOverflows, { timeout: 1000 }).toBe(false)
+  // The horizontal offset becomes meaningless and resets rather than erroring:
+  // nothing is retained and pushing far right clamps instead of scrolling.
+  const scroller = window.locator('.source-view .cm-scroller')
+  expect(await scroller.evaluate((el) => el.scrollLeft)).toBe(0)
+  expect(
+    await scroller.evaluate((el) => {
+      el.scrollLeft = el.scrollWidth
+      return el.scrollLeft
+    })
+  ).toBe(0)
   await expect(window.getByTestId('source-textarea')).toBeVisible()
 })
 

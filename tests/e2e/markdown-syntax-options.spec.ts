@@ -158,13 +158,14 @@ test('US1 toggling task lists off renders brackets as literal list text', async 
 })
 
 test('US1 with autolink disabled, a bare URL stays plain text on load', async () => {
-  // Pre-seed the config so the document is parsed with autolink OFF.
+  await closeAppSafely(app)
+  // Seed only after the previous instance is gone: a live app's debounced
+  // settings write would otherwise flush over this file after the seed.
   fs.writeFileSync(
     path.join(configDir, 'config.json'),
     JSON.stringify({ settings: { autolink: false } }),
     'utf-8'
   )
-  await closeAppSafely(app)
   ;({ app, window } = await launchApp(configDir, testFolder))
   await openFile()
 
