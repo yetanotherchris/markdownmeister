@@ -14,9 +14,9 @@
 
 ## Phase 3: Block-index caret restore (R5)
 
-- [ ] 3.1 Extend `tests/renderer/cursorRestore.test.ts`: `planBlockRestore` resolves each top-level block to a valid inline selection, rejects count mismatches and empty docs
-- [ ] 3.2 Implement `planBlockRestore` in `src/renderer/editor/cursorRestore.ts` (boundary offset by child sizes, `TextSelection.near`)
-- [ ] 3.3 Verify: `npm run test -- cursorRestore`
+- [x] 3.1 Extend `tests/renderer/cursorRestore.test.ts`: `planBlockRestore` resolves each top-level block to a valid inline selection, rejects count mismatches and empty docs
+- [x] 3.2 Implement `planBlockRestore` in `src/renderer/editor/cursorRestore.ts` (boundary offset by child sizes, `TextSelection.near`)
+- [x] 3.3 Verify: `npm run test -- cursorRestore`
 
 ## Phase 4: Switch wiring (R1, R4, R5)
 

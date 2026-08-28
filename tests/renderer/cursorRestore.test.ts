@@ -3,7 +3,7 @@ import { Schema } from '@milkdown/kit/prose/model'
 import type { Node as PMNode } from '@milkdown/kit/prose/model'
 import type { Selection } from '@milkdown/kit/prose/state'
 import type { EditorView } from '@milkdown/kit/prose/view'
-import { planCursorRestore, applyCursorRestore } from '../../src/renderer/editor/cursorRestore'
+import { planCursorRestore, planBlockRestore, applyCursorRestore } from '../../src/renderer/editor/cursorRestore'
 
 const schema = new Schema({
   nodes: {
@@ -57,6 +57,37 @@ describe('planCursorRestore (spec 044 D3)', () => {
     expect(plan!.clamped).toBe(true)
     const $pos = doc.resolve(plan!.selection.head)
     expect($pos.parent.inlineContent).toBe(true)
+  })
+})
+
+describe('planBlockRestore (spec 052)', () => {
+  it('resolves each top-level block to a valid inline selection', () => {
+    const doc = buildDoc()
+    for (const blockIndex of [0, 1, 2]) {
+      const selection = planBlockRestore(doc, blockIndex, 3)
+      expect(selection).not.toBeNull()
+      const $pos = doc.resolve(selection!.head)
+      expect($pos.parent.inlineContent).toBe(true)
+      // Each resolution lands inside its own block, not a neighbour.
+      const blockStart = [0, 4, 13][blockIndex]
+      expect(selection!.head).toBeGreaterThanOrEqual(blockStart)
+      expect(selection!.head).toBeLessThan(blockStart + [4, 9, 4][blockIndex])
+    }
+  })
+
+  it('places block 0 at the first text position of the document', () => {
+    const doc = buildDoc()
+    expect(planBlockRestore(doc, 0, 3)!.head).toBe(1)
+  })
+
+  it('rejects a count mismatch, out-of-range index, or empty document', () => {
+    const doc = buildDoc()
+    expect(planBlockRestore(doc, 0, 2)).toBeNull()
+    expect(planBlockRestore(doc, 3, 3)).toBeNull()
+    expect(planBlockRestore(doc, -1, 3)).toBeNull()
+    expect(planBlockRestore(doc, 0, 0)).toBeNull()
+    const empty = schema.topNodeType.create([])
+    expect(planBlockRestore(empty, 0, 1)).toBeNull()
   })
 })
 
