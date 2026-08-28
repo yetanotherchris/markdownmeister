@@ -196,7 +196,12 @@ export default function CrepeHost({
       endOpen()
       onBaselineCapture(crepe.getMarkdown(), view.state.doc)
       applyInert()
-      if (active) {
+      // `active` is the mount-time prop: if the view flipped to source while
+      // create() was pending, this closure still sees true. lockedRef tracks
+      // the live lock, so restoring the caret or focusing here would apply a
+      // stored scroll to the locked container and steal focus from the
+      // source surface.
+      if (active && !lockedRef.current) {
         applyCursorState(view)
         view.focus()
       }
