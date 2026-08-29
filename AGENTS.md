@@ -289,7 +289,22 @@ AGENTS.md                         This file
   - After addressing findings on an implementation PR, re-run `npm run lint`,
     `npm run typecheck`, `npm run test`, and `npm run test:e2e`; the PR is not
     ready to merge until all four are green.
-- **Never merge a pull request yourself.** When every requirement above is satisfied, post a short readiness summary (reviews addressed, gates green) and stop. The user merges the PR in GitHub's UI or gives an explicit instruction in that session to merge that specific PR. Running `gh pr merge` (or any equivalent command) without that explicit per-PR instruction is a workflow violation, even when all reviews are addressed and every gate is green. This applies equally to implementation, documentation, and specification PRs.
+- **Check the GitHub checks before declaring any PR ready.** Run
+  `gh pr checks <number>` (or `gh pr checks` on the checked-out branch), wait
+  for in-progress runs to finish, and treat a failed check as blocking. The CI
+  gate (`quality.yml`) runs `format:check`, `lint`, `typecheck`, the
+  maintainability check, unit tests, and e2e tests, but only on PRs that touch
+  `src/`, `tests/`, `scripts/`, `package.json`, `package-lock.json`, or the
+  build and test config files (`electron-builder.yml`, `electron.vite.config.ts`,
+  `eslint.config.mjs`, `playwright.config.ts`, `tsconfig*.json`,
+  `vitest.config.ts`); a documentation-only or specification-only PR
+  usually triggers no checks, which is fine. If checks did run, they must be
+  green before a readiness summary or a merge request is appropriate. The
+  gate's `format:check` step compares against `.prettierrc`, so a code-touching
+  PR must be prettier-clean; on Windows a local prettier check can misreport
+  clean files because checkout line endings differ, so confirm the gate on
+  GitHub rather than trusting a red local result.
+- **Never merge a pull request yourself.** When every requirement above is satisfied, post a short readiness summary (reviews addressed, local gates green, GitHub checks green) and stop. The user merges the PR in GitHub's UI or gives an explicit instruction in that session to merge that specific PR. Running `gh pr merge` (or any equivalent command) without that explicit per-PR instruction is a workflow violation, even when all reviews are addressed and every gate is green. This applies equally to implementation, documentation, and specification PRs.
 - **Archive the spec as part of the implementation PR.** When a spec's feature
   is fully implemented and its PR is opened, move the spec directory from
   `specs/<n>-<name>/` to `specs/archive/<n>-<name>/` in the same change (use
