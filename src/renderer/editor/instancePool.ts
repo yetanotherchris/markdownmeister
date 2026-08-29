@@ -63,9 +63,7 @@ export class InstancePool {
    *  correlates on, plus whether the last child is the empty paragraph
    *  Milkdown keeps after a non-paragraph last block (a list, table, code
    *  block, or quote). Reading structure does not serialize the document. */
-  getSelectionGeometry(
-    documentId: string
-  ): {
+  getSelectionGeometry(documentId: string): {
     caretOffset: number
     childSizes: number[]
     trailingEmptyParagraph: boolean
