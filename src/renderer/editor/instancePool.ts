@@ -1,6 +1,7 @@
 import type { DocumentState } from '../state/documents'
 import type { Crepe } from '@milkdown/crepe'
 import { editorViewCtx } from '@milkdown/kit/core'
+import { isEmptyParagraph } from './cursorRestore'
 
 const MAX_INSTANCES = 8
 
@@ -74,18 +75,13 @@ export class InstancePool {
     try {
       const view = entry.editor.editor.action((ctx) => ctx.get(editorViewCtx))
       const doc = view.state.doc
-      const children: { size: number; emptyParagraph: boolean }[] = []
-      doc.forEach((child) =>
-        children.push({
-          size: child.nodeSize,
-          emptyParagraph: child.type.name === 'paragraph' && child.nodeSize === 2
-        })
-      )
-      const last = children[children.length - 1]
+      const childSizes: number[] = []
+      doc.forEach((child) => childSizes.push(child.nodeSize))
+      const last = doc.lastChild
       return {
         caretOffset: view.state.selection.anchor,
-        childSizes: children.map((c) => c.size),
-        trailingEmptyParagraph: last !== undefined && last.emptyParagraph
+        childSizes,
+        trailingEmptyParagraph: last !== null && isEmptyParagraph(last)
       }
     } catch {
       return null

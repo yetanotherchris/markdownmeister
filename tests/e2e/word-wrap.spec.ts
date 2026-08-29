@@ -140,6 +140,12 @@ test('FR-005 the toggle is grey when off and accent when on', async () => {
   const on = await toggleBackground()
   expect(on).toBe(await accentBackground())
   expect(on).not.toBe(toolbar)
+
+  // Toggling back off returns to the grey off state; move the pointer off
+  // the button first so the hover rule does not tint the read.
+  await toggleWordWrap()
+  await window.mouse.move(0, 0)
+  expect(await toggleBackground()).toBe(toolbar)
 })
 
 test('FR-008 the Settings Markdown area no longer offers word wrap', async () => {

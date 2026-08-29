@@ -103,7 +103,9 @@ export function planSourceSeed(params: {
   const table = buildBlockTable(displayedText)
   if (!table) return null
   const effectiveSizes =
-    trailingEmptyParagraph && childSizes.length === table.blocks.length + 1
+    trailingEmptyParagraph &&
+    childSizes.length === table.blocks.length + 1 &&
+    childSizes[childSizes.length - 1] === 2
       ? childSizes.slice(0, -1)
       : childSizes
   if (table.blocks.length !== effectiveSizes.length) return null

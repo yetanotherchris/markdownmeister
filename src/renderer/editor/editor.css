@@ -196,8 +196,7 @@
   cursor: pointer;
 }
 
-.source-return:hover,
-.source-word-wrap:hover {
+.source-return:hover {
   background: var(--mm-surface-secondary);
 }
 
@@ -209,7 +208,9 @@
 }
 
 .source-word-wrap:hover {
-  background: var(--mm-active-tab);
+  /* The accent pressed state is declared later at equal specificity, so it
+     still wins while hovering a pressed toggle. */
+  background: var(--mm-bg);
 }
 
 .source-word-wrap[aria-pressed='true'] {

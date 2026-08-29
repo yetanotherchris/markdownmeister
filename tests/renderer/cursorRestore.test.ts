@@ -133,6 +133,24 @@ describe('planBlockRestore (spec 052)', () => {
     expect(planBlockRestore(doc, 0, 3)).toBeNull()
     expect(planBlockRestore(doc, 2, 3)).toBeNull()
   })
+
+  it('descends into a container as the last real block ahead of the artifact', () => {
+    const para = (text: string) => schema.node('paragraph', null, text ? [schema.text(text)] : [])
+    const doc = schema.node('doc', null, [
+      para('ab'),
+      para('cd'),
+      schema.node('blockquote', null, [para('quote end')]),
+      para('')
+    ])
+    const selection = planBlockRestore(doc, 2, 3)
+    expect(selection).not.toBeNull()
+    const $pos = doc.resolve(selection!.head)
+    expect($pos.parent.inlineContent).toBe(true)
+    // The caret descends into the quote's paragraph (spans 8-21) and never
+    // lands in the artifact paragraph that follows it.
+    expect(selection!.head).toBeGreaterThanOrEqual(8)
+    expect(selection!.head).toBeLessThan(21)
+  })
 })
 
 describe('applyCursorRestore', () => {

@@ -8,6 +8,14 @@ export interface CursorRestorePlan {
   clamped: boolean
 }
 
+/** True when a ProseMirror node is an empty paragraph, the artifact Milkdown
+ *  keeps after a document whose last block is a list, table, code block, or
+ *  quote. Used by the geometry read and by the restore plan so the predicate
+ *  cannot drift between them. */
+export function isEmptyParagraph(node: Node): boolean {
+  return node.type.name === 'paragraph' && node.nodeSize === 2
+}
+
 /** Resolve a mapped top-level block index to a caret selection in the visual
  *  document. The block's left boundary is the sum of the preceding child
  *  sizes; `near` walks forward into the block's text. The call is refused
@@ -25,10 +33,7 @@ export function planBlockRestore(
   if (blockIndex >= blockCount) return null
   const countMatches = doc.childCount === blockCount
   const countMatchesWithTrailingEmpty =
-    doc.childCount === blockCount + 1 &&
-    doc.lastChild !== null &&
-    doc.lastChild.type.name === 'paragraph' &&
-    doc.lastChild.nodeSize === 2
+    doc.childCount === blockCount + 1 && doc.lastChild !== null && isEmptyParagraph(doc.lastChild)
   if (!countMatches && !countMatchesWithTrailingEmpty) return null
   let pos = 0
   for (let i = 0; i < blockIndex; i++) pos += doc.child(i).nodeSize

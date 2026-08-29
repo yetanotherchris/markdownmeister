@@ -47,10 +47,14 @@ function makeDoc(patch: Partial<DocumentState> = {}): DocumentState {
 }
 
 /** A stub editor exposing the selection geometry the mapping correlates on:
- *  top-level child sizes and the caret's ProseMirror offset. A size-2 child
- *  is typed as the empty paragraph Milkdown keeps after a non-paragraph last
- *  block, so the trailing-artifact signal is exercised too. */
+ *  top-level child sizes and the caret's ProseMirror offset. Every child is
+ *  typed as a paragraph, mirroring the real predicate so only a size-2 last
+ *  child flags the trailing empty paragraph. */
 function stubEditorFor(childSizes: number[], caretOffset: number): Crepe {
+  const children = childSizes.map((size) => ({
+    nodeSize: size,
+    type: { name: 'paragraph' }
+  }))
   return {
     destroy: () => {},
     editor: {
@@ -58,9 +62,8 @@ function stubEditorFor(childSizes: number[], caretOffset: number): Crepe {
         state: {
           doc: {
             forEach: (fn: (child: { nodeSize: number; type: { name: string } }) => void) =>
-              childSizes.forEach((size) =>
-                fn({ nodeSize: size, type: { name: size === 2 ? 'paragraph' : 'heading' } })
-              )
+              children.forEach((child) => fn(child)),
+            lastChild: children[children.length - 1] ?? null
           },
           selection: { anchor: caretOffset }
         }

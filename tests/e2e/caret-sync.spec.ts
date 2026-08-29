@@ -400,13 +400,16 @@ test.describe('caret line sync (spec 052)', () => {
     // break the block-count correlation and drop the caret at the top.
     expect(caret.lineText).toContain('PARA-15')
     expect(caret.visible).toBe(true)
+    // Positioning must not dirty the document (FR-007).
+    await expect(window.locator('.document-title')).not.toContainText('\u2022')
   })
 
-  test('a document ending in a table or code block maps into the containing block (FR-001/002)', async () => {
+  test('a document ending in a table, code block, or quote maps both ways (FR-001/002/003)', async () => {
     await openFolder()
     const cases: Array<{ name: string; ending: string }> = [
       { name: 'trailing-table', ending: '| TBL end |\n| --- |\n| cell |\n' },
-      { name: 'trailing-code', ending: '```js\n// end\n```\n' }
+      { name: 'trailing-code', ending: '```js\n// end\n```\n' },
+      { name: 'trailing-quote', ending: '> trailing quote line\n' }
     ]
     for (const { name, ending } of cases) {
       const doc = `${buildLongDoc()}\n${ending}`
@@ -416,11 +419,71 @@ test.describe('caret line sync (spec 052)', () => {
       await viewSourceButton().click()
       await expect(window.getByTestId('source-view')).toBeVisible()
       const caret = await readSourceCaret()
-      expect(caret.lineText, `${name}.md`).toContain('PARA-10')
+      expect(caret.lineText, `${name}.md entry`).toContain('PARA-10')
+      // Mapped return: move the source caret to a distant block and confirm
+      // the visual caret follows into it (FR-003).
+      await revealSourceLine('PARA-18')
+      await window.locator('.source-view .cm-line', { hasText: 'PARA-18' }).click()
+      await window.waitForTimeout(80)
       await returnButton().click()
       await expect(window.getByTestId('source-view')).toHaveCount(0)
       await expect(window.locator('.ProseMirror:visible')).toBeVisible()
+      await window.waitForTimeout(60)
+      const visual = await readVisualCaret()
+      expect(visual.blockText, `${name}.md return`).toContain('PARA-18')
     }
+  })
+
+  test('a caret in the trailing list maps to that list block, never the top (US1-3)', async () => {
+    await openFolder()
+    const doc = `${buildLongDoc()}\n- trailing item one\n- trailing item two\n`
+    fs.writeFileSync(path.join(testFolder, 'trailing-list.md'), doc)
+    await openFile('trailing-list.md')
+    await placeVisualCaret('trailing item two')
+    await viewSourceButton().click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
+    const caret = await readSourceCaret()
+    expect(caret.lineText).toContain('trailing item one')
+    expect(caret.lineText).not.toContain('Heading 1')
+  })
+
+  test('a CRLF list-ending document maps by line, not by raw byte offset (FR-001)', async () => {
+    await openFolder()
+    const doc = `${buildLongDoc()}\n- trailing item one\n- trailing item two\n`.replace(
+      /\n/g,
+      '\r\n'
+    )
+    fs.writeFileSync(path.join(testFolder, 'trailing-crlf.md'), doc)
+    await openFile('trailing-crlf.md')
+    await placeVisualCaret('PARA-22')
+    await viewSourceButton().click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
+    const caret = await readSourceCaret()
+    expect(caret.lineText).toContain('PARA-22')
+    expect(caret.visible).toBe(true)
+  })
+
+  test('editing in source in a list-ending document maps the return into the list (FR-003, US2-2)', async () => {
+    await openFolder()
+    const doc = `${buildLongDoc()}\n- trailing item one\n- trailing item two\n`
+    fs.writeFileSync(path.join(testFolder, 'trailing-list.md'), doc)
+    await openFile('trailing-list.md')
+    await viewSourceButton().click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
+
+    const edited = `${buildLongDoc()}\n- trailing item one\n- trailing item two EDITED\n`
+    await window.getByTestId('source-textarea').fill(edited)
+    await revealSourceLine('EDITED')
+    await window.locator('.source-view .cm-line', { hasText: 'EDITED' }).click()
+    await window.waitForTimeout(80)
+    await returnButton().click()
+    await expect(window.getByTestId('source-view')).toHaveCount(0)
+    await expect(window.locator('.ProseMirror:visible')).toBeVisible()
+    await window.waitForTimeout(60)
+
+    await expect(window.locator('.ProseMirror:visible')).toContainText('EDITED')
+    const caret = await readVisualCaret()
+    expect(caret.blockText).toContain('trailing item')
   })
 
   test('moving the source caret in a list-ending document maps the return into that block (FR-003)', async () => {
@@ -458,6 +521,7 @@ test.describe('caret line sync (spec 052)', () => {
     })
     await window.waitForTimeout(60)
     const before = await readVisualCaret()
+    expect(before.scrollTop).toBe(220)
 
     await viewSourceButton().click()
     await expect(window.getByTestId('source-view')).toBeVisible()
