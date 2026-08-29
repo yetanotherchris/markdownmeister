@@ -386,4 +386,89 @@ test.describe('caret line sync (spec 052)', () => {
     const caret = await readVisualCaret()
     expect(caret.blockText).toContain('EDITED-IN-SOURCE')
   })
+
+  test('a document ending in a list maps the source caret to the block you were reading (FR-001)', async () => {
+    await openFolder()
+    const doc = `${buildLongDoc()}\n- trailing item one\n- trailing item two\n`
+    fs.writeFileSync(path.join(testFolder, 'trailing-list.md'), doc)
+    await openFile('trailing-list.md')
+    await placeVisualCaret('PARA-15')
+    await viewSourceButton().click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
+    const caret = await readSourceCaret()
+    // Milkdown keeps a trailing empty paragraph after the list, which used to
+    // break the block-count correlation and drop the caret at the top.
+    expect(caret.lineText).toContain('PARA-15')
+    expect(caret.visible).toBe(true)
+  })
+
+  test('a document ending in a table or code block maps into the containing block (FR-001/002)', async () => {
+    await openFolder()
+    const cases: Array<{ name: string; ending: string }> = [
+      { name: 'trailing-table', ending: '| TBL end |\n| --- |\n| cell |\n' },
+      { name: 'trailing-code', ending: '```js\n// end\n```\n' }
+    ]
+    for (const { name, ending } of cases) {
+      const doc = `${buildLongDoc()}\n${ending}`
+      fs.writeFileSync(path.join(testFolder, `${name}.md`), doc)
+      await openFile(`${name}.md`)
+      await placeVisualCaret('PARA-10')
+      await viewSourceButton().click()
+      await expect(window.getByTestId('source-view')).toBeVisible()
+      const caret = await readSourceCaret()
+      expect(caret.lineText, `${name}.md`).toContain('PARA-10')
+      await returnButton().click()
+      await expect(window.getByTestId('source-view')).toHaveCount(0)
+      await expect(window.locator('.ProseMirror:visible')).toBeVisible()
+    }
+  })
+
+  test('moving the source caret in a list-ending document maps the return into that block (FR-003)', async () => {
+    await openFolder()
+    const doc = `${buildLongDoc()}\n- trailing item one\n- trailing item two\n`
+    fs.writeFileSync(path.join(testFolder, 'trailing-list.md'), doc)
+    await openFile('trailing-list.md')
+    await placeVisualCaret('PARA-3')
+    await viewSourceButton().click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
+
+    await revealSourceLine('PARA-20')
+    await window.locator('.source-view .cm-line', { hasText: 'PARA-20' }).click()
+    await window.waitForTimeout(80)
+    await returnButton().click()
+    await expect(window.getByTestId('source-view')).toHaveCount(0)
+    await expect(window.locator('.ProseMirror:visible')).toBeVisible()
+    await window.waitForTimeout(60)
+
+    const caret = await readVisualCaret()
+    expect(caret.blockText).toContain('PARA-20')
+    expect(caret.visible).toBe(true)
+  })
+
+  test('an untouched round trip on a list-ending document restores exactly (FR-003)', async () => {
+    await openFolder()
+    const doc = `${buildLongDoc()}\n- trailing item one\n- trailing item two\n`
+    fs.writeFileSync(path.join(testFolder, 'trailing-list.md'), doc)
+    await openFile('trailing-list.md')
+    await placeVisualCaret('PARA-5')
+    await window.evaluate(() => {
+      const host = document.querySelector('.editor-host:not(.has-source)') as HTMLElement | null
+      if (!host) throw new Error('editor surface not found')
+      host.scrollTop = 220
+    })
+    await window.waitForTimeout(60)
+    const before = await readVisualCaret()
+
+    await viewSourceButton().click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
+    await returnButton().click()
+    await expect(window.getByTestId('source-view')).toHaveCount(0)
+    await expect(window.locator('.ProseMirror:visible')).toBeVisible()
+    await window.waitForTimeout(60)
+
+    const after = await readVisualCaret()
+    expect(after.blockIndex).toBe(before.blockIndex)
+    expect(after.offset).toBe(before.offset)
+    expect(after.scrollTop).toBe(before.scrollTop)
+  })
 })

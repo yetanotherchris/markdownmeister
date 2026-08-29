@@ -123,6 +123,25 @@ test('FR-010/FR-012 the toggle communicates its state and defaults to off', asyn
   await expect(toggle).toHaveText('Word Wrap')
 })
 
+/** The toolbar's resolved background colour, the grey the off state keys on. */
+async function toolbarBackground(): Promise<string> {
+  return window.locator('.source-toolbar').evaluate((el) => getComputedStyle(el).backgroundColor)
+}
+
+test('FR-005 the toggle is grey when off and accent when on', async () => {
+  await openSourceView('alpha.md')
+
+  const off = await toggleBackground()
+  const toolbar = await toolbarBackground()
+  expect(off).toBe(toolbar)
+
+  await toggleWordWrap()
+
+  const on = await toggleBackground()
+  expect(on).toBe(await accentBackground())
+  expect(on).not.toBe(toolbar)
+})
+
 test('FR-008 the Settings Markdown area no longer offers word wrap', async () => {
   await window.getByRole('button', { name: 'Open menu' }).click()
   await window.getByRole('menuitem', { name: 'Settings…' }).click()

@@ -59,17 +59,34 @@ export class InstancePool {
   }
 
   /** The live selection anchor and top-level child sizes the caret mapping
-   *  correlates on, or null when no readable view exists. Reading structure
-   *  does not serialize the document. */
-  getSelectionGeometry(documentId: string): { caretOffset: number; childSizes: number[] } | null {
+   *  correlates on, plus whether the last child is the empty paragraph
+   *  Milkdown keeps after a non-paragraph last block (a list, table, code
+   *  block, or quote). Reading structure does not serialize the document. */
+  getSelectionGeometry(
+    documentId: string
+  ): {
+    caretOffset: number
+    childSizes: number[]
+    trailingEmptyParagraph: boolean
+  } | null {
     const entry = this.instances.get(documentId)
     if (!entry) return null
     try {
       const view = entry.editor.editor.action((ctx) => ctx.get(editorViewCtx))
       const doc = view.state.doc
-      const childSizes: number[] = []
-      doc.forEach((child) => childSizes.push(child.nodeSize))
-      return { caretOffset: view.state.selection.anchor, childSizes }
+      const children: { size: number; emptyParagraph: boolean }[] = []
+      doc.forEach((child) =>
+        children.push({
+          size: child.nodeSize,
+          emptyParagraph: child.type.name === 'paragraph' && child.nodeSize === 2
+        })
+      )
+      const last = children[children.length - 1]
+      return {
+        caretOffset: view.state.selection.anchor,
+        childSizes: children.map((c) => c.size),
+        trailingEmptyParagraph: last !== undefined && last.emptyParagraph
+      }
     } catch {
       return null
     }

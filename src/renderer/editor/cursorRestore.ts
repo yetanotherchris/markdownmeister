@@ -12,15 +12,24 @@ export interface CursorRestorePlan {
  *  document. The block's left boundary is the sum of the preceding child
  *  sizes; `near` walks forward into the block's text. The call is refused
  *  when the document's top-level child count does not match the correlated
- *  parse that produced the index, so a structurally drifted document falls
- *  back to the caller's stored-offset restore. */
+ *  parse that produced the index, unless the extra child is the trailing
+ *  empty paragraph Milkdown keeps after a list, table, code block, or quote;
+ *  a structurally drifted document falls back to the caller's stored-offset
+ *  restore. */
 export function planBlockRestore(
   doc: Node,
   blockIndex: number,
   blockCount: number
 ): Selection | null {
   if (blockIndex < 0 || blockCount <= 0) return null
-  if (blockIndex >= blockCount || doc.childCount !== blockCount) return null
+  if (blockIndex >= blockCount) return null
+  const countMatches = doc.childCount === blockCount
+  const countMatchesWithTrailingEmpty =
+    doc.childCount === blockCount + 1 &&
+    doc.lastChild !== null &&
+    doc.lastChild.type.name === 'paragraph' &&
+    doc.lastChild.nodeSize === 2
+  if (!countMatches && !countMatchesWithTrailingEmpty) return null
   let pos = 0
   for (let i = 0; i < blockIndex; i++) pos += doc.child(i).nodeSize
   return TextSelection.near(doc.resolve(Math.min(pos, doc.content.size)))

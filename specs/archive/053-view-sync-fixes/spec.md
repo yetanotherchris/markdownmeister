@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-29
 
-**Status**: Active
+**Status**: Archived
 
 **Input**: User description: "The previous spec implementation didn't seem to implement the caret (row) switching between visual editing and source editing properly. Can you fix it? ... Also the 'wordwrap' button should be grey in source editing"
 

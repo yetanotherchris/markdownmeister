@@ -203,6 +203,13 @@
 
 .source-word-wrap {
   margin-left: auto;
+  /* The off state reads as a neutral grey secondary control in the toolbar;
+     the accent pressed state below reports the active toggle. */
+  background: var(--mm-surface-secondary);
+}
+
+.source-word-wrap:hover {
+  background: var(--mm-active-tab);
 }
 
 .source-word-wrap[aria-pressed='true'] {
