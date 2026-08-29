@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-29
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "change the wordwrap so it's a checkbox, or toggle button in view source mode. Change the "about" page in settings so it displays v.1.2.3  and remove the "repository url" label."
 
