@@ -6,11 +6,13 @@ import { REPOSITORY_URL } from '../../src/main/buildInfo'
 import { closeAppSafely, launchApp, messageBoxCallCount, openSettingsDialog } from './launch'
 
 /**
- * Spec 037 suite, pared down by spec 050: the About settings area. Covers the
- * nav entry last (FR-001), the bare version value with no label (spec 050
- * FR-001), the unchanged repository row and its exact-URL external hand-off
- * (FR-002/FR-004), zero revision content regardless of build metadata (spec
- * 050 FR-003), and the never-prompting stateless close (FR-008).
+ * Spec 037 suite, pared down by spec 050 and migrated by spec 054: the About
+ * settings area. Covers the nav entry last (FR-001), the version value with
+ * its "v." prefix and no label (spec 050 FR-001, spec 054 FR-006), the
+ * repository row without its label and its exact-URL external hand-off
+ * (spec 054 FR-007/FR-008, FR-004), zero revision content regardless of build
+ * metadata (spec 050 FR-003), and the never-prompting stateless close (spec
+ * 037 FR-008).
  */
 
 let app: ElectronApplication
@@ -87,19 +89,20 @@ test('US1/FR-002 the displayed version equals the running application version', 
   await openAboutArea()
 
   const runtimeVersion = await app.evaluate(({ app: electronApp }) => electronApp.getVersion())
-  await expect(window.getByTestId('settings-about-version')).toHaveText(runtimeVersion)
+  await expect(window.getByTestId('settings-about-version')).toHaveText('v.' + runtimeVersion)
 })
 
-test('spec 050 FR-001 the version renders as a bare value with no Version label', async () => {
+test('spec 054 FR-006/FR-007 the version carries a v. prefix and the repository label is gone', async () => {
   await openAboutArea()
 
-  // Two rows remain: the bare version and the labelled repository row.
+  // Two rows remain: the prefixed version and the unlabelled repository link.
   const rows = window.locator('.settings-about-row')
   await expect(rows).toHaveCount(2)
   const labels = await rows.locator('.settings-about-label').allTextContents()
-  expect(labels.map((label) => label.trim())).toEqual(['Repository URL'])
+  expect(labels).toEqual([])
   const panel = window.getByRole('group', { name: 'About' })
   await expect(panel).not.toContainText('Version', { ignoreCase: true })
+  await expect(panel).not.toContainText('Repository URL')
 
   // The rows keep zero horizontal padding, aligning with the legend.
   const horizontalPaddings = await rows.evaluateAll((elements) =>
@@ -177,7 +180,7 @@ test('spec 050 FR-003 a development run without revision metadata still shows ve
   await openAboutArea()
 
   const runtimeVersion = await app.evaluate(({ app: electronApp }) => electronApp.getVersion())
-  await expect(window.getByTestId('settings-about-version')).toHaveText(runtimeVersion)
+  await expect(window.getByTestId('settings-about-version')).toHaveText('v.' + runtimeVersion)
   await expect(window.getByTestId('settings-about-repository')).toHaveText(REPOSITORY_URL)
   const panel = window.getByRole('group', { name: 'About' })
   await expect(panel).not.toContainText('Revision')
