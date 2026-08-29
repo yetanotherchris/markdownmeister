@@ -1,6 +1,7 @@
 import type { DocumentState } from '../state/documents'
 import type { Crepe } from '@milkdown/crepe'
 import { editorViewCtx } from '@milkdown/kit/core'
+import { isEmptyParagraph } from './cursorRestore'
 
 const MAX_INSTANCES = 8
 
@@ -59,9 +60,14 @@ export class InstancePool {
   }
 
   /** The live selection anchor and top-level child sizes the caret mapping
-   *  correlates on, or null when no readable view exists. Reading structure
-   *  does not serialize the document. */
-  getSelectionGeometry(documentId: string): { caretOffset: number; childSizes: number[] } | null {
+   *  correlates on, plus whether the last child is the empty paragraph
+   *  Milkdown keeps after a non-paragraph last block (a list, table, code
+   *  block, or quote). Reading structure does not serialize the document. */
+  getSelectionGeometry(documentId: string): {
+    caretOffset: number
+    childSizes: number[]
+    trailingEmptyParagraph: boolean
+  } | null {
     const entry = this.instances.get(documentId)
     if (!entry) return null
     try {
@@ -69,7 +75,12 @@ export class InstancePool {
       const doc = view.state.doc
       const childSizes: number[] = []
       doc.forEach((child) => childSizes.push(child.nodeSize))
-      return { caretOffset: view.state.selection.anchor, childSizes }
+      const last = doc.lastChild
+      return {
+        caretOffset: view.state.selection.anchor,
+        childSizes,
+        trailingEmptyParagraph: last !== null && isEmptyParagraph(last)
+      }
     } catch {
       return null
     }

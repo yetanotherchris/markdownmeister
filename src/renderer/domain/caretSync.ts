@@ -86,18 +86,30 @@ export function topLevelBlockIndex(childSizes: number[], caretOffset: number): n
 
 /** Seed the source caret from the visual caret. The origin caret resolves to
  *  a top-level block index in the visual document; the same index in the
- *  parsed displayed text gives the line to open on. A child-count mismatch
- *  means the two structures cannot be correlated, and the seed is refused so
- *  the caller falls back to the stored context. */
+ *  parsed displayed text gives the line to open on. Milkdown keeps a trailing
+ *  empty paragraph after a document whose last block is a list, table, code
+ *  block, or quote; remark-parse does not produce it, so when the caller
+ *  reports that artifact and the counts differ by exactly it, the trailing
+ *  child is dropped to bring the two structures into step. Any other
+ *  mismatch means the structures cannot be correlated, and the seed is
+ *  refused so the caller falls back to the stored context. */
 export function planSourceSeed(params: {
   displayedText: string
   childSizes: number[]
   caretOffset: number
+  trailingEmptyParagraph?: boolean
 }): SourceSeed | null {
-  const { displayedText, childSizes, caretOffset } = params
+  const { displayedText, childSizes, caretOffset, trailingEmptyParagraph = false } = params
   const table = buildBlockTable(displayedText)
-  if (!table || table.blocks.length !== childSizes.length) return null
-  const index = topLevelBlockIndex(childSizes, caretOffset)
+  if (!table) return null
+  const effectiveSizes =
+    trailingEmptyParagraph &&
+    childSizes.length === table.blocks.length + 1 &&
+    childSizes[childSizes.length - 1] === 2
+      ? childSizes.slice(0, -1)
+      : childSizes
+  if (table.blocks.length !== effectiveSizes.length) return null
+  const index = topLevelBlockIndex(effectiveSizes, caretOffset)
   if (index === null) return null
   const anchor = Math.min(
     table.frontmatterLength + table.blocks[index].startOffset,

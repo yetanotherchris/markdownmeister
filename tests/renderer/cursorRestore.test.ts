@@ -28,6 +28,19 @@ function buildDoc(): PMNode {
   ])
 }
 
+/** The visual document Milkdown keeps after a non-paragraph last block: a
+ *  trailing empty paragraph (nodeSize 2) that the parsed text has no block
+ *  for, so its child count is the block count plus one. */
+function buildDocWithTrailingEmpty(): PMNode {
+  const para = (text: string) => schema.node('paragraph', null, text ? [schema.text(text)] : [])
+  return schema.node('doc', null, [
+    para('ab'),
+    schema.node('blockquote', null, [para('quote')]),
+    para('cd'),
+    para('')
+  ])
+}
+
 describe('planCursorRestore (spec 044 D3)', () => {
   it('returns no plan for a zero or negative stored offset', () => {
     const doc = buildDoc()
@@ -93,6 +106,50 @@ describe('planBlockRestore (spec 052)', () => {
     expect(planBlockRestore(doc, 0, 0)).toBeNull()
     const empty = schema.topNodeType.create([])
     expect(planBlockRestore(empty, 0, 1)).toBeNull()
+  })
+
+  it('accepts a trailing empty paragraph beyond the correlated block count', () => {
+    const doc = buildDocWithTrailingEmpty()
+    for (const blockIndex of [0, 1, 2]) {
+      const selection = planBlockRestore(doc, blockIndex, 3)
+      expect(selection).not.toBeNull()
+      const $pos = doc.resolve(selection!.head)
+      expect($pos.parent.inlineContent).toBe(true)
+    }
+    // The last real block still resolves inside its own block, not the
+    // artifact paragraph appended after it.
+    expect(planBlockRestore(doc, 2, 3)!.head).toBeGreaterThanOrEqual(13)
+    expect(planBlockRestore(doc, 2, 3)!.head).toBeLessThan(17)
+  })
+
+  it('refuses the leniency when the extra trailing child is not an empty paragraph', () => {
+    const para = (text: string) => schema.node('paragraph', null, text ? [schema.text(text)] : [])
+    const doc = schema.node('doc', null, [
+      para('ab'),
+      schema.node('blockquote', null, [para('quote')]),
+      para('cd'),
+      para('not empty')
+    ])
+    expect(planBlockRestore(doc, 0, 3)).toBeNull()
+    expect(planBlockRestore(doc, 2, 3)).toBeNull()
+  })
+
+  it('descends into a container as the last real block ahead of the artifact', () => {
+    const para = (text: string) => schema.node('paragraph', null, text ? [schema.text(text)] : [])
+    const doc = schema.node('doc', null, [
+      para('ab'),
+      para('cd'),
+      schema.node('blockquote', null, [para('quote end')]),
+      para('')
+    ])
+    const selection = planBlockRestore(doc, 2, 3)
+    expect(selection).not.toBeNull()
+    const $pos = doc.resolve(selection!.head)
+    expect($pos.parent.inlineContent).toBe(true)
+    // The caret descends into the quote's paragraph (spans 8-21) and never
+    // lands in the artifact paragraph that follows it.
+    expect(selection!.head).toBeGreaterThanOrEqual(8)
+    expect(selection!.head).toBeLessThan(21)
   })
 })
 

@@ -145,6 +145,93 @@ describe('planSourceSeed', () => {
     ).toBeNull()
   })
 
+  it('correlates when the visual document carries a trailing empty paragraph', () => {
+    // Milkdown keeps an empty paragraph (size 2) after the code-block last
+    // block, so the visual child count is one more than the parsed text's
+    // block count; the artifact is dropped and the mapping engages.
+    const table = buildBlockTable(FRONTMATTER_DOC)!
+    const paragraphStart = FRONTMATTER_LENGTH + table.blocks[1].startOffset
+    const seed = planSourceSeed({
+      displayedText: FRONTMATTER_DOC,
+      childSizes: [10, 200, 10, 10, 10, 2],
+      caretOffset: 50,
+      trailingEmptyParagraph: true
+    })
+    expect(seed).toEqual({
+      anchor: paragraphStart,
+      head: paragraphStart,
+      reveal: true,
+      textLength: FRONTMATTER_DOC.length
+    })
+  })
+
+  it('maps a caret inside the trailing artifact to the last real block', () => {
+    const table = buildBlockTable(FRONTMATTER_DOC)!
+    const codeStart = FRONTMATTER_LENGTH + table.blocks[4].startOffset
+    // The artifact paragraph spans offsets 240-242 (the effective sizes sum
+    // to 240), so 241 is genuinely inside it, not the past-end clamp.
+    const seed = planSourceSeed({
+      displayedText: FRONTMATTER_DOC,
+      childSizes: [10, 200, 10, 10, 10, 2],
+      caretOffset: 241,
+      trailingEmptyParagraph: true
+    })
+    expect(seed).not.toBeNull()
+    expect(seed!.anchor).toBe(codeStart)
+  })
+
+  it('correlates normally when the flag is set but the counts already match', () => {
+    const table = buildBlockTable(FRONTMATTER_DOC)!
+    const paragraphStart = FRONTMATTER_LENGTH + table.blocks[1].startOffset
+    const seed = planSourceSeed({
+      displayedText: FRONTMATTER_DOC,
+      childSizes: [10, 200, 10, 10, 10],
+      caretOffset: 50,
+      trailingEmptyParagraph: true
+    })
+    expect(seed).toEqual({
+      anchor: paragraphStart,
+      head: paragraphStart,
+      reveal: true,
+      textLength: FRONTMATTER_DOC.length
+    })
+  })
+
+  it('refuses the leniency when the flag lies about the trailing child', () => {
+    // The flag claims an artifact but the last child is not size 2, so the
+    // structural guard keeps the leniency from firing and the mapping fails
+    // closed.
+    expect(
+      planSourceSeed({
+        displayedText: FRONTMATTER_DOC,
+        childSizes: [10, 200, 10, 10, 10, 50],
+        caretOffset: 50,
+        trailingEmptyParagraph: true
+      })
+    ).toBeNull()
+  })
+
+  it('refuses the leniency when the trailing paragraph does not close the gap', () => {
+    expect(
+      planSourceSeed({
+        displayedText: FRONTMATTER_DOC,
+        childSizes: [10, 200, 10, 10, 10, 2, 2],
+        caretOffset: 50,
+        trailingEmptyParagraph: true
+      })
+    ).toBeNull()
+  })
+
+  it('keeps the fallback when a trailing paragraph is not reported', () => {
+    expect(
+      planSourceSeed({
+        displayedText: FRONTMATTER_DOC,
+        childSizes: [10, 200, 10, 10, 10, 2],
+        caretOffset: 50
+      })
+    ).toBeNull()
+  })
+
   it('returns null when the visual document has no blocks', () => {
     expect(
       planSourceSeed({ displayedText: FRONTMATTER_DOC, childSizes: [], caretOffset: 0 })

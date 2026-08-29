@@ -196,13 +196,21 @@
   cursor: pointer;
 }
 
-.source-return:hover,
-.source-word-wrap:hover {
+.source-return:hover {
   background: var(--mm-surface-secondary);
 }
 
 .source-word-wrap {
   margin-left: auto;
+  /* The off state reads as a neutral grey secondary control in the toolbar;
+     the accent pressed state below reports the active toggle. */
+  background: var(--mm-surface-secondary);
+}
+
+.source-word-wrap:hover {
+  /* The accent pressed state is declared later at equal specificity, so it
+     still wins while hovering a pressed toggle. */
+  background: var(--mm-bg);
 }
 
 .source-word-wrap[aria-pressed='true'] {

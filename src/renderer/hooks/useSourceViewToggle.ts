@@ -57,7 +57,8 @@ export function useSourceViewToggle(opts: {
           ? planSourceSeed({
               displayedText,
               childSizes: geometry.childSizes,
-              caretOffset: geometry.caretOffset
+              caretOffset: geometry.caretOffset,
+              trailingEmptyParagraph: geometry.trailingEmptyParagraph
             })
           : null
       const seed: SourceSeed = mapped ?? {
