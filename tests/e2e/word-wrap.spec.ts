@@ -251,9 +251,11 @@ test('US2 toggling mid-edit preserves text, dirty state, selection, and the typi
   const alphaTab = window.getByRole('tab', { name: /alpha\.md/ })
   await expect(alphaTab.locator('.tab-dirty')).toBeVisible()
 
-  // A live selection spanning a word must keep its exact coverage.
+  // A live selection spanning a word must keep its exact coverage. Seven
+  // Shift+ArrowRight presses select "# Alpha" exactly on every platform;
+  // word-wise shortcuts differ in what they include across OSes.
   await window.keyboard.press('Control+Home')
-  await window.keyboard.press('Shift+Control+ArrowRight')
+  for (let i = 0; i < 7; i++) await window.keyboard.press('Shift+ArrowRight')
   const selectionBefore = await window.evaluate(() => {
     const selection = document.getSelection()
     return { text: selection?.toString() ?? '', anchor: selection?.anchorOffset ?? -1 }
