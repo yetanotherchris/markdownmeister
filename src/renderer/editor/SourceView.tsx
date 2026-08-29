@@ -17,6 +17,9 @@ interface SourceViewProps {
   selectionAnchor: number
   selectionHead: number
   scrollTop: number
+  /** Reveal the seeded caret on first activation instead of applying the
+   *  stored scroll; set when the context was mapped from the visual caret. */
+  reveal: boolean
   onContextChange: (selectionAnchor: number, selectionHead: number, scrollTop: number) => void
 }
 
@@ -47,6 +50,7 @@ export default function SourceView({
   selectionAnchor,
   selectionHead,
   scrollTop,
+  reveal,
   onContextChange
 }: SourceViewProps) {
   const hostRef = useRef<HTMLDivElement>(null)
@@ -56,11 +60,17 @@ export default function SourceView({
   const onContextChangeRef = useRef(onContextChange)
   const wasActiveRef = useRef(isActive)
   const appliedWrapRef = useRef(wordWrap)
+  // Consumed once: the reveal belongs to the switch that mapped the context,
+  // not to later activations of the same surface.
+  const pendingRevealRef = useRef(reveal)
   onChangeRef.current = onChange
   onContextChangeRef.current = onContextChange
 
   useEffect(() => {
     if (!hostRef.current) return
+    // Re-arm from the mount-time prop: StrictMode's discarded first mount
+    // consumes the reveal otherwise, losing it for the real surface in dev.
+    pendingRevealRef.current = reveal
 
     const captureContext = (view: EditorView) => {
       const context = sourceContext(view)
@@ -101,7 +111,7 @@ export default function SourceView({
     })
     const view = new EditorView({ state, parent: hostRef.current })
     viewRef.current = view
-    view.scrollDOM.scrollTop = scrollTop
+    if (!pendingRevealRef.current) view.scrollDOM.scrollTop = scrollTop
     view.scrollDOM.addEventListener('scroll', () => scheduleContextCapture(view), { passive: true })
 
     return () => {
@@ -145,7 +155,12 @@ export default function SourceView({
       const anchor = Math.min(selectionAnchor, length)
       const head = Math.min(selectionHead, length)
       view.dispatch({ selection: EditorSelection.single(anchor, head) })
-      view.scrollDOM.scrollTop = scrollTop
+      if (pendingRevealRef.current) {
+        pendingRevealRef.current = false
+        view.dispatch({ scrollIntoView: true })
+      } else {
+        view.scrollDOM.scrollTop = scrollTop
+      }
       view.focus()
     } else if (wasActiveRef.current) {
       const context = sourceContext(view)

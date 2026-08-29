@@ -8,6 +8,24 @@ export interface CursorRestorePlan {
   clamped: boolean
 }
 
+/** Resolve a mapped top-level block index to a caret selection in the visual
+ *  document. The block's left boundary is the sum of the preceding child
+ *  sizes; `near` walks forward into the block's text. The call is refused
+ *  when the document's top-level child count does not match the correlated
+ *  parse that produced the index, so a structurally drifted document falls
+ *  back to the caller's stored-offset restore. */
+export function planBlockRestore(
+  doc: Node,
+  blockIndex: number,
+  blockCount: number
+): Selection | null {
+  if (blockIndex < 0 || blockCount <= 0) return null
+  if (blockIndex >= blockCount || doc.childCount !== blockCount) return null
+  let pos = 0
+  for (let i = 0; i < blockIndex; i++) pos += doc.child(i).nodeSize
+  return TextSelection.near(doc.resolve(Math.min(pos, doc.content.size)))
+}
+
 /** Resolve a stored absolute caret offset against a freshly parsed document.
  *  An offset past the document end, or one resolving into a position that
  *  cannot host a text selection (an atom node or the document root), moves to
@@ -51,4 +69,21 @@ export function applyCursorRestore(
   if (restoreCursor.scrollTop > 0 && scrollElement) {
     scrollElement.scrollTop = restoreCursor.scrollTop
   }
+}
+
+/** Bring a freshly placed caret into view by centering it in the scrollable
+ *  editor host. ProseMirror's transaction-level scrollIntoView targets the
+ *  view's own scrollDOM, which is not the element that actually scrolls in
+ *  this layout, so a mapped caret would otherwise be applied off screen. */
+export function revealCaretInView(
+  view: EditorView,
+  pos: number,
+  scrollElement: HTMLElement | null
+): void {
+  if (!scrollElement) return
+  const coords = view.coordsAtPos(pos)
+  if (!coords) return
+  const rect = scrollElement.getBoundingClientRect()
+  if (coords.top >= rect.top && coords.bottom <= rect.bottom) return
+  scrollElement.scrollTop += coords.top - rect.top - scrollElement.clientHeight / 2
 }

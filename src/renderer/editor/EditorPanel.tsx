@@ -27,6 +27,7 @@ interface EditorPanelProps {
     selectionHead: number,
     scrollTop: number
   ) => void
+  onCursorSyncApplied: (id: string) => void
   onRequestViewSource: (id: string) => void
   onReturnToFormatted: (id: string) => void
 }
@@ -55,6 +56,7 @@ function DocumentHost({
   onStagedEditorReady,
   onCursorState,
   onSourceContext,
+  onCursorSyncApplied,
   onRequestViewSource,
   onReturnToFormatted
 }: DocumentHostProps) {
@@ -87,6 +89,9 @@ function DocumentHost({
     },
     [document.id, onSourceContext]
   )
+  const handleCursorSyncApplied = useCallback(() => {
+    onCursorSyncApplied(document.id)
+  }, [document.id, onCursorSyncApplied])
   // The source overlay is anchored at this container's content origin, so a
   // scroll offset retained from the formatted view displaces it out of the
   // viewport and exposes the inert visual editor. Child effects run first, so
@@ -114,6 +119,8 @@ function DocumentHost({
         markdownOptions={markdownOptions}
         onSpellingMenu={onSpellingMenu}
         restoreCursor={{ cursorOffset: document.cursorOffset, scrollTop: document.scrollTop }}
+        cursorSync={document.cursorSync}
+        onCursorSyncApplied={handleCursorSyncApplied}
         onMarkdownUpdated={handleMarkdownUpdated}
         onReady={handleReady}
         onBaselineCapture={handleBaselineCapture}
@@ -132,6 +139,7 @@ function DocumentHost({
           selectionAnchor={document.sourceSelectionAnchor}
           selectionHead={document.sourceSelectionHead}
           scrollTop={document.sourceScrollTop}
+          reveal={document.sourceSeed?.reveal ?? false}
           onContextChange={handleSourceContext}
         />
       )}

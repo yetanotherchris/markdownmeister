@@ -30,7 +30,6 @@ export class InstancePool {
     this.instances.delete(documentId)
   }
 
-
   setBaselineDoc(documentId: string, docRef: unknown): void {
     const entry = this.instances.get(documentId)
     if (entry) entry.baselineDoc = docRef
@@ -39,7 +38,6 @@ export class InstancePool {
   getBaselineDoc(documentId: string): unknown {
     return this.instances.get(documentId)?.baselineDoc
   }
-
 
   clearBaselineDoc(documentId: string): void {
     const entry = this.instances.get(documentId)
@@ -60,6 +58,23 @@ export class InstancePool {
     }
   }
 
+  /** The live selection anchor and top-level child sizes the caret mapping
+   *  correlates on, or null when no readable view exists. Reading structure
+   *  does not serialize the document. */
+  getSelectionGeometry(documentId: string): { caretOffset: number; childSizes: number[] } | null {
+    const entry = this.instances.get(documentId)
+    if (!entry) return null
+    try {
+      const view = entry.editor.editor.action((ctx) => ctx.get(editorViewCtx))
+      const doc = view.state.doc
+      const childSizes: number[] = []
+      doc.forEach((child) => childSizes.push(child.nodeSize))
+      return { caretOffset: view.state.selection.anchor, childSizes }
+    } catch {
+      return null
+    }
+  }
+
   getMarkdown(documentId: string): string | null {
     const entry = this.instances.get(documentId)
     if (!entry) return null
@@ -68,14 +83,12 @@ export class InstancePool {
     return entry.editor.getMarkdown()
   }
 
-
   forEach(fn: (editor: Crepe) => void): void {
     this.instances.forEach((entry) => fn(entry.editor))
   }
 
-
   evictLRU(dirtyDocuments: DocumentState[], activeId: string | null): string | null {
-    const dirtyIds = new Set(dirtyDocuments.map(d => d.id))
+    const dirtyIds = new Set(dirtyDocuments.map((d) => d.id))
     let oldest: InstanceEntry | null = null
 
     for (const entry of this.instances.values()) {

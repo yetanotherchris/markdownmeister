@@ -12,7 +12,8 @@ import { tightListPlugins } from './tightList'
 import { spellcheckPlugin, type SpellingMenuState } from './spellcheckPlugin'
 import { reconfigureEditor, isReconfigureSuppressed } from './markdownSyntaxRuntime'
 import { recordParse, recordIncomingSerialization, endOpen } from './openPerformance'
-import { applyCursorRestore } from './cursorRestore'
+import { applyCursorRestore, planBlockRestore, revealCaretInView } from './cursorRestore'
+import type { VisualRestorePlan } from '../domain/caretSync'
 import {
   markdownSyntaxInputRuleGate,
   setMarkdownSyntaxGateOptions
@@ -34,6 +35,10 @@ interface CrepeHostProps {
 
   onSpellingMenu: (menu: SpellingMenuState | null) => void
   restoreCursor?: CursorState
+  /** A mapped caret restore from the source caret's block, applied ahead of
+   *  the stored offset and reported through onCursorSyncApplied once. */
+  cursorSync?: VisualRestorePlan | null
+  onCursorSyncApplied?: () => void
   onMarkdownUpdated: (markdown: string) => void
   onReady: (editor: Crepe) => void
 
@@ -64,6 +69,8 @@ export default function CrepeHost({
   markdownOptions,
   onSpellingMenu,
   restoreCursor,
+  cursorSync,
+  onCursorSyncApplied,
   onMarkdownUpdated,
   onReady,
   onBaselineCapture,
@@ -81,6 +88,8 @@ export default function CrepeHost({
   lockedRef.current = locked
   const onSpellingMenuRef = useRef(onSpellingMenu)
   onSpellingMenuRef.current = onSpellingMenu
+  const onCursorSyncAppliedRef = useRef(onCursorSyncApplied)
+  onCursorSyncAppliedRef.current = onCursorSyncApplied
 
   function applyInert() {
     const onInert = lockedRef.current
@@ -92,8 +101,25 @@ export default function CrepeHost({
   }
 
   function applyCursorState(view: EditorView | null) {
-    if (!view || !restoreCursor) return
-    applyCursorRestore(view, restoreCursor, scrollElementRef.current)
+    if (!view) return
+    if (cursorSync) {
+      const selection = planBlockRestore(
+        view.state.doc,
+        cursorSync.blockIndex,
+        cursorSync.blockCount
+      )
+      if (selection) {
+        // The mapped caret is revealed rather than paired with a stored
+        // scroll.
+        view.dispatch(view.state.tr.setSelection(selection))
+        revealCaretInView(view, selection.head, scrollElementRef.current)
+      }
+      // A refused plan (count drift) is still consumed: a retained prime
+      // would fire on some later, unrelated activation.
+      onCursorSyncAppliedRef.current?.()
+      if (selection) return
+    }
+    if (restoreCursor) applyCursorRestore(view, restoreCursor, scrollElementRef.current)
   }
 
   function captureCursorState(): CursorState {

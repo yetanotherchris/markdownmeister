@@ -50,6 +50,10 @@ const initialSession: EditingSession = {
 export default function App() {
   const [session, dispatch] = useReducer(documentsReducer, initialSession)
   const [workspace, dispatchWorkspace] = useReducer(workspaceReducer, initialWorkspaceState)
+  const handleCursorSyncApplied = useCallback(
+    (id: string) => dispatch({ type: 'CLEAR_VISUAL_CARET', payload: { id } }),
+    [dispatch]
+  )
   const [pendingEditId, setPendingEditId] = useState<string | null>(null)
   const [footerNote, setFooterNote] = useState<string | null>(null)
   const [spellMenu, setSpellMenu] = useState<SpellingMenuState | null>(null)
@@ -392,6 +396,7 @@ export default function App() {
                       onStagedEditorReady={sessionApi.handleStagedEditorReady}
                       onCursorState={sessionApi.handleCursorState}
                       onSourceContext={sessionApi.handleSourceContext}
+                      onCursorSyncApplied={handleCursorSyncApplied}
                       onRequestViewSource={source.handleShowSource}
                       onReturnToFormatted={source.handleReturnToFormatted}
                     />

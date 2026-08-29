@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-28
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "is it possible to sync the carets between visual editor and source editor? ... it wouldn't need to be 100% accurate. just to the line level"
 

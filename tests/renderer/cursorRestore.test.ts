@@ -1,9 +1,14 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { Schema } from '@milkdown/kit/prose/model'
 import type { Node as PMNode } from '@milkdown/kit/prose/model'
 import type { Selection } from '@milkdown/kit/prose/state'
 import type { EditorView } from '@milkdown/kit/prose/view'
-import { planCursorRestore, applyCursorRestore } from '../../src/renderer/editor/cursorRestore'
+import {
+  planCursorRestore,
+  planBlockRestore,
+  applyCursorRestore,
+  revealCaretInView
+} from '../../src/renderer/editor/cursorRestore'
 
 const schema = new Schema({
   nodes: {
@@ -57,6 +62,37 @@ describe('planCursorRestore (spec 044 D3)', () => {
     expect(plan!.clamped).toBe(true)
     const $pos = doc.resolve(plan!.selection.head)
     expect($pos.parent.inlineContent).toBe(true)
+  })
+})
+
+describe('planBlockRestore (spec 052)', () => {
+  it('resolves each top-level block to a valid inline selection', () => {
+    const doc = buildDoc()
+    for (const blockIndex of [0, 1, 2]) {
+      const selection = planBlockRestore(doc, blockIndex, 3)
+      expect(selection).not.toBeNull()
+      const $pos = doc.resolve(selection!.head)
+      expect($pos.parent.inlineContent).toBe(true)
+      // Each resolution lands inside its own block, not a neighbour.
+      const blockStart = [0, 4, 13][blockIndex]
+      expect(selection!.head).toBeGreaterThanOrEqual(blockStart)
+      expect(selection!.head).toBeLessThan(blockStart + [4, 9, 4][blockIndex])
+    }
+  })
+
+  it('places block 0 at the first text position of the document', () => {
+    const doc = buildDoc()
+    expect(planBlockRestore(doc, 0, 3)!.head).toBe(1)
+  })
+
+  it('rejects a count mismatch, out-of-range index, or empty document', () => {
+    const doc = buildDoc()
+    expect(planBlockRestore(doc, 0, 2)).toBeNull()
+    expect(planBlockRestore(doc, 3, 3)).toBeNull()
+    expect(planBlockRestore(doc, -1, 3)).toBeNull()
+    expect(planBlockRestore(doc, 0, 0)).toBeNull()
+    const empty = schema.topNodeType.create([])
+    expect(planBlockRestore(empty, 0, 1)).toBeNull()
   })
 })
 
@@ -137,5 +173,51 @@ describe('applyCursorRestore', () => {
     expect(dispatched[0].scrolledIntoView).toBeUndefined()
     expect(dispatched[0].selection!.head).toBe(2)
     expect(scrollElement.scrollTop).toBe(120)
+  })
+})
+
+describe('revealCaretInView (spec 052)', () => {
+  function fakeView(coords: { top: number; bottom: number }): EditorView {
+    return {
+      coordsAtPos: () => coords
+    } as unknown as EditorView
+  }
+
+  function scrollElementWith(rect: { top: number; bottom: number }): HTMLElement {
+    const el = document.createElement('div')
+    Object.defineProperty(el, 'clientHeight', { value: rect.bottom - rect.top })
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+      top: rect.top,
+      bottom: rect.bottom,
+      left: 0,
+      right: 0,
+      width: 100,
+      height: rect.bottom - rect.top,
+      x: 0,
+      y: rect.top,
+      toJSON: () => ({})
+    } as DOMRect)
+    return el
+  }
+
+  it('centers an off-screen caret in the scrollable host', () => {
+    const el = scrollElementWith({ top: 100, bottom: 600 })
+    revealCaretInView(fakeView({ top: 2000, bottom: 2020 }), 5, el)
+    // 2000 - 100 - (500 / 2) = 1650
+    expect(el.scrollTop).toBe(1650)
+  })
+
+  it('leaves the scroll alone when the caret is already in view', () => {
+    const el = scrollElementWith({ top: 100, bottom: 600 })
+    revealCaretInView(fakeView({ top: 200, bottom: 220 }), 5, el)
+    expect(el.scrollTop).toBe(0)
+  })
+
+  it('does nothing without a scroll element or coordinates', () => {
+    expect(() => revealCaretInView(fakeView({ top: 2000, bottom: 2020 }), 5, null)).not.toThrow()
+    const el = scrollElementWith({ top: 100, bottom: 600 })
+    const blind = { coordsAtPos: () => null } as unknown as EditorView
+    expect(() => revealCaretInView(blind, 5, el)).not.toThrow()
+    expect(el.scrollTop).toBe(0)
   })
 })

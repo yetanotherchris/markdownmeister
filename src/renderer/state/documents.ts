@@ -1,5 +1,6 @@
 import { isWithinOrEqual } from './workspace'
 import { splitFrontmatter, joinFrontmatter } from '../domain/frontmatter'
+import type { SourceSeed, VisualRestorePlan } from '../domain/caretSync'
 import type { OpenedFile } from '../../shared/ipc-contract'
 
 export function markdownSame(a: string, b: string): boolean {
@@ -46,6 +47,14 @@ export interface DocumentState {
 
   view: 'formatted' | 'source'
 
+  /** Snapshot of the source context as the source view opened, compared on
+   *  the return path to distinguish an untouched caret from a moved one. */
+  sourceSeed?: SourceSeed
+
+  /** A mapped visual caret restore awaiting application. Set when leaving
+   *  the source view and consumed once by the visual editor. */
+  cursorSync?: VisualRestorePlan
+
   pendingReplacement?: DocumentState
 }
 
@@ -78,7 +87,8 @@ export function createEmpty(counter: number): DocumentState {
     externalState: 'clean',
     contentVersion: 0,
     revision: 0,
-    view: 'formatted'
+    view: 'formatted',
+    sourceSeed: { anchor: 0, head: 0, reveal: false, textLength: 0 }
   }
 }
 
@@ -116,7 +126,8 @@ export function openFile(opened: {
     externalState: 'clean',
     contentVersion: 0,
     revision: 0,
-    view: opened.view ?? 'formatted'
+    view: opened.view ?? 'formatted',
+    sourceSeed: { anchor: 0, head: 0, reveal: false, textLength: opened.content.length }
   }
 }
 
@@ -157,6 +168,12 @@ export type DocumentsAction =
   | { type: 'EXTERNAL_CHANGE'; payload: { path: string; kind: 'changed' | 'removed' } }
   | { type: 'SET_VIEW'; payload: { id: string; view: 'formatted' | 'source' } }
   | { type: 'REFRESH_FROM_SOURCE'; payload: { id: string; content: string } }
+  | {
+      type: 'SEED_SOURCE_CONTEXT'
+      payload: { id: string; scrollTop: number; seed: SourceSeed }
+    }
+  | { type: 'PRIME_VISUAL_CARET'; payload: { id: string; blockIndex: number; blockCount: number } }
+  | { type: 'CLEAR_VISUAL_CARET'; payload: { id: string } }
 
 export function handleOpenNew(state: EditingSession): EditingSession {
   const counter = state.untitledCounter + 1
@@ -184,15 +201,23 @@ export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload
       return {
         ...state,
         activeId: existing.id,
-        documents: state.documents.map((d) =>
-          d.id === existing.id
-            ? {
-                ...d,
-                view: value.view!,
-                editorState: d.editorState === 'evicted' ? 'live' : d.editorState
-              }
-            : d
-        )
+        documents: state.documents.map((d) => {
+          if (d.id !== existing.id) return d
+          const next: DocumentState = {
+            ...d,
+            view: value.view!,
+            editorState: d.editorState === 'evicted' ? 'live' : d.editorState
+          }
+          if (value.view === 'source') {
+            // The view flipped without a switch-time seed, so the stored
+            // context is what the source view opens with and the comparison
+            // on return starts from it. A primed restore is stale across a
+            // fresh entry and dies here.
+            next.cursorSync = undefined
+            next.sourceSeed = storedSeed(d)
+          }
+          return next
+        })
       }
     }
     return {
@@ -359,7 +384,18 @@ export function handleCloseDoc(state: EditingSession, id: string): EditingSessio
 export function handleEvict(state: EditingSession, id: string): EditingSession {
   return {
     ...state,
-    documents: state.documents.map((d) => (d.id === id ? { ...d, editorState: 'evicted' } : d))
+    documents: state.documents.map((d) =>
+      d.id === id
+        ? {
+            ...d,
+            editorState: 'evicted',
+            // A primed restore is stale across eviction, and the seed must not
+            // reveal on a remount that was not preceded by a switch.
+            cursorSync: undefined,
+            sourceSeed: storedSeed(d)
+          }
+        : d
+    )
   }
 }
 
@@ -433,7 +469,14 @@ export function handleReload(
             sourceSelectionHead: 0,
             sourceScrollTop: 0,
             contentVersion: d.contentVersion + 1,
-            revision: (d.revision ?? 0) + 1
+            revision: (d.revision ?? 0) + 1,
+            cursorSync: undefined,
+            sourceSeed: {
+              anchor: 0,
+              head: 0,
+              reveal: false,
+              textLength: frontmatter.length + body.length
+            }
           }
         : d
     )
@@ -498,6 +541,60 @@ export function handleSetView(
   return {
     ...state,
     documents: state.documents.map((d) => (d.id === id ? { ...d, view } : d))
+  }
+}
+
+export function handleSeedSourceContext(
+  state: EditingSession,
+  payload: { id: string; scrollTop: number; seed: SourceSeed }
+): EditingSession {
+  const { id, scrollTop, seed } = payload
+  return {
+    ...state,
+    documents: state.documents.map((d) =>
+      d.id === id
+        ? {
+            ...d,
+            sourceSelectionAnchor: seed.anchor,
+            sourceSelectionHead: seed.head,
+            sourceScrollTop: Math.max(0, scrollTop),
+            sourceSeed: seed
+          }
+        : d
+    )
+  }
+}
+
+export function handlePrimeVisualCaret(
+  state: EditingSession,
+  payload: { id: string; blockIndex: number; blockCount: number }
+): EditingSession {
+  const { id, blockIndex, blockCount } = payload
+  return {
+    ...state,
+    documents: state.documents.map((d) =>
+      d.id === id ? { ...d, cursorSync: { blockIndex, blockCount } } : d
+    )
+  }
+}
+
+export function handleClearVisualCaret(state: EditingSession, id: string): EditingSession {
+  return {
+    ...state,
+    documents: state.documents.map((d) =>
+      d.id === id && d.cursorSync !== undefined ? { ...d, cursorSync: undefined } : d
+    )
+  }
+}
+
+/** The seed for a source entry that had no mapping: the source view opens at
+ *  the stored context, so the return-path comparison starts from it. */
+function storedSeed(d: DocumentState): SourceSeed {
+  return {
+    anchor: d.sourceSelectionAnchor,
+    head: d.sourceSelectionHead,
+    reveal: false,
+    textLength: d.frontmatter.length + d.content.length
   }
 }
 
@@ -572,6 +669,12 @@ export function documentsReducer(state: EditingSession, action: DocumentsAction)
       return handleSetView(state, action.payload)
     case 'REFRESH_FROM_SOURCE':
       return handleRefreshFromSource(state, action.payload)
+    case 'SEED_SOURCE_CONTEXT':
+      return handleSeedSourceContext(state, action.payload)
+    case 'PRIME_VISUAL_CARET':
+      return handlePrimeVisualCaret(state, action.payload)
+    case 'CLEAR_VISUAL_CARET':
+      return handleClearVisualCaret(state, action.payload.id)
     default:
       return state
   }
