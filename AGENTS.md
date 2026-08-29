@@ -295,7 +295,9 @@ AGENTS.md                         This file
   gate (`quality.yml`) runs `format:check`, `lint`, `typecheck`, the
   maintainability check, unit tests, and e2e tests, but only on PRs that touch
   `src/`, `tests/`, `scripts/`, `package.json`, `package-lock.json`, or the
-  build/format config files; a documentation-only or specification-only PR
+  build and test config files (`electron-builder.yml`, `electron.vite.config.ts`,
+  `eslint.config.mjs`, `playwright.config.ts`, `tsconfig*.json`,
+  `vitest.config.ts`); a documentation-only or specification-only PR
   usually triggers no checks, which is fine. If checks did run, they must be
   green before a readiness summary or a merge request is appropriate. The
   gate's `format:check` step compares against `.prettierrc`, so a code-touching
