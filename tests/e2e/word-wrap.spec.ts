@@ -64,7 +64,7 @@ async function openSourceView(name: string): Promise<void> {
   await expect(window.getByTestId('source-view')).toBeVisible()
 }
 
-test('FR-009 the toggle sits at the far right of the header bar, back button far left', async () => {
+test('FR-009 the checkbox sits at the far right of the header bar, back button far left', async () => {
   await openSourceView('alpha.md')
 
   const bar = window.locator('.source-toolbar')
@@ -216,6 +216,24 @@ test('US1 edge case toggling wrap on while scrolled far right resets sanely', as
   await expect(window.getByTestId('source-textarea')).toBeVisible()
 })
 
+test('US1 edge case the checkbox stays visible and operable in a narrow window', async () => {
+  await openSourceView('alpha.md')
+  await expect.poll(sourceOverflows).toBe(true)
+
+  // Resize the real window: the toolbar must compress without hiding the
+  // control or making its state unreadable.
+  await app.evaluate(({ BrowserWindow }) => {
+    BrowserWindow.getAllWindows()[0].setBounds({ width: 360, height: 600 })
+  })
+  const checkbox = wordWrapToggle()
+  await expect(checkbox).toBeVisible()
+  await expect(checkbox).toBeEnabled()
+
+  await checkbox.click()
+  await expect.poll(sourceOverflows, { timeout: 1000 }).toBe(false)
+  await expect(checkbox).toBeChecked()
+})
+
 test('US1 unbroken tokens break within the pane when wrap is enabled', async () => {
   await openSourceView('token.md')
   await toggleWordWrap()
@@ -254,7 +272,7 @@ test('US2 toggling mid-edit preserves text, dirty state, selection, and the typi
   expect(selectionAfter).toEqual(selectionBefore)
 
   // Typing continues exactly at the selection without any re-click, replacing it.
-  // The toggle click moved focus to the checkbox; refocusing the editor surface
+  // Clicking the checkbox moved focus to it; refocusing the editor surface
   // restores the caret to the preserved selection without moving it.
   const fullTextBefore = await source.textContent()
   await source.focus()

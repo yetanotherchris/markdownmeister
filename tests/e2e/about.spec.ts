@@ -11,7 +11,8 @@ import { closeAppSafely, launchApp, messageBoxCallCount, openSettingsDialog } fr
  * its "v." prefix and no label (spec 050 FR-001, spec 054 FR-006), the
  * repository row without its label and its exact-URL external hand-off
  * (spec 054 FR-007/FR-008, FR-004), zero revision content regardless of build
- * metadata (spec 050 FR-003), and the never-prompting stateless close (FR-008).
+ * metadata (spec 050 FR-003), and the never-prompting stateless close (spec
+ * 037 FR-008).
  */
 
 let app: ElectronApplication
