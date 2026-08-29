@@ -16,6 +16,9 @@ import type { BuildInfo, EditorColors, EditorThemeDefinition } from '../../src/s
  *
  * Spec 050 pares the panel down to the bare version value plus the repository
  * row, and moves the word wrap control out of the Markdown area entirely.
+ *
+ * Spec 054 prefixes the version with "v." and removes the "Repository URL"
+ * label, keeping the clickable link with its constant fallback.
  */
 
 let currentBuildInfo: BuildInfo
@@ -142,23 +145,24 @@ describe('SETTINGS_AREAS registration order (spec 008 FR-002, spec 037 Assumptio
   })
 })
 
-describe('the About area (spec 037 US1, spec 050 US1)', () => {
-  it('shows the bare version value and the repository row with no revision content', async () => {
+describe('the About area (spec 037 US1, spec 050 US1, spec 054 US2)', () => {
+  it('shows the version prefixed with v. and the repository row with no label', async () => {
     renderDialog()
     await clickButton('About')
 
-    // FR-001: the version stands alone, with no "Version" label before it.
+    // FR-006: the version renders as "v." followed by the version number.
     const values = Array.from(container.querySelectorAll('.settings-about-value')).map((el) =>
       el.textContent?.trim()
     )
-    expect(values).toEqual(['9.9.9'])
+    expect(values).toEqual(['v.9.9.9'])
     expect(container.textContent).not.toContain('Version')
 
-    // FR-002: the repository row is untouched.
+    // FR-007/FR-008: the repository label is gone, the link itself remains.
     const labels = Array.from(container.querySelectorAll('.settings-about-label')).map((el) =>
       el.textContent?.trim()
     )
-    expect(labels).toEqual(['Repository URL'])
+    expect(labels).toEqual([])
+    expect(container.textContent).not.toContain('Repository URL')
     const link = container.querySelector<HTMLButtonElement>('.settings-about-link')
     expect(link?.textContent?.trim()).toBe(REPOSITORY_URL)
 

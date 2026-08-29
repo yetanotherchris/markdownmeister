@@ -15,12 +15,11 @@ export default function AboutArea(): ReactElement {
       {buildInfo && (
         <div className="settings-about-row">
           <span className="settings-about-value" data-testid="settings-about-version">
-            {buildInfo.version}
+            v.{buildInfo.version}
           </span>
         </div>
       )}
       <div className="settings-about-row">
-        <span className="settings-about-label">Repository URL</span>
         <button
           type="button"
           className="settings-about-link"
