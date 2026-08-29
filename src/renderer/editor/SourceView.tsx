@@ -186,16 +186,15 @@ export default function SourceView({
         >
           ← Visual Editing
         </button>
-        <button
-          type="button"
-          className="source-word-wrap"
-          data-testid="source-word-wrap"
-          title="Word Wrap"
-          aria-pressed={wordWrap}
-          onClick={() => onWordWrapChange(!wordWrap)}
-        >
+        <label className="source-word-wrap">
+          <input
+            type="checkbox"
+            data-testid="source-word-wrap"
+            checked={wordWrap}
+            onChange={() => onWordWrapChange(!wordWrap)}
+          />
           Word Wrap
-        </button>
+        </label>
       </div>
       <div ref={hostRef} className="source-editor-host" />
     </div>

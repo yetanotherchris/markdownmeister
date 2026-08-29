@@ -182,8 +182,7 @@
   flex-shrink: 0;
 }
 
-.source-return,
-.source-word-wrap {
+.source-return {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -201,22 +200,13 @@
 }
 
 .source-word-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   margin-left: auto;
-  /* The off state reads as a neutral grey secondary control in the toolbar;
-     the accent pressed state below reports the active toggle. */
-  background: var(--mm-surface-secondary);
-}
-
-.source-word-wrap:hover {
-  /* The accent pressed state is declared later at equal specificity, so it
-     still wins while hovering a pressed toggle. */
-  background: var(--mm-bg);
-}
-
-.source-word-wrap[aria-pressed='true'] {
-  background: var(--mm-accent);
-  border-color: var(--mm-accent);
-  color: var(--mm-bg);
+  font-size: 13px;
+  color: inherit;
+  cursor: pointer;
 }
 
 .source-editor-host {
