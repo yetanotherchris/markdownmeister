@@ -152,7 +152,10 @@ test.describe('visual search (spec 055)', () => {
     // While the box is open the DOM selection follows focus into the input,
     // so the caret is compared after dismissal: ProseMirror restores its
     // selection on refocus, and it must be exactly where the search began.
-    expect(await caretSelection()).toEqual(caretBefore)
+    // The restore lands in a browser task after focus, so poll for it.
+    await expect
+      .poll(caretSelection, { timeout: 3_000, intervals: [50, 100, 250] })
+      .toEqual(caretBefore)
     expect(await window.locator('.ProseMirror').textContent()).toBe(before)
   })
 
