@@ -1,6 +1,6 @@
 # Implementation Plan: Search Box for Visual Editing
 
-**Branch**: `spec-055-visual-editor-search` | **Date**: 2026-09-02 | **Spec**: [spec.md](./spec.md)
+**Branch**: `spec-055-visual-editor-search` (per-spec implementation branch; all four specs of this batch are specified together on branch `specs-055-058-search-and-new-file`, PR #99) | **Date**: 2026-09-02 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `/specs/055-visual-editor-search/spec.md`
 
@@ -30,7 +30,7 @@ Add find-in-document to the visual (WYSIWYG) editing view: a docking search box 
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- **I. Process Isolation**: Renderer-only. The one main-process addition is a shortcut entry that reuses the established menu command channel; no new IPC surface. PASS
+- **I. Process Isolation**: Renderer-only. The one main-process addition is a shortcut entry that reuses the established menu command channel; the shared command union gains one named command and no new channel. PASS
 - **II. Every Path Is Untrusted**: No filesystem or path work. PASS
 - **III. Never Lose The User's Words**: Highlights are decorations, not document edits; the plugin never dispatches a transaction that changes the document, so dirty tracking, saves, and undo are untouched by construction. Dismissal dispatches nothing. PASS
 - **IV. Calm, Predictable Editing**: Match computation is one linear text scan per query change, only while the box is open; nothing is added to the keystroke path while the box is closed. Navigation scrolls the view without dialogs or focus stealing. PASS
@@ -61,11 +61,12 @@ src/renderer/
 │   └── SearchPanel.tsx       # NEW: input, count, prev/next, close
 ├── editor/
 │   └── CrepeHost.tsx         # Wire the plugin into the editor; expose open/nav/close to the panel
+├── chrome/
+│   └── menuModel.ts          # Show the shortcut beside a Find entry
 └── hooks/
     └── useMenuCommands.ts    # Route the find command to the active document's visual host
 src/main/
-├── shortcuts.ts              # Add the find shortcut (Ctrl/Cmd+F)
-└── menuModel.ts              # Show the shortcut beside a Find entry
+└── shortcuts.ts              # Add the find shortcut (Ctrl/Cmd+F)
 tests/
 ├── renderer/
 │   └── search/
@@ -74,7 +75,7 @@ tests/
     └── visual-search.spec.ts     # Spec scenarios against the built app
 ```
 
-**Structure Decision**: The matcher is pure so every matching rule is unit-testable without a mounted editor, mirroring the existing domain/ + editor/ split (caretSync, cursorRestore). The plugin holds only ProseMirror plumbing; the panel holds only view state.
+**Structure Decision**: The matcher is pure so every matching rule is unit-testable without a mounted editor, mirroring the existing domain/ + editor/ split (caretSync, cursorRestore). The plugin holds only ProseMirror plumbing; the panel holds only view state. The panel component is designed for reuse: spec 056 (source view search) shares it so both views present one search box.
 
 ## Complexity Tracking
 

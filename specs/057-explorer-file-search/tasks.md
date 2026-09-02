@@ -16,7 +16,7 @@
 
 ## Phase 3: E2E scenarios
 
-- [ ] 3.1 Write `tests/e2e/explorer-search.spec.ts`: live filtering on typing (US1); matches inside collapsed folders become visible with ancestors shown (FR-004); non-matching entries hidden (FR-005); folder-name match shows the folder only (FR-006); no-match empty state (FR-009); activating a match opens the file exactly as unfiltered activation does, including duplicate-tab focus (US3/FR-010); clearing restores expansion and selection exactly (US2/FR-008); Escape clears and refocuses the tree (FR-014); existing create/rename/delete flows still work while filtered
+- [ ] 3.1 Write `tests/e2e/explorer-search.spec.ts`: live filtering on typing (US1); matches inside collapsed folders become visible with ancestors shown (FR-004); non-matching entries hidden (FR-005); folder-name match shows the folder only (FR-006); no-match empty state (FR-009); activating a match opens the file exactly as unfiltered activation does, including duplicate-tab focus (US3/FR-010); activating a matching folder focuses and expands it like unfiltered activation (FR-011); clearing restores expansion and selection exactly (US2/FR-008); Escape clears and refocuses the tree (FR-014); existing create/rename/delete flows still work while filtered; a large generated workspace (thousands of entries) filters without perceptible lag (FR-012/SC-002)
 - [ ] 3.2 Build and run: `npm run test:e2e -- explorer-search`, iterate to green
 
 ## Phase 4: Full verification and archive

@@ -8,7 +8,7 @@ Findings that resolve the plan's open questions, with the evidence and the rejec
 
 **Decision**: Track the placeholder entry created by the New File flow between creation and commit/cancel; trigger the open only when that specific entry's naming input is confirmed.
 
-**Evidence**: The creation flow is already a three-step sequence in `useWorkspaceTree`: `handleCreate` creates the file on disk under a placeholder name, inserts it, and opens the inline naming input (src/renderer/hooks/useWorkspaceTree.ts:134-174, `setPendingEditId` at :173); confirmation goes through `handleRename` (:103-115), cancellation through `handleEditingCancelled` (:117-131), which trashes the placeholder. Remembering the placeholder id in a ref gives the hook an exact, cheap way to know that a rename is a creation commit.
+**Evidence**: The creation flow is already a three-step sequence in `useWorkspaceTree`: `handleCreate` creates the file on disk under a placeholder name, inserts it, and opens the inline naming input (src/renderer/hooks/useWorkspaceTree.ts:134-174, `setPendingEditId` at :173); confirmation goes through `handleRename` (:103-115), cancellation through `handleEditingCancelled` (:117-131), which trashes the placeholder. The hook already distinguishes creation commits from ordinary renames with `pendingCreateRef` (:45, :56, :111), so the tracking state needed for the trigger exists.
 
 **Alternatives rejected**:
 

@@ -1,6 +1,6 @@
 # Implementation Plan: Search Box for Source Editing
 
-**Branch**: `spec-056-source-view-search` | **Date**: 2026-09-02 | **Spec**: [spec.md](./spec.md)
+**Branch**: `spec-056-source-view-search` (per-spec implementation branch; all four specs of this batch are specified together on branch `specs-055-058-search-and-new-file`, PR #99) | **Date**: 2026-09-02 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `/specs/056-source-view-search/spec.md`
 

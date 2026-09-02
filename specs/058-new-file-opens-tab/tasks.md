@@ -10,7 +10,7 @@
 ## Phase 2: E2E scenarios (R4)
 
 - [ ] 2.1 Update the creation scenario in `tests/e2e/organize.spec.ts` to the new specified behaviour: the created file opens in an active tab showing an empty, clean document (deliberate expectation change, recorded in research.md R4)
-- [ ] 2.2 Write `tests/e2e/new-file-tab.spec.ts`: create with a dirty active tab (new tab active, dirty tab intact and recoverable); cancel the naming input (no tab, no placeholder file); confirm an invalid name (no tab); create a folder (no tab); create a file whose path is already open (existing tab focused, no duplicate)
+- [ ] 2.2 Write `tests/e2e/new-file-tab.spec.ts`: create with a dirty active tab (new tab active, dirty tab intact and recoverable); cancel the naming input (no tab, no placeholder file); confirm an invalid name (no tab); create a file in a subfolder (the correct file from that subfolder opens); create a folder (no tab); create a file whose path is already open (existing tab focused, no duplicate); assert the untitled-document flow is unchanged, with `tests/e2e/double-click-new-tab.spec.ts` as the existing guard (FR-008)
 - [ ] 2.3 Build and run: `npm run test:e2e -- organize new-file-tab`, iterate to green
 
 ## Phase 3: Full verification and archive

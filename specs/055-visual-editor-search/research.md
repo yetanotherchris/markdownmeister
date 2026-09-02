@@ -8,7 +8,7 @@ Findings that resolve the plan's open questions, with the evidence and the rejec
 
 **Decision**: Build the search as a small in-repo plugin over the editor's existing foundation.
 
-**Evidence**: The renderer has no find/search feature anywhere today (a scan of `src/` for find/search/match/query surfaces nothing), the editor stack has no search package (`@codemirror/search` is not even installed), and the visual editor exposes no search capability of its own. The highlighting primitive needed (decorations) already ships inside the editor stack via prosemirror-view as a transitive dependency.
+**Evidence**: The renderer has no find/search feature anywhere today (a scan of `src/` for find/search/match/query surfaces nothing), and the visual editor exposes no search capability of its own. The highlighting primitive needed (decorations) already ships inside the editor stack via prosemirror-view as a transitive dependency. `@codemirror/search` is not a direct dependency and is not applicable here regardless: it searches CodeMirror documents, and the visual editor is not CodeMirror-based.
 
 **Alternatives rejected**:
 

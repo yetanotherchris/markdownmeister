@@ -8,7 +8,7 @@ Findings that resolve the plan's open questions, with the evidence and the rejec
 
 **Decision**: Add `@codemirror/search` (6.7.x) and drive it programmatically.
 
-**Evidence**: The npm registry lists `@codemirror/search` 6.7.2, described as "Search functionality for the CodeMirror code editor", MIT-licensed, depending only on `@codemirror/view` and `@codemirror/state`, which the source view already uses. The source view is otherwise plain text, so a general text search engine is exactly what the package provides.
+**Evidence**: The npm registry lists `@codemirror/search` 6.7.2, described as "Search functionality for the CodeMirror code editor", MIT-licensed, depending only on `@codemirror/view` and `@codemirror/state`, which the source view already uses. The package is already present in the dependency tree as a transitive dependency of the editor stack, so promoting it to a direct dependency adds zero new packages. The source view is otherwise plain text, so a general text search engine is exactly what the package provides.
 
 **Alternatives rejected**:
 
