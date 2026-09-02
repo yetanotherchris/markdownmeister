@@ -136,12 +136,21 @@ async function caretSelection(): Promise<{ node: string | null; offset: number }
   })
 }
 
+/** Text of the top-level paragraphs. Deliberately excludes the code block:
+ *  its node view lazily switches between the placeholder and the CodeMirror
+ *  rendering, so full-document textContent is not stable across a test's
+ *  window. Whole-document identity is covered by the markdown-derived dirty
+ *  state assertions alongside. */
+async function paragraphTexts(): Promise<string[]> {
+  return window.locator('.ProseMirror > p').allTextContents()
+}
+
 test.describe('visual search (spec 055)', () => {
   test('Ctrl+F opens the find box without moving the caret or content (FR-001, US1-1)', async () => {
     await openFile('fixture.md')
     await window.locator('.ProseMirror p').first().click()
     const caretBefore = await caretSelection()
-    const before = await window.locator('.ProseMirror').textContent()
+    const before = await paragraphTexts()
     await pressShortcut(app, 'f', ['control'])
     await expect(searchPanel()).toBeVisible()
     await expect(searchInput()).toBeFocused()
@@ -156,7 +165,7 @@ test.describe('visual search (spec 055)', () => {
     await expect
       .poll(caretSelection, { timeout: 3_000, intervals: [50, 100, 250] })
       .toEqual(caretBefore)
-    expect(await window.locator('.ProseMirror').textContent()).toBe(before)
+    expect(await paragraphTexts()).toEqual(before)
   })
 
   test('the hamburger Find control opens it too (FR-001)', async () => {
@@ -249,14 +258,14 @@ test.describe('visual search (spec 055)', () => {
 
   test('Escape closes cleanly: content identical, dirty clean, focus restored (US3, FR-008/009)', async () => {
     await openFile('fixture.md')
-    const before = await window.locator('.ProseMirror').textContent()
+    const before = await paragraphTexts()
     await pressShortcut(app, 'f', ['control'])
     await searchInput().fill('needle')
     await expect(searchCount()).toHaveText('1 of 9')
     await searchInput().press('Escape')
     await expect(searchPanel()).toHaveCount(0)
     await expect(highlightCount()).toHaveCount(0)
-    expect(await window.locator('.ProseMirror').textContent()).toBe(before)
+    expect(await paragraphTexts()).toEqual(before)
     await expect(window.locator('.document-title')).not.toContainText('\u2022')
     const focusInDocument = await window.evaluate(
       () => document.activeElement?.classList.contains('ProseMirror') ?? false
