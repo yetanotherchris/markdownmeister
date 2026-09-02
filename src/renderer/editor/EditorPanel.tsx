@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import type { Crepe } from '@milkdown/crepe'
 import type { DocumentState } from '../state/documents'
 import { instancePool } from './instancePool'
@@ -7,16 +7,9 @@ import CrepeHost, { type CursorState } from './CrepeHost'
 import type { SpellingMenuState } from './spellcheckPlugin'
 import type { MarkdownSyntaxOptions } from './markdownSyntaxOptions'
 import SearchPanel from '../search/SearchPanel'
-import type { VisualSearchHandle, VisualSearchSnapshot } from '../search/visualSearch'
+import { useVisualSearch, type FindRequest } from '../search/useVisualSearch'
 import SourceView from './SourceView'
 import './editor.css'
-
-/** Requests opening search in the document with `id`; `seq` increments so a
- *  repeated request is distinguishable from the previous one. */
-export interface FindRequest {
-  id: string
-  seq: number
-}
 
 interface EditorPanelProps {
   document: DocumentState
@@ -72,23 +65,8 @@ function DocumentHost({
   findRequest
 }: DocumentHostProps) {
   const inSource = !staged && document.view === 'source'
-  const searchHandleRef = useRef<VisualSearchHandle | null>(null)
-  const [searchUi, setSearchUi] = useState<VisualSearchSnapshot>({
-    open: false,
-    current: 0,
-    total: 0
-  })
-  const handleSearchState = useCallback(
-    (snapshot: VisualSearchSnapshot) => setSearchUi(snapshot),
-    []
-  )
-  // Find requests target one document by id; only the matching host opens
-  // its box. The signal value (not just identity) gates re-runs.
-  const findSignal = findRequest && findRequest.id === document.id ? findRequest.seq : null
-  useEffect(() => {
-    if (findSignal == null) return
-    searchHandleRef.current?.open()
-  }, [findSignal])
+  const editingActive = isActive && !inSource && !staged
+  const search = useVisualSearch(document.id, findRequest, editingActive)
   const handleMarkdownUpdated = useCallback(
     (markdown: string) => onContentChange(document.id, markdown),
     [document.id, onContentChange]
@@ -143,7 +121,7 @@ function DocumentHost({
         <CrepeHost
           key={`${document.id}-v${document.contentVersion}`}
           defaultValue={document.content}
-          active={isActive && !inSource && !staged}
+          active={editingActive}
           locked={inSource || staged}
           markdownOptions={markdownOptions}
           onSpellingMenu={onSpellingMenu}
@@ -155,9 +133,9 @@ function DocumentHost({
           onBaselineCapture={handleBaselineCapture}
           onCursorState={handleCursorState}
           onRequestViewSource={() => onRequestViewSource(document.id)}
-          searchHandleRef={searchHandleRef}
-          onSearchState={handleSearchState}
-          findSignal={findSignal}
+          searchHandleRef={search.searchHandleRef}
+          onSearchState={search.onSearchState}
+          findSignal={search.findSignal}
         />
         {inSource && (
           <SourceView
@@ -176,15 +154,15 @@ function DocumentHost({
           />
         )}
       </div>
-      {isActive && !inSource && !staged && searchUi.open && (
+      {search.panel && (
         <SearchPanel
-          current={searchUi.current}
-          total={searchUi.total}
+          current={search.panel.current}
+          total={search.panel.total}
           hostRef={hostRef}
-          onQueryChange={(query) => searchHandleRef.current?.setQuery(query)}
-          onNext={() => searchHandleRef.current?.next()}
-          onPrevious={() => searchHandleRef.current?.previous()}
-          onClose={() => searchHandleRef.current?.close()}
+          onQueryChange={search.setQuery}
+          onNext={search.next}
+          onPrevious={search.previous}
+          onClose={search.close}
         />
       )}
     </>

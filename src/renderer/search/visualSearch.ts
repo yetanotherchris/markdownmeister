@@ -85,11 +85,7 @@ function computeMatches(query: string, doc: PMNode): SearchMatch[] {
 
 /** Builds the decoration set: inline highlights for ProseMirror-rendered
  *  text, and one node-level highlight per code block containing matches. */
-function buildDecorations(
-  doc: PMNode,
-  matches: SearchMatch[],
-  current: number
-): DecorationSet {
+function buildDecorations(doc: PMNode, matches: SearchMatch[], current: number): DecorationSet {
   const decos: Decoration[] = []
   const nodeHighlights = new Map<number, 'match' | 'current'>()
   matches.forEach((match, index) => {
@@ -100,10 +96,7 @@ function buildDecorations(
       if (NODE_VIEW_BLOCKS.has(ancestor.type.name)) {
         const start = $from.before(depth)
         const seen = nodeHighlights.get(start)
-        nodeHighlights.set(
-          start,
-          seen === 'current' || index === current ? 'current' : 'match'
-        )
+        nodeHighlights.set(start, seen === 'current' || index === current ? 'current' : 'match')
         inNodeView = true
         break
       }

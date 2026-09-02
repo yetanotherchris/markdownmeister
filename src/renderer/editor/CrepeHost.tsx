@@ -232,7 +232,9 @@ export default function CrepeHost({
 
       crepe.editor.use($prose(() => spellcheckPlugin((menu) => onSpellingMenuRef.current(menu))))
 
-      crepe.editor.use($prose(() => visualSearchPlugin((snapshot) => onSearchStateRef.current?.(snapshot))))
+      crepe.editor.use(
+        $prose(() => visualSearchPlugin((snapshot) => onSearchStateRef.current?.(snapshot)))
+      )
 
       setMarkdownSyntaxGateOptions(markdownOptions)
       crepe.editor.use(markdownSyntaxInputRuleGate)
