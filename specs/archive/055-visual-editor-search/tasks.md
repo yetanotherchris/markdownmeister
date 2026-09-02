@@ -22,11 +22,11 @@
 
 ## Phase 4: E2E scenarios
 
-- [ ] 4.1 Write `tests/e2e/visual-search.spec.ts`: shortcut opens the box (FR-001); live count and highlights on typing (US1); current match distinct and scrolled into view; matches inside heading, list, table, and code block (FR-011); next/previous wrap both ways and Enter/Shift+Enter (US2); editing while open refreshes counts; Escape closes with content byte-identical, dirty state clean, and focus in the document (US3/FR-009); zero-match calm state; a generated 10,000-line document searches without perceptible lag (FR-012/SC-002)
-- [ ] 4.2 Build and run: `npm run test:e2e -- visual-search`, iterate to green
+- [x] 4.1 Write `tests/e2e/visual-search.spec.ts`: shortcut opens the box (FR-001); live count and highlights on typing (US1); current match distinct and scrolled into view; matches inside heading, list, table, and code block (FR-011); next/previous wrap both ways and Enter/Shift+Enter (US2); editing while open refreshes counts; Escape closes with content byte-identical, dirty state clean, and focus in the document (US3/FR-009); zero-match calm state; a generated 10,000-line document searches without perceptible lag (FR-012/SC-002)
+- [x] 4.2 Build and run: `npm run test:e2e -- visual-search`, iterate to green
 
 ## Phase 5: Full verification and archive
 
-- [ ] 5.1 `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:e2e`
-- [ ] 5.2 Append new source/test files to `scripts.format:check`; `npx prettier --check` touched files
+- [x] 5.1 `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:e2e`
+- [x] 5.2 Append new source/test files to `scripts.format:check`; `npx prettier --check` touched files
 - [ ] 5.3 Archive: `git mv specs/055-visual-editor-search specs/archive/055-visual-editor-search`, set Status Archived
