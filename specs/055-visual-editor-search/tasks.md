@@ -2,9 +2,9 @@
 
 ## Phase 1: Pure matcher (R3, FR-002/010/011)
 
-- [ ] 1.1 Write unit tests `tests/renderer/search/findMatches.test.ts`: literal case-insensitive matching; a phrase crossing inline formatting boundaries inside one block; no false match across block boundaries (sentinel); punctuation/symbol queries; empty and whitespace-only queries return none; repeated and overlapping matches ("aa" in "aaa"); offset-to-position mapping round-trips; a 10,000-line fixture completes well inside the imperceptibility budget (FR-012/SC-002)
-- [ ] 1.2 Implement `src/renderer/search/findMatches.ts`: per-block text concatenation with boundary sentinel, literal case-insensitive scan, offset-to-position mapping; pure, never throws
-- [ ] 1.3 Verify: `npm run test -- findMatches`
+- [x] 1.1 Write unit tests `tests/renderer/search/findMatches.test.ts`: literal case-insensitive matching; a phrase crossing inline formatting boundaries inside one block; no false match across block boundaries (sentinel); punctuation/symbol queries; empty and whitespace-only queries return none; repeated and overlapping matches ("aa" in "aaa"); offset-to-position mapping round-trips; a 10,000-line fixture completes well inside the imperceptibility budget (FR-012/SC-002)
+- [x] 1.2 Implement `src/renderer/search/findMatches.ts`: per-block text concatenation with boundary sentinel, literal case-insensitive scan, offset-to-position mapping; pure, never throws
+- [x] 1.3 Verify: `npm run test -- findMatches`
 
 ## Phase 2: Plugin and panel (R2, FR-001/003/004/005/006/007/008)
 

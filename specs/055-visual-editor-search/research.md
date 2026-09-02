@@ -54,3 +54,13 @@ Findings that resolve the plan's open questions, with the evidence and the rejec
 **Alternatives rejected**:
 
 - _An incremental match index updated on every edit_: state to keep consistent across every edit path (typing, paste, undo, reload, external change) for zero user-visible gain, since a fresh scan is already fast enough.
+
+## R6. Decoration API surface verified against the installed types (task 2.1), with one code-block caveat
+
+**Decision**: The plugin uses inline decorations for all text rendered by ProseMirror, plus a node-level decoration fallback for code blocks, and never touches the document.
+
+**Evidence** (installed `prosemirror-view`, checked during implementation): `Decoration.inline(from, to, attrs, spec?)` (index.d.ts:105), `DecorationSet.create(doc, decorations)` (index.d.ts:194) and `DecorationSet.map(mapping, doc, options?)` (index.d.ts:209) all match R2's assumptions. Node decorations are applied to custom node views' DOM (`applyOuterDeco`, index.cjs:1482; kept current by `updateOuterDeco`/`patchOuterDeco`), and `domAtPos` for a position inside a node view without a contentDOM returns the node view's own element without throwing (index.cjs:847-851), so reveal-by-element works.
+
+**Caveat**: Milkdown's code block is a CodeMirror node view (`CodeMirrorBlock`) with **no `contentDOM`**, so ProseMirror renders nothing inside it and inline decorations cannot appear there. Its text is still part of the document, so occurrences inside code blocks are found and counted; they are highlighted at block granularity with a node decoration on the `.milkdown-code-block` element, and the current match is revealed by scrolling that block into view. Tables (TableNodeView exposes a `tbody` contentDOM) and lists take true inline decorations. True in-code-block text highlighting would require CodeMirror-side decorations, which would need a new direct dependency on `@codemirror/search` and a bridge into per-block node views; rejected for this feature under the no-new-dependencies constraint.
+
+**Consequence**: FR-003/FR-011 hold for every block type ProseMirror renders, and hold at block granularity inside code blocks.
