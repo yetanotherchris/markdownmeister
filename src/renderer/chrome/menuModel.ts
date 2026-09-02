@@ -17,7 +17,7 @@ export const RECENT_LABEL_MAX = 60
 /** Format an accelerator for the current platform (⌘ on macOS, Ctrl+ elsewhere;
  *  macOS orders modifiers ⇧ before ⌘, Windows/Linux use Ctrl+Shift+). */
 export function formatAccelerator(
-  combo: 'new-file' | 'open-file' | 'open-folder' | 'save' | 'save-as' | 'close-tab',
+  combo: 'new-file' | 'open-file' | 'open-folder' | 'save' | 'save-as' | 'close-tab' | 'find',
   platform: Platform
 ): string {
   const mod = platform === 'darwin' ? '⌘' : 'Ctrl+'
@@ -36,6 +36,8 @@ export function formatAccelerator(
       return shifted + 'S'
     case 'close-tab':
       return mod + 'W'
+    case 'find':
+      return mod + 'F'
   }
 }
 
@@ -50,6 +52,7 @@ export function hamburgerMenuStructure(platform: Platform): HamburgerItem[] {
     { kind: 'command', label: 'Save', command: 'save', accelerator: formatAccelerator('save', platform) },
     { kind: 'command', label: 'Save As…', command: 'save-as', accelerator: formatAccelerator('save-as', platform) },
     { kind: 'command', label: 'Close Tab', command: 'close-tab', accelerator: formatAccelerator('close-tab', platform) },
+    { kind: 'command', label: 'Find', command: 'find', accelerator: formatAccelerator('find', platform) },
     { kind: 'separator' },
     { kind: 'action', label: 'Settings…', action: 'settings' },
     { kind: 'separator' },

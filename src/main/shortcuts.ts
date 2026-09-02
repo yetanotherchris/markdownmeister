@@ -38,6 +38,8 @@ export function matchShortcut(input: ShortcutInput): ShortcutResult | null {
       return 'save'
     case 'w':
       return 'close-tab'
+    case 'f':
+      return 'find'
     default:
       return null
   }

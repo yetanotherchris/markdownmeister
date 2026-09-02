@@ -23,7 +23,7 @@ import { useOsOpen } from './hooks/useOsOpen'
 import { useWorkspaceFolder } from './hooks/useWorkspaceFolder'
 import { useSidebarLayout } from './hooks/useSidebarLayout'
 import { useSettingsState } from './hooks/useSettingsState'
-import EditorPanel from './editor/EditorPanel'
+import EditorPanel, { type FindRequest } from './editor/EditorPanel'
 import EditorErrorBoundary from './editor/EditorErrorBoundary'
 import SpellingMenu from './editor/SpellingMenu'
 import type { SpellingMenuState } from './editor/spellcheckPlugin'
@@ -58,6 +58,8 @@ export default function App() {
   const [footerNote, setFooterNote] = useState<string | null>(null)
   const [spellMenu, setSpellMenu] = useState<SpellingMenuState | null>(null)
   const [explorerCollapsed, setExplorerCollapsed] = useState(false)
+  const [findRequest, setFindRequest] = useState<FindRequest | null>(null)
+  const findSeqRef = useRef(0)
   const {
     settingsOpen,
     setSettingsOpen,
@@ -182,7 +184,11 @@ export default function App() {
     session: sessionApi,
     folder,
     dispatch,
-    enforcePoolCap: pool.enforcePoolCap
+    enforcePoolCap: pool.enforcePoolCap,
+    requestFind: useCallback((id: string) => {
+      findSeqRef.current += 1
+      setFindRequest({ id, seq: findSeqRef.current })
+    }, [])
   })
   useOsOpen({ session: sessionApi, folder, onOpenFailed: setFooterNote })
 
@@ -399,6 +405,7 @@ export default function App() {
                       onCursorSyncApplied={handleCursorSyncApplied}
                       onRequestViewSource={source.handleShowSource}
                       onReturnToFormatted={source.handleReturnToFormatted}
+                      findRequest={findRequest}
                     />
                   </EditorErrorBoundary>
                 ))

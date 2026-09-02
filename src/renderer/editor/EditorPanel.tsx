@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Crepe } from '@milkdown/crepe'
 import type { DocumentState } from '../state/documents'
 import { instancePool } from './instancePool'
@@ -6,8 +6,17 @@ import { joinFrontmatter } from '../domain/frontmatter'
 import CrepeHost, { type CursorState } from './CrepeHost'
 import type { SpellingMenuState } from './spellcheckPlugin'
 import type { MarkdownSyntaxOptions } from './markdownSyntaxOptions'
+import SearchPanel from '../search/SearchPanel'
+import type { VisualSearchHandle, VisualSearchSnapshot } from '../search/visualSearch'
 import SourceView from './SourceView'
 import './editor.css'
+
+/** Requests opening search in the document with `id`; `seq` increments so a
+ *  repeated request is distinguishable from the previous one. */
+export interface FindRequest {
+  id: string
+  seq: number
+}
 
 interface EditorPanelProps {
   document: DocumentState
@@ -30,6 +39,7 @@ interface EditorPanelProps {
   onCursorSyncApplied: (id: string) => void
   onRequestViewSource: (id: string) => void
   onReturnToFormatted: (id: string) => void
+  findRequest: FindRequest | null
 }
 
 interface DocumentHostProps extends Omit<
@@ -58,9 +68,27 @@ function DocumentHost({
   onSourceContext,
   onCursorSyncApplied,
   onRequestViewSource,
-  onReturnToFormatted
+  onReturnToFormatted,
+  findRequest
 }: DocumentHostProps) {
   const inSource = !staged && document.view === 'source'
+  const searchHandleRef = useRef<VisualSearchHandle | null>(null)
+  const [searchUi, setSearchUi] = useState<VisualSearchSnapshot>({
+    open: false,
+    current: 0,
+    total: 0
+  })
+  const handleSearchState = useCallback(
+    (snapshot: VisualSearchSnapshot) => setSearchUi(snapshot),
+    []
+  )
+  // Find requests target one document by id; only the matching host opens
+  // its box. The signal value (not just identity) gates re-runs.
+  const findSignal = findRequest && findRequest.id === document.id ? findRequest.seq : null
+  useEffect(() => {
+    if (findSignal == null) return
+    searchHandleRef.current?.open()
+  }, [findSignal])
   const handleMarkdownUpdated = useCallback(
     (markdown: string) => onContentChange(document.id, markdown),
     [document.id, onContentChange]
@@ -105,45 +133,60 @@ function DocumentHost({
   if (document.editorState === 'evicted') return <div className="editor-host evicted" />
 
   return (
-    <div
-      ref={hostRef}
-      className={`editor-host${inSource ? ' has-source' : ''}${staged ? ' staged' : ''}`}
-      style={{ visibility: isActive && !staged ? 'visible' : 'hidden' }}
-      aria-hidden={staged || undefined}
-    >
-      <CrepeHost
-        key={`${document.id}-v${document.contentVersion}`}
-        defaultValue={document.content}
-        active={isActive && !inSource && !staged}
-        locked={inSource || staged}
-        markdownOptions={markdownOptions}
-        onSpellingMenu={onSpellingMenu}
-        restoreCursor={{ cursorOffset: document.cursorOffset, scrollTop: document.scrollTop }}
-        cursorSync={document.cursorSync}
-        onCursorSyncApplied={handleCursorSyncApplied}
-        onMarkdownUpdated={handleMarkdownUpdated}
-        onReady={handleReady}
-        onBaselineCapture={handleBaselineCapture}
-        onCursorState={handleCursorState}
-        onRequestViewSource={() => onRequestViewSource(document.id)}
-      />
-      {inSource && (
-        <SourceView
-          value={joinFrontmatter(document.frontmatter, document.content)}
-          onChange={(content) => onContentChange(document.id, content)}
-          onReturnToFormatted={() => onReturnToFormatted(document.id)}
-          isActive={isActive}
-          spellcheckEnabled={spellcheckEnabled}
-          wordWrap={wordWrap}
-          onWordWrapChange={onWordWrapChange}
-          selectionAnchor={document.sourceSelectionAnchor}
-          selectionHead={document.sourceSelectionHead}
-          scrollTop={document.sourceScrollTop}
-          reveal={document.sourceSeed?.reveal ?? false}
-          onContextChange={handleSourceContext}
+    <>
+      <div
+        ref={hostRef}
+        className={`editor-host${inSource ? ' has-source' : ''}${staged ? ' staged' : ''}`}
+        style={{ visibility: isActive && !staged ? 'visible' : 'hidden' }}
+        aria-hidden={staged || undefined}
+      >
+        <CrepeHost
+          key={`${document.id}-v${document.contentVersion}`}
+          defaultValue={document.content}
+          active={isActive && !inSource && !staged}
+          locked={inSource || staged}
+          markdownOptions={markdownOptions}
+          onSpellingMenu={onSpellingMenu}
+          restoreCursor={{ cursorOffset: document.cursorOffset, scrollTop: document.scrollTop }}
+          cursorSync={document.cursorSync}
+          onCursorSyncApplied={handleCursorSyncApplied}
+          onMarkdownUpdated={handleMarkdownUpdated}
+          onReady={handleReady}
+          onBaselineCapture={handleBaselineCapture}
+          onCursorState={handleCursorState}
+          onRequestViewSource={() => onRequestViewSource(document.id)}
+          searchHandleRef={searchHandleRef}
+          onSearchState={handleSearchState}
+          findSignal={findSignal}
+        />
+        {inSource && (
+          <SourceView
+            value={joinFrontmatter(document.frontmatter, document.content)}
+            onChange={(content) => onContentChange(document.id, content)}
+            onReturnToFormatted={() => onReturnToFormatted(document.id)}
+            isActive={isActive}
+            spellcheckEnabled={spellcheckEnabled}
+            wordWrap={wordWrap}
+            onWordWrapChange={onWordWrapChange}
+            selectionAnchor={document.sourceSelectionAnchor}
+            selectionHead={document.sourceSelectionHead}
+            scrollTop={document.sourceScrollTop}
+            reveal={document.sourceSeed?.reveal ?? false}
+            onContextChange={handleSourceContext}
+          />
+        )}
+      </div>
+      {isActive && !inSource && !staged && searchUi.open && (
+        <SearchPanel
+          current={searchUi.current}
+          total={searchUi.total}
+          onQueryChange={(query) => searchHandleRef.current?.setQuery(query)}
+          onNext={() => searchHandleRef.current?.next()}
+          onPrevious={() => searchHandleRef.current?.previous()}
+          onClose={() => searchHandleRef.current?.close()}
         />
       )}
-    </div>
+    </>
   )
 }
 

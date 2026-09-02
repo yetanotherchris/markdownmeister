@@ -8,17 +8,17 @@
 
 ## Phase 2: Plugin and panel (R2, FR-001/003/004/005/006/007/008)
 
-- [ ] 2.1 Verify the decoration API surface against the installed prosemirror-view type definitions (inline decorations, DecorationSet mapping across transactions) before wiring; record anything that differs from R2 in research.md
-- [ ] 2.2 Implement `src/renderer/search/visualSearch.ts`: plugin state (query, matches, current index) recomputed on query-set effect and on document changes while active; highlight decorations plus a distinct current-match decoration; next/previous commands with wrap-around; close command clears all state
-- [ ] 2.3 Implement `src/renderer/search/SearchPanel.tsx`: labelled input (autofocused), "current of total" count, prev/next and close buttons; Enter/Shift+Enter navigation; Escape closes; calm zero-match rendering
-- [ ] 2.4 Wire the plugin into `src/renderer/editor/CrepeHost.tsx` and mount the panel over the editing area for the active document only; the panel dispatches no document-changing transactions; closing returns focus to the editor
-- [ ] 2.5 Verify: `npm run typecheck` and `npm run lint`
+- [x] 2.1 Verify the decoration API surface against the installed prosemirror-view type definitions (inline decorations, DecorationSet mapping across transactions) before wiring; record anything that differs from R2 in research.md
+- [x] 2.2 Implement `src/renderer/search/visualSearch.ts`: plugin state (query, matches, current index) recomputed on query-set effect and on document changes while active; highlight decorations plus a distinct current-match decoration; next/previous commands with wrap-around; close command clears all state
+- [x] 2.3 Implement `src/renderer/search/SearchPanel.tsx`: labelled input (autofocused), "current of total" count, prev/next and close buttons; Enter/Shift+Enter navigation; Escape closes; calm zero-match rendering
+- [x] 2.4 Wire the plugin into `src/renderer/editor/CrepeHost.tsx` and mount the panel over the editing area for the active document only; the panel dispatches no document-changing transactions; closing returns focus to the editor
+- [x] 2.5 Verify: `npm run typecheck` and `npm run lint`
 
 ## Phase 3: Shortcut and menu routing (R4, FR-001/013)
 
-- [ ] 3.1 Add the find shortcut (Ctrl/Cmd+F) to `src/main/shortcuts.ts` and a Find entry showing it to `src/renderer/chrome/menuModel.ts`; extend `tests/main/shortcuts.test.ts` and `tests/renderer/menuModel.test.ts`
-- [ ] 3.2 Route the find command in `src/renderer/hooks/useMenuCommands.ts` to the active document's visual host (open with an empty query, focus the input); no-op when the source view is active (spec 056 owns that surface)
-- [ ] 3.3 Verify: `npm run test -- shortcuts`
+- [x] 3.1 Add the find shortcut (Ctrl/Cmd+F) to `src/main/shortcuts.ts` and a Find entry showing it to `src/renderer/chrome/menuModel.ts`; extend `tests/main/shortcuts.test.ts` and `tests/renderer/menuModel.test.ts`
+- [x] 3.2 Route the find command in `src/renderer/hooks/useMenuCommands.ts` to the active document's visual host (open with an empty query, focus the input); no-op when the source view is active (spec 056 owns that surface)
+- [x] 3.3 Verify: `npm run test -- shortcuts`
 
 ## Phase 4: E2E scenarios
 

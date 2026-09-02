@@ -18,7 +18,7 @@ describe('hamburgerMenuStructure (spec 010)', () => {
     expect(items.map((i) => (i.kind === 'separator' || i.kind === 'recent-items') ? i.kind : i.label)).toEqual([
       'New File', 'Open File…', 'Open Folder…',
       'recent-items', 'separator',
-      'Save', 'Save As…', 'Close Tab',
+      'Save', 'Save As…', 'Close Tab', 'Find',
       'separator',
       'Settings…',
       'separator',
@@ -35,7 +35,7 @@ describe('hamburgerMenuStructure (spec 010)', () => {
     const commands = hamburgerMenuStructure('win32')
       .filter((i): i is Extract<HamburgerItem, { kind: 'command' }> => i.kind === 'command')
     expect(commands.map((c) => c.command)).toEqual([
-      'new-file', 'open-file', 'open-folder', 'save', 'save-as', 'close-tab'
+      'new-file', 'open-file', 'open-folder', 'save', 'save-as', 'close-tab', 'find'
     ])
   })
 
@@ -57,8 +57,8 @@ describe('hamburgerMenuStructure (spec 010)', () => {
       items
         .filter((i): i is Extract<HamburgerItem, { kind: 'command' }> => i.kind === 'command')
         .map((i) => i.accelerator)
-    expect(labels(win)).toEqual(['Ctrl+N', 'Ctrl+O', 'Ctrl+Shift+O', 'Ctrl+S', 'Ctrl+Shift+S', 'Ctrl+W'])
-    expect(labels(mac)).toEqual(['⌘N', '⌘O', '⇧⌘O', '⌘S', '⇧⌘S', '⌘W'])
+    expect(labels(win)).toEqual(['Ctrl+N', 'Ctrl+O', 'Ctrl+Shift+O', 'Ctrl+S', 'Ctrl+Shift+S', 'Ctrl+W', 'Ctrl+F'])
+    expect(labels(mac)).toEqual(['⌘N', '⌘O', '⇧⌘O', '⌘S', '⇧⌘S', '⌘W', '⌘F'])
   })
 
   it('formats accelerators consistently', () => {

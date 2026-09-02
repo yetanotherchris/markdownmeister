@@ -18,8 +18,10 @@ export function useMenuCommands(opts: {
   folder: Pick<WorkspaceFolderApi, 'runFolderOpenFlow'>
   dispatch: React.Dispatch<DocumentsAction>
   enforcePoolCap: (activeId: string | null) => void
+  /** Opens search in the given document (spec 055). */
+  requestFind: (id: string) => void
 }): MenuCommandsApi {
-  const { sessionRef, dialog, session, folder, dispatch, enforcePoolCap } = opts
+  const { sessionRef, dialog, session, folder, dispatch, enforcePoolCap, requestFind } = opts
   const { showOperationError } = dialog
 
   const handleMenuCommand = useCallback((command: MenuCommand) => {
@@ -71,10 +73,16 @@ export function useMenuCommands(opts: {
         session.handleNew()
         break
       }
+      case 'find': {
+        // Search is a visual-editing surface; the source view owns its own
+        // search (spec 056), so a find while it is active is a no-op.
+        if (active && active.view !== 'source') requestFind(active.id)
+        break
+      }
       default:
         break
     }
-  }, [dispatch, enforcePoolCap, folder, session, sessionRef, showOperationError])
+  }, [dispatch, enforcePoolCap, folder, requestFind, session, sessionRef, showOperationError])
 
   return { handleMenuCommand }
 }
