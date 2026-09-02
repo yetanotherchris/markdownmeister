@@ -180,6 +180,7 @@ function DocumentHost({
         <SearchPanel
           current={searchUi.current}
           total={searchUi.total}
+          hostRef={hostRef}
           onQueryChange={(query) => searchHandleRef.current?.setQuery(query)}
           onNext={() => searchHandleRef.current?.next()}
           onPrevious={() => searchHandleRef.current?.previous()}
