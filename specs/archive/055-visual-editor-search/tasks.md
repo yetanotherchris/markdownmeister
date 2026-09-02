@@ -29,4 +29,4 @@
 
 - [x] 5.1 `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:e2e`
 - [x] 5.2 Append new source/test files to `scripts.format:check`; `npx prettier --check` touched files
-- [ ] 5.3 Archive: `git mv specs/055-visual-editor-search specs/archive/055-visual-editor-search`, set Status Archived
+- [x] 5.3 Archive: `git mv specs/055-visual-editor-search specs/archive/055-visual-editor-search`, set Status Archived

@@ -82,7 +82,9 @@ describe('findMatches (spec 055 FR-002/010/011)', () => {
       block(text(0, 'The '), text(4, 'Quick'), text(9, ' Brown'), text(15, ' FOX')),
       block(text(30, 'brown bread'))
     ]
-    for (const match of findMatches('brown fox', blocks)) {
+    const matches = findMatches('brown fox', blocks)
+    expect(matches.length).toBeGreaterThan(0)
+    for (const match of matches) {
       const stitched = blocks
         .flatMap((b) => b.runs.map((r) => ({ ...r, to: r.from + r.text.length })))
         .filter((r) => r.to > match.from && r.from < match.to)

@@ -14,6 +14,7 @@ import {
   visualSearchPlugin,
   openSearch,
   closeSearch,
+  closeSearchAndRefocus,
   setSearchQuery,
   findNextMatch,
   findPreviousMatch,
@@ -113,6 +114,8 @@ export default function CrepeHost({
   onCursorSyncAppliedRef.current = onCursorSyncApplied
   const onSearchStateRef = useRef(onSearchState)
   onSearchStateRef.current = onSearchState
+  const findSignalRef = useRef(findSignal)
+  findSignalRef.current = findSignal
   const handledFindRef = useRef<number | null>(null)
 
   function searchHandle(): VisualSearchHandle {
@@ -124,7 +127,7 @@ export default function CrepeHost({
       },
       close: () => {
         const v = view()
-        if (v) closeSearch(v, true)
+        if (v) closeSearchAndRefocus(v)
       },
       setQuery: (query) => {
         const v = view()
@@ -254,6 +257,18 @@ export default function CrepeHost({
       const view = crepe.editor.action((ctx) => ctx.get(editorViewCtx))
       viewRef.current = view
       if (searchHandleRef) searchHandleRef.current = searchHandle()
+      // Replay a find signal that arrived while create() was still running:
+      // the effect above cannot dispatch before the handle exists.
+      const pendingFind = findSignalRef.current
+      if (
+        active &&
+        !lockedRef.current &&
+        pendingFind != null &&
+        handledFindRef.current !== pendingFind
+      ) {
+        handledFindRef.current = pendingFind
+        openSearch(view)
+      }
       recordParse()
       scrollElementRef.current = view.dom.closest('.editor-host') ?? view.dom.parentElement
       view.dom.spellcheck = false
@@ -319,9 +334,18 @@ export default function CrepeHost({
 
   useEffect(() => {
     if (findSignal == null || findSignal === handledFindRef.current) return
+    if (!active || locked) {
+      // Consumed, not deferred: find is a no-op on a locked or background
+      // surface, and replaying it on reactivation would surprise.
+      handledFindRef.current = findSignal
+      return
+    }
+    const handle = searchHandleRef?.current
+    if (!handle) return
+    // The editor is still creating; init() replays the pending signal once
+    // the handle exists.
     handledFindRef.current = findSignal
-    if (!active || locked) return
-    searchHandleRef?.current?.open()
+    handle.open()
   }, [findSignal, active, locked, searchHandleRef])
 
   useEffect(() => {

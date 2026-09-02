@@ -45,8 +45,9 @@ const CLOSED: VisualSearchState = {
 }
 
 /** Block types whose content is rendered by node views rather than
- *  ProseMirror, so inline decorations cannot reach the text (R6). */
-const NODE_VIEW_BLOCKS = new Set(['fence', 'code_block', 'math'])
+ *  ProseMirror, so inline decorations cannot reach the text (R6). Crepe's
+ *  math blocks share the code_block schema, so one name covers both. */
+const NODE_VIEW_BLOCKS = new Set(['code_block'])
 
 export const visualSearchKey = new PluginKey<VisualSearchState>('mm-visual-search')
 
@@ -300,11 +301,17 @@ export function openSearch(view: EditorView): void {
 }
 
 /** Closes the search box. Highlights are removed and the document, its dirty
- *  state, and its undo history are untouched; `refocus` additionally returns
- *  focus to the document after dismissal. */
-export function closeSearch(view: EditorView, refocus = false): void {
+ *  state, and its undo history are untouched. Used for the automatic close on
+ *  tab and view switches, which must not steal focus. */
+export function closeSearch(view: EditorView): void {
   dispatchEffect(view, { type: 'close' })
-  if (refocus) view.focus()
+}
+
+/** Closes the search box and returns focus to the document; the
+ *  user-initiated dismissal path (Escape, close button). */
+export function closeSearchAndRefocus(view: EditorView): void {
+  closeSearch(view)
+  view.focus()
 }
 
 export function setSearchQuery(view: EditorView, query: string): void {

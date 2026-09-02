@@ -28,6 +28,8 @@ Findings that resolve the plan's open questions, with the evidence and the rejec
 
 **Evidence**: A query like "bold end" must find its target when the phrase crosses inline nodes (for example an emphasis boundary) within one paragraph, so per-text-node scanning alone is insufficient. Scanning the whole document as one string would produce false matches spanning separate blocks (a heading ending "in" and a paragraph starting "time" would match "in time"), which the sentinel prevents.
 
+**Implementation note**: the implementation reaches the same guarantee slightly differently than the wording above: each block is scanned independently (no joined haystack) and the sentinel only guards the query, so a match can never include a block gap.
+
 **Alternatives rejected**:
 
 - _Per-text-node scanning only_: misses the common cross-inline-node phrase, failing FR-011's spirit.

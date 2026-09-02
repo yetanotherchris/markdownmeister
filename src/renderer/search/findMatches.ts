@@ -16,9 +16,9 @@ export interface SearchMatch {
   to: number
 }
 
-/** Joins concatenated block texts in the plugin's haystack. It cannot occur
- *  in document text or in a typeable query, so a match can never span the
- *  gap between two blocks. */
+/** Blocks never contain this character, and each block is scanned
+ *  independently, so a query containing it could never match anything;
+ *  rejecting it up front keeps that guarantee explicit. */
 const SEPARATOR = '\u0000'
 
 /** Case-folds for search while preserving UTF-16 length, so folded offsets

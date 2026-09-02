@@ -2,6 +2,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ChevronDownIcon, ChevronUpIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import './search.css'
 
+const PANEL_TOP_FALLBACK_PX = 8
+const PANEL_TOP_GAP_PX = 8
+
 export interface SearchPanelProps {
   /** Zero-based index of the current match. */
   current: number
@@ -30,20 +33,23 @@ export default function SearchPanel({
   onClose
 }: SearchPanelProps) {
   const [query, setQuery] = useState('')
-  const [top, setTop] = useState(8)
+  const [top, setTop] = useState(PANEL_TOP_FALLBACK_PX)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useLayoutEffect(() => {
     const updateTop = () => {
       const host = hostRef.current
       const area = host?.parentElement
-      const bar = host?.querySelector('.milkdown-top-bar')
       if (!host || !area) return
-      if (!bar) {
-        setTop(8)
-        return
-      }
-      setTop(bar.getBoundingClientRect().bottom - area.getBoundingClientRect().top + 8)
+      const bar = host.querySelector('.milkdown-top-bar')?.getBoundingClientRect()
+      // A zero-size bar means it is display:none (formatting bar off): dock
+      // near the top of the area instead of computing a negative, clipped
+      // offset.
+      setTop(
+        !bar || bar.height === 0
+          ? PANEL_TOP_FALLBACK_PX
+          : bar.bottom - area.getBoundingClientRect().top + PANEL_TOP_GAP_PX
+      )
     }
     updateTop()
     // The bar wraps to two rows in narrow editors, so its own size tracks the
