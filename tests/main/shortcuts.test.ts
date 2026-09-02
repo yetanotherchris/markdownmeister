@@ -2,7 +2,15 @@ import { describe, it, expect } from 'vitest'
 import { matchShortcut, ShortcutInput } from '../../src/main/shortcuts'
 
 function keyDown(partial: Partial<ShortcutInput>): ShortcutInput {
-  return { type: 'keyDown', key: '', control: false, meta: false, alt: false, shift: false, ...partial }
+  return {
+    type: 'keyDown',
+    key: '',
+    control: false,
+    meta: false,
+    alt: false,
+    shift: false,
+    ...partial
+  }
 }
 
 describe('matchShortcut (spec 010 contracts/renderer.md)', () => {
@@ -13,6 +21,12 @@ describe('matchShortcut (spec 010 contracts/renderer.md)', () => {
     expect(matchShortcut(keyDown({ key: 's', control: true }))).toBe('save')
     expect(matchShortcut(keyDown({ key: 's', control: true, shift: true }))).toBe('save-as')
     expect(matchShortcut(keyDown({ key: 'w', control: true }))).toBe('close-tab')
+  })
+
+  it('maps the find shortcut (spec 055 FR-001)', () => {
+    expect(matchShortcut(keyDown({ key: 'f', control: true }))).toBe('find')
+    expect(matchShortcut(keyDown({ key: 'f', meta: true }))).toBe('find')
+    expect(matchShortcut(keyDown({ key: 'f', control: true, shift: true }))).toBeNull()
   })
 
   it('accepts the meta (Cmd) modifier identically to control', () => {

@@ -1,7 +1,6 @@
 import { BrowserWindow } from 'electron'
 import type { MenuCommand } from '../shared/ipc-contract'
 
-
 export interface ShortcutInput {
   type: string
   key: string
@@ -13,7 +12,6 @@ export interface ShortcutInput {
 
 /** The main-side devtools toggle, distinct from renderer `MenuCommand`s. */
 export type ShortcutResult = MenuCommand | 'devtools'
-
 
 export function matchShortcut(input: ShortcutInput): ShortcutResult | null {
   if (input.type !== 'keyDown') return null
@@ -38,11 +36,12 @@ export function matchShortcut(input: ShortcutInput): ShortcutResult | null {
       return 'save'
     case 'w':
       return 'close-tab'
+    case 'f':
+      return 'find'
     default:
       return null
   }
 }
-
 
 export function registerShortcuts(window: BrowserWindow): void {
   window.webContents.on('before-input-event', (event, input) => {

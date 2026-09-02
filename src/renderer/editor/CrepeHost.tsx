@@ -10,6 +10,18 @@ import { applyToolbarLabels } from './toolbarLabels'
 import { planTaskBackspace } from './taskBackspace'
 import { tightListPlugins } from './tightList'
 import { spellcheckPlugin, type SpellingMenuState } from './spellcheckPlugin'
+import {
+  visualSearchPlugin,
+  openSearch,
+  closeSearch,
+  closeSearchAndRefocus,
+  setSearchQuery,
+  findNextMatch,
+  findPreviousMatch,
+  visualSearchIsOpen,
+  type VisualSearchHandle,
+  type VisualSearchSnapshot
+} from '../search/visualSearch'
 import { reconfigureEditor, isReconfigureSuppressed } from './markdownSyntaxRuntime'
 import { recordParse, recordIncomingSerialization, endOpen } from './openPerformance'
 import { applyCursorRestore, planBlockRestore, revealCaretInView } from './cursorRestore'
@@ -45,6 +57,13 @@ interface CrepeHostProps {
   onBaselineCapture: (markdown: string, docRef: unknown) => void
   onCursorState: (cursor: CursorState) => void
   onRequestViewSource: () => void
+
+  /** Receives the imperative search handle once the editor exists. */
+  searchHandleRef?: React.MutableRefObject<VisualSearchHandle | null>
+  /** Live search state for the panel (open, current of total). */
+  onSearchState?: (snapshot: VisualSearchSnapshot) => void
+  /** Increments to request opening search in this host; null does nothing. */
+  findSignal?: number | null
 }
 
 const VIEW_SOURCE_ICON = `
@@ -75,7 +94,10 @@ export default function CrepeHost({
   onReady,
   onBaselineCapture,
   onCursorState,
-  onRequestViewSource
+  onRequestViewSource,
+  searchHandleRef,
+  onSearchState,
+  findSignal
 }: CrepeHostProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<Crepe | null>(null)
@@ -90,6 +112,37 @@ export default function CrepeHost({
   onSpellingMenuRef.current = onSpellingMenu
   const onCursorSyncAppliedRef = useRef(onCursorSyncApplied)
   onCursorSyncAppliedRef.current = onCursorSyncApplied
+  const onSearchStateRef = useRef(onSearchState)
+  onSearchStateRef.current = onSearchState
+  const findSignalRef = useRef(findSignal)
+  findSignalRef.current = findSignal
+  const handledFindRef = useRef<number | null>(null)
+
+  function searchHandle(): VisualSearchHandle {
+    const view = () => viewRef.current
+    return {
+      open: () => {
+        const v = view()
+        if (v) openSearch(v)
+      },
+      close: () => {
+        const v = view()
+        if (v) closeSearchAndRefocus(v)
+      },
+      setQuery: (query) => {
+        const v = view()
+        if (v) setSearchQuery(v, query)
+      },
+      next: () => {
+        const v = view()
+        if (v) findNextMatch(v)
+      },
+      previous: () => {
+        const v = view()
+        if (v) findPreviousMatch(v)
+      }
+    }
+  }
 
   function applyInert() {
     const onInert = lockedRef.current
@@ -182,6 +235,10 @@ export default function CrepeHost({
 
       crepe.editor.use($prose(() => spellcheckPlugin((menu) => onSpellingMenuRef.current(menu))))
 
+      crepe.editor.use(
+        $prose(() => visualSearchPlugin((snapshot) => onSearchStateRef.current?.(snapshot)))
+      )
+
       setMarkdownSyntaxGateOptions(markdownOptions)
       crepe.editor.use(markdownSyntaxInputRuleGate)
 
@@ -199,6 +256,19 @@ export default function CrepeHost({
       editorRef.current = crepe
       const view = crepe.editor.action((ctx) => ctx.get(editorViewCtx))
       viewRef.current = view
+      if (searchHandleRef) searchHandleRef.current = searchHandle()
+      // Replay a find signal that arrived while create() was still running:
+      // the effect above cannot dispatch before the handle exists.
+      const pendingFind = findSignalRef.current
+      if (
+        active &&
+        !lockedRef.current &&
+        pendingFind != null &&
+        handledFindRef.current !== pendingFind
+      ) {
+        handledFindRef.current = pendingFind
+        openSearch(view)
+      }
       recordParse()
       scrollElementRef.current = view.dom.closest('.editor-host') ?? view.dom.parentElement
       view.dom.spellcheck = false
@@ -241,6 +311,7 @@ export default function CrepeHost({
       editorRef.current = null
       viewRef.current = null
       scrollElementRef.current = null
+      if (searchHandleRef) searchHandleRef.current = null
       // Same-tab replacement unmounts an entire Milkdown editor. Releasing its
       // resources during idle time lets the replacement editor paint first.
       window.requestIdleCallback(() => editor?.destroy(), { timeout: 1_000 })
@@ -250,6 +321,32 @@ export default function CrepeHost({
   useEffect(() => {
     applyInert()
   }, [locked])
+
+  // Search state never carries across tab switches, view switches, or editor
+  // replacement (FR-013): closing dispatches a meta-only transaction, which
+  // leaves content, dirty state, and undo history untouched.
+  useEffect(() => {
+    if (!active || locked) {
+      const view = viewRef.current
+      if (view && visualSearchIsOpen(view)) closeSearch(view)
+    }
+  }, [active, locked])
+
+  useEffect(() => {
+    if (findSignal == null || findSignal === handledFindRef.current) return
+    if (!active || locked) {
+      // Consumed, not deferred: find is a no-op on a locked or background
+      // surface, and replaying it on reactivation would surprise.
+      handledFindRef.current = findSignal
+      return
+    }
+    const handle = searchHandleRef?.current
+    if (!handle) return
+    // The editor is still creating; init() replays the pending signal once
+    // the handle exists.
+    handledFindRef.current = findSignal
+    handle.open()
+  }, [findSignal, active, locked, searchHandleRef])
 
   useEffect(() => {
     const view = viewRef.current

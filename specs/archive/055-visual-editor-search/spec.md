@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-02
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "search box for visual editing"
 

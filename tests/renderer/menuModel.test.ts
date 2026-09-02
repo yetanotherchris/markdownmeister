@@ -15,10 +15,18 @@ function item(path: string, kind: RecentKind): RecentItem {
 describe('hamburgerMenuStructure (spec 010)', () => {
   it('orders File actions, the Recent Items submenu parent, Save/Close, Settings, Quit with separators', () => {
     const items = hamburgerMenuStructure('win32')
-    expect(items.map((i) => (i.kind === 'separator' || i.kind === 'recent-items') ? i.kind : i.label)).toEqual([
-      'New File', 'Open File…', 'Open Folder…',
-      'recent-items', 'separator',
-      'Save', 'Save As…', 'Close Tab',
+    expect(
+      items.map((i) => (i.kind === 'separator' || i.kind === 'recent-items' ? i.kind : i.label))
+    ).toEqual([
+      'New File',
+      'Open File…',
+      'Open Folder…',
+      'recent-items',
+      'separator',
+      'Save',
+      'Save As…',
+      'Close Tab',
+      'Find',
       'separator',
       'Settings…',
       'separator',
@@ -32,17 +40,28 @@ describe('hamburgerMenuStructure (spec 010)', () => {
   })
 
   it('maps every File command to a MenuCommand the renderer bus handles', () => {
-    const commands = hamburgerMenuStructure('win32')
-      .filter((i): i is Extract<HamburgerItem, { kind: 'command' }> => i.kind === 'command')
+    const commands = hamburgerMenuStructure('win32').filter(
+      (i): i is Extract<HamburgerItem, { kind: 'command' }> => i.kind === 'command'
+    )
     expect(commands.map((c) => c.command)).toEqual([
-      'new-file', 'open-file', 'open-folder', 'save', 'save-as', 'close-tab'
+      'new-file',
+      'open-file',
+      'open-folder',
+      'save',
+      'save-as',
+      'close-tab',
+      'find'
     ])
   })
 
   it('removes Toggle Developer Tools and keeps Settings before Quit (spec 008 FR-010)', () => {
     const items = hamburgerMenuStructure('win32')
-    expect(items.some((i) => i.kind === 'action' && (i.action as string) === 'toggle-devtools')).toBe(false)
-    const labels = items.map((i) => (i.kind === 'separator' || i.kind === 'recent-items') ? i.kind : i.label)
+    expect(
+      items.some((i) => i.kind === 'action' && (i.action as string) === 'toggle-devtools')
+    ).toBe(false)
+    const labels = items.map((i) =>
+      i.kind === 'separator' || i.kind === 'recent-items' ? i.kind : i.label
+    )
     const settingsIndex = labels.indexOf('Settings…')
     const quitIndex = labels.indexOf('Quit')
     expect(settingsIndex).toBeGreaterThan(-1)
@@ -57,8 +76,16 @@ describe('hamburgerMenuStructure (spec 010)', () => {
       items
         .filter((i): i is Extract<HamburgerItem, { kind: 'command' }> => i.kind === 'command')
         .map((i) => i.accelerator)
-    expect(labels(win)).toEqual(['Ctrl+N', 'Ctrl+O', 'Ctrl+Shift+O', 'Ctrl+S', 'Ctrl+Shift+S', 'Ctrl+W'])
-    expect(labels(mac)).toEqual(['⌘N', '⌘O', '⇧⌘O', '⌘S', '⇧⌘S', '⌘W'])
+    expect(labels(win)).toEqual([
+      'Ctrl+N',
+      'Ctrl+O',
+      'Ctrl+Shift+O',
+      'Ctrl+S',
+      'Ctrl+Shift+S',
+      'Ctrl+W',
+      'Ctrl+F'
+    ])
+    expect(labels(mac)).toEqual(['⌘N', '⌘O', '⇧⌘O', '⌘S', '⇧⌘S', '⌘W', '⌘F'])
   })
 
   it('formats accelerators consistently', () => {
@@ -74,7 +101,10 @@ describe('recentMenuEntries (spec 010)', () => {
   })
 
   it('shortens long paths with the native-menu budget', () => {
-    const long = item('/a/very/long/path/that/exceeds/any/reasonable/budget/notes-folder.md', 'file')
+    const long = item(
+      '/a/very/long/path/that/exceeds/any/reasonable/budget/notes-folder.md',
+      'file'
+    )
     const entries = recentMenuEntries([long])
     expect(entries[0].label.length).toBeLessThanOrEqual(RECENT_LABEL_MAX + 1)
     expect(entries[0].label).toContain('notes-folder.md')

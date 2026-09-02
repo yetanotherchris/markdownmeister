@@ -6,6 +6,8 @@ import { joinFrontmatter } from '../domain/frontmatter'
 import CrepeHost, { type CursorState } from './CrepeHost'
 import type { SpellingMenuState } from './spellcheckPlugin'
 import type { MarkdownSyntaxOptions } from './markdownSyntaxOptions'
+import SearchPanel from '../search/SearchPanel'
+import { useVisualSearch, type FindRequest } from '../search/useVisualSearch'
 import SourceView from './SourceView'
 import './editor.css'
 
@@ -30,6 +32,7 @@ interface EditorPanelProps {
   onCursorSyncApplied: (id: string) => void
   onRequestViewSource: (id: string) => void
   onReturnToFormatted: (id: string) => void
+  findRequest: FindRequest | null
 }
 
 interface DocumentHostProps extends Omit<
@@ -58,9 +61,12 @@ function DocumentHost({
   onSourceContext,
   onCursorSyncApplied,
   onRequestViewSource,
-  onReturnToFormatted
+  onReturnToFormatted,
+  findRequest
 }: DocumentHostProps) {
   const inSource = !staged && document.view === 'source'
+  const editingActive = isActive && !inSource && !staged
+  const search = useVisualSearch(document.id, findRequest, editingActive)
   const handleMarkdownUpdated = useCallback(
     (markdown: string) => onContentChange(document.id, markdown),
     [document.id, onContentChange]
@@ -105,45 +111,61 @@ function DocumentHost({
   if (document.editorState === 'evicted') return <div className="editor-host evicted" />
 
   return (
-    <div
-      ref={hostRef}
-      className={`editor-host${inSource ? ' has-source' : ''}${staged ? ' staged' : ''}`}
-      style={{ visibility: isActive && !staged ? 'visible' : 'hidden' }}
-      aria-hidden={staged || undefined}
-    >
-      <CrepeHost
-        key={`${document.id}-v${document.contentVersion}`}
-        defaultValue={document.content}
-        active={isActive && !inSource && !staged}
-        locked={inSource || staged}
-        markdownOptions={markdownOptions}
-        onSpellingMenu={onSpellingMenu}
-        restoreCursor={{ cursorOffset: document.cursorOffset, scrollTop: document.scrollTop }}
-        cursorSync={document.cursorSync}
-        onCursorSyncApplied={handleCursorSyncApplied}
-        onMarkdownUpdated={handleMarkdownUpdated}
-        onReady={handleReady}
-        onBaselineCapture={handleBaselineCapture}
-        onCursorState={handleCursorState}
-        onRequestViewSource={() => onRequestViewSource(document.id)}
-      />
-      {inSource && (
-        <SourceView
-          value={joinFrontmatter(document.frontmatter, document.content)}
-          onChange={(content) => onContentChange(document.id, content)}
-          onReturnToFormatted={() => onReturnToFormatted(document.id)}
-          isActive={isActive}
-          spellcheckEnabled={spellcheckEnabled}
-          wordWrap={wordWrap}
-          onWordWrapChange={onWordWrapChange}
-          selectionAnchor={document.sourceSelectionAnchor}
-          selectionHead={document.sourceSelectionHead}
-          scrollTop={document.sourceScrollTop}
-          reveal={document.sourceSeed?.reveal ?? false}
-          onContextChange={handleSourceContext}
+    <>
+      <div
+        ref={hostRef}
+        className={`editor-host${inSource ? ' has-source' : ''}${staged ? ' staged' : ''}`}
+        style={{ visibility: isActive && !staged ? 'visible' : 'hidden' }}
+        aria-hidden={staged || undefined}
+      >
+        <CrepeHost
+          key={`${document.id}-v${document.contentVersion}`}
+          defaultValue={document.content}
+          active={editingActive}
+          locked={inSource || staged}
+          markdownOptions={markdownOptions}
+          onSpellingMenu={onSpellingMenu}
+          restoreCursor={{ cursorOffset: document.cursorOffset, scrollTop: document.scrollTop }}
+          cursorSync={document.cursorSync}
+          onCursorSyncApplied={handleCursorSyncApplied}
+          onMarkdownUpdated={handleMarkdownUpdated}
+          onReady={handleReady}
+          onBaselineCapture={handleBaselineCapture}
+          onCursorState={handleCursorState}
+          onRequestViewSource={() => onRequestViewSource(document.id)}
+          searchHandleRef={search.searchHandleRef}
+          onSearchState={search.onSearchState}
+          findSignal={search.findSignal}
+        />
+        {inSource && (
+          <SourceView
+            value={joinFrontmatter(document.frontmatter, document.content)}
+            onChange={(content) => onContentChange(document.id, content)}
+            onReturnToFormatted={() => onReturnToFormatted(document.id)}
+            isActive={isActive}
+            spellcheckEnabled={spellcheckEnabled}
+            wordWrap={wordWrap}
+            onWordWrapChange={onWordWrapChange}
+            selectionAnchor={document.sourceSelectionAnchor}
+            selectionHead={document.sourceSelectionHead}
+            scrollTop={document.sourceScrollTop}
+            reveal={document.sourceSeed?.reveal ?? false}
+            onContextChange={handleSourceContext}
+          />
+        )}
+      </div>
+      {search.panel && (
+        <SearchPanel
+          current={search.panel.current}
+          total={search.panel.total}
+          hostRef={hostRef}
+          onQueryChange={search.setQuery}
+          onNext={search.next}
+          onPrevious={search.previous}
+          onClose={search.close}
         />
       )}
-    </div>
+    </>
   )
 }
 
