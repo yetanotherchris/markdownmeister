@@ -17,30 +17,37 @@ Findings that resolve the plan's open questions, with the evidence and the rejec
 
 **Dependency justification** (constitution: dependencies must be justified): one package, from the same upstream family as the four CodeMirror packages already in use, replacing a nontrivial amount of hand-written search code. This is the plan's single new dependency.
 
-## R2. The package is driven programmatically; its default panel UI is not used
+## R2. The package's query engine is driven programmatically; its panel, state field, and find commands are not used
 
-**Decision**: Build the query with the package's query type (literal, case-insensitive), apply it via its state effect, and navigate with its find-next/find-previous commands; the panel above the source text is the app's own shared `SearchPanel`, not the package's built-in panel. Match highlighting is provided by a small decoration plugin in the glue module, because the package's own highlighter is dormant while its panel is closed.
+**Decision**: Build the query with the package's query type (literal, case-insensitive) and scan with `query.getCursor`; the glue owns the search state (a small CodeMirror StateField holding open flag, query, and the match spans), the highlight decorations, the counts, and the navigation. The panel above the source text is the app's own shared `SearchPanel`, not the package's built-in panel.
 
 **Evidence** (read from the installed `@codemirror/search` 6.7.1 `dist/index.cjs` and `dist/index.d.ts`, task 1.1 verification obligation):
 
 - `search(config?)` installs exactly `[searchState field, Prec.low(searchHighlighter), baseTheme]`. It ships **no keymap**; `searchKeymap` is a separate export that is only active if the host adds it. Not registering it (R4) is the default, so the find shortcut cannot double-handle.
-- The package's `searchHighlighter` returns `Decoration.none` unless its own panel is open (`if (!panel || !query.spec.valid) return Decoration.none`). Since the app never opens that panel, **match highlighting is not automatic**: the glue adds its own decoration marks (`cm-searchMatch`, plus a distinct current-match class) driven by the same query state.
-- The query is applied with `setSearchQuery.of(new SearchQuery({ search, caseSensitive: false, literal: true, regexp: false }))`: `literal: true` keeps markdown characters (asterisks, brackets, backslashes) matched literally instead of unquoted, and an empty `search` makes the query `valid: false`, which the glue treats as "no active query" (no highlights, zero matches).
-- `findNext`/`findPrevious` dispatch `selection` + a screen-reader announcement effect + `EditorView.scrollIntoView` with `userEvent: "select.search"`. They change no document text. Caveat: both are wrapped in `searchCommand`, which falls back to `openSearchPanel` when the search state is missing or the query is invalid, so the glue must only call them while a valid query with at least one match exists.
-- `query.getCursor(state)` iterates `{ from, to }` over the whole document; the glue uses one full-document scan per query change for counts and decorations.
+- The package's `searchHighlighter` returns `Decoration.none` unless its own panel is open (`if (!panel || !query.spec.valid) return Decoration.none`). Since the app never opens that panel, **match highlighting is not automatic**: the glue adds its own decoration marks (`cm-searchMatch`, plus a distinct current-match class) driven by its own match scan.
+- `new SearchQuery({ search, caseSensitive: false, literal: true, regexp: false })` gives the required matching semantics: `literal: true` keeps markdown characters (asterisks, brackets, backslashes) matched literally instead of unquoted, and an empty `search` makes the query `valid: false`, which the glue treats as "no active query" (no highlights, zero matches).
+- `query.getCursor(doc)` iterates `{ from, to }` over the whole document; the glue uses one full-document scan per query change or edit while the box is open, and never scans while it is closed.
+
+**Why the package's state field and find commands were dropped** (found during implementation, replacing the initial "drive it via `setSearchQuery` + `findNext`/`findPrevious`" approach): the glue placed a collapsed caret (the spec's FR-004/008 caret semantics), and the package's commands are selection-based and assume their own range selection. `findPrevious` recomputes its search start from `selection.main.from`, so with a caret at a match's end it re-finds the same match instead of stepping back; and both commands fall back to `openSearchPanel` when the query is invalid. Navigation over the glue's own span array is a few lines, removes the panel-fallback hazard, and keeps one caret-placement path for query changes and navigation alike. The package is still what does the actual scanning work (R1).
 
 **Alternatives rejected**:
 
 - _Using the package's default panel_: foreign UI, inconsistent with the visual view's search box, and a second focus/Escape behaviour to reconcile with the app.
 - _Relying on the package's built-in highlighter_: it is panel-gated and would force opening the foreign UI.
+- _Keeping the package's find commands and collapsing their selection afterwards_: `findPrevious` then steps onto the same match (boundary condition above), so navigation would need its own span logic anyway.
 
-## R3. Caret placement comes free from the find commands
+## R3. Caret placement is the glue's; search caret movements are collapsed and selection-only
 
-**Decision**: Let the package's find-next/find-previous commands move the editor selection to the current match; do not manage caret positions separately.
+**Decision**: The glue places a collapsed caret at the current match's end on query changes and on navigation. Search-driven caret movements are plain selection-only transactions, so the document, its dirty state, and the undo history are untouched (FR-009).
 
 **Evidence**: The source view already reports selection changes upward through its coalesced context capture (src/renderer/editor/SourceView.tsx selection reporting), which is the same path every user caret movement takes. A selection moved by search is therefore indistinguishable from a user's movement for all existing bookkeeping, including the caret context kept for switching back to the visual view (archived spec 052).
 
-**Refinement found during implementation**: the package's `findNext` searches from the end of the current selection, so driving it per keystroke while the user types a query walks one match forward per character. Query changes therefore place the caret from the glue's own match scan, anchored at the selection as it stood before the query change (typing a longer query keeps the caret on the growing match); the package's find commands still own next/previous navigation, where stepping forward is exactly what is wanted. Both paths dispatch plain selection-only transactions, so the reporting path and the dirty-state guarantee are unchanged. The glue must still assert that search dispatches selection-only transactions so the dirty state cannot flip (FR-009); that assertion is a unit/e2e test, not a convention.
+**Refinements found during implementation**:
+
+- The caret is collapsed at the match's **end** because a collapsed caret is what the spec means by "the text caret is placed at it so editing can continue from that spot": typing then appends and can never replace a matched word (constitution Principle III). The end (not the start) is what keeps stepping forward natural: the next match is the first one starting after the caret.
+- While the box is open, the per-keystroke selection/scroll updates suspend the source view's context capture (the store write that feeds caret sync). Capturing per keystroke re-rendered the whole app on every character, and the explorer's row focus effect then stole the panel input's focus mid-typing. The context is captured once on close, deactivation, or the next non-search event, so nothing is lost.
+- Query changes anchor at the selection as it stood before the query change (typing a longer query keeps the caret on the growing match instead of walking one match forward per keystroke).
+- The glue asserts in unit tests that search dispatches selection-only transactions so the dirty state cannot flip (FR-009); that assertion is a test, not a convention.
 
 ## R4. The shortcut shares spec 055's route; the package keymap must not double-handle it
 

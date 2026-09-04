@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { EditorSelection, EditorState } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
-import { getSearchQuery } from '@codemirror/search'
 import {
   closeSourceSearchAndRefocus,
   findNextSourceMatch,
@@ -59,7 +58,7 @@ describe('sourceSearch (spec 056 FR-002/004/010/011)', () => {
     openSourceSearch(harness.view)
     setSourceSearchQuery(harness.view, 'alpha')
     expect(lastSnapshot(harness)).toMatchObject({ open: true, current: 0, total: 3 })
-    expect(harness.view.state.selection.main).toMatchObject({ anchor: 0, head: 5 })
+    expect(harness.view.state.selection.main).toMatchObject({ anchor: 5, head: 5 })
     harness.destroy()
   })
 
@@ -87,7 +86,7 @@ describe('sourceSearch (spec 056 FR-002/004/010/011)', () => {
     openSourceSearch(harness.view)
     setSourceSearchQuery(harness.view, 'hello')
     expect(lastSnapshot(harness).total).toBe(2)
-    expect(harness.view.state.selection.main.anchor).toBe(11)
+    expect(harness.view.state.selection.main.anchor).toBe(16)
     harness.destroy()
   })
 
@@ -95,19 +94,15 @@ describe('sourceSearch (spec 056 FR-002/004/010/011)', () => {
     const harness = makeView('foo bar foo')
     openSourceSearch(harness.view)
     setSourceSearchQuery(harness.view, 'foo')
-    expect(harness.view.state.selection.main).toMatchObject({ anchor: 0, head: 3 })
+    expect(harness.view.state.selection.main).toMatchObject({ anchor: 3, head: 3 })
 
     harness.view.dispatch({ selection: EditorSelection.single(5) })
     setSourceSearchQuery(harness.view, 'foo')
-    expect(harness.view.state.selection.main).toMatchObject({ anchor: 8, head: 11 })
+    expect(harness.view.state.selection.main).toMatchObject({ anchor: 11, head: 11 })
     expect(lastSnapshot(harness).current).toBe(1)
 
     setSourceSearchQuery(harness.view, 'foo')
-    expect(harness.view.state.selection.main).toMatchObject({ anchor: 8, head: 11 })
-
-    harness.view.dispatch({ selection: EditorSelection.single(11) })
-    setSourceSearchQuery(harness.view, 'foo')
-    expect(harness.view.state.selection.main).toMatchObject({ anchor: 0, head: 3 })
+    expect(harness.view.state.selection.main).toMatchObject({ anchor: 3, head: 3 })
     expect(lastSnapshot(harness).current).toBe(0)
     harness.destroy()
   })
@@ -116,9 +111,10 @@ describe('sourceSearch (spec 056 FR-002/004/010/011)', () => {
     const harness = makeView('foo bar')
     openSourceSearch(harness.view)
     setSourceSearchQuery(harness.view, 'foo')
+    const caretAfterMatch = harness.view.state.selection.main.anchor
     setSourceSearchQuery(harness.view, 'zzz')
     expect(lastSnapshot(harness)).toMatchObject({ open: true, current: 0, total: 0 })
-    expect(harness.view.state.selection.main.anchor).toBe(0)
+    expect(harness.view.state.selection.main.anchor).toBe(caretAfterMatch)
     harness.destroy()
   })
 
@@ -135,11 +131,11 @@ describe('sourceSearch (spec 056 FR-002/004/010/011)', () => {
     const harness = makeView('foo foo')
     openSourceSearch(harness.view)
     setSourceSearchQuery(harness.view, 'f')
-    expect(harness.view.state.selection.main).toMatchObject({ anchor: 0, head: 1 })
+    expect(harness.view.state.selection.main).toMatchObject({ anchor: 1, head: 1 })
     setSourceSearchQuery(harness.view, 'fo')
-    expect(harness.view.state.selection.main).toMatchObject({ anchor: 0, head: 2 })
+    expect(harness.view.state.selection.main).toMatchObject({ anchor: 2, head: 2 })
     setSourceSearchQuery(harness.view, 'foo')
-    expect(harness.view.state.selection.main).toMatchObject({ anchor: 0, head: 3 })
+    expect(harness.view.state.selection.main).toMatchObject({ anchor: 3, head: 3 })
     expect(lastSnapshot(harness)).toMatchObject({ current: 0, total: 2 })
     harness.destroy()
   })
@@ -151,18 +147,19 @@ describe('sourceSearch navigation (spec 056 US2/FR-006)', () => {
     openSourceSearch(harness.view)
     setSourceSearchQuery(harness.view, 'aa')
     expect(lastSnapshot(harness)).toMatchObject({ current: 0, total: 3 })
+    expect(harness.view.state.selection.main).toMatchObject({ anchor: 2, head: 2 })
 
     findNextSourceMatch(harness.view)
     expect(lastSnapshot(harness).current).toBe(1)
-    expect(harness.view.state.selection.main).toMatchObject({ anchor: 6, head: 8 })
+    expect(harness.view.state.selection.main).toMatchObject({ anchor: 8, head: 8 })
 
     findNextSourceMatch(harness.view)
     expect(lastSnapshot(harness).current).toBe(2)
-    expect(harness.view.state.selection.main).toMatchObject({ anchor: 12, head: 14 })
+    expect(harness.view.state.selection.main).toMatchObject({ anchor: 14, head: 14 })
 
     findNextSourceMatch(harness.view)
     expect(lastSnapshot(harness).current).toBe(0)
-    expect(harness.view.state.selection.main).toMatchObject({ anchor: 0, head: 2 })
+    expect(harness.view.state.selection.main).toMatchObject({ anchor: 2, head: 2 })
 
     findPreviousSourceMatch(harness.view)
     expect(lastSnapshot(harness).current).toBe(2)
@@ -221,7 +218,6 @@ describe('sourceSearch dismissal (spec 056 US3/FR-008/009/014)', () => {
     closeSourceSearchAndRefocus(harness.view)
     expect(lastSnapshot(harness)).toEqual({ open: false, current: 0, total: 0 })
     expect(sourceSearchIsOpen(harness.view)).toBe(false)
-    expect(getSearchQuery(harness.view.state).valid).toBe(false)
     expect(harness.view.hasFocus).toBe(true)
     harness.destroy()
   })

@@ -11,19 +11,19 @@
 
 ## Phase 2: Panel wiring in the source view (R2, R3, R6, FR-001/003/004/005/006/007/008/013)
 
-- [ ] 2.1 Mount the shared `SearchPanel` in the source view area of `src/renderer/editor/SourceView.tsx` (only while source view is active); the word wrap checkbox and return button are untouched; register the search extension without the package's default panel and without its default find-shortcut keymap (R4)
-- [ ] 2.2 Wire the panel: input to query effect per keystroke; count display; Enter/Shift+Enter navigation; Escape closes (clear query, remove highlights, restore focus to the text with the caret where navigation left it)
-- [ ] 2.3 Verify: `npm run typecheck` and `npm run lint`
+- [X] 2.1 Mount the shared `SearchPanel` in the source view area of `src/renderer/editor/SourceView.tsx` (only while source view is active); the word wrap checkbox and return button are untouched; register the search extension without the package's default panel and without its default find-shortcut keymap (R4)
+- [X] 2.2 Wire the panel: input to query effect per keystroke; count display; Enter/Shift+Enter navigation; Escape closes (clear query, remove highlights, restore focus to the text with the caret where navigation left it)
+- [X] 2.3 Verify: `npm run typecheck` and `npm run lint`
 
 ## Phase 3: Command routing (R4, FR-001/014)
 
-- [ ] 3.1 Extend the find command routing in `src/renderer/hooks/useMenuCommands.ts`: when the source view is active, open the source search instead of the visual one; confirm no double handling of the shortcut
-- [ ] 3.2 Verify: `npm run test -- shortcuts` and `npm run test -- menuModel`
+- [X] 3.1 Extend the find command routing in `src/renderer/hooks/useMenuCommands.ts`: when the source view is active, open the source search instead of the visual one; confirm no double handling of the shortcut
+- [X] 3.2 Verify: `npm run test -- shortcuts` and `npm run test -- menuModel`
 
 ## Phase 4: E2E scenarios
 
-- [ ] 4.1 Write `tests/e2e/source-search.spec.ts`: shortcut opens the box (FR-001); live highlights and count in raw text including frontmatter (FR-011); caret placed on the current match and scrolled into view (FR-004); next/previous wrap and Enter/Shift+Enter (US2); word wrap on and off both work with the wrap state unchanged (FR-013); Escape leaves edits intact, a clean document clean, highlights gone, and focus in the text (US3/FR-009); zero-match calm state; a generated 10,000-line document searches without perceptible lag (FR-012/SC-002)
-- [ ] 4.2 Build and run: `npm run test:e2e -- source-search`, iterate to green
+- [X] 4.1 Write `tests/e2e/source-search.spec.ts`: shortcut opens the box (FR-001); live highlights and count in raw text including frontmatter (FR-011); caret placed on the current match and scrolled into view (FR-004); next/previous wrap and Enter/Shift+Enter (US2); word wrap on and off both work with the wrap state unchanged (FR-013); Escape leaves edits intact, a clean document clean, highlights gone, and focus in the text (US3/FR-009); zero-match calm state; a generated 10,000-line document searches without perceptible lag (FR-012/SC-002)
+- [X] 4.2 Build and run: `npm run test:e2e -- source-search`, iterate to green
 
 ## Phase 5: Full verification and archive
 

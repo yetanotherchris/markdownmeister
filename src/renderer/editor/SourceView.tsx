@@ -85,7 +85,10 @@ export default function SourceView({
   // Consumed once: the reveal belongs to the switch that mapped the context,
   // not to later activations of the same surface.
   const pendingRevealRef = useRef(reveal)
-  const handledFindRef = useRef<number | null>(null)
+  // Seeded with the mount-time signal: a find request dispatched before this
+  // view existed already opened the search box it was meant for (the visual
+  // view), and replaying it here would open the source box uninvited.
+  const handledFindRef = useRef<number | null>(findSignal)
   const [searchUi, setSearchUi] = useState<SourceSearchSnapshot>(CLOSED_SEARCH)
   onChangeRef.current = onChange
   onContextChangeRef.current = onContextChange
@@ -97,6 +100,12 @@ export default function SourceView({
     pendingRevealRef.current = reveal
 
     const captureContext = (view: EditorView) => {
+      // While the search box is open, every keystroke moves the selection and
+      // scroll position; capturing then would re-render the whole app per
+      // keystroke, and the explorer's row focus effect would steal the panel
+      // input's focus. The context is captured once on close, deactivation,
+      // or the next non-search event, so nothing is lost.
+      if (sourceSearchIsOpen(view)) return
       const context = sourceContext(view)
       onContextChangeRef.current(context.selectionAnchor, context.selectionHead, context.scrollTop)
     }
