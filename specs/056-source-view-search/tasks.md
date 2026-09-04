@@ -4,10 +4,10 @@
 
 ## Phase 1: Dependency and glue (R1, R2, FR-002/010/011)
 
-- [ ] 1.1 Add `@codemirror/search` to `package.json`; read the installed package's type definitions and pin the exact exports used (query type, query-set effect, find-next/previous, and whether match highlighting is automatic or needs an explicit control); record the finding in research.md R2
-- [ ] 1.2 Write unit tests `tests/renderer/search/sourceSearch.test.ts`: query building (literal, case-insensitive), total/current count derivation, zero-match handling, open/close clearing state, and an assertion that search dispatches selection-only transactions (dirty state cannot flip)
-- [ ] 1.3 Implement `src/renderer/search/sourceSearch.ts`: build the query from the panel's term, apply the query effect, compute counts, navigate with wrap-around, place the selection on the current match, expose open/close that add and remove highlights
-- [ ] 1.4 Verify: `npm run test -- sourceSearch`
+- [X] 1.1 Add `@codemirror/search` to `package.json`; read the installed package's type definitions and pin the exact exports used (query type, query-set effect, find-next/previous, and whether match highlighting is automatic or needs an explicit control); record the finding in research.md R2
+- [X] 1.2 Write unit tests `tests/renderer/search/sourceSearch.test.ts`: query building (literal, case-insensitive), total/current count derivation, zero-match handling, open/close clearing state, and an assertion that search dispatches selection-only transactions (dirty state cannot flip)
+- [X] 1.3 Implement `src/renderer/search/sourceSearch.ts`: build the query from the panel's term, apply the query effect, compute counts, navigate with wrap-around, place the selection on the current match, expose open/close that add and remove highlights
+- [X] 1.4 Verify: `npm run test -- sourceSearch`
 
 ## Phase 2: Panel wiring in the source view (R2, R3, R6, FR-001/003/004/005/006/007/008/013)
 

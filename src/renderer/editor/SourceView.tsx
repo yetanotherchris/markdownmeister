@@ -1,9 +1,22 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Annotation, Compartment, EditorSelection, EditorState } from '@codemirror/state'
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { markdown } from '@codemirror/lang-markdown'
 import { yamlFrontmatter } from '@codemirror/lang-yaml'
 import { EditorView } from '@codemirror/view'
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
+import SearchPanel from '../search/SearchPanel'
+import {
+  closeSourceSearch,
+  closeSourceSearchAndRefocus,
+  findNextSourceMatch,
+  findPreviousSourceMatch,
+  openSourceSearch,
+  setSourceSearchQuery,
+  sourceSearchExtension,
+  sourceSearchIsOpen,
+  type SourceSearchSnapshot
+} from '../search/sourceSearch'
 
 interface SourceViewProps {
   value: string
@@ -20,12 +33,20 @@ interface SourceViewProps {
   /** Reveal the seeded caret on first activation instead of applying the
    *  stored scroll; set when the context was mapped from the visual caret. */
   reveal: boolean
+  /** Increments to request opening search in this view; null does nothing. */
+  findSignal: number | null
   onContextChange: (selectionAnchor: number, selectionHead: number, scrollTop: number) => void
 }
 
 const externalContentUpdate = Annotation.define<boolean>()
 
 const wrapCompartment = new Compartment()
+
+// The search box docks just below the source toolbar, with the same gap the
+// visual view's panel keeps below the Milkdown top bar.
+const SEARCH_PANEL_TOP_PX = 56
+
+const CLOSED_SEARCH: SourceSearchSnapshot = { open: false, current: 0, total: 0 }
 
 function sourceContext(view: EditorView): {
   selectionAnchor: number
@@ -51,6 +72,7 @@ export default function SourceView({
   selectionHead,
   scrollTop,
   reveal,
+  findSignal,
   onContextChange
 }: SourceViewProps) {
   const hostRef = useRef<HTMLDivElement>(null)
@@ -63,6 +85,8 @@ export default function SourceView({
   // Consumed once: the reveal belongs to the switch that mapped the context,
   // not to later activations of the same surface.
   const pendingRevealRef = useRef(reveal)
+  const handledFindRef = useRef<number | null>(null)
+  const [searchUi, setSearchUi] = useState<SourceSearchSnapshot>(CLOSED_SEARCH)
   onChangeRef.current = onChange
   onContextChangeRef.current = onContextChange
 
@@ -99,6 +123,7 @@ export default function SourceView({
           'data-testid': 'source-textarea',
           spellcheck: String(spellcheckEnabled)
         }),
+        sourceSearchExtension(setSearchUi),
         EditorView.updateListener.of((update) => {
           const isExternalUpdate = update.transactions.some((transaction) =>
             transaction.annotation(externalContentUpdate)
@@ -163,11 +188,43 @@ export default function SourceView({
       }
       view.focus()
     } else if (wasActiveRef.current) {
+      // Search state never carries across tab switches (FR-014): the close
+      // dispatches a state-only transaction and must not steal focus.
+      if (sourceSearchIsOpen(view)) closeSourceSearch(view)
       const context = sourceContext(view)
       onContextChange(context.selectionAnchor, context.selectionHead, context.scrollTop)
     }
     wasActiveRef.current = isActive
   }, [isActive])
+
+  useEffect(() => {
+    if (findSignal == null || handledFindRef.current === findSignal) return
+    // Consumed, not deferred: find is a no-op on a background tab.
+    handledFindRef.current = findSignal
+    const view = viewRef.current
+    if (isActive && view) openSourceSearch(view)
+  }, [findSignal, isActive])
+
+  const handleOpenSearch = useCallback(() => {
+    const view = viewRef.current
+    if (view) openSourceSearch(view)
+  }, [])
+  const handleSearchQuery = useCallback((query: string) => {
+    const view = viewRef.current
+    if (view) setSourceSearchQuery(view, query)
+  }, [])
+  const handleSearchNext = useCallback(() => {
+    const view = viewRef.current
+    if (view) findNextSourceMatch(view)
+  }, [])
+  const handleSearchPrevious = useCallback(() => {
+    const view = viewRef.current
+    if (view) findPreviousSourceMatch(view)
+  }, [])
+  const handleSearchClose = useCallback(() => {
+    const view = viewRef.current
+    if (view) closeSourceSearchAndRefocus(view)
+  }, [])
 
   return (
     <div
@@ -186,6 +243,16 @@ export default function SourceView({
         >
           ← Visual Editing
         </button>
+        <button
+          type="button"
+          className="source-find"
+          title="Find in source (Ctrl+F)"
+          aria-label="Find in source"
+          data-testid="source-find-button"
+          onClick={handleOpenSearch}
+        >
+          <MagnifyingGlassIcon aria-hidden="true" />
+        </button>
         <label className="source-word-wrap">
           <input
             type="checkbox"
@@ -197,6 +264,17 @@ export default function SourceView({
         </label>
       </div>
       <div ref={hostRef} className="source-editor-host" />
+      {searchUi.open && (
+        <SearchPanel
+          current={searchUi.current}
+          total={searchUi.total}
+          dockTop={SEARCH_PANEL_TOP_PX}
+          onQueryChange={handleSearchQuery}
+          onNext={handleSearchNext}
+          onPrevious={handleSearchPrevious}
+          onClose={handleSearchClose}
+        />
+      )}
     </div>
   )
 }

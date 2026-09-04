@@ -11,8 +11,11 @@ export interface SearchPanelProps {
   total: number
   /** This document's editor host. The panel docks just below its top bar,
    *  whose height varies with the editor width (it wraps) and the
-   *  formatting-bar setting. */
-  hostRef: React.RefObject<HTMLElement | null>
+   *  formatting-bar setting. Required unless `dockTop` is given. */
+  hostRef?: React.RefObject<HTMLElement | null>
+  /** Fixed dock offset below the area's own top bar, for hosts that measure
+   *  nothing (the source view's toolbar). Skips host-based measurement. */
+  dockTop?: number
   onQueryChange: (query: string) => void
   onNext: () => void
   onPrevious: () => void
@@ -27,18 +30,20 @@ export default function SearchPanel({
   current,
   total,
   hostRef,
+  dockTop,
   onQueryChange,
   onNext,
   onPrevious,
   onClose
 }: SearchPanelProps) {
   const [query, setQuery] = useState('')
-  const [top, setTop] = useState(PANEL_TOP_FALLBACK_PX)
+  const [top, setTop] = useState(dockTop ?? PANEL_TOP_FALLBACK_PX)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useLayoutEffect(() => {
+    if (dockTop !== undefined) return
     const updateTop = () => {
-      const host = hostRef.current
+      const host = hostRef?.current
       const area = host?.parentElement
       if (!host || !area) return
       const bar = host.querySelector('.milkdown-top-bar')?.getBoundingClientRect()
@@ -54,7 +59,7 @@ export default function SearchPanel({
     updateTop()
     // The bar wraps to two rows in narrow editors, so its own size tracks the
     // layout changes that move it; the area's top can move independently.
-    const bar = hostRef.current?.querySelector('.milkdown-top-bar')
+    const bar = hostRef?.current?.querySelector('.milkdown-top-bar')
     const observer = new ResizeObserver(updateTop)
     if (bar) observer.observe(bar)
     window.addEventListener('resize', updateTop)
@@ -62,7 +67,7 @@ export default function SearchPanel({
       observer.disconnect()
       window.removeEventListener('resize', updateTop)
     }
-  }, [hostRef])
+  }, [hostRef, dockTop])
 
   useEffect(() => {
     inputRef.current?.focus()

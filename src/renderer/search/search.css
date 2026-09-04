@@ -93,3 +93,16 @@
   outline-offset: -2px;
   border-radius: 4px;
 }
+
+/* Source view match highlights (spec 056): CodeMirror content rather than
+ * ProseMirror, with enough specificity to override the search package's
+ * base theme colors. */
+.source-view .cm-editor .cm-content .cm-searchMatch {
+  background: color-mix(in srgb, var(--mm-accent) 28%, transparent);
+  border-radius: 2px;
+}
+
+.source-view .cm-editor .cm-content .cm-searchMatch-current {
+  background: color-mix(in srgb, var(--mm-accent) 62%, transparent);
+  box-shadow: 0 0 0 1px var(--mm-accent);
+}

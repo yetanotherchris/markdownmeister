@@ -77,9 +77,10 @@ export function useMenuCommands(opts: {
           break
         }
         case 'find': {
-          // Search is a visual-editing surface; the source view owns its own
-          // search (spec 056), so a find while it is active is a no-op.
-          if (active && active.view !== 'source') requestFind(active.id)
+          // The find command targets the active document; each editing view
+          // gates its own search box (spec 055 visual, spec 056 source), so
+          // exactly one surface can open.
+          if (active) requestFind(active.id)
           break
         }
         default:

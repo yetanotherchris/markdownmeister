@@ -150,6 +150,7 @@ function DocumentHost({
             selectionHead={document.sourceSelectionHead}
             scrollTop={document.sourceScrollTop}
             reveal={document.sourceSeed?.reveal ?? false}
+            findSignal={search.findSignal}
             onContextChange={handleSourceContext}
           />
         )}
