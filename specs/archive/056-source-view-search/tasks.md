@@ -27,6 +27,6 @@
 
 ## Phase 5: Full verification and archive
 
-- [ ] 5.1 `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:e2e`
-- [ ] 5.2 Append new source/test files to `scripts.format:check`; `npx prettier --check` touched files
-- [ ] 5.3 Archive: `git mv specs/056-source-view-search specs/archive/056-source-view-search`, set Status Archived
+- [X] 5.1 `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:e2e`
+- [X] 5.2 Append new source/test files to `scripts.format:check`; `npx prettier --check` touched files
+- [X] 5.3 Archive: `git mv specs/056-source-view-search specs/archive/056-source-view-search`, set Status Archived
