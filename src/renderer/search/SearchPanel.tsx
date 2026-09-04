@@ -5,17 +5,17 @@ import './search.css'
 const PANEL_TOP_FALLBACK_PX = 8
 const PANEL_TOP_GAP_PX = 8
 
+/** Where the panel docks. `measure` tracks the host's own top bar (the visual
+ *  view's Milkdown bar); `fixed` pins the panel at a constant offset below the
+ *  area's own bar (the source view's toolbar). */
+export type SearchPanelDock =
+  { mode: 'measure'; hostRef: React.RefObject<HTMLElement | null> } | { mode: 'fixed'; top: number }
+
 export interface SearchPanelProps {
   /** Zero-based index of the current match. */
   current: number
   total: number
-  /** This document's editor host. The panel docks just below its top bar,
-   *  whose height varies with the editor width (it wraps) and the
-   *  formatting-bar setting. Required unless `dockTop` is given. */
-  hostRef?: React.RefObject<HTMLElement | null>
-  /** Fixed dock offset below the area's own top bar, for hosts that measure
-   *  nothing (the source view's toolbar). Skips host-based measurement. */
-  dockTop?: number
+  dock: SearchPanelDock
   onQueryChange: (query: string) => void
   onNext: () => void
   onPrevious: () => void
@@ -29,21 +29,23 @@ export interface SearchPanelProps {
 export default function SearchPanel({
   current,
   total,
-  hostRef,
-  dockTop,
+  dock,
   onQueryChange,
   onNext,
   onPrevious,
   onClose
 }: SearchPanelProps) {
   const [query, setQuery] = useState('')
-  const [top, setTop] = useState(dockTop ?? PANEL_TOP_FALLBACK_PX)
+  const [top, setTop] = useState(dock.mode === 'fixed' ? dock.top : PANEL_TOP_FALLBACK_PX)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useLayoutEffect(() => {
-    if (dockTop !== undefined) return
+    if (dock.mode === 'fixed') {
+      setTop(dock.top)
+      return
+    }
     const updateTop = () => {
-      const host = hostRef?.current
+      const host = dock.hostRef.current
       const area = host?.parentElement
       if (!host || !area) return
       const bar = host.querySelector('.milkdown-top-bar')?.getBoundingClientRect()
@@ -59,7 +61,7 @@ export default function SearchPanel({
     updateTop()
     // The bar wraps to two rows in narrow editors, so its own size tracks the
     // layout changes that move it; the area's top can move independently.
-    const bar = hostRef?.current?.querySelector('.milkdown-top-bar')
+    const bar = dock.hostRef.current?.querySelector('.milkdown-top-bar')
     const observer = new ResizeObserver(updateTop)
     if (bar) observer.observe(bar)
     window.addEventListener('resize', updateTop)
@@ -67,7 +69,7 @@ export default function SearchPanel({
       observer.disconnect()
       window.removeEventListener('resize', updateTop)
     }
-  }, [hostRef, dockTop])
+  }, [dock])
 
   useEffect(() => {
     inputRef.current?.focus()

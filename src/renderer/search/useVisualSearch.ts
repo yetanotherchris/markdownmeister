@@ -12,8 +12,9 @@ const CLOSED_SEARCH: VisualSearchSnapshot = { open: false, current: 0, total: 0 
 
 /** Per-document wiring between the React panel and the editor's search
  *  plugin: holds the imperative handle and the live snapshot. Find requests
- *  are targeted per document via `findSignal` and dispatched by CrepeHost's
- *  gated effect, which also opens the box. */
+ *  are targeted per document via `findSignal` and dispatched by whichever
+ *  editing surface owns that document's view: CrepeHost opens the visual
+ *  box; SourceView consumes the same signal for its own search. */
 export function useVisualSearch(
   documentId: string,
   findRequest: FindRequest | null,

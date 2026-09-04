@@ -159,7 +159,7 @@ function DocumentHost({
         <SearchPanel
           current={search.panel.current}
           total={search.panel.total}
-          hostRef={hostRef}
+          dock={{ mode: 'measure', hostRef }}
           onQueryChange={search.setQuery}
           onNext={search.next}
           onPrevious={search.previous}

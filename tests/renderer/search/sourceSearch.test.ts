@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { EditorSelection, EditorState } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
 import {
+  closeSourceSearch,
   closeSourceSearchAndRefocus,
   findNextSourceMatch,
   findPreviousSourceMatch,
@@ -49,6 +50,7 @@ function makeView(doc: string, anchor?: number): Harness {
 }
 
 function lastSnapshot(harness: Harness): SourceSearchSnapshot {
+  if (harness.snapshots.length === 0) throw new Error('no snapshot was emitted')
   return harness.snapshots[harness.snapshots.length - 1]
 }
 
@@ -219,6 +221,47 @@ describe('sourceSearch dismissal (spec 056 US3/FR-008/009/014)', () => {
     expect(lastSnapshot(harness)).toEqual({ open: false, current: 0, total: 0 })
     expect(sourceSearchIsOpen(harness.view)).toBe(false)
     expect(harness.view.hasFocus).toBe(true)
+    harness.destroy()
+  })
+
+  it('the focus-free close used for deactivation clears state without touching focus', () => {
+    const harness = makeView('foo bar')
+    openSourceSearch(harness.view)
+    setSourceSearchQuery(harness.view, 'foo')
+    expect(sourceSearchIsOpen(harness.view)).toBe(true)
+    closeSourceSearch(harness.view)
+    expect(lastSnapshot(harness)).toEqual({ open: false, current: 0, total: 0 })
+    expect(sourceSearchIsOpen(harness.view)).toBe(false)
+    expect(document.activeElement?.classList.contains('cm-content')).toBe(false)
+    harness.destroy()
+  })
+
+  it('marks every match and gives exactly one the current-match class', () => {
+    const harness = makeView('foo bar foo baz foo')
+    openSourceSearch(harness.view)
+    setSourceSearchQuery(harness.view, 'foo')
+    expect(harness.view.dom.querySelectorAll('.cm-searchMatch').length).toBe(3)
+    expect(harness.view.dom.querySelectorAll('.cm-searchMatch-current').length).toBe(1)
+    findNextSourceMatch(harness.view)
+    expect(harness.view.dom.querySelectorAll('.cm-searchMatch-current').length).toBe(1)
+    harness.destroy()
+  })
+
+  it('navigation stays valid when an edit removes the match under the caret', () => {
+    const harness = makeView('foo bar foo baz foo')
+    openSourceSearch(harness.view)
+    setSourceSearchQuery(harness.view, 'foo')
+    expect(lastSnapshot(harness)).toMatchObject({ current: 0, total: 3 })
+    // Remove the first occurrence, which contains the caret.
+    harness.view.dispatch({ changes: { from: 0, to: 4, insert: 'x' } })
+    expect(lastSnapshot(harness).total).toBe(2)
+    findNextSourceMatch(harness.view)
+    const index = lastSnapshot(harness).current
+    expect(index).toBeGreaterThanOrEqual(0)
+    expect(index).toBeLessThan(2)
+    const span = harness.view.state.selection.main
+    expect(span.from).toBeGreaterThanOrEqual(0)
+    expect(span.head).toBeLessThanOrEqual(harness.view.state.doc.length)
     harness.destroy()
   })
 

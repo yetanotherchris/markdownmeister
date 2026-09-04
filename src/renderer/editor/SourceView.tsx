@@ -103,8 +103,9 @@ export default function SourceView({
       // While the search box is open, every keystroke moves the selection and
       // scroll position; capturing then would re-render the whole app per
       // keystroke, and the explorer's row focus effect would steal the panel
-      // input's focus. The context is captured once on close, deactivation,
-      // or the next non-search event, so nothing is lost.
+      // input's focus. The live editor selection stays correct throughout;
+      // the store catches up via the ungated captures on deactivation and
+      // unmount and on the next non-search event.
       if (sourceSearchIsOpen(view)) return
       const context = sourceContext(view)
       onContextChangeRef.current(context.selectionAnchor, context.selectionHead, context.scrollTop)
@@ -153,7 +154,11 @@ export default function SourceView({
         window.cancelAnimationFrame(frameRef.current)
         frameRef.current = null
       }
-      captureContext(view)
+      // Ungated: the surface is going away, so the panel-focus concern that
+      // suspends per-event captures does not apply, and the view switch or
+      // close that triggers this must not restore a pre-search caret.
+      const context = sourceContext(view)
+      onContextChange(context.selectionAnchor, context.selectionHead, context.scrollTop)
       view.destroy()
       viewRef.current = null
     }
@@ -277,7 +282,7 @@ export default function SourceView({
         <SearchPanel
           current={searchUi.current}
           total={searchUi.total}
-          dockTop={SEARCH_PANEL_TOP_PX}
+          dock={{ mode: 'fixed', top: SEARCH_PANEL_TOP_PX }}
           onQueryChange={handleSearchQuery}
           onNext={handleSearchNext}
           onPrevious={handleSearchPrevious}

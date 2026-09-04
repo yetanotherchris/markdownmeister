@@ -148,6 +148,15 @@ async function currentMatchVisible(): Promise<boolean> {
   })
 }
 
+/** Whether the source scroller has horizontal overflow, i.e. the long line
+ *  is NOT wrapped; used to prove the wrap toggle actually engages. */
+async function horizontalOverflow(): Promise<boolean> {
+  return window.evaluate(() => {
+    const scroller = document.querySelector('.source-view .cm-scroller')
+    return scroller ? scroller.scrollWidth > scroller.clientWidth + 1 : false
+  })
+}
+
 test.describe('source search (spec 056)', () => {
   test('Ctrl+F and the toolbar control open the box, empty and focused (FR-001)', async () => {
     await openFileInSource('fixture.md')
@@ -156,13 +165,17 @@ test.describe('source search (spec 056)', () => {
     await expect(searchInput()).toBeFocused()
     await expect(searchInput()).toHaveValue('')
     await expect(searchCount()).toHaveText('')
-    await searchInput().press('Escape')
+    // The close control dismisses like Escape (FR-008).
+    await window.getByTestId('search-close').click()
     await expect(searchPanel()).toHaveCount(0)
+    await expect(searchInput()).toHaveCount(0)
 
     await window.getByTestId('source-find-button').click()
     await expect(searchPanel()).toBeVisible()
     await expect(searchInput()).toBeFocused()
     await expect(searchInput()).toHaveValue('')
+    await searchInput().press('Escape')
+    await expect(searchPanel()).toHaveCount(0)
   })
 
   test('live matching highlights every occurrence with a count, frontmatter included (US1, FR-002/003/005/011)', async () => {
@@ -201,7 +214,10 @@ test.describe('source search (spec 056)', () => {
     await searchInput().press('Escape')
     await expect(searchPanel()).toHaveCount(0)
     await window.keyboard.type('X')
-    await expect(window.locator('.cm-line', { hasText: 'markerX' })).toHaveCount(1)
+    // Exact, case-sensitive line text: the caret appended to the match the
+    // search landed on, and no case-folding slip can hide a wrong placement.
+    await expect(window.locator('.cm-line', { hasText: 'MarkerX' })).toHaveText('MarkerX line 100.')
+    await expect(window.locator('.document-title')).toContainText('\u2022')
   })
 
   test('next and previous wrap at both ends; Enter and Shift+Enter navigate (US2, FR-006/007)', async () => {
@@ -231,8 +247,12 @@ test.describe('source search (spec 056)', () => {
     const wrapCheckbox = window.getByTestId('source-word-wrap')
     await expect(wrapCheckbox).not.toBeChecked()
 
+    // The fixture's long line genuinely wraps: on, no horizontal overflow;
+    // off, the scroller grows sideways. Search must behave the same either
+    // way and leave the toggle exactly as it was.
     await wrapCheckbox.click()
     await expect(wrapCheckbox).toBeChecked()
+    await expect.poll(horizontalOverflow).toBe(false)
     await pressShortcut(app, 'f', ['control'])
     await searchInput().fill('needle')
     await expect(searchCount()).toHaveText('1 of 3')
@@ -244,6 +264,7 @@ test.describe('source search (spec 056)', () => {
 
     await wrapCheckbox.click()
     await expect(wrapCheckbox).not.toBeChecked()
+    await expect.poll(horizontalOverflow).toBe(true)
     // The first search left the caret at match 1's end; reset it so the second
     // search starts from the top like the first one did.
     await caretToDocumentStart()
@@ -280,7 +301,9 @@ test.describe('source search (spec 056)', () => {
     )
     expect(focusInSource).toBe(true)
     await window.keyboard.type('X')
-    await expect(window.locator('.cm-line', { hasText: 'NeedleX' })).toHaveCount(1)
+    await expect(window.locator('.cm-line', { hasText: 'NeedleX' })).toHaveText(
+      '# NeedleX in the body'
+    )
     await expect(window.locator('.document-title')).toContainText('\u2022')
   })
 
@@ -305,7 +328,7 @@ test.describe('source search (spec 056)', () => {
     await expect(searchPanel()).toBeVisible()
   })
 
-  test('search does not carry across tab switches and restarts empty (US3-5, FR-014)', async () => {
+  test('search does not carry across tab switches or restarts (US3-5, FR-014)', async () => {
     await openFileInSource('fixture.md')
     await caretToDocumentStart()
     await pressShortcut(app, 'f', ['control'])
@@ -320,6 +343,22 @@ test.describe('source search (spec 056)', () => {
     await expect(window.getByTestId('source-view')).toBeVisible()
     await expect(searchPanel()).toHaveCount(0)
     await caretToDocumentStart()
+    await pressShortcut(app, 'f', ['control'])
+    await expect(searchPanel()).toBeVisible()
+    await expect(searchInput()).toHaveValue('')
+    await expect(searchCount()).toHaveText('')
+    await searchInput().press('Escape')
+
+    // Nothing about the search is persisted, so a restart starts empty too.
+    await closeAppSafely(app)
+    ;({ app, window } = await launchApp(configDir, testFolder))
+    await stubTrash(app)
+    await stubMessageBox(app)
+    await openFolder(window)
+    await window.getByRole('treeitem').getByText('fixture.md').click()
+    await expect(window.locator('.ProseMirror:visible')).toBeVisible()
+    await window.getByRole('button', { name: 'View source' }).click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
     await pressShortcut(app, 'f', ['control'])
     await expect(searchPanel()).toBeVisible()
     await expect(searchInput()).toHaveValue('')

@@ -22,7 +22,12 @@ import { SearchQuery } from '@codemirror/search'
  *  panel, keymap, state field, and find commands are not used: its highlighter
  *  stays dormant while its panel is closed, and its find commands both fall
  *  back to opening that panel and manage a match selection rather than a
- *  caret, which the spec's caret semantics (FR-004/008) rule out. */
+ *  caret, which the spec's caret semantics (FR-004/008) rule out.
+ *
+ *  Naming note: state accessors carry the `sourceSearch` prefix (mirroring the
+ *  visual module's `visualSearchIsOpen`), while actions use the `...Source...`
+ *  infix because the unprefixed names are taken by the visual module and the
+ *  two are imported together in SourceView. */
 
 export interface SourceSearchSnapshot {
   open: boolean
@@ -182,8 +187,9 @@ export function setSourceSearchQuery(view: EditorView, term: string): void {
 }
 
 /** Moves the caret to the neighbouring match, wrapping around at both ends
- *  (FR-006). The caret convention is "at a match's end", so next skips any
- *  match ending exactly at the caret and previous skips one ending after it. */
+ *  (FR-006). The caret convention is "at a match's end", so next takes the
+ *  first match starting after the caret and previous takes the last match
+ *  ending strictly before it. */
 function navigateSourceMatch(view: EditorView, step: 1 | -1): void {
   const { spans } = view.state.field(sourceSearchField)
   if (spans.length === 0) return
