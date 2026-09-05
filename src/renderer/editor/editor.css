@@ -176,6 +176,8 @@
   align-items: center;
   gap: 8px;
   height: 48px;
+  /* SourceView.tsx's SEARCH_PANEL_TOP_PX docks the search box below this bar;
+   * keep the two in sync. */
   padding: 0 16px;
   border-bottom: 1px solid var(--mm-border);
   background: var(--mm-surface-secondary);
@@ -199,11 +201,35 @@
   background: var(--mm-surface-secondary);
 }
 
+.source-find {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+  padding: 0;
+  color: var(--mm-muted);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.source-find:hover {
+  color: var(--mm-text);
+  background: var(--mm-active-tab);
+}
+
+.source-find svg {
+  width: 18px;
+  height: 18px;
+}
+
 .source-word-wrap {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-left: auto;
   font-size: 13px;
   color: inherit;
   cursor: pointer;

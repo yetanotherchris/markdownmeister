@@ -150,6 +150,7 @@ function DocumentHost({
             selectionHead={document.sourceSelectionHead}
             scrollTop={document.sourceScrollTop}
             reveal={document.sourceSeed?.reveal ?? false}
+            findSignal={search.findSignal}
             onContextChange={handleSourceContext}
           />
         )}
@@ -158,7 +159,7 @@ function DocumentHost({
         <SearchPanel
           current={search.panel.current}
           total={search.panel.total}
-          hostRef={hostRef}
+          dock={{ mode: 'measure', hostRef }}
           onQueryChange={search.setQuery}
           onNext={search.next}
           onPrevious={search.previous}
