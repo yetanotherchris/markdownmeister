@@ -275,9 +275,16 @@ test('US2 toggling mid-edit preserves text, dirty state, selection, and the typi
 
   // Typing continues exactly at the selection without any re-click, replacing it.
   // Clicking the checkbox moved focus to it; refocusing the editor surface
-  // restores the caret to the preserved selection without moving it.
+  // restores the caret to the preserved selection without moving it. Wait for
+  // the editor's focus handler to land the restored selection before typing,
+  // so a slow runner can never type at a stale caret.
   const fullTextBefore = await source.textContent()
   await source.focus()
+  await expect
+    .poll(async () => window.evaluate(() => document.getSelection()?.toString() ?? ''), {
+      timeout: 5_000
+    })
+    .toBe(selectionBefore.text)
   await window.keyboard.type('X')
   const text = await source.textContent()
   expect(text).toBe('X' + fullTextBefore!.slice(selectionBefore.text.length))

@@ -27,6 +27,14 @@ export interface DirEntry {
   kind: EntryKind
 }
 
+/** One file's content-search result: the occurrence count and the distinct
+ *  matching lines (full text, in file order). */
+export interface SearchContentResult {
+  path: string
+  count: number
+  lines: string[]
+}
+
 export interface OpenedFile {
   path: string | null
   name: string
@@ -192,6 +200,10 @@ export interface DesktopApi {
   /** Abandon a prepared folder open (no workspace change). */
   cancelFolderOpen(): Promise<Result<null>>
   readDir(relativePath: string): Promise<Result<DirEntry[]>>
+  /** Content search: per-file occurrence counts and matching lines for the
+   *  markdown files whose contents contain the term, scanned from the
+   *  workspace root in the main process. */
+  searchContents(term: string): Promise<Result<SearchContentResult[]>>
   openFileDialog(): Promise<Result<OpenedFile | null>>
   readFile(relativePath: string): Promise<Result<OpenedFile>>
   openRecentFile(path: string): Promise<Result<OpenedFile>>

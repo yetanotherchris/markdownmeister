@@ -19,6 +19,7 @@ import type {
   RecentItem,
   EditorThemesList,
   BuildInfo,
+  SearchContentResult,
   ErrorCode
 } from '../shared/ipc-contract'
 
@@ -63,6 +64,8 @@ const api: DesktopApi = {
   cancelFolderOpen: () => invokeResult<null>('workspace:cancelFolderOpen'),
   readDir: (relativePath: string) =>
     invokeResult<DirEntry[]>('workspace:readDir', { path: relativePath }),
+  searchContents: (term: string) =>
+    invokeResult<SearchContentResult[]>('workspace:searchContents', { term }),
   openFileDialog: () => invokeResult<OpenedFile | null>('file:openDialog'),
   readFile: (relativePath: string) => invokeResult<OpenedFile>('file:read', { path: relativePath }),
   openRecentFile: (path: string) => invokeResult<OpenedFile>('recent:openFile', { path }),

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Tree as ArboristTree, NodeApi, TreeApi } from 'react-arborist'
 import type { RowRendererProps, NodeRendererProps } from 'react-arborist'
-import { Folder, FolderOpen, FileText, ChevronRight, ChevronDown } from 'lucide-react'
+import { Folder, FolderOpen, FileText, ChevronRight, ChevronDown, Search, X } from 'lucide-react'
 import type { TreeNode } from '../state/workspace'
 import { findNodeById, parentPathOf } from '../state/workspace'
 import { useElementSize } from '../hooks/useElementSize'
@@ -11,6 +11,8 @@ import { treeRenameLabel } from './treeRename'
 import { isOpenableFile } from './openGesture'
 import type { FileOpenGesture } from './openGesture'
 import type { EntryKind } from '../../shared/ipc-contract'
+import SearchResults from './SearchResults'
+import type { SearchSection } from './searchResultModel'
 import './Tree.css'
 
 interface TreeProps {
@@ -40,12 +42,83 @@ interface TreeProps {
   onFileOpen: (node: TreeNode, gesture: FileOpenGesture) => void
 
   apiRef?: React.MutableRefObject<TreeApi<TreeNode> | null> | null
+
+  /** Live search term for the explorer search (spec 057/059/060). */
+  searchTerm: string
+  onSearchTermChange: (term: string) => void
+  /** The merged results sections shown while a term is active (spec 060). */
+  searchSections: SearchSection[]
+  /** True once the content scan has settled (spec 060, empty-state timing). */
+  searchSettled: boolean
+  /** Open a file from the results view with the existing open behaviour. */
+  onOpenFile: (path: string) => void
 }
 
 interface ContextMenuState {
   x: number
   y: number
   node: TreeNode | null
+}
+
+interface ExplorerSearchInputProps {
+  searchTerm: string
+  onSearchTermChange: (term: string) => void
+  onEscape: () => void
+  inputRef: React.RefObject<HTMLInputElement | null>
+}
+
+/** The labelled search row above the tree (FR-001). Escape clears the term and
+ *  returns focus to the tree (FR-014); the clear control keeps focus in the
+ *  input so the user can type a fresh term. */
+function ExplorerSearchInput({
+  searchTerm,
+  onSearchTermChange,
+  onEscape,
+  inputRef
+}: ExplorerSearchInputProps) {
+  return (
+    <div className="explorer-search" onContextMenu={(e) => e.stopPropagation()}>
+      <label className="explorer-search-label" htmlFor="explorer-search-input">
+        Search files
+      </label>
+      <div className="explorer-search-box">
+        <Search size={14} className="explorer-search-icon" aria-hidden="true" />
+        <input
+          id="explorer-search-input"
+          ref={inputRef}
+          type="text"
+          className="explorer-search-input"
+          placeholder="Search files"
+          aria-label="Search files"
+          spellCheck={false}
+          value={searchTerm}
+          onChange={(e) => onSearchTermChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.preventDefault()
+              onEscape()
+            }
+          }}
+          data-testid="explorer-search-input"
+        />
+        {searchTerm !== '' && (
+          <button
+            type="button"
+            className="explorer-search-clear"
+            aria-label="Clear search"
+            title="Clear search"
+            onClick={() => {
+              onSearchTermChange('')
+              inputRef.current?.focus()
+            }}
+            data-testid="explorer-search-clear"
+          >
+            <X size={14} aria-hidden="true" />
+          </button>
+        )}
+      </div>
+    </div>
+  )
 }
 
 interface TreeNodeProps {
@@ -95,7 +168,15 @@ function RenameInput({ node }: { node: NodeApi<TreeNode> }) {
       onBlur={(e) => {
         if (!node.isEditing) return
         const next = e.relatedTarget as HTMLElement | null
-        if (next && (next.closest('.tree-container') || next.closest('.context-menu'))) {
+        // Stay in the edit when the blur target is elsewhere in the tree or
+        // a context menu, but NOT the search box: moving to the search box is
+        // an explicit intent to search, and stealing focus back would make
+        // the next keystroke (e.g. Escape) cancel the pending edit.
+        if (
+          next &&
+          !next.closest('.explorer-search') &&
+          (next.closest('.tree-container') || next.closest('.context-menu'))
+        ) {
           inputRef.current?.focus()
         }
       }}
@@ -241,9 +322,15 @@ export default function Tree({
   onReveal,
   onOpenNewTab,
   onFileOpen,
-  apiRef
+  apiRef,
+  searchTerm,
+  onSearchTermChange,
+  searchSections,
+  searchSettled,
+  onOpenFile
 }: TreeProps) {
-  const [containerRef, size] = useElementSize<HTMLDivElement>()
+  const [containerRef] = useElementSize<HTMLDivElement>()
+  const [treeBodyRef, treeBodySize] = useElementSize<HTMLDivElement>()
   const treeRef = useRef<TreeApi<TreeNode> | null>(null)
   if (apiRef) apiRef.current = treeRef.current
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
@@ -251,6 +338,35 @@ export default function Tree({
   const editingIdRef = useRef(editingId)
   editingIdRef.current = editingId
   const editingInFlightRef = useRef(false)
+
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const filtering = searchTerm.trim() !== ''
+
+  // Escape clears the term and asks to return focus to the tree. The tree is
+  // hidden (display:none) until the term clears, so the focus happens in an
+  // effect after that render, not synchronously here.
+  const pendingTreeFocusRef = useRef(false)
+  const focusTree = useCallback(() => {
+    containerRef.current?.querySelector<HTMLElement>('[role="tree"]')?.focus()
+  }, [])
+
+  useEffect(() => {
+    if (filtering) return
+    if (pendingTreeFocusRef.current) {
+      pendingTreeFocusRef.current = false
+      focusTree()
+    }
+  }, [filtering, focusTree])
+
+  const handleSearchEscape = useCallback(() => {
+    onSearchTermChange('')
+    pendingTreeFocusRef.current = true
+  }, [onSearchTermChange])
+
+  // While a term is active the tree is hidden behind the results view; it is
+  // never modified, so clearing restores it exactly (spec 060 R1).
+  const showResults = filtering
+  const showNoMatchState = filtering && searchSections.length === 0 && searchSettled
 
   useEffect(() => {
     if (!pendingEditId || editingIdRef.current === pendingEditId) return
@@ -472,38 +588,65 @@ export default function Tree({
     </div>
   )
 
+  // While a term is active the results view replaces the tree visually; the
+  // tree stays mounted (display:none) so its expansion and selection survive
+  // the search and clearing restores it exactly (spec 060 R1).
+  const renderTreeContent = () => {
+    return (
+      <div className="tree-body" ref={treeBodyRef}>
+        <div className="tree-host" style={showResults ? { display: 'none' } : undefined}>
+          {data.length === 0 ? (
+            <div className="tree-empty">No markdown files in this folder</div>
+          ) : (
+            <ArboristTree
+              ref={(api) => {
+                if (api) treeRef.current = api
+              }}
+              data={data}
+              width={treeBodySize.width}
+              height={Math.max(0, treeBodySize.height)}
+              rowHeight={28}
+              selection={selectedId ?? undefined}
+              onSelect={handleSelect}
+              onActivate={handleActivate}
+              onToggle={handleToggle}
+              onRename={handleRename}
+              onMove={handleMove}
+              disableMultiSelection={true}
+              disableDrop={disableDrop}
+              openByDefault={false}
+              renderRow={renderRow}
+              aria-label="Workspace files"
+            >
+              {renderNode}
+            </ArboristTree>
+          )}
+        </div>
+        {showResults &&
+          (showNoMatchState ? (
+            <div className="tree-empty" data-testid="explorer-search-empty">
+              No files match “{searchTerm}”
+            </div>
+          ) : (
+            <SearchResults sections={searchSections} term={searchTerm} onOpenFile={onOpenFile} />
+          ))}
+      </div>
+    )
+  }
+
   return (
     <div
       ref={containerRef}
       className="tree-container"
       onContextMenu={handleContainerContextMenu}
     >
-      {data.length === 0 ? (
-        <div className="tree-empty">No markdown files in this folder</div>
-      ) : (
-        <ArboristTree
-          ref={(api) => {
-            if (api) treeRef.current = api
-          }}
-          data={data}
-          width={size.width}
-          height={size.height}
-          rowHeight={28}
-          selection={selectedId ?? undefined}
-          onSelect={handleSelect}
-          onActivate={handleActivate}
-          onToggle={handleToggle}
-          onRename={handleRename}
-          onMove={handleMove}
-          disableMultiSelection={true}
-          disableDrop={disableDrop}
-          openByDefault={false}
-          renderRow={renderRow}
-          aria-label="Workspace files"
-        >
-          {renderNode}
-        </ArboristTree>
-      )}
+      <ExplorerSearchInput
+        searchTerm={searchTerm}
+        onSearchTermChange={onSearchTermChange}
+        onEscape={handleSearchEscape}
+        inputRef={searchInputRef}
+      />
+      {renderTreeContent()}
 
       {createPortal(menu, document.body)}
     </div>

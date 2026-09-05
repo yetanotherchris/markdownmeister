@@ -19,6 +19,7 @@ import { useSourceViewToggle } from './hooks/useSourceViewToggle'
 import { useWorkspaceTree } from './hooks/useWorkspaceTree'
 import { useExternalFileEvents } from './hooks/useExternalFileEvents'
 import { useMenuCommands } from './hooks/useMenuCommands'
+import { useSearchResults } from './hooks/useSearchResults'
 import { useOsOpen } from './hooks/useOsOpen'
 import { useWorkspaceFolder } from './hooks/useWorkspaceFolder'
 import { useSidebarLayout } from './hooks/useSidebarLayout'
@@ -59,6 +60,7 @@ export default function App() {
   const [footerNote, setFooterNote] = useState<string | null>(null)
   const [spellMenu, setSpellMenu] = useState<SpellingMenuState | null>(null)
   const [explorerCollapsed, setExplorerCollapsed] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
   const [findRequest, setFindRequest] = useState<FindRequest | null>(null)
   const findSeqRef = useRef(0)
   const {
@@ -192,6 +194,11 @@ export default function App() {
     }, [])
   })
   useOsOpen({ session: sessionApi, folder, onOpenFailed: setFooterNote })
+  const searchResults = useSearchResults({
+    searchTerm,
+    workspaceRoot: workspace.root,
+    nodes: workspace.nodes
+  })
 
   const { handleMenuCommand } = menu
   const { handleQuitRequest } = sessionApi
@@ -212,6 +219,17 @@ export default function App() {
     (node: TreeNode) => {
       window.api.readFile(node.id).then((result) => {
         if (result.ok) sessionApi.openFileFromExplorer(result.value, true)
+      })
+    },
+    [sessionApi]
+  )
+
+  // Open a search result by path: the file may sit in a folder never loaded
+  // into the tree, so the open must not require a tree node.
+  const handleOpenSearchResult = useCallback(
+    (path: string) => {
+      window.api.readFile(path).then((result) => {
+        if (result.ok) sessionApi.openFileFromExplorer(result.value)
       })
     },
     [sessionApi]
@@ -272,6 +290,12 @@ export default function App() {
       instancePool.destroyAll()
     }
   }, [])
+
+  // FR-013: the explorer search term never survives a workspace change or
+  // restart (restart is automatic since the term is component state only).
+  useEffect(() => {
+    setSearchTerm('')
+  }, [workspace.root])
 
   const workspaceActiveId = session.activeId
   useEffect(() => {
@@ -368,6 +392,11 @@ export default function App() {
                     onReveal={handleReveal}
                     onOpenNewTab={handleOpenNewTab}
                     apiRef={treeApiRef}
+                    searchTerm={searchTerm}
+                    onSearchTermChange={setSearchTerm}
+                    searchSections={searchResults.sections}
+                    searchSettled={searchResults.settled}
+                    onOpenFile={handleOpenSearchResult}
                   />
                 </div>
               </Panel>
