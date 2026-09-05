@@ -65,19 +65,32 @@ describe('searchContents (spec 059, R1/R2)', () => {
 describe('searchContents escape containment (constitution II)', () => {
   let escapeRoot: string
   let outside: string
+  // Whether a directory link (symlink or junction) was created; junctions work
+  // without privileges on Windows, so the vector is exercised there too.
+  let dirLinkMade = false
 
   beforeAll(() => {
     escapeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mm-search-escape-'))
     outside = fs.mkdtempSync(path.join(os.tmpdir(), 'mm-search-outside-'))
     fs.writeFileSync(path.join(outside, 'secret.md'), 'top secret needle inside')
-    // A symlink inside the root pointing at the outside file/directory. The
-    // scan must never follow it, so the outside content never matches.
+    // A symlink (or, on Windows, a junction) inside the root pointing at the
+    // outside directory. The scan must never follow it, so the outside content
+    // never matches.
+    try {
+      fs.symlinkSync(
+        outside,
+        path.join(escapeRoot, 'leakdir'),
+        process.platform === 'win32' ? 'junction' : undefined
+      )
+      dirLinkMade = true
+    } catch {
+      dirLinkMade = false
+    }
     try {
       fs.symlinkSync(path.join(outside, 'secret.md'), path.join(escapeRoot, 'leak.md'))
-      fs.symlinkSync(outside, path.join(escapeRoot, 'leakdir'))
     } catch {
-      // Symlinks may be unavailable (Windows privileges); the test then
-      // asserts the non-symlink behaviour only.
+      // A file symlink needs privileges on Windows; the directory link above
+      // is the portable escape vector.
     }
   })
 
@@ -86,13 +99,12 @@ describe('searchContents escape containment (constitution II)', () => {
     fs.rmSync(outside, { recursive: true, force: true })
   })
 
-  it('never follows a symlink that points outside the root', async () => {
-    if (fs.existsSync(path.join(escapeRoot, 'leak.md'))) {
+  it('never follows a symlink or junction that points outside the root', async () => {
+    if (dirLinkMade) {
       expect(await searchContents(escapeRoot, 'top secret needle')).toEqual([])
-      expect(await searchContents(escapeRoot, 'leak')).toEqual([])
     }
-    if (fs.existsSync(path.join(escapeRoot, 'leakdir'))) {
-      expect(await searchContents(escapeRoot, 'top secret needle')).toEqual([])
+    if (fs.existsSync(path.join(escapeRoot, 'leak.md'))) {
+      expect(await searchContents(escapeRoot, 'leak')).toEqual([])
     }
   })
 

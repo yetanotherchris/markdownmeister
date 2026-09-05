@@ -52,9 +52,14 @@ export function useContentSearch(opts: {
             dispatchWorkspace({ type: 'EXPAND_ERROR', payload: { id: dir, error: res.message } })
           }
           // The next ancestor lookup reads the reducer state, which is only
-          // reflected in the ref after a render; yield so the dispatch lands
-          // before we look for the next level (deep/nest/file.md).
-          await new Promise((resolve) => setTimeout(resolve, 0))
+          // reflected in the ref after a render (deep/nest/file.md needs each
+          // level loaded before the next can be found). Bounded poll, same
+          // pattern as the tree's inline-edit wait.
+          for (let i = 0; i < 20; i++) {
+            const fresh = findNodeById(workspaceRef.current.nodes, dir)
+            if (fresh && (fresh.loadState === 'loaded' || fresh.loadState === 'error')) break
+            await new Promise((resolve) => setTimeout(resolve, 25))
+          }
         }
       }
     },
@@ -64,8 +69,10 @@ export function useContentSearch(opts: {
   useEffect(() => {
     const term = searchTerm.trim()
     const seq = ++seqRef.current
+    // Matches from a previous term never linger while the new term's scan is
+    // in flight; the settled flag keeps the empty state quiet until it lands.
+    setContentMatchIds(new Set())
     if (term === '') {
-      setContentMatchIds(new Set())
       setContentSearchIdle(true)
       return
     }

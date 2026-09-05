@@ -7,6 +7,10 @@ import { isMarkdown } from './read'
  *  while keeping a single workspace-wide scan bounded. */
 const MAX_SEARCH_FILE_BYTES = 1_000_000
 
+/** Upper bound on the total cached content bytes; when exceeded the cache is
+ *  cleared and rebuilt lazily (one cold re-scan per workspace session). */
+const MAX_CACHE_TOTAL_BYTES = 64 * 1024 * 1024
+
 interface CachedContent {
   mtimeMs: number
   size: number
@@ -16,8 +20,9 @@ interface CachedContent {
 // File contents keyed by absolute path and validated against mtime+size, so a
 // repeated search over a stable workspace re-reads no files (only stat calls).
 // Paths are absolute and workspace-specific, so different workspaces never
-// collide.
+// collide; the total byte count keeps the cache bounded.
 const contentCache = new Map<string, CachedContent>()
+let cachedBytes = 0
 
 /**
  * Recursively find markdown files under `root` whose contents contain `term`
@@ -26,11 +31,12 @@ const contentCache = new Map<string, CachedContent>()
  * asynchronous so a large workspace never blocks the main process, only
  * descends into real directories, and only reads regular markdown files, so
  * symlinks (which could point outside the root) are never followed. Files that
- * are too large or fail to read are skipped silently. An empty term matches
- * nothing. The walk never throws: unreadable directories are skipped.
+ * are too large or fail to read are skipped silently. An empty or
+ * whitespace-only term matches nothing. The walk never throws: unreadable
+ * directories are skipped.
  */
 export async function searchContents(root: string, term: string): Promise<string[]> {
-  const needle = term.toLowerCase()
+  const needle = term.trim().toLowerCase()
   if (needle === '') return []
   const matches: string[] = []
 
@@ -75,6 +81,15 @@ async function fileContainsCached(filePath: string, needle: string): Promise<boo
   } catch {
     return false
   }
+  // The stat cap was a pre-read guard; a file that grew past the cap mid-read
+  // is still skipped rather than cached.
+  if (content.length > MAX_SEARCH_FILE_BYTES) return false
+  if (cachedBytes > MAX_CACHE_TOTAL_BYTES) {
+    contentCache.clear()
+    cachedBytes = 0
+  }
+  if (cached) cachedBytes -= cached.content.length
   contentCache.set(filePath, { mtimeMs: stat.mtimeMs, size: stat.size, content })
+  cachedBytes += content.length
   return content.toLowerCase().includes(needle)
 }

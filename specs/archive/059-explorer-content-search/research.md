@@ -26,13 +26,13 @@
 
 **Alternatives rejected**: Injecting ephemeral nodes into the workspace tree and removing them on clear would fight the reducer's ownership of `workspace.nodes`. A separate flat results list was rejected in spec 057 for the same reason (a second UI to keep in sync).
 
-## R4. Debounce, stale responses, and silent skipping
+## R4. Debounce, stale responses, silent skipping, and a bounded content cache
 
-**Decision**: The renderer debounces content searches (~250 ms after typing pauses), guards against stale responses with a sequence number, and treats empty/whitespace terms as "no content search". Main skips files over a 1 MB size cap and files that fail to read (permission, invalid UTF-8), silently.
+**Decision**: The renderer debounces content searches (~250 ms after typing pauses), guards against stale responses with a sequence number, and treats empty/whitespace terms as "no content search". Main skips files over a 1 MB size cap and files that fail to read (permission, invalid UTF-8), silently. The scan runs asynchronously (`fs.promises`) so a large workspace never blocks the main process. File contents are cached in main keyed by absolute path and validated against mtime+size, so repeated searches in a session re-read no files; the cache is bounded by a total-byte cap and rebuilt lazily when exceeded.
 
-**Evidence**: Scanning thousands of files per keystroke without debounce would block and feel broken (SC-002); a stale response from an earlier term would show wrong matches. A 1 MB cap keeps a single scan bounded for typical workspaces while comfortably covering the app's own large-document floor (~10k lines ≈ 300 KB); files the editor could not open anyway (invalid UTF-8) are not worth erroring on.
+**Evidence**: Scanning thousands of files per keystroke without debounce would block and feel broken (SC-002); a stale response from an earlier term would show wrong matches. A 1 MB cap keeps a single scan bounded for typical workspaces while comfortably covering the app's own large-document floor (~10k lines ≈ 300 KB); files the editor could not open anyway (invalid UTF-8) are not worth erroring on. A cold first scan of 5,000 files reads every file (measured ~13 s on a slow Windows temp disk; ~0.3 s warm), so the async walk keeps the main process responsive and the cache makes every later search a stat-only pass; the e2e bounds the cold path generously and asserts the warm path tightly.
 
-**Consequence**: The e2e "no perceptible lag" scenario types a term and asserts matches within a bounded wait; the renderer never blocks typing because the scan is debounced and runs in main.
+**Consequence**: The e2e "no perceptible lag" scenario warms the cache with a first search, then asserts a second search in the same session lands well inside the bound; typing is never blocked because the scan is debounced, async, and runs in main.
 
 ## R5. Empty state waits for the content search to settle
 

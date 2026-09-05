@@ -8,7 +8,8 @@ import {
   stubTrash,
   stubMessageBox,
   stubOpenDialog,
-  openFolder
+  openFolder,
+  pressShortcut
 } from './launch'
 
 let app: ElectronApplication
@@ -58,6 +59,7 @@ test.beforeAll(async () => {
     path.join(testFolder, 'secret.md'),
     ['---', 'tags: [aurora]', '---', '', '# Secret body', ''].join('\n')
   )
+  fs.writeFileSync(path.join(testFolder, 'legacy.markdown'), '# Legacy\n\nbrandywine receipt')
 
   secondFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'mm-content-search-ws2-'))
   fs.writeFileSync(path.join(secondFolder, 'other.md'), '# Other\n\nunrelated words')
@@ -115,12 +117,17 @@ test.describe('explorer content search (spec 059)', () => {
     await expect(treeRow('secret.md')).toBeVisible()
   })
 
+  test('content search covers .markdown files too (FR-011)', async () => {
+    await typeSearch('brandywine')
+    await expect(treeRow('legacy.markdown')).toBeVisible()
+  })
+
   test('a term matching neither names nor contents keeps the empty state (FR-009)', async () => {
     await typeSearch('qzxwvzz-no-such')
     await expect(searchEmpty()).toBeVisible()
   })
 
-  test('content search never modifies a file; the opened file matches its bytes (FR-006, SC-004)', async () => {
+  test('content search never modifies a file; a content-matched file edits and saves normally (FR-006, SC-004)', async () => {
     const before = fs.readFileSync(path.join(testFolder, 'deep', 'nest', 'hidden.md'))
     await typeSearch('walrus')
     await expect(treeRow('hidden.md')).toBeVisible()
@@ -134,6 +141,16 @@ test.describe('explorer content search (spec 059)', () => {
     expect(fs.readFileSync(path.join(testFolder, 'deep', 'nest', 'hidden.md')).equals(before)).toBe(
       true
     )
+    // The normal editing flow works on a content-matched file: edit, dirty,
+    // save, and the only on-disk difference is the edit.
+    await window.locator('.ProseMirror:visible').click()
+    await window.keyboard.press('Control+End')
+    await window.keyboard.type(' EDITED-TAIL')
+    await expect(window.locator('.document-title')).toContainText('\u2022')
+    await pressShortcut(app, 's', ['control'])
+    await expect
+      .poll(() => fs.readFileSync(path.join(testFolder, 'deep', 'nest', 'hidden.md'), 'utf-8'))
+      .toContain('EDITED-TAIL')
   })
 
   test('clearing the term removes content matches and restores the tree (FR-007)', async () => {
