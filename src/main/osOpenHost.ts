@@ -59,15 +59,12 @@ function drain(): void {
   }
 }
 
-/** Makes the primary window visible without activating it: the never-steal
- *  focus policy (a second launch or an OS file open must not yank focus from
- *  whatever the user is working in). Restoring from minimized may still
- *  activate on Windows; there is no inactive restore API. */
-function revealPrimaryWindow(): void {
+function focusPrimaryWindow(): void {
   const win = currentWindow
   if (!win) return
   if (win.isMinimized()) win.restore()
-  win.showInactive()
+  win.show()
+  win.focus()
 }
 
 
@@ -80,7 +77,7 @@ export function initOsOpenHost(): boolean {
       return false
     }
     app.on('second-instance', (_event, argv) => {
-      revealPrimaryWindow()
+      focusPrimaryWindow()
       const target = extractTargetFromArgv(argv)
       if (target) enqueueTarget(target)
     })
