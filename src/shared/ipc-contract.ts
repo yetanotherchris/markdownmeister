@@ -192,6 +192,9 @@ export interface DesktopApi {
   /** Abandon a prepared folder open (no workspace change). */
   cancelFolderOpen(): Promise<Result<null>>
   readDir(relativePath: string): Promise<Result<DirEntry[]>>
+  /** Content search: relative paths of markdown files whose contents contain
+   *  the term, scanned from the workspace root in the main process. */
+  searchContents(term: string): Promise<Result<string[]>>
   openFileDialog(): Promise<Result<OpenedFile | null>>
   readFile(relativePath: string): Promise<Result<OpenedFile>>
   openRecentFile(path: string): Promise<Result<OpenedFile>>

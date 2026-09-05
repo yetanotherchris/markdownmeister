@@ -19,6 +19,7 @@ import { useSourceViewToggle } from './hooks/useSourceViewToggle'
 import { useWorkspaceTree } from './hooks/useWorkspaceTree'
 import { useExternalFileEvents } from './hooks/useExternalFileEvents'
 import { useMenuCommands } from './hooks/useMenuCommands'
+import { useContentSearch } from './hooks/useContentSearch'
 import { useOsOpen } from './hooks/useOsOpen'
 import { useWorkspaceFolder } from './hooks/useWorkspaceFolder'
 import { useSidebarLayout } from './hooks/useSidebarLayout'
@@ -193,6 +194,12 @@ export default function App() {
     }, [])
   })
   useOsOpen({ session: sessionApi, folder, onOpenFailed: setFooterNote })
+  const contentSearch = useContentSearch({
+    searchTerm,
+    workspaceRoot: workspace.root,
+    dispatchWorkspace,
+    workspaceRef
+  })
 
   const { handleMenuCommand } = menu
   const { handleQuitRequest } = sessionApi
@@ -377,6 +384,8 @@ export default function App() {
                     apiRef={treeApiRef}
                     searchTerm={searchTerm}
                     onSearchTermChange={setSearchTerm}
+                    contentMatchIds={contentSearch.contentMatchIds}
+                    contentSearchIdle={contentSearch.contentSearchIdle}
                   />
                 </div>
               </Panel>

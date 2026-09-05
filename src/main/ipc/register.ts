@@ -9,6 +9,7 @@ import { registerThemesHandlers } from './handlers/themes'
 import { registerRecentHandlers } from './handlers/recent'
 import { registerSpellcheckHandlers } from './handlers/spellcheck'
 import { registerBuildHandlers } from './handlers/build'
+import { registerSearchHandlers } from './handlers/search'
 
 export function registerIpcHandlers(window: BrowserWindow, approvedRendererUrl: string): void {
   // Electron keeps handlers process-wide while macOS can recreate windows.
@@ -30,6 +31,7 @@ export function registerIpcHandlers(window: BrowserWindow, approvedRendererUrl: 
     'workspace:commitFolderOpen',
     'workspace:cancelFolderOpen',
     'workspace:readDir',
+    'workspace:searchContents',
     'dialog:show',
     'settings:get',
     'settings:update',
@@ -51,6 +53,7 @@ export function registerIpcHandlers(window: BrowserWindow, approvedRendererUrl: 
   registerAppHandlers(window, ctx)
   registerFileHandlers(window, ctx)
   registerWorkspaceHandlers(window, ctx)
+  registerSearchHandlers(window, ctx)
   registerDialogHandlers(window, ctx)
   registerSettingsHandlers(window, ctx)
   registerThemesHandlers(window, ctx)

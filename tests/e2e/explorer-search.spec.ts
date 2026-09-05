@@ -50,6 +50,7 @@ test.beforeAll(async () => {
   fs.mkdirSync(path.join(testFolder, 'reports'))
   fs.writeFileSync(path.join(testFolder, 'reports', 'quarterly.md'), '# Quarterly')
   fs.writeFileSync(path.join(testFolder, 'reports', 'summary.md'), '# Summary')
+  fs.writeFileSync(path.join(testFolder, 'reports', 'budget.md'), '# Finances')
   fs.mkdirSync(path.join(testFolder, 'docs'))
   fs.writeFileSync(path.join(testFolder, 'docs', 'meeting-notes.md'), '# Meeting notes')
   fs.writeFileSync(path.join(testFolder, 'docs', 'todo.md'), '# Todo')
@@ -149,17 +150,18 @@ test.describe('explorer file search (spec 057)', () => {
     await expect(treeRow('summary.md')).toHaveCount(0)
   })
 
-  test('a never-opened folder is not searched until it is loaded (FR-007)', async () => {
+  test('a never-opened folder is not name-searched until it is loaded (FR-007)', async () => {
     // reports was never expanded, so its children are unknown to the tree:
-    // searching for one shows the empty state, not a phantom match.
-    await typeSearch('quarterly')
+    // searching for a word that appears in a child's FILENAME but not in any
+    // content shows the empty state (content search matches nothing here).
+    await typeSearch('budget')
     await expect(searchEmpty()).toBeVisible()
 
     await searchInput().press('Escape')
     await row('reports').getByRole('button', { name: 'Expand' }).click()
-    await expect(treeRow('quarterly.md')).toBeVisible()
-    await searchInput().pressSequentially('quarterly')
-    await expect(treeRow('quarterly.md')).toBeVisible()
+    await expect(treeRow('budget.md')).toBeVisible()
+    await searchInput().pressSequentially('budget')
+    await expect(treeRow('budget.md')).toBeVisible()
     await expect(searchEmpty()).toHaveCount(0)
   })
 

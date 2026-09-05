@@ -8,7 +8,7 @@ import { findNodeById, parentPathOf } from '../state/workspace'
 import { useElementSize } from '../hooks/useElementSize'
 import { treeMoveTarget, treeWouldMoveIntoOwnDescendant } from './treeMove'
 import { treeRenameLabel } from './treeRename'
-import { nameSearchMatch, hasNameMatch } from './explorerSearch'
+import { searchMatchWithContent, shouldShowNoMatchState } from './contentSearch'
 import { isOpenableFile } from './openGesture'
 import type { FileOpenGesture } from './openGesture'
 import type { EntryKind } from '../../shared/ipc-contract'
@@ -45,6 +45,10 @@ interface TreeProps {
   /** Live search term for the explorer filter (FR-001/FR-002). */
   searchTerm: string
   onSearchTermChange: (term: string) => void
+  /** Node ids whose contents matched the active term (spec 059 FR-001). */
+  contentMatchIds: Set<string>
+  /** True once the content scan for the term has settled (spec 059 R5). */
+  contentSearchIdle: boolean
 }
 
 interface ContextMenuState {
@@ -81,18 +85,6 @@ function usePreFilterSelectionRestore(
     }
     filteringRef.current = filtering
   }, [filtering, selectedId, data, onSelect])
-}
-
-/** The entry being created or renamed stays reachable while the filter hides
- *  it, otherwise inline editing of a new placeholder times out and the create
- *  flow deletes the fresh file (the tree api only resolves visible nodes). */
-function searchMatchFor(
-  node: NodeApi<TreeNode>,
-  term: string,
-  editingId: string | null
-): boolean {
-  if (node.data.id === editingId) return true
-  return nameSearchMatch(node.data.name, term)
 }
 
 interface ExplorerSearchInputProps {
@@ -359,7 +351,9 @@ export default function Tree({
   onFileOpen,
   apiRef,
   searchTerm,
-  onSearchTermChange
+  onSearchTermChange,
+  contentMatchIds,
+  contentSearchIdle
 }: TreeProps) {
   const [containerRef] = useElementSize<HTMLDivElement>()
   const [treeBodyRef, treeBodySize] = useElementSize<HTMLDivElement>()
@@ -385,11 +379,19 @@ export default function Tree({
   }, [focusTree, onSearchTermChange])
 
   const handleSearchMatch = useCallback(
-    (node: NodeApi<TreeNode>) => searchMatchFor(node, searchTerm, editingId),
-    [searchTerm, editingId]
+    (node: NodeApi<TreeNode>) =>
+      searchMatchWithContent(node.data.id, node.data.name, searchTerm, editingId, contentMatchIds),
+    [searchTerm, editingId, contentMatchIds]
   )
 
-  const showNoMatchState = filtering && !hasNameMatch(data, searchTerm) && !editingId
+  const showNoMatchState = shouldShowNoMatchState(
+    filtering,
+    data,
+    searchTerm,
+    contentMatchIds,
+    contentSearchIdle,
+    editingId
+  )
 
   useEffect(() => {
     if (!pendingEditId || editingIdRef.current === pendingEditId) return
