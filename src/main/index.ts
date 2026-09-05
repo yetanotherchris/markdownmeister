@@ -73,7 +73,9 @@ function createWindow(): void {
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   mainWindow.once('ready-to-show', () => {
     if (isMaximized) mainWindow?.maximize()
-    mainWindow?.show()
+    // Policy: launching must never steal focus from whatever the user is
+    // working in (maximize() itself shows without focusing).
+    mainWindow?.showInactive()
   })
   trackWindowState(mainWindow)
 
