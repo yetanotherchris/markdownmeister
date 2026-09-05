@@ -41,6 +41,11 @@ describe('nameSearchMatch', () => {
     expect(nameSearchMatch('anything.md', '   ')).toBe(true)
   })
 
+  it('surrounding whitespace in the term is not significant (the library trims)', () => {
+    expect(nameSearchMatch('alpha.md', ' alpha ')).toBe(true)
+    expect(nameSearchMatch('alpha.md', '  pha  ')).toBe(true)
+  })
+
   it('does not match when the name lacks the term', () => {
     expect(nameSearchMatch('alpha.md', 'bravo')).toBe(false)
     expect(nameSearchMatch('alpha.md', 'al pha')).toBe(false)

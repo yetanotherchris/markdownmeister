@@ -53,6 +53,109 @@ interface ContextMenuState {
   node: TreeNode | null
 }
 
+/**
+ * FR-008: capture the selection the moment a term first becomes non-empty and
+ * reapply it when the term returns to empty. The library restores the open
+ * map itself; selection is the one part it does not, and clicking a match
+ * while filtering would otherwise leave the post-filter selection behind.
+ */
+function usePreFilterSelectionRestore(
+  filtering: boolean,
+  selectedId: string | null,
+  data: TreeNode[],
+  onSelect: (id: string | null) => void
+): void {
+  const preFilterSelectionRef = useRef<string | null | undefined>(undefined)
+  const filteringRef = useRef(false)
+  useEffect(() => {
+    if (filtering && !filteringRef.current) {
+      preFilterSelectionRef.current = selectedId
+    } else if (!filtering && filteringRef.current) {
+      const restore = preFilterSelectionRef.current
+      // The pre-filter entry may have been deleted or renamed while the
+      // filter was active; a dead id must not be re-selected.
+      if (restore !== undefined && (restore === null || findNodeById(data, restore))) {
+        onSelect(restore)
+      }
+      preFilterSelectionRef.current = undefined
+    }
+    filteringRef.current = filtering
+  }, [filtering, selectedId, data, onSelect])
+}
+
+/** The entry being created or renamed stays reachable while the filter hides
+ *  it, otherwise inline editing of a new placeholder times out and the create
+ *  flow deletes the fresh file (the tree api only resolves visible nodes). */
+function searchMatchFor(
+  node: NodeApi<TreeNode>,
+  term: string,
+  editingId: string | null
+): boolean {
+  if (node.data.id === editingId) return true
+  return nameSearchMatch(node.data.name, term)
+}
+
+interface ExplorerSearchInputProps {
+  searchTerm: string
+  onSearchTermChange: (term: string) => void
+  onEscape: () => void
+  inputRef: React.RefObject<HTMLInputElement | null>
+}
+
+/** The labelled search row above the tree (FR-001). Escape clears the term and
+ *  returns focus to the tree (FR-014); the clear control keeps focus in the
+ *  input so the user can type a fresh term. */
+function ExplorerSearchInput({
+  searchTerm,
+  onSearchTermChange,
+  onEscape,
+  inputRef
+}: ExplorerSearchInputProps) {
+  return (
+    <div className="explorer-search" onContextMenu={(e) => e.stopPropagation()}>
+      <label className="explorer-search-label" htmlFor="explorer-search-input">
+        Search files
+      </label>
+      <div className="explorer-search-box">
+        <Search size={14} className="explorer-search-icon" aria-hidden="true" />
+        <input
+          id="explorer-search-input"
+          ref={inputRef}
+          type="text"
+          className="explorer-search-input"
+          placeholder="Search files"
+          aria-label="Search files"
+          spellCheck={false}
+          value={searchTerm}
+          onChange={(e) => onSearchTermChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.preventDefault()
+              onEscape()
+            }
+          }}
+          data-testid="explorer-search-input"
+        />
+        {searchTerm !== '' && (
+          <button
+            type="button"
+            className="explorer-search-clear"
+            aria-label="Clear search"
+            title="Clear search"
+            onClick={() => {
+              onSearchTermChange('')
+              inputRef.current?.focus()
+            }}
+            data-testid="explorer-search-clear"
+          >
+            <X size={14} aria-hidden="true" />
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 interface TreeNodeProps {
   node: NodeApi<TreeNode>
   style: React.CSSProperties
@@ -100,7 +203,15 @@ function RenameInput({ node }: { node: NodeApi<TreeNode> }) {
       onBlur={(e) => {
         if (!node.isEditing) return
         const next = e.relatedTarget as HTMLElement | null
-        if (next && (next.closest('.tree-container') || next.closest('.context-menu'))) {
+        // Stay in the edit when the blur target is elsewhere in the tree or
+        // a context menu, but NOT the search box: moving to the search box is
+        // an explicit intent to search, and stealing focus back would make
+        // the next keystroke (e.g. Escape) cancel the pending edit.
+        if (
+          next &&
+          !next.closest('.explorer-search') &&
+          (next.closest('.tree-container') || next.closest('.context-menu'))
+        ) {
           inputRef.current?.focus()
         }
       }}
@@ -250,8 +361,8 @@ export default function Tree({
   searchTerm,
   onSearchTermChange
 }: TreeProps) {
-  const [containerRef, size] = useElementSize<HTMLDivElement>()
-  const [searchRowRef, searchRowSize] = useElementSize<HTMLDivElement>()
+  const [containerRef] = useElementSize<HTMLDivElement>()
+  const [treeBodyRef, treeBodySize] = useElementSize<HTMLDivElement>()
   const treeRef = useRef<TreeApi<TreeNode> | null>(null)
   if (apiRef) apiRef.current = treeRef.current
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
@@ -261,42 +372,24 @@ export default function Tree({
   const editingInFlightRef = useRef(false)
 
   const searchInputRef = useRef<HTMLInputElement>(null)
-  // The pre-filter selection, captured the moment a term first becomes
-  // non-empty and reapplied when it returns to empty (FR-008). `undefined`
-  // means no snapshot exists yet.
-  const preFilterSelectionRef = useRef<string | null | undefined>(undefined)
-  const filteringRef = useRef(false)
   const filtering = searchTerm.trim() !== ''
-
-  useEffect(() => {
-    if (filtering && !filteringRef.current) {
-      preFilterSelectionRef.current = selectedId
-    } else if (!filtering && filteringRef.current) {
-      const restore = preFilterSelectionRef.current
-      if (restore !== undefined) onSelect(restore)
-      preFilterSelectionRef.current = undefined
-    }
-    filteringRef.current = filtering
-  }, [filtering, selectedId, onSelect])
+  usePreFilterSelectionRestore(filtering, selectedId, data, onSelect)
 
   const focusTree = useCallback(() => {
     containerRef.current?.querySelector<HTMLElement>('[role="tree"]')?.focus()
   }, [])
 
-  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      onSearchTermChange('')
-      focusTree()
-    }
+  const handleSearchEscape = useCallback(() => {
+    onSearchTermChange('')
+    focusTree()
   }, [focusTree, onSearchTermChange])
 
   const handleSearchMatch = useCallback(
-    (node: NodeApi<TreeNode>) => nameSearchMatch(node.data.name, searchTerm),
-    [searchTerm]
+    (node: NodeApi<TreeNode>) => searchMatchFor(node, searchTerm, editingId),
+    [searchTerm, editingId]
   )
 
-  const showNoMatchState = filtering && !hasNameMatch(data, searchTerm)
+  const showNoMatchState = filtering && !hasNameMatch(data, searchTerm) && !editingId
 
   useEffect(() => {
     if (!pendingEditId || editingIdRef.current === pendingEditId) return
@@ -518,62 +611,22 @@ export default function Tree({
     </div>
   )
 
-  return (
-    <div
-      ref={containerRef}
-      className="tree-container"
-      onContextMenu={handleContainerContextMenu}
-    >
-      <div className="explorer-search" ref={searchRowRef} onContextMenu={(e) => e.stopPropagation()}>
-        <label className="explorer-search-label" htmlFor="explorer-search-input">
-          Search files
-        </label>
-        <div className="explorer-search-box">
-          <Search size={14} className="explorer-search-icon" aria-hidden="true" />
-          <input
-            id="explorer-search-input"
-            ref={searchInputRef}
-            type="text"
-            className="explorer-search-input"
-            placeholder="Search files"
-            aria-label="Search files"
-            spellCheck={false}
-            value={searchTerm}
-            onChange={(e) => onSearchTermChange(e.target.value)}
-            onKeyDown={handleSearchKeyDown}
-            data-testid="explorer-search-input"
-          />
-          {searchTerm !== '' && (
-            <button
-              type="button"
-              className="explorer-search-clear"
-              aria-label="Clear search"
-              title="Clear search"
-              onClick={() => {
-                onSearchTermChange('')
-                searchInputRef.current?.focus()
-              }}
-              data-testid="explorer-search-clear"
-            >
-              <X size={14} aria-hidden="true" />
-            </button>
-          )}
-        </div>
-      </div>
-      {data.length === 0 ? (
-        <div className="tree-empty">No markdown files in this folder</div>
-      ) : showNoMatchState ? (
-        <div className="tree-empty" data-testid="explorer-search-empty">
-          No files match “{searchTerm}”
-        </div>
-      ) : (
+  // The tree stays mounted while a term matches nothing so clearing the term
+  // restores the pre-filter expansion exactly (FR-008); the empty message
+  // overlays the tree's (empty) list area.
+  const renderTreeContent = () => {
+    if (data.length === 0) {
+      return <div className="tree-empty">No markdown files in this folder</div>
+    }
+    return (
+      <div className="tree-body" ref={treeBodyRef}>
         <ArboristTree
           ref={(api) => {
             if (api) treeRef.current = api
           }}
           data={data}
-          width={size.width}
-          height={Math.max(0, size.height - searchRowSize.height)}
+          width={treeBodySize.width}
+          height={Math.max(0, treeBodySize.height)}
           rowHeight={28}
           selection={selectedId ?? undefined}
           onSelect={handleSelect}
@@ -591,7 +644,28 @@ export default function Tree({
         >
           {renderNode}
         </ArboristTree>
-      )}
+        {showNoMatchState && (
+          <div className="tree-empty tree-empty-overlay" data-testid="explorer-search-empty">
+            No files match “{searchTerm}”
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className="tree-container"
+      onContextMenu={handleContainerContextMenu}
+    >
+      <ExplorerSearchInput
+        searchTerm={searchTerm}
+        onSearchTermChange={onSearchTermChange}
+        onEscape={handleSearchEscape}
+        inputRef={searchInputRef}
+      />
+      {renderTreeContent()}
 
       {createPortal(menu, document.body)}
     </div>

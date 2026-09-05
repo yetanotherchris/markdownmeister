@@ -126,22 +126,59 @@ test.describe('explorer file search (spec 057)', () => {
     await expect(treeRow('quarterly.md')).toHaveCount(0)
     await expect(treeRow('reports')).toHaveCount(0)
     await expect(treeRow('alpha.md')).toHaveCount(0)
+
+    // FR-011: activating a matching folder behaves like unfiltered
+    // activation. Double-clicking docs (a loaded ancestor) collapses it, so
+    // its matching child hides, exactly as in the unfiltered tree.
+    await row('docs').dblclick()
+    await expect(treeRow('meeting-notes.md')).toHaveCount(0)
+    await row('docs').click()
+    await expect(row('docs')).toHaveAttribute('aria-selected', 'true')
   })
 
-  test('a folder whose own name matches shows the folder only (FR-006)', async () => {
+  test('a folder whose own name matches shows the folder only, even when loaded (FR-006)', async () => {
+    // Load reports so its children are known, then collapse it again: the
+    // folder-name match must still show the folder without its children.
+    await row('reports').getByRole('button', { name: 'Expand' }).click()
+    await expect(treeRow('quarterly.md')).toBeVisible()
+    await row('reports').getByRole('button', { name: 'Collapse' }).click()
+
     await typeSearch('reports')
     await expect(treeRow('reports')).toBeVisible()
     await expect(treeRow('quarterly.md')).toHaveCount(0)
     await expect(treeRow('summary.md')).toHaveCount(0)
   })
 
-  test('a term matching nothing shows a calm empty state, no error (FR-009)', async () => {
+  test('a never-opened folder is not searched until it is loaded (FR-007)', async () => {
+    // reports was never expanded, so its children are unknown to the tree:
+    // searching for one shows the empty state, not a phantom match.
+    await typeSearch('quarterly')
+    await expect(searchEmpty()).toBeVisible()
+
+    await searchInput().press('Escape')
+    await row('reports').getByRole('button', { name: 'Expand' }).click()
+    await expect(treeRow('quarterly.md')).toBeVisible()
+    await searchInput().pressSequentially('quarterly')
+    await expect(treeRow('quarterly.md')).toBeVisible()
+    await expect(searchEmpty()).toHaveCount(0)
+  })
+
+  test('a term matching nothing shows a calm empty state, no error, and clearing restores the tree (FR-009, FR-008)', async () => {
+    // Expansion survives a no-match filter and its clear: the tree stays
+    // mounted during the empty state, so open state is not lost (FR-008).
+    await row('docs').getByRole('button', { name: 'Expand' }).click()
+    await expect(treeRow('todo.md')).toBeVisible()
+
     await typeSearch('zzz-no-such-entry')
     await expect(searchEmpty()).toBeVisible()
     await expect(searchEmpty()).toContainText('zzz-no-such-entry')
     // The empty state replaces the tree list.
     await expect(treeRow('alpha.md')).toHaveCount(0)
     await expect(window.locator('.context-menu')).toHaveCount(0)
+
+    await searchInput().press('Escape')
+    await expect(treeRow('todo.md')).toBeVisible()
+    await expect(searchEmpty()).toHaveCount(0)
   })
 
   test('activating a match opens exactly like unfiltered, including duplicate-tab focus (US3, FR-010)', async () => {
@@ -158,7 +195,7 @@ test.describe('explorer file search (spec 057)', () => {
     await expect(window.locator('.ProseMirror:visible')).toBeVisible()
   })
 
-  test('clearing restores expansion and selection exactly, and Escape refocuses the tree (US2/FR-008, FR-014)', async () => {
+  test('clearing restores expansion and selection exactly (US2/FR-008, FR-014)', async () => {
     // Pre-filter state: docs expanded and selected, reports collapsed.
     await row('docs').getByRole('button', { name: 'Expand' }).click()
     await expect(treeRow('todo.md')).toBeVisible()
@@ -224,16 +261,20 @@ test.describe('explorer file search (spec 057)', () => {
 
   test('create, rename, and delete flows work while filtered (US3-3)', async () => {
     // Create a new file while "alpha" is active: the file is created on disk
-    // but hidden by the filter until the term is cleared.
+    // but hidden by the filter until the term is cleared. Wait past the
+    // tree's 500ms inline-edit wait window first, so this proves the hidden
+    // create flow never times out into a delete of the fresh placeholder.
     await typeSearch('alpha')
     await window.locator('.tree-container').click({ button: 'right', position: { x: 120, y: 240 } })
     await window.getByRole('menuitem').getByText('New File').click()
     await expect.poll(() => fs.existsSync(path.join(testFolder, 'new-file-1.md'))).toBe(true)
     await expect(treeRow('new-file-1.md')).toHaveCount(0)
+    await window.waitForTimeout(650)
 
     await searchInput().press('Escape')
     const placeholder = window.getByRole('textbox', { name: /Name new file/ })
     await expect(placeholder).toBeVisible()
+    expect(fs.existsSync(path.join(testFolder, 'new-file-1.md'))).toBe(true)
     await placeholder.fill('created.md')
     await placeholder.press('Enter')
     await expect(treeRow('created.md')).toBeVisible()

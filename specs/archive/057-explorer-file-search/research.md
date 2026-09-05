@@ -42,3 +42,11 @@ Findings that resolve the plan's open questions, with the evidence and the rejec
 **Decision**: The input handles Escape (clear term, restore, focus the tree container) and the input is labelled for accessibility; the tree keeps its existing focus handling for rows.
 
 **Evidence**: Escape already closes the tree context menu and other transient surfaces in the renderer with the same clear-and-return-focus shape; reusing that convention keeps the interaction model uniform (FR-014).
+
+## R6. Implementation-time fixes from the review cycle
+
+Two real defects surfaced when the e2e scenarios were stress-tested past their initial happy paths. Both are fixed in the implementation and pinned by e2e assertions.
+
+**R6a. The no-match empty state must not unmount the tree.** Rendering the empty message instead of the tree destroyed react-arborist's expansion store, so a type-a-no-match-then-clear cycle lost the pre-filter open state (FR-008). Fix: the tree stays mounted and the message overlays its (empty) list area (`tree-empty-overlay`). Escape focus also benefits: the tree element remains in the DOM, so focus can return to it even from the no-match state.
+
+**R6b. Creating an entry while the filter hides it timed out and deleted the file.** The tree api only resolves visible nodes, so `startEditing`'s 500ms wait loop never found the hidden placeholder and `handleEditingCancelled` trashed the just-created file (the spec's create-while-filtered edge case). Fix: the `searchMatch` predicate exempts the entry currently being edited, so the placeholder becomes visible and nameable while the filter stays active, and the empty-state overlay is suppressed while that edit is in flight. A pre-existing sibling bug surfaced here: the rename input's blur handler retained focus for any target inside the tree container, which let it steal focus back from the search box and turn the search box's Escape into an edit-cancel; the retention now excludes the search box.
