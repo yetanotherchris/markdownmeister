@@ -60,6 +60,9 @@ export async function searchContents(root: string, term: string): Promise<string
   }
 
   await walk(root, '.')
+  // Directory read order is filesystem-dependent; sort like the tree does so
+  // results are deterministic across platforms.
+  matches.sort((a, b) => a.localeCompare(b))
   return matches
 }
 
