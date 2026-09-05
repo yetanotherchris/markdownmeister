@@ -59,6 +59,7 @@ export default function App() {
   const [footerNote, setFooterNote] = useState<string | null>(null)
   const [spellMenu, setSpellMenu] = useState<SpellingMenuState | null>(null)
   const [explorerCollapsed, setExplorerCollapsed] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
   const [findRequest, setFindRequest] = useState<FindRequest | null>(null)
   const findSeqRef = useRef(0)
   const {
@@ -273,6 +274,12 @@ export default function App() {
     }
   }, [])
 
+  // FR-013: the explorer search term never survives a workspace change or
+  // restart (restart is automatic since the term is component state only).
+  useEffect(() => {
+    setSearchTerm('')
+  }, [workspace.root])
+
   const workspaceActiveId = session.activeId
   useEffect(() => {
     if (!workspace.name) return
@@ -368,6 +375,8 @@ export default function App() {
                     onReveal={handleReveal}
                     onOpenNewTab={handleOpenNewTab}
                     apiRef={treeApiRef}
+                    searchTerm={searchTerm}
+                    onSearchTermChange={setSearchTerm}
                   />
                 </div>
               </Panel>

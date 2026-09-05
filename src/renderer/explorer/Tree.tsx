@@ -2,12 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Tree as ArboristTree, NodeApi, TreeApi } from 'react-arborist'
 import type { RowRendererProps, NodeRendererProps } from 'react-arborist'
-import { Folder, FolderOpen, FileText, ChevronRight, ChevronDown } from 'lucide-react'
+import { Folder, FolderOpen, FileText, ChevronRight, ChevronDown, Search, X } from 'lucide-react'
 import type { TreeNode } from '../state/workspace'
 import { findNodeById, parentPathOf } from '../state/workspace'
 import { useElementSize } from '../hooks/useElementSize'
 import { treeMoveTarget, treeWouldMoveIntoOwnDescendant } from './treeMove'
 import { treeRenameLabel } from './treeRename'
+import { nameSearchMatch, hasNameMatch } from './explorerSearch'
 import { isOpenableFile } from './openGesture'
 import type { FileOpenGesture } from './openGesture'
 import type { EntryKind } from '../../shared/ipc-contract'
@@ -40,6 +41,10 @@ interface TreeProps {
   onFileOpen: (node: TreeNode, gesture: FileOpenGesture) => void
 
   apiRef?: React.MutableRefObject<TreeApi<TreeNode> | null> | null
+
+  /** Live search term for the explorer filter (FR-001/FR-002). */
+  searchTerm: string
+  onSearchTermChange: (term: string) => void
 }
 
 interface ContextMenuState {
@@ -241,9 +246,12 @@ export default function Tree({
   onReveal,
   onOpenNewTab,
   onFileOpen,
-  apiRef
+  apiRef,
+  searchTerm,
+  onSearchTermChange
 }: TreeProps) {
   const [containerRef, size] = useElementSize<HTMLDivElement>()
+  const [searchRowRef, searchRowSize] = useElementSize<HTMLDivElement>()
   const treeRef = useRef<TreeApi<TreeNode> | null>(null)
   if (apiRef) apiRef.current = treeRef.current
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
@@ -251,6 +259,44 @@ export default function Tree({
   const editingIdRef = useRef(editingId)
   editingIdRef.current = editingId
   const editingInFlightRef = useRef(false)
+
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  // The pre-filter selection, captured the moment a term first becomes
+  // non-empty and reapplied when it returns to empty (FR-008). `undefined`
+  // means no snapshot exists yet.
+  const preFilterSelectionRef = useRef<string | null | undefined>(undefined)
+  const filteringRef = useRef(false)
+  const filtering = searchTerm.trim() !== ''
+
+  useEffect(() => {
+    if (filtering && !filteringRef.current) {
+      preFilterSelectionRef.current = selectedId
+    } else if (!filtering && filteringRef.current) {
+      const restore = preFilterSelectionRef.current
+      if (restore !== undefined) onSelect(restore)
+      preFilterSelectionRef.current = undefined
+    }
+    filteringRef.current = filtering
+  }, [filtering, selectedId, onSelect])
+
+  const focusTree = useCallback(() => {
+    containerRef.current?.querySelector<HTMLElement>('[role="tree"]')?.focus()
+  }, [])
+
+  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      onSearchTermChange('')
+      focusTree()
+    }
+  }, [focusTree, onSearchTermChange])
+
+  const handleSearchMatch = useCallback(
+    (node: NodeApi<TreeNode>) => nameSearchMatch(node.data.name, searchTerm),
+    [searchTerm]
+  )
+
+  const showNoMatchState = filtering && !hasNameMatch(data, searchTerm)
 
   useEffect(() => {
     if (!pendingEditId || editingIdRef.current === pendingEditId) return
@@ -478,8 +524,48 @@ export default function Tree({
       className="tree-container"
       onContextMenu={handleContainerContextMenu}
     >
+      <div className="explorer-search" ref={searchRowRef} onContextMenu={(e) => e.stopPropagation()}>
+        <label className="explorer-search-label" htmlFor="explorer-search-input">
+          Search files
+        </label>
+        <div className="explorer-search-box">
+          <Search size={14} className="explorer-search-icon" aria-hidden="true" />
+          <input
+            id="explorer-search-input"
+            ref={searchInputRef}
+            type="text"
+            className="explorer-search-input"
+            placeholder="Search files"
+            aria-label="Search files"
+            spellCheck={false}
+            value={searchTerm}
+            onChange={(e) => onSearchTermChange(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            data-testid="explorer-search-input"
+          />
+          {searchTerm !== '' && (
+            <button
+              type="button"
+              className="explorer-search-clear"
+              aria-label="Clear search"
+              title="Clear search"
+              onClick={() => {
+                onSearchTermChange('')
+                searchInputRef.current?.focus()
+              }}
+              data-testid="explorer-search-clear"
+            >
+              <X size={14} aria-hidden="true" />
+            </button>
+          )}
+        </div>
+      </div>
       {data.length === 0 ? (
         <div className="tree-empty">No markdown files in this folder</div>
+      ) : showNoMatchState ? (
+        <div className="tree-empty" data-testid="explorer-search-empty">
+          No files match “{searchTerm}”
+        </div>
       ) : (
         <ArboristTree
           ref={(api) => {
@@ -487,7 +573,7 @@ export default function Tree({
           }}
           data={data}
           width={size.width}
-          height={size.height}
+          height={Math.max(0, size.height - searchRowSize.height)}
           rowHeight={28}
           selection={selectedId ?? undefined}
           onSelect={handleSelect}
@@ -498,6 +584,8 @@ export default function Tree({
           disableMultiSelection={true}
           disableDrop={disableDrop}
           openByDefault={false}
+          searchTerm={searchTerm}
+          searchMatch={handleSearchMatch}
           renderRow={renderRow}
           aria-label="Workspace files"
         >
