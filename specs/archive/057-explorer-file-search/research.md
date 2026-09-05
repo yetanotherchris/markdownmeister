@@ -23,13 +23,13 @@ Findings that resolve the plan's open questions, with the evidence and the rejec
 
 **Consequence**: The predicate lives in the small pure module (explorerSearch.ts) with unit fixtures, including the negative cases that pin FR-006 (a folder matching does not surface its children unless they match too).
 
-## R3. Restore-on-clear must be verified, with a snapshot fallback
+## R3. Restore-on-clear is verified: the library restores open state, so only selection needs a snapshot
 
-**Decision**: When a term first becomes non-empty, snapshot the tree's open (expansion) map and current selection; when the term is cleared, reapply the snapshot if and only if the library has not already restored the pre-filter state.
+**Decision**: Snapshot the selection when a term first becomes non-empty and reapply it when the term clears. Do not reapply open state: the installed library already restores the pre-filter expansion map.
 
-**Evidence**: The library opens internal nodes while filtering, and its documentation does not promise that clearing the term restores the exact pre-filter open state. The tree api exposes the open-state controls needed for both the snapshot and the reapply. Whether the manual reapply is necessary is an implementation-time verification (task 2.1); the spec's FR-008 is fixed either way, so the fallback costs one small pure helper (explorerSearch.ts) that is unit-tested regardless.
+**Evidence** (task 2.1, read from the installed package's own source, react-arborist 3.16.0): the open slice keeps two maps, `unfiltered` and `filtered`. While a term is active `isOpen(id)` returns `filtered[id] ?? true` (internal nodes forced open), and user toggles during filtering write to the `filtered` map only. When the term becomes empty, `TreeProvider` dispatches `VISIBILITY_CLEAR filtered`, emptying the `filtered` map, so `isOpen` falls back to the untouched `unfiltered` map: the pre-filter expansion state is restored automatically. Selection lives in its own slice driven by the `selection` prop and is never cleared by search, so a pre-filter selection survives the clear too. The one gap is when the user changes selection during filtering (e.g. clicks a match): the click's selection would survive the clear, contradicting FR-008's "same selection", so the explorer snapshots the selection on the term's first non-empty change and reapplies it on clear (transition effect in `Tree.tsx`).
 
-**Consequence**: FR-008 does not depend on undocumented library behaviour; if the library already restores state, the helper is a no-op path and the tests still pass.
+**Consequence**: The open-state reapply helper is not wired (it would be a no-op against the current library); FR-008's open-state half is covered by the library and pinned by the e2e restore scenario. The selection snapshot/restore lives in `Tree.tsx` (a ref captured on the unfiltered→filtered transition) and is pinned by the same e2e scenario; tasks 1.1/1.2 were narrowed to the pure predicate and empty-state helpers accordingly.
 
 ## R4. State placement: component state in the explorer container, nothing persisted
 

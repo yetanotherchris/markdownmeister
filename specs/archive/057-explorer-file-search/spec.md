@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-02
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "search box for file explorer to find a file"
 
@@ -109,3 +109,8 @@ Activating a matching file in the filtered tree opens it exactly as activating i
 - The search input is always visible above the tree rather than hidden behind a toggle; it is compact enough not to crowd the panel.
 - The term is used as typed, without trimming surrounding whitespace; a whitespace-only term counts as no filter.
 - Filtering is display-only: it never gates or rewrites the existing create, rename, move, or delete operations.
+- The search domain is the set of entries already listed in the tree (FR-007). Folders load their children lazily on first expansion, so a folder that has never been expanded contributes no candidates; FR-004's "collapsed folders" means folders that are collapsed but whose entries the tree already knows (expanded at least once).
+
+## Clarifications
+
+- 2026-09-05: FR-004 and FR-007 reconcile as follows. Matching considers only entries already listed in the tree, so a never-expanded folder's contents are not searched until the folder is opened once. Once loaded, a collapsed folder's matching entries surface while the term is active, with the folder kept visible as an ancestor. This was confirmed during e2e authoring: a fixture file inside a never-opened folder did not match, which is consistent with FR-007 rather than a defect in the filter.
