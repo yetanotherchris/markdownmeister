@@ -5,6 +5,8 @@ import { mergeSearchSections, nameMatchSections } from '../explorer/searchResult
 import type { SearchSection } from '../explorer/searchResultModel'
 
 const DEBOUNCE_MS = 250
+/** Must match the main-process term length limit. */
+const MAX_TERM_LENGTH = 200
 
 export interface SearchResultsApi {
   /** The merged, sorted sections for the active term (empty when not
@@ -48,13 +50,24 @@ export function useSearchResults(opts: {
       return
     }
     setSettled(false)
+    // A term longer than the main-process limit never reaches the scan; it
+    // simply yields no content matches instead of surfacing an error.
+    if (term.length > MAX_TERM_LENGTH) {
+      setSettled(true)
+      return
+    }
     const timer = setTimeout(() => {
-      window.api.searchContents(term).then((res) => {
-        // Drop stale responses: a newer keystroke owns the result.
-        if (seq !== seqRef.current) return
-        if (res.ok) setContentResults(res.value)
-        setSettled(true)
-      })
+      window.api.searchContents(term).then(
+        (res) => {
+          // Drop stale responses: a newer keystroke owns the result.
+          if (seq !== seqRef.current) return
+          if (res.ok) setContentResults(res.value)
+          setSettled(true)
+        },
+        () => {
+          if (seq === seqRef.current) setSettled(true)
+        }
+      )
     }, DEBOUNCE_MS)
     return () => clearTimeout(timer)
   }, [searchTerm, workspaceRoot])

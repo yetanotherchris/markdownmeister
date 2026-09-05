@@ -90,13 +90,13 @@ test.describe('explorer search results (spec 060)', () => {
     await typeSearch('walrus')
     const one = section('one.md')
     await expect(one.locator('.search-result-snippet')).toHaveCount(2)
-    await expect(one.locator('.search-result-header')).toHaveAttribute('aria-expanded', 'true')
+    await expect(one.locator('.search-result-chevron')).toHaveAttribute('aria-expanded', 'true')
 
-    await one.locator('.search-result-header').click()
-    await expect(one.locator('.search-result-header')).toHaveAttribute('aria-expanded', 'false')
+    await one.locator('.search-result-chevron').click()
+    await expect(one.locator('.search-result-chevron')).toHaveAttribute('aria-expanded', 'false')
     await expect(one.locator('.search-result-snippet')).toHaveCount(0)
 
-    await one.locator('.search-result-header').click()
+    await one.locator('.search-result-chevron').click()
     await expect(one.locator('.search-result-snippet')).toHaveCount(2)
   })
 
@@ -136,17 +136,22 @@ test.describe('explorer search results (spec 060)', () => {
     expect(await resultsView().locator('.search-result-section').count()).toBe(4)
   })
 
-  test('clicking a snippet opens the file with duplicate-tab focus (FR-009)', async () => {
+  test('clicking a section or snippet opens the file with duplicate-tab focus (FR-009)', async () => {
     await typeSearch('walrus')
-    await section('one.md').locator('.search-result-snippet').first().click()
+    // Clicking the section (the open button) opens the file.
+    await section('one.md').locator('.search-result-open').click()
     await expect(window.locator('.ProseMirror:visible')).toBeVisible()
     await expect(window.locator('.document-title')).toContainText('one.md')
     await expect(window.getByRole('tab')).toHaveCount(1)
 
     // Reopening from the results again focuses the existing tab.
-    await section('one.md').locator('.search-result-header').click()
-    await section('one.md').locator('.search-result-header').click()
     await section('one.md').locator('.search-result-snippet').first().click()
+    await expect(window.getByRole('tab')).toHaveCount(1)
+
+    // A second file from the same results opens with the same-tab behaviour
+    // (default fileOpenBehavior), replacing the active document.
+    await section('two.md').locator('.search-result-snippet').first().click()
+    await expect(window.locator('.document-title')).toContainText('two.md')
     await expect(window.getByRole('tab')).toHaveCount(1)
   })
 

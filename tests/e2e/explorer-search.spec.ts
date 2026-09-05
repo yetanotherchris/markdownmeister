@@ -105,7 +105,7 @@ test.describe('explorer file search (spec 057, results presentation)', () => {
     // alpha.md matches by name and by content; the summary counts the content
     // occurrence.
     await expect(badge(section('alpha.md'))).toHaveText('1')
-    await expect(resultsSummary()).toContainText('1 matches in 1 files')
+    await expect(resultsSummary()).toContainText('1 match in 1 file')
   })
 
   test('a name match renders as a section with a badge of 1 and no snippet (FR-008)', async () => {
@@ -164,6 +164,12 @@ test.describe('explorer file search (spec 057, results presentation)', () => {
     await expect(window.getByRole('tree')).toBeVisible()
     await expect(window.getByRole('treeitem').getByText('todo.md', { exact: true })).toBeVisible()
     await expect(docsRow).toHaveAttribute('aria-selected', 'true')
+    // FR-016: focus returns to the tree once the results view clears.
+    const focusInTree = await window.evaluate(() => {
+      const el = document.activeElement
+      return !!el && !!el.closest('[role="tree"]')
+    })
+    expect(focusInTree).toBe(true)
   })
 
   test('a whitespace-only term filters nothing and keeps the tree (FR-013)', async () => {

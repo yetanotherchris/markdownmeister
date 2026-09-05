@@ -75,8 +75,9 @@ export function summarize(sections: SearchSection[]): { matches: number; files: 
 /**
  * Truncate a snippet line to at most `maxChars`, keeping a window around the
  * first occurrence of `term` (case-insensitive) visible and appending `...`
- * on each truncated side. Never hides the term. A line short enough to fit is
- * returned unchanged. The result is always at most `maxChars` characters.
+ * on each truncated side. Never hides the term: the window always spans the
+ * whole match, growing past `maxChars` when the term itself is longer. A line
+ * short enough to fit is returned unchanged.
  */
 export function truncateSnippet(line: string, term: string, maxChars: number): string {
   const trimmed = term.trim()
@@ -84,9 +85,11 @@ export function truncateSnippet(line: string, term: string, maxChars: number): s
   const lower = line.toLowerCase()
   const idx = lower.indexOf(trimmed.toLowerCase())
   const ellipsis = '...'
-  const before = maxChars - ellipsis.length * 2
-  const start = Math.max(0, idx - Math.floor(before / 2))
-  const end = Math.min(line.length, start + before)
+  // The window must fit the whole match; with a short term it is capped so the
+  // output (window + ellipses) stays within maxChars.
+  const span = Math.max(maxChars - ellipsis.length * 2, trimmed.length)
+  const start = Math.max(0, Math.min(idx, line.length - span))
+  const end = Math.min(line.length, start + span)
   const prefix = start > 0 ? ellipsis : ''
   const suffix = end < line.length ? ellipsis : ''
   return prefix + line.slice(start, end) + suffix

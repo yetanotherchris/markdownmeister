@@ -93,11 +93,13 @@ async function fileMatchesCached(
   // The stat cap was a pre-read guard; a file that grew past the cap mid-read
   // is still skipped rather than cached.
   if (content.length > MAX_SEARCH_FILE_BYTES) return null
+  // Drop the stale entry's bytes first, then clear everything if still over
+  // the cap so the accounting never goes negative.
+  if (cached) cachedBytes -= cached.content.length
   if (cachedBytes > MAX_CACHE_TOTAL_BYTES) {
     contentCache.clear()
     cachedBytes = 0
   }
-  if (cached) cachedBytes -= cached.content.length
   contentCache.set(filePath, { mtimeMs: stat.mtimeMs, size: stat.size, content })
   cachedBytes += content.length
   return matchLines(content, needle)

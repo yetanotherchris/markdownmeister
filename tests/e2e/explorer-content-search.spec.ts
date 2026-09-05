@@ -132,7 +132,7 @@ test.describe('explorer content search (spec 059, results presentation)', () => 
     await expect(searchEmpty()).toBeVisible()
   })
 
-  test('content search never modifies a file; a content-matched file edits and saves normally (FR-006, SC-004)', async () => {
+  test('content search never modifies a file; editing and saving still work (FR-006, SC-004)', async () => {
     const before = fs.readFileSync(path.join(testFolder, 'deep', 'nest', 'hidden.md'))
     await typeSearch('walrus')
     await expect(section('hidden.md')).toBeVisible()

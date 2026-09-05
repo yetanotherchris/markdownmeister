@@ -15,11 +15,13 @@ interface SearchResultsProps {
  *  highlighted and long lines truncated with ellipses. */
 export default function SearchResults({ sections, term, onOpenFile }: SearchResultsProps) {
   const summary = useMemo(() => summarize(sections), [sections])
+  const matchWord = summary.matches === 1 ? 'match' : 'matches'
+  const fileWord = summary.files === 1 ? 'file' : 'files'
 
   return (
     <div className="search-results" data-testid="search-results">
       <div className="search-results-summary" data-testid="search-results-summary">
-        {summary.matches} matches in {summary.files} files
+        {summary.matches} {matchWord} in {summary.files} {fileWord}
       </div>
       <div className="search-results-list">
         {sections.map((section) => (
@@ -42,29 +44,36 @@ function ResultSection({
   const [open, setOpen] = useState(true)
   return (
     <div className="search-result-section" data-testid="search-result-section">
-      <button
-        type="button"
-        className="search-result-header"
-        aria-expanded={open}
-        onClick={(e) => {
-          e.preventDefault()
-          if (e.detail >= 2) onOpenFile(section.path)
-          else setOpen((o) => !o)
-        }}
-        onDoubleClick={(e) => e.preventDefault()}
-      >
-        <span className="search-result-chevron" aria-hidden="true">
+      <div className="search-result-header">
+        <button
+          type="button"
+          className="search-result-chevron"
+          aria-label={open ? 'Collapse' : 'Expand'}
+          aria-expanded={open}
+          onClick={(e) => {
+            e.stopPropagation()
+            setOpen((o) => !o)
+          }}
+        >
           {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        </span>
-        <span className="search-result-icon" aria-hidden="true">
-          <FileText size={14} />
-        </span>
-        <span className="search-result-name">{section.name}</span>
-        {section.directory !== '' && <span className="search-result-dir">{section.directory}</span>}
-        <span className="search-result-badge" data-testid="search-result-badge">
-          {section.count}
-        </span>
-      </button>
+        </button>
+        <button
+          type="button"
+          className="search-result-open"
+          onClick={() => onOpenFile(section.path)}
+        >
+          <span className="search-result-icon" aria-hidden="true">
+            <FileText size={14} />
+          </span>
+          <span className="search-result-name">{section.name}</span>
+          {section.directory !== '' && (
+            <span className="search-result-dir">{section.directory}</span>
+          )}
+          <span className="search-result-badge" data-testid="search-result-badge">
+            {section.count}
+          </span>
+        </button>
+      </div>
       {open && section.lines.length > 0 && (
         <div className="search-result-snippets">
           {section.lines.map((line, i) => (

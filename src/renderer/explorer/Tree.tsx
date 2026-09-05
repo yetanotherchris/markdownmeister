@@ -342,23 +342,31 @@ export default function Tree({
   const searchInputRef = useRef<HTMLInputElement>(null)
   const filtering = searchTerm.trim() !== ''
 
+  // Escape clears the term and asks to return focus to the tree. The tree is
+  // hidden (display:none) until the term clears, so the focus happens in an
+  // effect after that render, not synchronously here.
+  const pendingTreeFocusRef = useRef(false)
   const focusTree = useCallback(() => {
     containerRef.current?.querySelector<HTMLElement>('[role="tree"]')?.focus()
   }, [])
 
+  useEffect(() => {
+    if (filtering) return
+    if (pendingTreeFocusRef.current) {
+      pendingTreeFocusRef.current = false
+      focusTree()
+    }
+  }, [filtering, focusTree])
+
   const handleSearchEscape = useCallback(() => {
     onSearchTermChange('')
-    focusTree()
-  }, [focusTree, onSearchTermChange])
+    pendingTreeFocusRef.current = true
+  }, [onSearchTermChange])
 
   // While a term is active the tree is hidden behind the results view; it is
   // never modified, so clearing restores it exactly (spec 060 R1).
   const showResults = filtering
   const showNoMatchState = filtering && searchSections.length === 0 && searchSettled
-  const handleOpenFile = useCallback(
-    (path: string) => onOpenFile(path),
-    [onOpenFile]
-  )
 
   useEffect(() => {
     if (!pendingEditId || editingIdRef.current === pendingEditId) return
@@ -584,34 +592,35 @@ export default function Tree({
   // tree stays mounted (display:none) so its expansion and selection survive
   // the search and clearing restores it exactly (spec 060 R1).
   const renderTreeContent = () => {
-    if (data.length === 0) {
-      return <div className="tree-empty">No markdown files in this folder</div>
-    }
     return (
       <div className="tree-body" ref={treeBodyRef}>
         <div className="tree-host" style={showResults ? { display: 'none' } : undefined}>
-          <ArboristTree
-            ref={(api) => {
-              if (api) treeRef.current = api
-            }}
-            data={data}
-            width={treeBodySize.width}
-            height={Math.max(0, treeBodySize.height)}
-            rowHeight={28}
-            selection={selectedId ?? undefined}
-            onSelect={handleSelect}
-            onActivate={handleActivate}
-            onToggle={handleToggle}
-            onRename={handleRename}
-            onMove={handleMove}
-            disableMultiSelection={true}
-            disableDrop={disableDrop}
-            openByDefault={false}
-            renderRow={renderRow}
-            aria-label="Workspace files"
-          >
-            {renderNode}
-          </ArboristTree>
+          {data.length === 0 ? (
+            <div className="tree-empty">No markdown files in this folder</div>
+          ) : (
+            <ArboristTree
+              ref={(api) => {
+                if (api) treeRef.current = api
+              }}
+              data={data}
+              width={treeBodySize.width}
+              height={Math.max(0, treeBodySize.height)}
+              rowHeight={28}
+              selection={selectedId ?? undefined}
+              onSelect={handleSelect}
+              onActivate={handleActivate}
+              onToggle={handleToggle}
+              onRename={handleRename}
+              onMove={handleMove}
+              disableMultiSelection={true}
+              disableDrop={disableDrop}
+              openByDefault={false}
+              renderRow={renderRow}
+              aria-label="Workspace files"
+            >
+              {renderNode}
+            </ArboristTree>
+          )}
         </div>
         {showResults &&
           (showNoMatchState ? (
@@ -619,7 +628,7 @@ export default function Tree({
               No files match “{searchTerm}”
             </div>
           ) : (
-            <SearchResults sections={searchSections} term={searchTerm} onOpenFile={handleOpenFile} />
+            <SearchResults sections={searchSections} term={searchTerm} onOpenFile={onOpenFile} />
           ))}
       </div>
     )
