@@ -27,12 +27,16 @@ function searchEmpty(): ReturnType<Page['getByTestId']> {
   return window.getByTestId('explorer-search-empty')
 }
 
-function treeRow(name: string): ReturnType<Page['locator']> {
-  return window.getByRole('treeitem').getByText(name, { exact: true })
+function resultsView(): ReturnType<Page['getByTestId']> {
+  return window.getByTestId('search-results')
 }
 
-function row(name: string): ReturnType<Page['locator']> {
-  return window.getByRole('treeitem').filter({ hasText: name })
+function section(name: string): ReturnType<Page['locator']> {
+  return window.locator('.search-result-section').filter({ hasText: name })
+}
+
+function badge(sectionLocator: ReturnType<Page['locator']>): ReturnType<Page['getByTestId']> {
+  return sectionLocator.getByTestId('search-result-badge')
 }
 
 async function typeSearch(text: string): Promise<void> {
@@ -94,32 +98,33 @@ test.afterAll(async () => {
   fs.rmSync(largeFolder, { recursive: true, force: true })
 })
 
-test.describe('explorer content search (spec 059)', () => {
-  test('a content phrase in a never-opened folder surfaces the file with its ancestors (US1, FR-004)', async () => {
+test.describe('explorer content search (spec 059, results presentation)', () => {
+  test('a content phrase in a never-opened folder surfaces the file with its directory (US1)', async () => {
     await typeSearch('walrus')
-    await expect(treeRow('hidden.md')).toBeVisible()
-    await expect(row('nest')).toBeVisible()
-    await expect(row('deep')).toBeVisible()
-    await expect(treeRow('plans.md')).toHaveCount(0)
+    await expect(section('hidden.md')).toBeVisible()
+    await expect(section('hidden.md').locator('.search-result-dir')).toHaveText('deep/nest')
+    await expect(badge(section('hidden.md'))).toHaveText('1')
     await expect(searchEmpty()).toHaveCount(0)
   })
 
-  test('filename and content matches appear together; a content-only match is shown (FR-003, FR-005)', async () => {
+  test('filename and content matches appear together; a content-only match is shown (FR-003/005)', async () => {
     await typeSearch('alpha')
-    // alpha.md matches by name; misc.md matches only by content ("alpha channel").
-    await expect(treeRow('alpha.md')).toBeVisible()
-    await expect(treeRow('misc.md')).toBeVisible()
-    await expect(treeRow('plans.md')).toHaveCount(0)
+    // alpha.md matches by name and by content (one occurrence); misc.md matches
+    // only by content ("alpha channel").
+    await expect(section('alpha.md')).toBeVisible()
+    await expect(section('misc.md')).toBeVisible()
+    await expect(badge(section('misc.md'))).toHaveText('1')
+    await expect(section('plans.md')).toHaveCount(0)
   })
 
   test('a term in frontmatter counts as content (edge case)', async () => {
     await typeSearch('aurora')
-    await expect(treeRow('secret.md')).toBeVisible()
+    await expect(section('secret.md')).toBeVisible()
   })
 
   test('content search covers .markdown files too (FR-011)', async () => {
     await typeSearch('brandywine')
-    await expect(treeRow('legacy.markdown')).toBeVisible()
+    await expect(section('legacy.markdown')).toBeVisible()
   })
 
   test('a term matching neither names nor contents keeps the empty state (FR-009)', async () => {
@@ -130,19 +135,18 @@ test.describe('explorer content search (spec 059)', () => {
   test('content search never modifies a file; a content-matched file edits and saves normally (FR-006, SC-004)', async () => {
     const before = fs.readFileSync(path.join(testFolder, 'deep', 'nest', 'hidden.md'))
     await typeSearch('walrus')
-    await expect(treeRow('hidden.md')).toBeVisible()
+    await expect(section('hidden.md')).toBeVisible()
     // The on-disk bytes are untouched by the scan.
     expect(fs.readFileSync(path.join(testFolder, 'deep', 'nest', 'hidden.md')).equals(before)).toBe(
       true
     )
-    // Opening the content match presents the original content.
-    await treeRow('hidden.md').click()
+    // Clicking the snippet opens the original content.
+    await section('hidden.md').locator('.search-result-snippet').first().click()
     await expect(window.locator('.ProseMirror:visible')).toContainText('snippet walrus cavalry')
     expect(fs.readFileSync(path.join(testFolder, 'deep', 'nest', 'hidden.md')).equals(before)).toBe(
       true
     )
-    // The normal editing flow works on a content-matched file: edit, dirty,
-    // save, and the only on-disk difference is the edit.
+    // The normal editing flow works on a content-matched file.
     await window.locator('.ProseMirror:visible').click()
     await window.keyboard.press('Control+End')
     await window.keyboard.type(' EDITED-TAIL')
@@ -153,30 +157,27 @@ test.describe('explorer content search (spec 059)', () => {
       .toContain('EDITED-TAIL')
   })
 
-  test('clearing the term removes content matches and restores the tree (FR-007)', async () => {
-    // notes is never opened before filtering.
+  test('clearing the term removes the results and returns the tree (FR-007/010)', async () => {
+    // notes is never opened before searching.
     await typeSearch('waxing')
-    await expect(treeRow('journal.md')).toBeVisible()
-    await expect(row('notes')).toBeVisible()
+    await expect(section('journal.md')).toBeVisible()
 
     await searchInput().press('Escape')
     await expect(searchInput()).toHaveValue('')
-    // The content match is gone and notes returns to its pre-filter collapsed
-    // state, so its child is no longer visible.
-    await expect(treeRow('journal.md')).toHaveCount(0)
-    await expect(row('notes').getByRole('button', { name: 'Expand' })).toBeVisible()
+    await expect(resultsView()).toHaveCount(0)
+    await expect(window.getByRole('tree')).toBeVisible()
   })
 
-  test('content matches reset on workspace change and restart (FR-008)', async () => {
+  test('results reset on workspace change and restart (FR-008/011)', async () => {
     await typeSearch('walrus')
-    await expect(treeRow('hidden.md')).toBeVisible()
+    await expect(section('hidden.md')).toBeVisible()
 
     await stubOpenDialog(app, secondFolder)
     await window.getByRole('button', { name: 'Open menu' }).click()
     await window.getByRole('menuitem', { name: 'Open Folder…' }).click()
-    await expect(treeRow('other.md')).toBeVisible()
+    await expect(window.getByRole('treeitem').getByText('other.md', { exact: true })).toBeVisible()
     await expect(searchInput()).toHaveValue('')
-    await expect(treeRow('hidden.md')).toHaveCount(0)
+    await expect(resultsView()).toHaveCount(0)
 
     await closeAppSafely(app)
     ;({ app, window } = await launchApp(configDir, testFolder))
@@ -184,17 +185,16 @@ test.describe('explorer content search (spec 059)', () => {
     await stubMessageBox(app)
     await openFolder(window)
     await expect(searchInput()).toHaveValue('')
-    await expect(treeRow('alpha.md')).toBeVisible()
+    await expect(window.getByRole('treeitem').getByText('alpha.md', { exact: true })).toBeVisible()
   })
 
-  test('a whitespace-only term triggers no content search (edge case)', async () => {
+  test('a whitespace-only term triggers no content search (FR-013)', async () => {
     await searchInput().pressSequentially('   ')
-    await expect(treeRow('alpha.md')).toBeVisible()
-    await expect(treeRow('misc.md')).toBeVisible()
-    await expect(searchEmpty()).toHaveCount(0)
+    await expect(window.getByRole('tree')).toBeVisible()
+    await expect(resultsView()).toHaveCount(0)
   })
 
-  test('a 5,000-file workspace content-searches without perceptible lag (FR-010, SC-002)', async () => {
+  test('a 5,000-file workspace content-searches without perceptible lag (FR-014, SC-002)', async () => {
     test.setTimeout(120_000)
     await closeAppSafely(app)
     ;({ app, window } = await launchApp(configDir, largeFolder))
@@ -206,7 +206,7 @@ test.describe('explorer content search (spec 059)', () => {
     // The first scan reads every file from disk; that cold cost is bounded
     // generously here (a slow disk can take tens of seconds on 5,000 files).
     await searchInput().pressSequentially('needle')
-    await expect(treeRow('file-0000.md')).toBeVisible({ timeout: 60_000 })
+    await expect(section('file-0000.md')).toBeVisible({ timeout: 60_000 })
     await expect(searchEmpty()).toHaveCount(0)
 
     // A second search in the same session is served from the content cache
@@ -215,7 +215,7 @@ test.describe('explorer content search (spec 059)', () => {
     await expect(searchInput()).toHaveValue('')
     const started = Date.now()
     await searchInput().pressSequentially('document')
-    await expect(treeRow('file-0000.md')).toBeVisible()
+    await expect(section('file-0000.md')).toBeVisible()
     expect(Date.now() - started).toBeLessThan(5_000)
   })
 })

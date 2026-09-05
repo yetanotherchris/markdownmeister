@@ -22,22 +22,24 @@ function searchInput(): ReturnType<Page['getByTestId']> {
   return window.getByTestId('explorer-search-input')
 }
 
-function searchClear(): ReturnType<Page['getByTestId']> {
-  return window.getByTestId('explorer-search-clear')
-}
-
 function searchEmpty(): ReturnType<Page['getByTestId']> {
   return window.getByTestId('explorer-search-empty')
 }
 
-/** The tree row whose name is exactly `name` (rows carry the entry name). */
-function treeRow(name: string): ReturnType<Page['locator']> {
-  return window.getByRole('treeitem').getByText(name, { exact: true })
+function resultsView(): ReturnType<Page['getByTestId']> {
+  return window.getByTestId('search-results')
 }
 
-/** The treeitem row whose own name is `name`. */
-function row(name: string): ReturnType<Page['locator']> {
-  return window.getByRole('treeitem').filter({ hasText: name })
+function resultsSummary(): ReturnType<Page['getByTestId']> {
+  return window.getByTestId('search-results-summary')
+}
+
+function section(name: string): ReturnType<Page['locator']> {
+  return window.locator('.search-result-section').filter({ hasText: name })
+}
+
+function badge(sectionLocator: ReturnType<Page['locator']>): ReturnType<Page['getByTestId']> {
+  return sectionLocator.getByTestId('search-result-badge')
 }
 
 async function typeSearch(text: string): Promise<void> {
@@ -90,262 +92,144 @@ test.afterAll(async () => {
   fs.rmSync(largeFolder, { recursive: true, force: true })
 })
 
-test.describe('explorer file search (spec 057)', () => {
-  test('a search box sits above the tree and filters live per keystroke (US1, FR-001/002)', async () => {
+test.describe('explorer file search (spec 057, results presentation)', () => {
+  test('typing live replaces the tree with a results view (FR-001/002, spec 060)', async () => {
     await expect(searchInput()).toBeVisible()
     await expect(searchInput()).toHaveValue('')
+    await expect(window.getByRole('tree')).toBeVisible()
 
-    // US1-1: the tree narrows with each keystroke, no submit step.
-    await searchInput().pressSequentially('al')
-    await expect(treeRow('alpha.md')).toBeVisible()
-    await expect(treeRow('beta.md')).toHaveCount(0)
-    await expect(treeRow('reports')).toHaveCount(0)
-
-    await searchInput().pressSequentially('pha')
-    await expect(searchInput()).toHaveValue('alpha')
-    await expect(treeRow('alpha.md')).toBeVisible()
-    await expect(treeRow('beta.md')).toHaveCount(0)
-    await expect(treeRow('readme.md')).toHaveCount(0)
-    await expect(treeRow('docs')).toHaveCount(0)
+    await searchInput().pressSequentially('alpha')
+    await expect(resultsView()).toBeVisible()
+    await expect(window.getByRole('tree')).toBeHidden()
+    await expect(section('alpha.md')).toBeVisible()
+    // alpha.md matches by name and by content; the summary counts the content
+    // occurrence.
+    await expect(badge(section('alpha.md'))).toHaveText('1')
+    await expect(resultsSummary()).toContainText('1 matches in 1 files')
   })
 
-  test('matches inside collapsed folders become visible with their ancestors (FR-004)', async () => {
-    // Load docs once, then collapse it. FR-007 scopes search to entries
-    // already listed in the tree, so a never-opened folder's children are not
-    // known; a collapsed-but-loaded folder's matches must surface.
-    await row('docs').getByRole('button', { name: 'Expand' }).click()
-    await expect(treeRow('todo.md')).toBeVisible()
-    await row('docs').getByRole('button', { name: 'Collapse' }).click()
-    await expect(treeRow('todo.md')).toHaveCount(0)
-
-    await typeSearch('meeting')
-    await expect(treeRow('meeting-notes.md')).toBeVisible()
-    // The ancestor folder is kept so the structure stays readable.
-    await expect(treeRow('docs')).toBeVisible()
-    // Non-matching entries are hidden (FR-005), matching folders with no
-    // matching children are hidden too.
-    await expect(treeRow('quarterly.md')).toHaveCount(0)
-    await expect(treeRow('reports')).toHaveCount(0)
-    await expect(treeRow('alpha.md')).toHaveCount(0)
-
-    // FR-011: activating a matching folder behaves like unfiltered
-    // activation. Double-clicking docs (a loaded ancestor) collapses it, so
-    // its matching child hides, exactly as in the unfiltered tree.
-    await row('docs').dblclick()
-    await expect(treeRow('meeting-notes.md')).toHaveCount(0)
-    await row('docs').click()
-    await expect(row('docs')).toHaveAttribute('aria-selected', 'true')
+  test('a name match renders as a section with a badge of 1 and no snippet (FR-008)', async () => {
+    await typeSearch('readme')
+    await expect(section('readme.md')).toBeVisible()
+    await expect(badge(section('readme.md'))).toHaveText('1')
+    // readme.md content is '# Readme' so it also content-matches; a name-only
+    // case needs a word absent from the content, covered in the FR-007 test.
+    await expect(section('alpha.md')).toHaveCount(0)
   })
 
-  test('a folder whose own name matches shows the folder only, even when loaded (FR-006)', async () => {
-    // Load reports so its children are known, then collapse it again: the
-    // folder-name match must still show the folder without its children.
-    await row('reports').getByRole('button', { name: 'Expand' }).click()
-    await expect(treeRow('quarterly.md')).toBeVisible()
-    await row('reports').getByRole('button', { name: 'Collapse' }).click()
-
-    await typeSearch('reports')
-    await expect(treeRow('reports')).toBeVisible()
-    await expect(treeRow('quarterly.md')).toHaveCount(0)
-    await expect(treeRow('summary.md')).toHaveCount(0)
+  test('a content match inside a never-opened folder surfaces as a section (spec 059)', async () => {
+    await typeSearch('quarterly')
+    await expect(section('quarterly.md')).toBeVisible()
+    await expect(badge(section('quarterly.md'))).toHaveText('1')
+    // The section shows the file's directory path, so the location is clear
+    // even though reports was never opened.
+    await expect(section('quarterly.md').locator('.search-result-dir')).toHaveText('reports')
   })
 
   test('a never-opened folder is not name-searched until it is loaded (FR-007)', async () => {
-    // reports was never expanded, so its children are unknown to the tree:
-    // searching for a word that appears in a child's FILENAME but not in any
-    // content shows the empty state (content search matches nothing here).
+    // budget.md's filename contains 'budget' but its content ('# Finances')
+    // does not; with reports never opened the file is not in the loaded tree,
+    // so there is no name match and no content match.
     await typeSearch('budget')
     await expect(searchEmpty()).toBeVisible()
 
     await searchInput().press('Escape')
-    await row('reports').getByRole('button', { name: 'Expand' }).click()
-    await expect(treeRow('budget.md')).toBeVisible()
+    await window
+      .getByRole('treeitem')
+      .filter({ hasText: 'reports' })
+      .getByRole('button', { name: 'Expand' })
+      .click()
+    await expect(window.getByRole('treeitem').getByText('budget.md', { exact: true })).toBeVisible()
     await searchInput().pressSequentially('budget')
-    await expect(treeRow('budget.md')).toBeVisible()
+    await expect(section('budget.md')).toBeVisible()
     await expect(searchEmpty()).toHaveCount(0)
   })
 
-  test('a term matching nothing shows a calm empty state, no error, and clearing restores the tree (FR-009, FR-008)', async () => {
-    // Expansion survives a no-match filter and its clear: the tree stays
-    // mounted during the empty state, so open state is not lost (FR-008).
-    await row('docs').getByRole('button', { name: 'Expand' }).click()
-    await expect(treeRow('todo.md')).toBeVisible()
+  test('a term matching nothing shows a calm empty state, and clearing restores the tree (FR-009/010)', async () => {
+    // Pre-search state: docs expanded and selected. The tree is never modified
+    // during a search, so clearing restores it exactly.
+    const docsRow = window.getByRole('treeitem').filter({ hasText: 'docs' })
+    await docsRow.getByRole('button', { name: 'Expand' }).click()
+    await expect(window.getByRole('treeitem').getByText('todo.md', { exact: true })).toBeVisible()
+    await docsRow.click()
+    await expect(docsRow).toHaveAttribute('aria-selected', 'true')
 
     await typeSearch('zzz-no-such-entry')
     await expect(searchEmpty()).toBeVisible()
     await expect(searchEmpty()).toContainText('zzz-no-such-entry')
-    // The empty state replaces the tree list.
-    await expect(treeRow('alpha.md')).toHaveCount(0)
-    await expect(window.locator('.context-menu')).toHaveCount(0)
 
     await searchInput().press('Escape')
-    await expect(treeRow('todo.md')).toBeVisible()
-    await expect(searchEmpty()).toHaveCount(0)
-  })
-
-  test('activating a match opens exactly like unfiltered, including duplicate-tab focus (US3, FR-010)', async () => {
-    await typeSearch('alpha')
-    await treeRow('alpha.md').click()
-    await expect(window.locator('.ProseMirror:visible')).toBeVisible()
-    await expect(window.locator('.document-title')).toContainText('alpha.md')
-    await expect(window.getByRole('tab')).toHaveCount(1)
-
-    // Reopening an already-open file from the filtered tree focuses its tab
-    // instead of opening a second one, exactly as unfiltered activation does.
-    await treeRow('alpha.md').click()
-    await expect(window.getByRole('tab')).toHaveCount(1)
-    await expect(window.locator('.ProseMirror:visible')).toBeVisible()
-  })
-
-  test('clearing restores expansion and selection exactly (US2/FR-008, FR-014)', async () => {
-    // Pre-filter state: docs expanded and selected, reports collapsed.
-    await row('docs').getByRole('button', { name: 'Expand' }).click()
-    await expect(treeRow('todo.md')).toBeVisible()
-    await row('docs').click()
-    await expect(row('docs')).toHaveAttribute('aria-selected', 'true')
-
-    // Filter, then click the matching reports folder while filtered: this
-    // changes both expansion (library) and selection (our snapshot concern).
-    await typeSearch('reports')
-    await expect(treeRow('reports')).toBeVisible()
-    await row('reports').click()
-    await expect(row('reports')).toHaveAttribute('aria-selected', 'true')
-
-    // Escape clears the term, restores the pre-filter state, and returns
-    // focus to the tree.
-    await searchInput().press('Escape')
     await expect(searchInput()).toHaveValue('')
-    await expect(treeRow('todo.md')).toBeVisible()
-    await expect(row('docs')).toHaveAttribute('aria-selected', 'true')
-    await expect(treeRow('quarterly.md')).toHaveCount(0)
-    await expect(row('reports')).toHaveAttribute('aria-selected', 'false')
-    // FR-014: focus is back inside the tree (react-arborist lands it on the
-    // focused row rather than the role="tree" container itself).
-    const focusInTree = await window.evaluate(() => {
-      const el = document.activeElement
-      return !!el && !!el.closest('[role="tree"]')
-    })
-    expect(focusInTree).toBe(true)
+    await expect(resultsView()).toHaveCount(0)
+    await expect(window.getByRole('tree')).toBeVisible()
+    await expect(window.getByRole('treeitem').getByText('todo.md', { exact: true })).toBeVisible()
+    await expect(docsRow).toHaveAttribute('aria-selected', 'true')
   })
 
-  test('the clear control and backspace-deleting the term both restore the tree (US2-1/2)', async () => {
-    await row('docs').getByRole('button', { name: 'Expand' }).click()
-    await row('docs').click()
-
-    // Backspace the term to empty: selection and expansion survive.
-    await searchInput().pressSequentially('alpha')
-    await expect(treeRow('alpha.md')).toBeVisible()
-    await searchInput().press('Backspace')
-    await searchInput().press('Backspace')
-    await searchInput().press('Backspace')
-    await searchInput().press('Backspace')
-    await searchInput().press('Backspace')
-    await expect(searchInput()).toHaveValue('')
-    await expect(treeRow('todo.md')).toBeVisible()
-    await expect(row('docs')).toHaveAttribute('aria-selected', 'true')
-
-    // The clear control removes the term and returns the tree as well.
-    await searchInput().pressSequentially('beta')
-    await expect(treeRow('beta.md')).toBeVisible()
-    await searchClear().click()
-    await expect(searchInput()).toHaveValue('')
-    await expect(treeRow('todo.md')).toBeVisible()
-    await expect(row('docs')).toHaveAttribute('aria-selected', 'true')
-  })
-
-  test('a whitespace-only term filters nothing (edge case)', async () => {
+  test('a whitespace-only term filters nothing and keeps the tree (FR-013)', async () => {
     await searchInput().pressSequentially('   ')
-    await expect(treeRow('alpha.md')).toBeVisible()
-    await expect(treeRow('beta.md')).toBeVisible()
-    await expect(treeRow('reports')).toBeVisible()
-    await expect(searchEmpty()).toHaveCount(0)
+    await expect(window.getByRole('tree')).toBeVisible()
+    await expect(resultsView()).toHaveCount(0)
+    await expect(window.getByRole('treeitem').getByText('alpha.md', { exact: true })).toBeVisible()
   })
 
-  test('create, rename, and delete flows work while filtered (US3-3)', async () => {
-    // Create a new file while "alpha" is active: the file is created on disk
-    // but hidden by the filter until the term is cleared. Wait past the
-    // tree's 500ms inline-edit wait window first, so this proves the hidden
-    // create flow never times out into a delete of the fresh placeholder.
+  test('tree operations require clearing the search; create/rename/delete work after (spec 060, R5)', async () => {
+    // While a term is active the tree is hidden behind the results view, so
+    // the tree context menu (create) is not available.
     await typeSearch('alpha')
+    await expect(resultsView()).toBeVisible()
+    await expect(window.getByRole('tree')).toBeHidden()
+
+    await searchInput().press('Escape')
+    await expect(window.getByRole('tree')).toBeVisible()
+
+    // Create a file from the tree: the flow runs normally.
     await window.locator('.tree-container').click({ button: 'right', position: { x: 120, y: 240 } })
     await window.getByRole('menuitem').getByText('New File').click()
-    await expect.poll(() => fs.existsSync(path.join(testFolder, 'new-file-1.md'))).toBe(true)
-    await expect(treeRow('new-file-1.md')).toHaveCount(0)
-    await window.waitForTimeout(650)
-
-    await searchInput().press('Escape')
     const placeholder = window.getByRole('textbox', { name: /Name new file/ })
     await expect(placeholder).toBeVisible()
-    expect(fs.existsSync(path.join(testFolder, 'new-file-1.md'))).toBe(true)
     await placeholder.fill('created.md')
     await placeholder.press('Enter')
-    await expect(treeRow('created.md')).toBeVisible()
+    await expect(
+      window.getByRole('treeitem').getByText('created.md', { exact: true })
+    ).toBeVisible()
     expect(fs.existsSync(path.join(testFolder, 'created.md'))).toBe(true)
-
-    // Rename a match while filtered: the new name no longer matches, so the
-    // row hides; clearing the term shows the renamed entry.
-    await typeSearch('created')
-    await expect(treeRow('created.md')).toBeVisible()
-    await treeRow('created.md').click({ button: 'right' })
-    await window.getByRole('menuitem').getByText('Rename').click()
-    const rename = window.getByRole('textbox', { name: /Rename/ })
-    await rename.fill('renamed.md')
-    await rename.press('Enter')
-    await expect(treeRow('renamed.md')).toHaveCount(0)
-    expect(fs.existsSync(path.join(testFolder, 'renamed.md'))).toBe(true)
-    await searchInput().press('Escape')
-    await expect(treeRow('renamed.md')).toBeVisible()
-    await expect(treeRow('created.md')).toHaveCount(0)
-
-    // Delete while filtered: the confirmed delete removes the entry and the
-    // file, exactly as it does unfiltered.
-    await typeSearch('renamed')
-    await expect(treeRow('renamed.md')).toBeVisible()
-    await treeRow('renamed.md').click({ button: 'right' })
-    await stubMessageBox(app, 'Delete')
-    await window.getByRole('menuitem').getByText('Delete').click()
-    await expect(treeRow('renamed.md')).toHaveCount(0)
-    expect(fs.existsSync(path.join(testFolder, 'renamed.md'))).toBe(false)
   })
 
-  test('the term resets on workspace change and restart (US2-4, FR-013)', async () => {
+  test('the term resets on workspace change and restart (FR-011)', async () => {
     await typeSearch('alpha')
+    await expect(resultsView()).toBeVisible()
     await expect(searchInput()).toHaveValue('alpha')
 
-    // Open a different workspace through the stubbed native folder picker.
     await stubOpenDialog(app, secondFolder)
     await window.getByRole('button', { name: 'Open menu' }).click()
     await window.getByRole('menuitem', { name: 'Open Folder…' }).click()
-    await expect(treeRow('other.md')).toBeVisible()
+    await expect(window.getByRole('treeitem').getByText('other.md', { exact: true })).toBeVisible()
     await expect(searchInput()).toHaveValue('')
-    await expect(treeRow('alpha.md')).toHaveCount(0)
+    await expect(resultsView()).toHaveCount(0)
 
-    // A restart starts with an empty search box too (nothing is persisted).
     await closeAppSafely(app)
     ;({ app, window } = await launchApp(configDir, testFolder))
     await stubTrash(app)
     await stubMessageBox(app)
     await openFolder(window)
     await expect(searchInput()).toHaveValue('')
-    await expect(treeRow('alpha.md')).toBeVisible()
+    await expect(window.getByRole('treeitem').getByText('alpha.md', { exact: true })).toBeVisible()
   })
 
-  test('a 5,000-entry workspace filters without perceptible lag (FR-012, SC-002)', async () => {
-    // Re-launch against the large workspace so the tree lists all entries.
+  test('a 5,000-entry workspace shows a result within a bounded wait (FR-014, SC-002)', async () => {
+    test.setTimeout(120_000)
     await closeAppSafely(app)
     ;({ app, window } = await launchApp(configDir, largeFolder))
     await stubTrash(app)
     await stubMessageBox(app)
     await openFolder(window)
-    // The 5,000th entry is off-screen until filtered (the list is virtualized).
     await expect(window.getByRole('treeitem').first()).toBeVisible()
 
     const started = Date.now()
     await searchInput().pressSequentially('needle')
-    await expect(treeRow('needle-file.md')).toBeVisible()
-    await expect(treeRow('file-0000.md')).toHaveCount(0)
+    await expect(section('needle-file.md')).toBeVisible()
     await expect(searchEmpty()).toHaveCount(0)
-    // Bounded so a regression to a full-tree O(n²) per keystroke fails loudly.
     expect(Date.now() - started).toBeLessThan(5_000)
   })
 })

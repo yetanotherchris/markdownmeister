@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import { searchContents } from '../../fs/search'
-import type { Result } from '../../../shared/ipc-contract'
+import type { Result, SearchContentResult } from '../../../shared/ipc-contract'
 import {
   ctx,
   ok,
@@ -17,7 +17,7 @@ const MAX_TERM_LENGTH = 200
 export function registerSearchHandlers(window: Electron.BrowserWindow, _ctx: typeof ctx): void {
   ipcMain.handle(
     'workspace:searchContents',
-    async (event, args: unknown): Promise<Result<string[]>> => {
+    async (event, args: unknown): Promise<Result<SearchContentResult[]>> => {
       if (!isAuthorizedRenderer(event, window)) return err('IO', 'Unauthorized renderer')
       try {
         validateShape(args, ['term'])

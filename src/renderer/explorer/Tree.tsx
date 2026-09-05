@@ -8,10 +8,11 @@ import { findNodeById, parentPathOf } from '../state/workspace'
 import { useElementSize } from '../hooks/useElementSize'
 import { treeMoveTarget, treeWouldMoveIntoOwnDescendant } from './treeMove'
 import { treeRenameLabel } from './treeRename'
-import { searchMatchWithContent, shouldShowNoMatchState } from './contentSearch'
 import { isOpenableFile } from './openGesture'
 import type { FileOpenGesture } from './openGesture'
 import type { EntryKind } from '../../shared/ipc-contract'
+import SearchResults from './SearchResults'
+import type { SearchSection } from './searchResultModel'
 import './Tree.css'
 
 interface TreeProps {
@@ -42,49 +43,21 @@ interface TreeProps {
 
   apiRef?: React.MutableRefObject<TreeApi<TreeNode> | null> | null
 
-  /** Live search term for the explorer filter (FR-001/FR-002). */
+  /** Live search term for the explorer search (spec 057/059/060). */
   searchTerm: string
   onSearchTermChange: (term: string) => void
-  /** Node ids whose contents matched the active term (spec 059 FR-001). */
-  contentMatchIds: Set<string>
-  /** True once the content scan for the term has settled (spec 059 R5). */
-  contentSearchIdle: boolean
+  /** The merged results sections shown while a term is active (spec 060). */
+  searchSections: SearchSection[]
+  /** True once the content scan has settled (spec 060, empty-state timing). */
+  searchSettled: boolean
+  /** Open a file from the results view with the existing open behaviour. */
+  onOpenFile: (path: string) => void
 }
 
 interface ContextMenuState {
   x: number
   y: number
   node: TreeNode | null
-}
-
-/**
- * FR-008: capture the selection the moment a term first becomes non-empty and
- * reapply it when the term returns to empty. The library restores the open
- * map itself; selection is the one part it does not, and clicking a match
- * while filtering would otherwise leave the post-filter selection behind.
- */
-function usePreFilterSelectionRestore(
-  filtering: boolean,
-  selectedId: string | null,
-  data: TreeNode[],
-  onSelect: (id: string | null) => void
-): void {
-  const preFilterSelectionRef = useRef<string | null | undefined>(undefined)
-  const filteringRef = useRef(false)
-  useEffect(() => {
-    if (filtering && !filteringRef.current) {
-      preFilterSelectionRef.current = selectedId
-    } else if (!filtering && filteringRef.current) {
-      const restore = preFilterSelectionRef.current
-      // The pre-filter entry may have been deleted or renamed while the
-      // filter was active; a dead id must not be re-selected.
-      if (restore !== undefined && (restore === null || findNodeById(data, restore))) {
-        onSelect(restore)
-      }
-      preFilterSelectionRef.current = undefined
-    }
-    filteringRef.current = filtering
-  }, [filtering, selectedId, data, onSelect])
 }
 
 interface ExplorerSearchInputProps {
@@ -352,8 +325,9 @@ export default function Tree({
   apiRef,
   searchTerm,
   onSearchTermChange,
-  contentMatchIds,
-  contentSearchIdle
+  searchSections,
+  searchSettled,
+  onOpenFile
 }: TreeProps) {
   const [containerRef] = useElementSize<HTMLDivElement>()
   const [treeBodyRef, treeBodySize] = useElementSize<HTMLDivElement>()
@@ -367,7 +341,6 @@ export default function Tree({
 
   const searchInputRef = useRef<HTMLInputElement>(null)
   const filtering = searchTerm.trim() !== ''
-  usePreFilterSelectionRestore(filtering, selectedId, data, onSelect)
 
   const focusTree = useCallback(() => {
     containerRef.current?.querySelector<HTMLElement>('[role="tree"]')?.focus()
@@ -378,19 +351,13 @@ export default function Tree({
     focusTree()
   }, [focusTree, onSearchTermChange])
 
-  const handleSearchMatch = useCallback(
-    (node: NodeApi<TreeNode>) =>
-      searchMatchWithContent(node.data.id, node.data.name, searchTerm, editingId, contentMatchIds),
-    [searchTerm, editingId, contentMatchIds]
-  )
-
-  const showNoMatchState = shouldShowNoMatchState(
-    filtering,
-    data,
-    searchTerm,
-    contentMatchIds,
-    contentSearchIdle,
-    editingId
+  // While a term is active the tree is hidden behind the results view; it is
+  // never modified, so clearing restores it exactly (spec 060 R1).
+  const showResults = filtering
+  const showNoMatchState = filtering && searchSections.length === 0 && searchSettled
+  const handleOpenFile = useCallback(
+    (path: string) => onOpenFile(path),
+    [onOpenFile]
   )
 
   useEffect(() => {
@@ -613,44 +580,47 @@ export default function Tree({
     </div>
   )
 
-  // The tree stays mounted while a term matches nothing so clearing the term
-  // restores the pre-filter expansion exactly (FR-008); the empty message
-  // overlays the tree's (empty) list area.
+  // While a term is active the results view replaces the tree visually; the
+  // tree stays mounted (display:none) so its expansion and selection survive
+  // the search and clearing restores it exactly (spec 060 R1).
   const renderTreeContent = () => {
     if (data.length === 0) {
       return <div className="tree-empty">No markdown files in this folder</div>
     }
     return (
       <div className="tree-body" ref={treeBodyRef}>
-        <ArboristTree
-          ref={(api) => {
-            if (api) treeRef.current = api
-          }}
-          data={data}
-          width={treeBodySize.width}
-          height={Math.max(0, treeBodySize.height)}
-          rowHeight={28}
-          selection={selectedId ?? undefined}
-          onSelect={handleSelect}
-          onActivate={handleActivate}
-          onToggle={handleToggle}
-          onRename={handleRename}
-          onMove={handleMove}
-          disableMultiSelection={true}
-          disableDrop={disableDrop}
-          openByDefault={false}
-          searchTerm={searchTerm}
-          searchMatch={handleSearchMatch}
-          renderRow={renderRow}
-          aria-label="Workspace files"
-        >
-          {renderNode}
-        </ArboristTree>
-        {showNoMatchState && (
-          <div className="tree-empty tree-empty-overlay" data-testid="explorer-search-empty">
-            No files match “{searchTerm}”
-          </div>
-        )}
+        <div className="tree-host" style={showResults ? { display: 'none' } : undefined}>
+          <ArboristTree
+            ref={(api) => {
+              if (api) treeRef.current = api
+            }}
+            data={data}
+            width={treeBodySize.width}
+            height={Math.max(0, treeBodySize.height)}
+            rowHeight={28}
+            selection={selectedId ?? undefined}
+            onSelect={handleSelect}
+            onActivate={handleActivate}
+            onToggle={handleToggle}
+            onRename={handleRename}
+            onMove={handleMove}
+            disableMultiSelection={true}
+            disableDrop={disableDrop}
+            openByDefault={false}
+            renderRow={renderRow}
+            aria-label="Workspace files"
+          >
+            {renderNode}
+          </ArboristTree>
+        </div>
+        {showResults &&
+          (showNoMatchState ? (
+            <div className="tree-empty" data-testid="explorer-search-empty">
+              No files match “{searchTerm}”
+            </div>
+          ) : (
+            <SearchResults sections={searchSections} term={searchTerm} onOpenFile={handleOpenFile} />
+          ))}
       </div>
     )
   }

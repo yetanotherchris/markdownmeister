@@ -19,7 +19,7 @@ import { useSourceViewToggle } from './hooks/useSourceViewToggle'
 import { useWorkspaceTree } from './hooks/useWorkspaceTree'
 import { useExternalFileEvents } from './hooks/useExternalFileEvents'
 import { useMenuCommands } from './hooks/useMenuCommands'
-import { useContentSearch } from './hooks/useContentSearch'
+import { useSearchResults } from './hooks/useSearchResults'
 import { useOsOpen } from './hooks/useOsOpen'
 import { useWorkspaceFolder } from './hooks/useWorkspaceFolder'
 import { useSidebarLayout } from './hooks/useSidebarLayout'
@@ -194,11 +194,10 @@ export default function App() {
     }, [])
   })
   useOsOpen({ session: sessionApi, folder, onOpenFailed: setFooterNote })
-  const contentSearch = useContentSearch({
+  const searchResults = useSearchResults({
     searchTerm,
     workspaceRoot: workspace.root,
-    dispatchWorkspace,
-    workspaceRef
+    nodes: workspace.nodes
   })
 
   const { handleMenuCommand } = menu
@@ -220,6 +219,17 @@ export default function App() {
     (node: TreeNode) => {
       window.api.readFile(node.id).then((result) => {
         if (result.ok) sessionApi.openFileFromExplorer(result.value, true)
+      })
+    },
+    [sessionApi]
+  )
+
+  // Open a search result by path: the file may sit in a folder never loaded
+  // into the tree, so the open must not require a tree node.
+  const handleOpenSearchResult = useCallback(
+    (path: string) => {
+      window.api.readFile(path).then((result) => {
+        if (result.ok) sessionApi.openFileFromExplorer(result.value)
       })
     },
     [sessionApi]
@@ -384,8 +394,9 @@ export default function App() {
                     apiRef={treeApiRef}
                     searchTerm={searchTerm}
                     onSearchTermChange={setSearchTerm}
-                    contentMatchIds={contentSearch.contentMatchIds}
-                    contentSearchIdle={contentSearch.contentSearchIdle}
+                    searchSections={searchResults.sections}
+                    searchSettled={searchResults.settled}
+                    onOpenFile={handleOpenSearchResult}
                   />
                 </div>
               </Panel>
