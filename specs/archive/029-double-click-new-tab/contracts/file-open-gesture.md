@@ -33,17 +33,20 @@ onClick={(e) => {
 
 | Gesture | Setting | Active-tab state | Action |
 |---------|---------|------------------|--------|
-| `double-click` | either | any | `openFileFromExplorer(file, true)` (FR-001/005); the reducer's already-open dedupe lands it on the tab the first click just presented (2026-08-21 amendment) |
-| `single-click` | either | any | `openFileFromExplorer(file)` now — the deferral window was removed on 2026-08-21; replacement vs new-tab is decided by the existing open gate |
+| `double-click` | either | any | `openFileFromExplorer(file, true)` (FR-001/005); always a NEW tab, the active tab is left untouched (2026-09-06 re-amendment) |
+| `single-click` | either | any | `openFileFromExplorer(file)` now — replacement vs new-tab is decided by the existing open gate; in same-tab mode a single click that would REPLACE a clean active tab is deferred by `DOUBLE_CLICK_WINDOW_MS` so a double-click is still recognised as one gesture (FR-003) |
 
 `openFileFromExplorer` keeps its existing behaviour: already-open → activate (FR-005);
 same-tab + clean active → replace; dirty/no active → new tab (FR-009).
 
 Historical note: before the 2026-08-21 amendment a single-click that would replace
 a clean active tab was deferred by `DOUBLE_CLICK_WINDOW_MS` (500 ms) so a
-double-click could cancel it. The deferral was removed because, once spec 033 made
-mounts fast, it was the entire perceived cost of a same-tab open; the double-click's
-explicit-new request now dedupes onto the tab the first click opened instead.
+double-click could cancel it. The 2026-08-21 amendment removed the deferral because
+spec 033 made mounts fast; the double-click's explicit-new request then deduped onto
+the tab the first click opened instead — which also meant a double-click over a CLEAN
+tab replaced it (one tab). On 2026-09-06 the deferral was restored: a double-click is
+again one gesture that always opens a NEW tab and leaves the active tab (clean or
+dirty) untouched.
 
 ## Entry points
 

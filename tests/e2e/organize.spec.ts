@@ -234,7 +234,7 @@ test('clicking inside the rename input places the caret at the click point', asy
   expect(state.selStart).toBe(state.selEnd)
 })
 
-test('creates a file from the tree, named inline, present on disk', async () => {
+test('creates a file from the tree, named inline, opens in a tab (spec 058)', async () => {
   await openFolder()
   const row = window.getByRole('treeitem').filter({ hasText: 'sub' })
   await openContextMenu(row)
@@ -245,6 +245,12 @@ test('creates a file from the tree, named inline, present on disk', async () => 
   await input.fill('fresh.md')
   await input.press('Enter')
 
+  // The confirmed creation opens the file in a new active tab (spec 058
+  // FR-001), showing an empty, clean document.
+  await expect(window.getByRole('tab', { name: /fresh\.md/ })).toBeVisible()
+  await expect(window.locator('.document-title')).toContainText('fresh.md')
+  await expect(window.locator('.document-title')).not.toContainText('\u2022')
+  await expect(window.locator('.ProseMirror:visible')).toHaveText('')
   await expect(window.getByRole('treeitem').getByText('fresh.md')).toBeVisible()
   expect(fs.existsSync(path.join(testFolder, 'sub', 'fresh.md'))).toBe(true)
 })
