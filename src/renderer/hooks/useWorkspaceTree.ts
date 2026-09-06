@@ -18,6 +18,22 @@ import type { DialogQueue } from './useDialogQueue'
 import type { DocumentSessionApi } from './useDocumentSession'
 import { useFileOpenGesture } from './useFileOpenGesture'
 
+// T058: open a just-created file in a new active tab. New-tab mode is forced so
+// the empty document never displaces an active (possibly dirty) tab (FR-003,
+// FR-007); duplicate prevention rides the existing open path.
+async function openCreatedFile(
+  path: string,
+  openFileFromExplorer: DocumentSessionApi['openFileFromExplorer'],
+  showOperationError: (message: string) => Promise<void>
+): Promise<void> {
+  const result = await window.api.readFile(path)
+  if (result.ok) {
+    openFileFromExplorer(result.value, true)
+    return
+  }
+  await showOperationError(result.message)
+}
+
 export interface WorkspaceTreeApi {
   handleTreeSelect: (id: string | null) => void
   handleTreeActivate: (id: string) => Promise<void>
@@ -100,18 +116,6 @@ export function useWorkspaceTree(opts: {
     return true
   }, [dispatch, dispatchWorkspace, showOperationError])
 
-  // T058: open a just-created file in a new active tab. New-tab mode is forced
-  // so the empty document never displaces an active (possibly dirty) tab
-  // (FR-003, FR-007); duplicate prevention rides the existing open path.
-  const openCreatedFile = useCallback(async (path: string) => {
-    const result = await window.api.readFile(path)
-    if (result.ok) {
-      openFileFromExplorer(result.value, true)
-      return
-    }
-    void showOperationError(result.message)
-  }, [openFileFromExplorer, showOperationError])
-
   // T058: inline rename commit from the tree (also used to name new entries).
   const handleRename = useCallback(async (node: TreeNode, newName: string): Promise<boolean> => {
     const error = validateEntryName(node.kind, node.name, newName)
@@ -121,27 +125,18 @@ export function useWorkspaceTree(opts: {
     }
     const fromPath = node.id
     const toPath = renameTargetPath(fromPath, newName.trim())
-    // A confirmed creation commit opens the just-named file in a new active
-    // tab (FR-001); only files open, never folders (FR-006), and only when the
-    // placeholder was still pending creation (ordinary renames are unaffected).
+    // A confirmed creation commit opens the just-named file in a new active tab
+    // (FR-001); a failed commit (e.g. a name collision) leaves the placeholder
+    // pending so a retry still opens a tab.
     const wasFileCreation = pendingCreateRef.current.has(fromPath) && node.kind === 'file'
     setPendingEditId(null)
-    if (toPath === fromPath) {
-      if (wasFileCreation) {
-        pendingCreateRef.current.delete(fromPath)
-        await openCreatedFile(toPath)
-      }
-      return true
-    }
-    const moved = await applyMove(fromPath, toPath)
+    const moved = toPath === fromPath ? true : await applyMove(fromPath, toPath)
     if (moved) {
-      // Only a successful move ends the creation; a failed commit (e.g. a name
-      // collision) leaves the placeholder pending so a retry still opens a tab.
       pendingCreateRef.current.delete(fromPath)
-      if (wasFileCreation) await openCreatedFile(toPath)
+      if (wasFileCreation) await openCreatedFile(toPath, openFileFromExplorer, showOperationError)
     }
     return moved
-  }, [applyMove, openCreatedFile, pendingCreateRef, setPendingEditId, showOperationError])
+  }, [applyMove, openFileFromExplorer, pendingCreateRef, setPendingEditId, showOperationError])
 
   const handleEditingCancelled = useCallback((id: string) => {
     // A new entry the user declined to name: remove the placeholder.
