@@ -3,7 +3,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { useWorkspaceTree } from '../../src/renderer/hooks/useWorkspaceTree'
 import type { TreeNode } from '../../src/renderer/state/workspace'
-import type { DocumentsAction, EditingSession } from '../../src/renderer/state/documents'
+import type { EditingSession } from '../../src/renderer/state/documents'
 import type { OpenedFile } from '../../src/shared/ipc-contract'
 
 /**
@@ -11,7 +11,9 @@ import type { OpenedFile } from '../../src/shared/ipc-contract'
  * file in a new active tab (FR-001). These tests pin the hook boundary: when a
  * creation placeholder is confirmed, openFileFromExplorer is called with the
  * final path and explicit-new forced; cancellation, failed naming, folder
- * creation, and ordinary renames never open anything (FR-004/005/006).
+ * creation, and ordinary renames never open anything (FR-004/005/006). A
+ * failed commit leaves the placeholder pending so a retry still opens a tab,
+ * and a failed read of the created file surfaces an error instead of a tab.
  */
 
 function makeNode(id: string, name: string, kind: 'file' | 'directory'): TreeNode {
@@ -54,8 +56,8 @@ function makeHarness(opts: { pendingCreates?: Set<string> } = {}) {
     current: { name: null, root: null, nodes: [], selectedId: null, error: null }
   }
   const sessionRef = { current: makeSession() }
-  const dispatched: DocumentsAction[] = []
   const opened: Array<{ file: OpenedFile; explicitNew: boolean }> = []
+  const errors: string[] = []
   let api!: ReturnType<typeof useWorkspaceTree>
 
   const session = {
@@ -68,14 +70,16 @@ function makeHarness(opts: { pendingCreates?: Set<string> } = {}) {
 
   function Harness() {
     api = useWorkspaceTree({
-      dispatch: (action) => dispatched.push(action),
+      dispatch: () => {},
       dispatchWorkspace: () => {},
       sessionRef,
       workspaceRef,
       dialog: {
         dialogInFlightRef: { current: false },
         releaseDialogSurface: () => {},
-        showOperationError: () => {}
+        showOperationError: (message: string) => {
+          errors.push(message)
+        }
       } as unknown as Parameters<typeof useWorkspaceTree>[0]['dialog'],
       session: session as unknown as Parameters<typeof useWorkspaceTree>[0]['session'],
       treeApiRef: { current: null },
@@ -88,15 +92,8 @@ function makeHarness(opts: { pendingCreates?: Set<string> } = {}) {
 
   root = createRoot(container)
   act(() => root!.render(<Harness />))
-  return { api, opened, dispatched }
+  return { api, opened, errors }
 }
-
-/** Flush the fire-and-forget openCreatedFile promise chain inside act so no
- *  async continuation lands after the test (or in the next test). */
-const flushAsync = () =>
-  act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0))
-  })
 
 describe('useWorkspaceTree creation commit opens a new tab (spec 058)', () => {
   it('opens the renamed file in a new tab after a confirmed file creation', async () => {
@@ -107,7 +104,6 @@ describe('useWorkspaceTree creation commit opens a new tab (spec 058)', () => {
     await act(async () => {
       ok = await api.handleRename(placeholder, 'fresh.md')
     })
-    await flushAsync()
 
     expect(ok).toBe(true)
     expect(opened).toHaveLength(1)
@@ -138,7 +134,6 @@ describe('useWorkspaceTree creation commit opens a new tab (spec 058)', () => {
     await act(async () => {
       ok = await api.handleRename(placeholder, 'new-file-1.md')
     })
-    await flushAsync()
 
     expect(ok).toBe(true)
     expect(opened).toHaveLength(1)
@@ -152,7 +147,6 @@ describe('useWorkspaceTree creation commit opens a new tab (spec 058)', () => {
     await act(async () => {
       api.handleEditingCancelled('notes/new-file-1.md')
     })
-    await flushAsync()
 
     expect(opened).toHaveLength(0)
   })
@@ -166,10 +160,71 @@ describe('useWorkspaceTree creation commit opens a new tab (spec 058)', () => {
       // Invalid: no markdown extension.
       ok = await api.handleRename(placeholder, 'fresh.txt')
     })
-    await flushAsync()
 
     expect(ok).toBe(false)
     expect(opened).toHaveLength(0)
+  })
+
+  it('a failed commit leaves the placeholder pending so a retry opens a tab (FR-001)', async () => {
+    const placeholder = makeNode('notes/new-file-1.md', 'new-file-1.md', 'file')
+    const pendingCreates = new Set(['notes/new-file-1.md'])
+    const { api, opened } = makeHarness({ pendingCreates })
+
+    // The committed name collides on disk: the move fails, nothing opens.
+    window.api = {
+      moveEntry: () => Promise.resolve({ ok: false, code: 'CONFLICT', message: 'Already exists' }),
+      readFile: () =>
+        Promise.resolve({
+          ok: true,
+          value: { path: 'x.md', name: 'x.md', content: '', mtimeMs: 0, size: 0 }
+        })
+    } as unknown as typeof window.api
+
+    let ok: boolean | undefined
+    await act(async () => {
+      ok = await api.handleRename(placeholder, 'beta.md')
+    })
+    expect(ok).toBe(false)
+    expect(opened).toHaveLength(0)
+
+    // The placeholder is still pending, so an accepted retry opens its tab.
+    window.api = {
+      moveEntry: () =>
+        Promise.resolve({ ok: true, value: { path: movedPath, name: 'fresh.md', kind: 'file' } }),
+      readFile: () =>
+        Promise.resolve({
+          ok: true,
+          value: { path: movedPath, name: 'fresh.md', content: '', mtimeMs: 0, size: 0 }
+        })
+    } as unknown as typeof window.api
+
+    await act(async () => {
+      ok = await api.handleRename(placeholder, 'fresh.md')
+    })
+    expect(ok).toBe(true)
+    expect(opened).toHaveLength(1)
+    expect(opened[0].file.path).toBe(movedPath)
+  })
+
+  it('a failed read of the created file surfaces an error and opens no tab', async () => {
+    const placeholder = makeNode('notes/new-file-1.md', 'new-file-1.md', 'file')
+    const { api, opened, errors } = makeHarness({
+      pendingCreates: new Set(['notes/new-file-1.md'])
+    })
+    window.api = {
+      moveEntry: () =>
+        Promise.resolve({ ok: true, value: { path: movedPath, name: 'fresh.md', kind: 'file' } }),
+      readFile: () => Promise.resolve({ ok: false, message: 'Could not read the file' })
+    } as unknown as typeof window.api
+
+    let ok: boolean | undefined
+    await act(async () => {
+      ok = await api.handleRename(placeholder, 'fresh.md')
+    })
+
+    expect(ok).toBe(true)
+    expect(opened).toHaveLength(0)
+    expect(errors).toEqual(['Could not read the file'])
   })
 
   it('opens nothing for a confirmed folder creation (FR-006)', async () => {
@@ -180,7 +235,6 @@ describe('useWorkspaceTree creation commit opens a new tab (spec 058)', () => {
     await act(async () => {
       ok = await api.handleRename(placeholder, 'docs')
     })
-    await flushAsync()
 
     expect(ok).toBe(true)
     expect(opened).toHaveLength(0)
@@ -194,7 +248,6 @@ describe('useWorkspaceTree creation commit opens a new tab (spec 058)', () => {
     await act(async () => {
       ok = await api.handleRename(existing, 'b.md')
     })
-    await flushAsync()
 
     expect(ok).toBe(true)
     expect(opened).toHaveLength(0)

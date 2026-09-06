@@ -31,16 +31,10 @@ async function resetFixture(): Promise<void> {
   for (const f of ['alpha.md', 'beta.md', 'sub/gamma.md', 'notes/note.md']) {
     const p = path.join(testFolder, f)
     fs.mkdirSync(path.dirname(p), { recursive: true })
-    fs.writeFileSync(
-      p,
-      f === 'alpha.md'
-        ? '# Alpha\n\nHello alpha.'
-        : f === 'beta.md'
-          ? '# Beta'
-          : f === 'sub/gamma.md'
-            ? '# Gamma'
-            : '# Note'
-    )
+    if (f === 'alpha.md') fs.writeFileSync(p, '# Alpha\n\nHello alpha.')
+    else if (f === 'beta.md') fs.writeFileSync(p, '# Beta')
+    else if (f === 'sub/gamma.md') fs.writeFileSync(p, '# Gamma')
+    else fs.writeFileSync(p, '# Note')
   }
   // Remove anything a previous test created.
   for (const name of [
@@ -200,6 +194,7 @@ test('US3/FR-003 a creation whose path is already open focuses the existing tab,
     'aria-selected',
     'true'
   )
+  await expect(window.locator('.document-title')).toContainText('gamma.md')
   expect(fs.existsSync(path.join(testFolder, 'sub', 'gamma.md'))).toBe(true)
 })
 

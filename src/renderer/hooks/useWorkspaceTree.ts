@@ -100,14 +100,17 @@ export function useWorkspaceTree(opts: {
     return true
   }, [dispatch, dispatchWorkspace, showOperationError])
 
-  // T058: open a just-created file in a new active tab, forcing new-tab mode so
-  // the empty document never displaces an active (possibly dirty) tab (FR-003,
-  // FR-007). Duplicate prevention and dirty-tab safety ride the existing open
-  // path via the explicit-new flag.
+  // T058: open a just-created file in a new active tab. New-tab mode is forced
+  // so the empty document never displaces an active (possibly dirty) tab
+  // (FR-003, FR-007); duplicate prevention rides the existing open path.
   const openCreatedFile = useCallback(async (path: string) => {
     const result = await window.api.readFile(path)
-    if (result.ok) openFileFromExplorer(result.value, true)
-  }, [openFileFromExplorer])
+    if (result.ok) {
+      openFileFromExplorer(result.value, true)
+      return
+    }
+    void showOperationError(result.message)
+  }, [openFileFromExplorer, showOperationError])
 
   // T058: inline rename commit from the tree (also used to name new entries).
   const handleRename = useCallback(async (node: TreeNode, newName: string): Promise<boolean> => {
@@ -122,14 +125,21 @@ export function useWorkspaceTree(opts: {
     // tab (FR-001); only files open, never folders (FR-006), and only when the
     // placeholder was still pending creation (ordinary renames are unaffected).
     const wasFileCreation = pendingCreateRef.current.has(fromPath) && node.kind === 'file'
-    pendingCreateRef.current.delete(fromPath)
     setPendingEditId(null)
     if (toPath === fromPath) {
-      if (wasFileCreation) void openCreatedFile(toPath)
+      if (wasFileCreation) {
+        pendingCreateRef.current.delete(fromPath)
+        await openCreatedFile(toPath)
+      }
       return true
     }
     const moved = await applyMove(fromPath, toPath)
-    if (moved && wasFileCreation) void openCreatedFile(toPath)
+    if (moved) {
+      // Only a successful move ends the creation; a failed commit (e.g. a name
+      // collision) leaves the placeholder pending so a retry still opens a tab.
+      pendingCreateRef.current.delete(fromPath)
+      if (wasFileCreation) await openCreatedFile(toPath)
+    }
     return moved
   }, [applyMove, openCreatedFile, pendingCreateRef, setPendingEditId, showOperationError])
 

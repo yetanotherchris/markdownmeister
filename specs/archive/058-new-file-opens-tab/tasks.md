@@ -17,4 +17,4 @@
 
 - [X] 3.1 `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:e2e`
 - [X] 3.2 Append touched test files to `scripts.format:check`; `npx prettier --check` touched files
-- [ ] 3.3 Archive: `git mv specs/058-new-file-opens-tab specs/archive/058-new-file-opens-tab`, set Status Archived
+- [X] 3.3 Archive: `git mv specs/058-new-file-opens-tab specs/archive/058-new-file-opens-tab`, set Status Archived
