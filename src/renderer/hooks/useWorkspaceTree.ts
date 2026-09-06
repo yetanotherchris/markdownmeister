@@ -74,7 +74,7 @@ export function useWorkspaceTree(opts: {
     }
   }, [openFileFromExplorer, workspaceRef])
 
-  const { handleFileOpen } = useFileOpenGesture({ session })
+  const { handleFileOpen } = useFileOpenGesture({ sessionRef, session })
 
   const handleTreeToggle = useCallback(async (id: string, isLoaded: boolean) => {
     if (isLoaded) {

@@ -5,16 +5,15 @@ import * as path from 'path'
 import { launchApp, closeAppSafely } from './launch'
 
 /**
- * Spec 029 suite (contracts/file-open-gesture.md), 2026-08-21 amendment: every
- * open commits immediately, the deferral window is gone. With "Open explorer
- * files in a new tab" disabled, a double-click's first click replaces a clean
- * active tab and its explicit-new second request dedupes onto that tab, so one
- * tab results (amended FR-001/003); over a dirty active tab the first click
- * still opens a NEW tab and the dirty tab stays untouched (FR-002/009);
- * already-open files activate their existing tab (FR-005); single-click is
- * immediate (FR-007); no-tab double-click opens one tab (FR-008). With the
- * setting enabled a double-click matches a single click (FR-004). Directories
- * expand/collapse on double-click and never open a tab (FR-006).
+ * Spec 029 suite (contracts/file-open-gesture.md), 2026-09-06 re-amendment: the
+ * deferral window is back so a double-click is always recognised as one gesture
+ * and opens the file in a NEW tab, leaving the active tab (clean or dirty)
+ * untouched (FR-001/002/003). A single click still follows the preference:
+ * same-tab replaces a clean active tab after the deferral window, new-tab opens
+ * immediately (FR-007). Over a dirty active tab, with no tabs open, for
+ * already-open files, and under the new-tab preference a double-click matches a
+ * single click's outcome (FR-004/005/008/009). Directories expand/collapse on
+ * double-click and never open a tab (FR-006).
  */
 
 let app: ElectronApplication
@@ -78,17 +77,18 @@ async function setExplorerPreference(newTab: boolean): Promise<void> {
 
 // ---------- US1: same-tab users pin a file to its own tab ----------
 
-test('US1/FR-001 amended a double-click over a clean active tab replaces it (second request dedupes)', async () => {
+test('US1/FR-001 a double-click over a clean active tab opens a new tab (active tab untouched)', async () => {
   await openWorkspaceFolder()
   await openFromTree('alpha.md')
   await expect(window.getByRole('tab')).toHaveCount(1)
 
-  // First click replaces the clean active tab; the double-click's explicit-new
-  // request then finds the file already open and activates that same tab.
+  // The double-click is one gesture: the first click defers, the explicit-new
+  // second request opens a new tab, and the clean active tab stays open.
   await doubleClickTree('beta.md')
-  await expect(window.getByRole('tab')).toHaveCount(1)
+  await expect(window.getByRole('tab')).toHaveCount(2)
+  await expect(window.getByRole('tab', { name: /beta\.md/ })).toBeVisible()
+  await expect(window.getByRole('tab', { name: /alpha\.md/ })).toBeVisible()
   await expect(window.locator('.document-title')).toContainText('beta.md')
-  await expect(window.getByRole('tab', { name: /alpha\.md/ })).toHaveCount(0)
 })
 
 test('US1/FR-009 a double-click leaves a dirty active tab untouched', async () => {
@@ -115,15 +115,16 @@ test('US1/FR-008 a double-click with no tab open opens a single new tab', async 
   await expect(window.locator('.document-title')).toContainText('alpha.md')
 })
 
-test('US1 a double-click replaces a clean untitled tab (first click wins)', async () => {
+test('US1 a double-click over a clean untitled tab opens a new tab (untitled stays)', async () => {
   await openWorkspaceFolder()
   await window.getByRole('button', { name: 'New file' }).click()
   await expect(window.getByRole('tab', { name: /Untitled-\d/ })).toBeVisible()
 
-  // The first click replaces the clean untitled tab; the double-click's
-  // explicit-new request dedupes onto the opened tab.
+  // The clean untitled tab is left untouched; the double-clicked file opens in
+  // its own new tab.
   await doubleClickTree('alpha.md')
-  await expect(window.getByRole('tab')).toHaveCount(1)
+  await expect(window.getByRole('tab')).toHaveCount(2)
+  await expect(window.getByRole('tab', { name: /Untitled-\d/ })).toBeVisible()
   await expect(window.locator('.document-title')).toContainText('alpha.md')
 })
 
