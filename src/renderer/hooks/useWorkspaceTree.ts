@@ -99,6 +99,16 @@ export function useWorkspaceTree(opts: {
     dispatch({ type: 'REROUTE_PATHS', payload: { fromPath, toPath } })
     return true
   }, [dispatch, dispatchWorkspace, showOperationError])
+
+  // T058: open a just-created file in a new active tab, forcing new-tab mode so
+  // the empty document never displaces an active (possibly dirty) tab (FR-003,
+  // FR-007). Duplicate prevention and dirty-tab safety ride the existing open
+  // path via the explicit-new flag.
+  const openCreatedFile = useCallback(async (path: string) => {
+    const result = await window.api.readFile(path)
+    if (result.ok) openFileFromExplorer(result.value, true)
+  }, [openFileFromExplorer])
+
   // T058: inline rename commit from the tree (also used to name new entries).
   const handleRename = useCallback(async (node: TreeNode, newName: string): Promise<boolean> => {
     const error = validateEntryName(node.kind, node.name, newName)
@@ -108,11 +118,20 @@ export function useWorkspaceTree(opts: {
     }
     const fromPath = node.id
     const toPath = renameTargetPath(fromPath, newName.trim())
+    // A confirmed creation commit opens the just-named file in a new active
+    // tab (FR-001); only files open, never folders (FR-006), and only when the
+    // placeholder was still pending creation (ordinary renames are unaffected).
+    const wasFileCreation = pendingCreateRef.current.has(fromPath) && node.kind === 'file'
     pendingCreateRef.current.delete(fromPath)
     setPendingEditId(null)
-    if (toPath === fromPath) return true
-    return applyMove(fromPath, toPath)
-  }, [applyMove, pendingCreateRef, setPendingEditId, showOperationError])
+    if (toPath === fromPath) {
+      if (wasFileCreation) void openCreatedFile(toPath)
+      return true
+    }
+    const moved = await applyMove(fromPath, toPath)
+    if (moved && wasFileCreation) void openCreatedFile(toPath)
+    return moved
+  }, [applyMove, openCreatedFile, pendingCreateRef, setPendingEditId, showOperationError])
 
   const handleEditingCancelled = useCallback((id: string) => {
     // A new entry the user declined to name: remove the placeholder.
