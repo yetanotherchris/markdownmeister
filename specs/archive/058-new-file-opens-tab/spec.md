@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-02
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "when creating a new file in the file explorer, it opens that file in a new tab"
 
