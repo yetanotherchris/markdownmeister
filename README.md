@@ -9,8 +9,11 @@ Install the latest release without building from source.
 ### macOS / Linux (Homebrew)
 
 ```sh
-brew install yetanotherchris/tap/markdownmeister
+scoop bucket add tinycity https://github.com/yetanotherchris/markdownmeister
+scoop install markdownmeister
 ```
+
+Launch the app via your terminal window.
 
 ### Windows (Scoop)
 
@@ -19,7 +22,7 @@ scoop bucket add markdownmeister https://github.com/yetanotherchris/markdownmeis
 scoop install markdownmeister
 ```
 
-Launch the editor with `markdownmeister` on every platform.
+Launch the app via the start menu.
 
 ## Opening folders from your file manager
 
