@@ -29,11 +29,11 @@ A Windows user searches the Microsoft Store for a markdown editor, finds Markdow
 
 ### User Story 2 - The Store install behaves like every other channel (Priority: P1)
 
-The Store build is not a reduced app. Opening a folder from File Explorer, the Windows 11 first-level folder action delivered in spec 038, single-instance routing, unsaved-changes confirmation, and path containment all behave exactly as they do for the installer and Scoop builds.
+On a Windows version with the modern context menu (Windows 11), the Store build is not a reduced app. Opening a folder from File Explorer, the first-level folder action delivered in spec 038, single-instance routing, unsaved-changes confirmation, and path containment all behave exactly as they do for the installer and Scoop builds. On a Windows version without the modern menu (for example Windows 10), the Store build does not register an Explorer folder entry; the user opens folders from the app's own Open Folder command. That is a recorded decision (FR-019), not a regression.
 
 **Why this priority**: A Store build that bypassed or diverged from the existing safeguards would create two different applications with one name, and would undermine the security boundary in Principle II.
 
-**Independent Test**: Install only the Store build and exercise folder opening (both entry points), a running-instance second open, a dirty-tabs workspace switch, and adversarial folder paths; compare every outcome with the installer build.
+**Independent Test**: Install only the Store build and exercise folder opening (both entry points on Windows 11), a running-instance second open, a dirty-tabs workspace switch, and adversarial folder paths; compare every outcome with the installer build.
 
 **Acceptance Scenarios**:
 
@@ -41,6 +41,7 @@ The Store build is not a reduced app. Opening a folder from File Explorer, the W
 2. **Given** the Store build, **When** a folder path is handed over from the shell, **Then** it is treated as untrusted and validated exactly as every other external path, failing closed without exposing unrelated locations.
 3. **Given** the Store build and a running instance, **When** the user opens a second folder, **Then** the existing single-instance routing and any unsaved-changes confirmation apply unchanged.
 4. **Given** the Store build, **When** a `.md` or `.markdown` file is passed to the app through a supported entry point, **Then** it opens with the same behaviour as the other channels. The Store package does not itself register a file association: `.md`/`.markdown` shell association remains provided by the classic channels, a scope boundary inherited from spec 038 (FR-016).
+5. **Given** the Store build installed on Windows 10, **When** the user wants to open a folder, **Then** no Explorer folder entry is expected and the folder is opened through the app's own Open Folder command.
 
 ---
 
@@ -79,11 +80,11 @@ A user may have the Store build alongside an installer or Scoop install. Each co
 
 ### User Story 5 - The listing accurately represents the app (Priority: P2)
 
-The Store listing presents the correct product name, a short and accurate description, the product icon and screenshots, the category, the licence, and working support and privacy links, so a user can judge the app before installing.
+The Store listing presents the correct product name, a short and accurate description, the product icon and screenshots, the category, the licence, working support and privacy links, and the Windows version required for the Explorer folder action, so a user can judge the app before installing.
 
 **Why this priority**: An incomplete or inaccurate listing fails certification and misleads users even when the package itself is correct.
 
-**Independent Test**: Walk the listing against a completeness checklist (name, description, screenshots, category, age rating, support, privacy) and confirm every field and link is present and correct.
+**Independent Test**: Walk the listing against a completeness checklist (name, description, screenshots, category, age rating, support, privacy, folder-action Windows version) and confirm every field and link is present and correct.
 
 **Acceptance Scenarios**:
 
@@ -91,6 +92,7 @@ The Store listing presents the correct product name, a short and accurate descri
 2. **Given** the listing, **When** the user follows the support and privacy links, **Then** they resolve to reachable, relevant pages.
 3. **Given** the Store's required listing assets, **When** the maintainer assembles the submission, **Then** every required field and image is present before submission.
 4. **Given** the app requires the full-trust desktop capability, **When** the submission is prepared, **Then** that capability and its certification justification are declared.
+5. **Given** the Explorer folder action is a Windows 11 capability, **When** a Windows 10 user reads the listing, **Then** the listing states that the folder action requires Windows 11 and that folders can still be opened from within the app.
 
 ---
 
@@ -98,7 +100,7 @@ The Store listing presents the correct product name, a short and accurate descri
 
 - The product name is already taken in Partner Center: the reserved identity must be settled before packaging, and the package identity must match it exactly.
 - Placeholder identity values are still in the packaging configuration: submission must fail rather than publish a package with placeholder identity.
-- The spec 038 classic-menu fallback (its FR-013) is unresolved: publication is blocked until it is delivered or an explicit supported-Windows-version scope decision is recorded (FR-019).
+- The Store build is installed on Windows 10, where the modern folder menu does not exist: there is deliberately no Explorer folder entry, and the user opens folders from the app's own Open Folder command (FR-019).
 - Certification rejects the submission: the previously published version must remain live and unaffected, and the rejection feedback must be actionable.
 - A market or device family does not support the package: the Store must present a clear unsupported result rather than installing an incompatible build.
 - The Store package and an installer build are both present: both are usable and neither breaks the other.
@@ -130,7 +132,7 @@ The Store listing presents the correct product name, a short and accurate descri
 - **FR-016**: The Store package MUST NOT advertise a file association it does not register. `.md`/`.markdown` shell association remains the classic channels' responsibility unless a separate Store file-association requirement is specified.
 - **FR-017**: Before submission, the package version, the app's reported version, and the intended release version MUST agree, and the submitted package version MUST be strictly greater than the currently published Store version.
 - **FR-018**: Store publication MUST be gated on the spec 038 fault-injection matrix (its US5 fault scenarios) passing against the actual submission candidate; any Explorer crash or hang in those scenarios blocks submission.
-- **FR-019**: Store publication MUST NOT proceed while spec 038's deferred classic-mechanism fallback (its FR-013) is unresolved. Either it is delivered, or the maintainer records an explicit, dated scope decision naming the supported Windows versions and the folder-open behaviour on the others, and the package makes no broader claim.
+- **FR-019**: Spec 038's classic-mechanism folder fallback (its FR-013) is NOT required and is dropped by maintainer decision. The Store package MUST NOT register or claim an Explorer folder entry on Windows versions without the modern context menu; on those systems folders are opened through the app's own Open Folder command. The Store listing MUST state that the Explorer folder action requires Windows 11. Adding the fallback later is a new feature, captured in a new spec, not a reopening of this requirement.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -149,15 +151,16 @@ The Store listing presents the correct product name, a short and accurate descri
 - **SC-003**: In 100% of uninstall tests, no Store-owned entry remains after removal (verified after an Explorer restart) and other channels and applications are unaffected.
 - **SC-004**: In 100% of coexistence tests, the Store build and one other channel both work and neither breaks the other.
 - **SC-005**: In 100% of submitted packages, identity values match Partner Center; zero placeholder values reach the Store.
-- **SC-006**: The listing completeness checklist passes before every submission (name, description, images, category, age rating, support, privacy).
+- **SC-006**: The listing completeness checklist passes before every submission (name, description, images, category, age rating, support, privacy, folder-action Windows version).
 - **SC-007**: A published update reaches an installed app through the Store and launches the expected version.
 - **SC-008**: In 100% of submissions, the package version equals the intended release version and is strictly greater than the previously published Store version.
 - **SC-009**: The spec 038 fault-injection matrix passes against the submission candidate with no Explorer crash or hang before any submission.
+- **SC-010**: The listing states the Windows 11 requirement for the Explorer folder action, and the app opens folders on Windows 10 through its own command.
 
 ## Assumptions
 
-- **Packaging already exists**: The Store package build and its CI workflow were delivered by spec 038; this feature does not re-package the app, it makes the app available through the Store. Spec 038's deferred classic-mechanism fallback for Windows versions without the modern menu (its FR-013) is a PUBLICATION PREREQUISITE: either it is delivered, or the maintainer records an explicit scope decision naming the supported Windows versions and the folder-open behaviour those users get (FR-019). Publication must not proceed while the package claims parity in US2 without that decision.
-- **Supported Windows versions pending decision**: Whether Windows 10 (no modern first-level menu) is supported by the Store channel, and through which mechanism, is the outstanding decision behind FR-019. It is a scope decision for the maintainer, not a default.
+- **Packaging already exists**: The Store package build and its CI workflow were delivered by spec 038; this feature does not re-package the app, it makes the app available through the Store. Spec 038's classic-mechanism fallback for Windows versions without the modern menu (its FR-013) is dropped by decision (FR-019): the folder action is a Windows 11 capability, and on other versions users open folders from the app itself.
+- **Supported Windows versions (decided)**: The Store package installs and runs on the Windows versions its manifest declares (currently Windows 10 build 19041 and later). The Explorer folder action is available on Windows 11 only; on Windows 10 the app is used and folders are opened from its own Open Folder command.
 - **Free developer account**: Store registration for individual developers is free; the maintainer will use an individual account unless a company account is separately chosen. No developer-purchased certificate is needed because the Store re-signs the package.
 - **Certification lag**: Store review adds days-to-weeks versus a GitHub release, and this is accepted as the cost of the channel. The submission may be rejected; the direct-download release is unaffected.
 - **Listing ownership**: Screenshots, the description, and the support/privacy URLs are maintainer-provided; the privacy policy is required by the Store even though the app collects no personal data.
@@ -177,4 +180,11 @@ The Store listing presents the correct product name, a short and accurate descri
 - **File association claim corrected**: the Store package registers a folder action only, so US2 no longer claims `.md`/`.markdown` shell activation for a Store-only install (FR-016).
 - **Version gate added**: the package/app/release version agreement and monotonic increase over the published Store version are now explicit requirements (FR-017, SC-008), because the existing Store build takes its version from the source tree rather than the release tag.
 - **Fault matrix as a gate**: publishing is now gated on spec 038's fault-injection matrix passing against the real candidate (FR-018, SC-009).
-- **Unresolved prerequisite surfaced**: spec 038's FR-013 is an unmet MUST requiring maintainer sign-off; publication is blocked until it is delivered or a supported-Windows-version scope decision is recorded (FR-019). This decision is outstanding and must be made before implementation.
+- **Windows fallback surfaced, then resolved**: spec 038's FR-013 was an unmet MUST requiring maintainer sign-off. It has since been dropped by maintainer decision (see below), so FR-019 records a Windows 11-only folder action instead of blocking publication.
+
+### 2026-09-26 (maintainer decision: spec 038 FR-013 dropped)
+
+- The maintainer decided the classic-mechanism folder fallback is NOT needed. Spec 038's FR-013 is dropped rather than delivered, which closes the deferral sign-off that spec 038 required.
+- Consequence: the Store channel's Explorer folder action is a Windows 11 capability. On Windows 10, or any configuration without the modern menu, users install the app normally and open folders from the app's own Open Folder command; no Explorer folder entry is registered.
+- The Store listing must state the Windows 11 requirement for the folder action (FR-019).
+- If a fallback is ever wanted, it will be a new spec, not a reopening of spec 038.
