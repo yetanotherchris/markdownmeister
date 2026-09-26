@@ -154,6 +154,12 @@ The component that powers the first-level entry runs inside Explorer's process. 
 
 - **FR-013 deferral (scope reduction — maintainer sign-off REQUIRED)**: FR-013's in-package classic-mechanism fallback was NOT implemented in this phase. Research R5 found no manifest-only route: MSIX forbids install-time script hooks, and manifest-declared classic verbs attach only to file types with no Directory equivalent. The fallback is deferred to a follow-up that delivers it via a sparse companion package owning its own classic verb registration and cleanup (tracked as unchecked T014 in tasks.md; deviation recorded in plan.md Complexity Tracking 1). **Explicit maintainer sign-off on this deferral is REQUIRED before FR-013 may be considered satisfied**; until then this archived spec contains an unmet MUST and must not be treated as fully delivered on Windows versions without the modern menu.
 
+### 2026-09-26 (post-archive decision: FR-013 dropped)
+
+- **Maintainer sign-off recorded**: The maintainer decided the classic-mechanism folder fallback required by FR-013 is NOT needed. FR-013 is therefore dropped, not delivered, and the unmet-MUST status recorded on 2026-08-23 is closed. The Store channel's Explorer folder action is a Windows 11 capability; on Windows versions without the modern menu, users open folders from the app's own Open Folder command.
+- **No fallback work in this spec**: A fallback, if ever wanted, will be captured as a new spec rather than reopening this archived one.
+- **Recorded in**: `specs/062-windows-store-distribution/spec.md` (FR-019 and its 2026-09-26 maintainer-decision clarification).
+
 ## Assumptions
 
 - **Certification gate**: Store submissions undergo Microsoft certification; release cadence for the Store channel therefore lags GitHub releases and is accepted as part of choosing this route.

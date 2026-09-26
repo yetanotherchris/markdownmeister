@@ -1,0 +1,36 @@
+# Specification Quality Checklist: macOS Signed and Notarized Distribution
+
+**Purpose**: Validate specification completeness and quality before proceeding to planning
+**Created**: 2026-09-26
+**Feature**: [spec.md](../spec.md)
+
+## Content Quality
+
+- [x] No implementation details (languages, frameworks, APIs)
+- [x] Focused on user value and business needs
+- [x] Written for non-technical stakeholders
+- [x] All mandatory sections completed
+
+## Requirement Completeness
+
+- [x] No [NEEDS CLARIFICATION] markers remain
+- [x] Requirements are testable and unambiguous
+- [x] Success criteria are measurable
+- [x] Success criteria are technology-agnostic (no implementation details)
+- [x] All acceptance scenarios are defined
+- [x] Edge cases are identified
+- [x] Scope is clearly bounded
+- [x] Dependencies and assumptions identified
+
+## Feature Readiness
+
+- [x] All functional requirements have clear acceptance criteria
+- [x] User scenarios cover primary flows
+- [x] Feature meets measurable outcomes defined in Success Criteria
+- [x] No implementation details leak into specification
+
+## Notes
+
+- Second pass on 2026-09-26 after an independent review. Failure semantics now preserve spec 005's no-partial-release rule, verification covers the final DMG and the app extracted from the final ZIP for both architectures, and a quarantined Gatekeeper assessment on a macOS CI runner is mandatory.
+- The Mac App Store remains explicitly out of scope and the no-Mac constraint is captured as an assumption rather than left as an open question.
+- Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`.

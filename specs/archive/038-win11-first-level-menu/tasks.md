@@ -46,7 +46,7 @@
 - [x] T011 Run gates in order until green: `npm run lint`; `npm run typecheck`; `npm test`; `npm run check`; append new src/test files to package.json format:check list and run `npx prettier --check` on them; LAST `npm run test:e2e` (retry apparent contention failures up to 3 times).
 - [x] T012 Archive: `git mv specs/038-win11-first-level-menu specs/archive/038-win11-first-level-menu`, set **Status** to Archived in spec.md, commit `docs(specs)`.
 - [ ] T013 Manual follow-ups (NOT automatable here): Partner Center identity + submission per docs/store-release.md; run quickstart.md US1–US5 matrices against real artifacts including fault injection; record evidence separately. Never claim Explorer behaviour not observed.
-- [ ] T014 FR-013 follow-up (deferred from this phase; maintainer sign-off on the deferral is REQUIRED — see spec.md Clarifications 2026-08-23 and plan.md Complexity Tracking 1): deliver the classic-mechanism folder fallback for Store installs as a sparse companion package registered at first run. A sparse package alone cannot declare a classic Directory verb (same manifest schema restriction), so the verb registration must be executed by the app at first run and owned/cleaned by the Store channel's own footprint, namespaced so US3 scenario 3 (channel isolation) still holds.
+- [X] T014 FR-013 follow-up: DROPPED by maintainer decision 2026-09-26. The classic-mechanism folder fallback is not needed; the Store folder action is a Windows 11 capability and folders on other versions are opened from the app. If a fallback is ever wanted it will be a new spec. See spec.md Clarifications 2026-09-26 post-archive decision and specs/062-windows-store-distribution/spec.md FR-019.
 
 ---
 
