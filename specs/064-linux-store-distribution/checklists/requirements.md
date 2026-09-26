@@ -31,6 +31,7 @@
 
 ## Notes
 
-- Validation passed on the first iteration. Which stores exist was the one genuine open question, and it was answered during specification (Flathub and Snap Store, both chosen), so no [NEEDS CLARIFICATION] markers remain.
-- The sandbox permission model is intentionally described by outcome, not mechanism; the mechanism belongs in the plan.
+- Second pass on 2026-09-26 after an independent review. FR-006/FR-008 now require and scope a per-store folder-access proof and explicitly exempt app data; the Flathub build, ID, metadata, and AI-authoring policy are specified; channel-owned desktop identity addresses the AppImage entry collision; and delivery now means a published, installable, upgradable revision.
+- Which stores exist was the one genuine open question and it was answered during specification (Flathub and Snap Store, both chosen), so no [NEEDS CLARIFICATION] markers remain.
+- The sandbox permission model is described by outcome; the per-store mechanism belongs in the plan.
 - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`.

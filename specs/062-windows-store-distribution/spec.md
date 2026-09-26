@@ -40,7 +40,7 @@ The Store build is not a reduced app. Opening a folder from File Explorer, the W
 1. **Given** the Store build installed on Windows 11, **When** the user right-clicks a folder, **Then** the first-level "Open in MarkdownMeister" entry appears and opens that folder as the workspace.
 2. **Given** the Store build, **When** a folder path is handed over from the shell, **Then** it is treated as untrusted and validated exactly as every other external path, failing closed without exposing unrelated locations.
 3. **Given** the Store build and a running instance, **When** the user opens a second folder, **Then** the existing single-instance routing and any unsaved-changes confirmation apply unchanged.
-4. **Given** the Store build, **When** the user opens a `.md` or `.markdown` file through the shell, **Then** it follows the same open behaviour as the other channels.
+4. **Given** the Store build, **When** a `.md` or `.markdown` file is passed to the app through a supported entry point, **Then** it opens with the same behaviour as the other channels. The Store package does not itself register a file association: `.md`/`.markdown` shell association remains provided by the classic channels, a scope boundary inherited from spec 038 (FR-016).
 
 ---
 
@@ -57,6 +57,7 @@ When a new version is submitted, the Store delivers the update. The installed ap
 1. **Given** an installed Store version, **When** an update is available, **Then** the Store offers and applies it without a manual reinstall.
 2. **Given** an update completed, **When** the user launches the app, **Then** the version shown matches the submitted version and the folder entry still works.
 3. **Given** an update is submitted but rejected in certification, **When** the process ends, **Then** the previously installed version and its integration remain intact.
+4. **Given** a candidate package, **When** it is prepared for submission, **Then** its package version, the app's reported version, and the intended release version agree, and it is strictly greater than the currently published Store version (FR-017).
 
 ---
 
@@ -97,6 +98,7 @@ The Store listing presents the correct product name, a short and accurate descri
 
 - The product name is already taken in Partner Center: the reserved identity must be settled before packaging, and the package identity must match it exactly.
 - Placeholder identity values are still in the packaging configuration: submission must fail rather than publish a package with placeholder identity.
+- The spec 038 classic-menu fallback (its FR-013) is unresolved: publication is blocked until it is delivered or an explicit supported-Windows-version scope decision is recorded (FR-019).
 - Certification rejects the submission: the previously published version must remain live and unaffected, and the rejection feedback must be actionable.
 - A market or device family does not support the package: the Store must present a clear unsupported result rather than installing an incompatible build.
 - The Store package and an installer build are both present: both are usable and neither breaks the other.
@@ -104,6 +106,7 @@ The Store listing presents the correct product name, a short and accurate descri
 - A Store update is interrupted: the previously working version must remain usable.
 - The Store is unavailable (offline or regional): the app remains installable and reachable through the other documented channels.
 - The Store build's shell extension faults (missing or corrupted component): it must not crash or hang Explorer, matching spec 038 FR-011.
+- A Store-only install is asked to open a `.md` file through the shell: no association is registered, so the request is served by whichever channel owns the association, and the app is not silently expected to receive it.
 
 ## Requirements *(mandatory)*
 
@@ -124,6 +127,10 @@ The Store listing presents the correct product name, a short and accurate descri
 - **FR-013**: The maintainer-facing submission and update procedure MUST be documented, including where identity values come from and what must be verified before submitting.
 - **FR-014**: Building the Store package MUST remain separate from the direct-download release artifacts, so neither channel ships the other's output by mistake.
 - **FR-015**: A failed or rejected Store submission MUST NOT alter the published direct-download release or the package definitions for Homebrew and Scoop.
+- **FR-016**: The Store package MUST NOT advertise a file association it does not register. `.md`/`.markdown` shell association remains the classic channels' responsibility unless a separate Store file-association requirement is specified.
+- **FR-017**: Before submission, the package version, the app's reported version, and the intended release version MUST agree, and the submitted package version MUST be strictly greater than the currently published Store version.
+- **FR-018**: Store publication MUST be gated on the spec 038 fault-injection matrix (its US5 fault scenarios) passing against the actual submission candidate; any Explorer crash or hang in those scenarios blocks submission.
+- **FR-019**: Store publication MUST NOT proceed while spec 038's deferred classic-mechanism fallback (its FR-013) is unresolved. Either it is delivered, or the maintainer records an explicit, dated scope decision naming the supported Windows versions and the folder-open behaviour on the others, and the package makes no broader claim.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -144,10 +151,13 @@ The Store listing presents the correct product name, a short and accurate descri
 - **SC-005**: In 100% of submitted packages, identity values match Partner Center; zero placeholder values reach the Store.
 - **SC-006**: The listing completeness checklist passes before every submission (name, description, images, category, age rating, support, privacy).
 - **SC-007**: A published update reaches an installed app through the Store and launches the expected version.
+- **SC-008**: In 100% of submissions, the package version equals the intended release version and is strictly greater than the previously published Store version.
+- **SC-009**: The spec 038 fault-injection matrix passes against the submission candidate with no Explorer crash or hang before any submission.
 
 ## Assumptions
 
-- **Packaging already exists**: The Store package build and its CI workflow were delivered by spec 038; this feature does not re-package the app, it makes the app available through the Store. Spec 038's deferred classic-mechanism fallback for Windows versions without the modern menu (its FR-013) remains out of scope here.
+- **Packaging already exists**: The Store package build and its CI workflow were delivered by spec 038; this feature does not re-package the app, it makes the app available through the Store. Spec 038's deferred classic-mechanism fallback for Windows versions without the modern menu (its FR-013) is a PUBLICATION PREREQUISITE: either it is delivered, or the maintainer records an explicit scope decision naming the supported Windows versions and the folder-open behaviour those users get (FR-019). Publication must not proceed while the package claims parity in US2 without that decision.
+- **Supported Windows versions pending decision**: Whether Windows 10 (no modern first-level menu) is supported by the Store channel, and through which mechanism, is the outstanding decision behind FR-019. It is a scope decision for the maintainer, not a default.
 - **Free developer account**: Store registration for individual developers is free; the maintainer will use an individual account unless a company account is separately chosen. No developer-purchased certificate is needed because the Store re-signs the package.
 - **Certification lag**: Store review adds days-to-weeks versus a GitHub release, and this is accepted as the cost of the channel. The submission may be rejected; the direct-download release is unaffected.
 - **Listing ownership**: Screenshots, the description, and the support/privacy URLs are maintainer-provided; the privacy policy is required by the Store even though the app collects no personal data.
@@ -161,3 +171,10 @@ The Store listing presents the correct product name, a short and accurate descri
 - **Scope after the existing packaging**: Spec 038 already built the Store package (MSIX) and its workflow as the delivery vehicle for the Windows 11 first-level folder menu. The user chose to have this spec finish the publication path: Partner Center identity, listing, submission, updates, and documentation, rather than re-specifying packaging.
 - **Not yet published**: The Store listing does not exist today; the configuration still carries placeholder identity values, so publication is genuinely outstanding work, not a documentation gap.
 - **Account**: A free individual developer account is the working assumption; if a company identity is preferred it can be substituted without changing this spec's requirements.
+
+### 2026-09-26 (revision after independent review)
+
+- **File association claim corrected**: the Store package registers a folder action only, so US2 no longer claims `.md`/`.markdown` shell activation for a Store-only install (FR-016).
+- **Version gate added**: the package/app/release version agreement and monotonic increase over the published Store version are now explicit requirements (FR-017, SC-008), because the existing Store build takes its version from the source tree rather than the release tag.
+- **Fault matrix as a gate**: publishing is now gated on spec 038's fault-injection matrix passing against the real candidate (FR-018, SC-009).
+- **Unresolved prerequisite surfaced**: spec 038's FR-013 is an unmet MUST requiring maintainer sign-off; publication is blocked until it is delivered or a supported-Windows-version scope decision is recorded (FR-019). This decision is outstanding and must be made before implementation.

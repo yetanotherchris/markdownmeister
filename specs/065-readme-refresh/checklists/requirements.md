@@ -31,5 +31,6 @@
 
 ## Notes
 
-- Validation passed on the first iteration. The dependency on the store specs (062-064) and the requirement for a real screenshot are recorded under Assumptions, not left as open questions.
+- Second pass on 2026-09-26 after an independent review. The missing Homebrew tap is handled explicitly, the macOS wording is defined before and after notarization ships, the store-entry handoff to specs 062-064 is enforceable, and the screenshot's committed location is named.
+- The dependency on the store specs (062-064) and the requirement for a real screenshot are recorded under Assumptions, not left as open questions.
 - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`.

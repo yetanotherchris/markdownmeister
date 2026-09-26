@@ -31,5 +31,6 @@
 
 ## Notes
 
-- Validation passed on the first iteration. The only design questions (literal matching, both views, single-document scope) were resolved during specification and recorded under Clarifications, so no [NEEDS CLARIFICATION] markers were needed.
+- Second pass on 2026-09-26 after an independent review. The spec was revised to define the match-count rule, the non-overlapping replacement policy, view-specific scope, the formatting outcome, and the undo/dirty boundaries; those ambiguities were why the first pass overstated readiness.
+- The only design questions (literal matching, both views, single-document scope) were resolved during specification and recorded under Clarifications, so no [NEEDS CLARIFICATION] markers remain.
 - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`.

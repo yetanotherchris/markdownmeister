@@ -31,5 +31,7 @@
 
 ## Notes
 
-- Validation passed on the first iteration. The packaging dependency on spec 038, the free-account assumption, and the not-yet-published status are recorded under Assumptions and Clarifications instead of as [NEEDS CLARIFICATION] markers, because reasonable defaults exist for each.
+- Second pass on 2026-09-26 after an independent review. The unsupported file-association claim was removed, version-agreement and monotonic-version gates were added, the spec 038 fault matrix became a submission gate, and spec 038's unresolved FR-013 is recorded as a publication prerequisite that needs an explicit maintainer scope decision.
+- Partner Center, package capability, and similar platform terms name the store being specified and are treated as requirements rather than implementation detail.
+- The packaging dependency on spec 038, the free-account assumption, and the not-yet-published status remain recorded under Assumptions and Clarifications rather than as [NEEDS CLARIFICATION] markers.
 - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`.

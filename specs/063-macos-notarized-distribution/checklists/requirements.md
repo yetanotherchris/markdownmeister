@@ -31,5 +31,6 @@
 
 ## Notes
 
-- Validation passed on the first iteration. The Mac App Store is explicitly out of scope and recorded under Assumptions and Clarifications; the no-Mac constraint is captured as an assumption rather than left as an open question.
+- Second pass on 2026-09-26 after an independent review. Failure semantics now preserve spec 005's no-partial-release rule, verification covers the final DMG and the app extracted from the final ZIP for both architectures, and a quarantined Gatekeeper assessment on a macOS CI runner is mandatory.
+- The Mac App Store remains explicitly out of scope and the no-Mac constraint is captured as an assumption rather than left as an open question.
 - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`.
