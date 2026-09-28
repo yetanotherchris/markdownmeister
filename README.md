@@ -9,8 +9,8 @@ Install the latest release without building from source.
 ### macOS / Linux (Homebrew)
 
 ```sh
-scoop bucket add tinycity https://github.com/yetanotherchris/markdownmeister
-scoop install markdownmeister
+brew tap markdownmeister https://github.com/yetanotherchris/markdownmeister
+brew install markdownmeister
 ```
 
 Launch the app via your terminal window.
