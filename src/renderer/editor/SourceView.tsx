@@ -1,18 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Annotation, Compartment, EditorSelection, EditorState } from '@codemirror/state'
+import {
+  Annotation,
+  Compartment,
+  EditorSelection,
+  EditorState,
+  Transaction
+} from '@codemirror/state'
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { markdown } from '@codemirror/lang-markdown'
 import { yamlFrontmatter } from '@codemirror/lang-yaml'
-import { EditorView } from '@codemirror/view'
+import { EditorView, keymap } from '@codemirror/view'
+import { history, historyKeymap } from '@codemirror/commands'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import SearchPanel from '../search/SearchPanel'
+import type { FindSignal } from '../search/findRequest'
 import {
   closeSourceSearch,
   closeSourceSearchAndRefocus,
   findNextSourceMatch,
   findPreviousSourceMatch,
   openSourceSearch,
+  replaceAllSourceMatches,
+  replaceCurrentSourceMatch,
   setSourceSearchQuery,
+  setSourceSearchReplaceOpen,
+  setSourceSearchReplacement,
   sourceSearchExtension,
   sourceSearchIsOpen,
   type SourceSearchSnapshot
@@ -33,8 +45,8 @@ interface SourceViewProps {
   /** Reveal the seeded caret on first activation instead of applying the
    *  stored scroll; set when the context was mapped from the visual caret. */
   reveal: boolean
-  /** Increments to request opening search in this view; null does nothing. */
-  findSignal: number | null
+  /** Requests opening search in this view; null does nothing. */
+  findSignal: FindSignal | null
   onContextChange: (selectionAnchor: number, selectionHead: number, scrollTop: number) => void
 }
 
@@ -46,7 +58,12 @@ const wrapCompartment = new Compartment()
 // visual view's panel keeps below the Milkdown top bar.
 const SEARCH_PANEL_TOP_PX = 56
 
-const CLOSED_SEARCH: SourceSearchSnapshot = { open: false, current: 0, total: 0 }
+const CLOSED_SEARCH: SourceSearchSnapshot = {
+  open: false,
+  replaceOpen: false,
+  current: 0,
+  total: 0
+}
 
 function sourceContext(view: EditorView): {
   selectionAnchor: number
@@ -88,7 +105,7 @@ export default function SourceView({
   // Seeded with the mount-time signal: a find request dispatched before this
   // view existed already opened the search box it was meant for (the visual
   // view), and replaying it here would open the source box uninvited.
-  const handledFindRef = useRef<number | null>(findSignal)
+  const handledFindRef = useRef<number | null>(findSignal?.seq ?? null)
   const [searchUi, setSearchUi] = useState<SourceSearchSnapshot>(CLOSED_SEARCH)
   onChangeRef.current = onChange
   onContextChangeRef.current = onContextChange
@@ -126,6 +143,10 @@ export default function SourceView({
       extensions: [
         yamlFrontmatter({ content: markdown() }),
         syntaxHighlighting(defaultHighlightStyle),
+        // Undo history for the source surface (spec 061): replace must be a
+        // single undo step like any other edit, and the surface had none.
+        history(),
+        keymap.of(historyKeymap),
         wrapCompartment.of(wordWrap ? EditorView.lineWrapping : []),
         EditorView.contentAttributes.of({
           'aria-label': 'Markdown source',
@@ -182,7 +203,9 @@ export default function SourceView({
     if (!view || view.state.doc.toString() === value) return
     view.dispatch({
       changes: { from: 0, to: view.state.doc.length, insert: value },
-      annotations: externalContentUpdate.of(true)
+      // A programmatic refresh is not the user's edit, so it must not enter
+      // or clear the undo stack.
+      annotations: [externalContentUpdate.of(true), Transaction.addToHistory.of(false)]
     })
   }, [value])
 
@@ -212,11 +235,13 @@ export default function SourceView({
   }, [isActive])
 
   useEffect(() => {
-    if (findSignal == null || handledFindRef.current === findSignal) return
+    if (findSignal == null || handledFindRef.current === findSignal.seq) return
     // Consumed, not deferred: find is a no-op on a background tab.
-    handledFindRef.current = findSignal
+    handledFindRef.current = findSignal.seq
     const view = viewRef.current
-    if (isActive && view) openSourceSearch(view)
+    if (!isActive || !view) return
+    openSourceSearch(view)
+    if (findSignal.replace) setSourceSearchReplaceOpen(view, true)
   }, [findSignal, isActive])
 
   const handleOpenSearch = useCallback(() => {
@@ -238,6 +263,22 @@ export default function SourceView({
   const handleSearchClose = useCallback(() => {
     const view = viewRef.current
     if (view) closeSourceSearchAndRefocus(view)
+  }, [])
+  const handleSearchReplaceOpen = useCallback((open: boolean) => {
+    const view = viewRef.current
+    if (view) setSourceSearchReplaceOpen(view, open)
+  }, [])
+  const handleSearchReplacement = useCallback((text: string) => {
+    const view = viewRef.current
+    if (view) setSourceSearchReplacement(view, text)
+  }, [])
+  const handleSearchReplace = useCallback(() => {
+    const view = viewRef.current
+    if (view) replaceCurrentSourceMatch(view)
+  }, [])
+  const handleSearchReplaceAll = useCallback(() => {
+    const view = viewRef.current
+    if (view) replaceAllSourceMatches(view)
   }, [])
 
   return (
@@ -282,11 +323,16 @@ export default function SourceView({
         <SearchPanel
           current={searchUi.current}
           total={searchUi.total}
+          replaceOpen={searchUi.replaceOpen}
           dock={{ mode: 'fixed', top: SEARCH_PANEL_TOP_PX }}
           onQueryChange={handleSearchQuery}
           onNext={handleSearchNext}
           onPrevious={handleSearchPrevious}
           onClose={handleSearchClose}
+          onToggleReplace={handleSearchReplaceOpen}
+          onReplacementChange={handleSearchReplacement}
+          onReplace={handleSearchReplace}
+          onReplaceAll={handleSearchReplaceAll}
         />
       )}
     </div>

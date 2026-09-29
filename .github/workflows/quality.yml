@@ -55,5 +55,26 @@ jobs:
         run: npm run check
       - name: Unit tests
         run: npm test
-      - name: End-to-end tests
-        run: xvfb-run -a env MM_E2E_HEADED=1 npm run test:e2e
+
+  # Two shards on separate runners. Each keeps one Electron app at a time
+  # (workers: 1 in playwright.config.ts), because two concurrent apps make the
+  # large-file open in open-performance.spec.ts time out on a shared runner.
+  # Sharding halves the wall-clock without that contention.
+  e2e:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Use Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: End-to-end tests (shard ${{ matrix.shard }} of 2)
+        run: xvfb-run -a env MM_E2E_HEADED=1 npm run test:e2e -- --shard=${{ matrix.shard }}/2

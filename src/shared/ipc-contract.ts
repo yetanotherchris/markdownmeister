@@ -119,6 +119,7 @@ export type MenuCommand =
   | 'close-tab'
   | 'new-file'
   | 'find'
+  | 'replace'
   | { type: 'open-recent'; path: string; kind: RecentKind }
 
 export type OsOpenRequest =

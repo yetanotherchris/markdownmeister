@@ -25,7 +25,7 @@ import { useWorkspaceFolder } from './hooks/useWorkspaceFolder'
 import { useSidebarLayout } from './hooks/useSidebarLayout'
 import { useSettingsState } from './hooks/useSettingsState'
 import EditorPanel from './editor/EditorPanel'
-import type { FindRequest } from './search/useVisualSearch'
+import type { FindRequest } from './search/findRequest'
 import EditorErrorBoundary from './editor/EditorErrorBoundary'
 import SpellingMenu from './editor/SpellingMenu'
 import type { SpellingMenuState } from './editor/spellcheckPlugin'
@@ -188,9 +188,9 @@ export default function App() {
     folder,
     dispatch,
     enforcePoolCap: pool.enforcePoolCap,
-    requestFind: useCallback((id: string) => {
+    requestFind: useCallback((id: string, replace = false) => {
       findSeqRef.current += 1
-      setFindRequest({ id, seq: findSeqRef.current })
+      setFindRequest({ id, seq: findSeqRef.current, replace })
     }, [])
   })
   useOsOpen({ session: sessionApi, folder, onOpenFailed: setFooterNote })

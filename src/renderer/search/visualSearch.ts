@@ -1,44 +1,68 @@
 import { Plugin, PluginKey } from '@milkdown/kit/prose/state'
+import type { Transaction } from '@milkdown/kit/prose/state'
 import { Decoration, DecorationSet } from '@milkdown/kit/prose/view'
 import type { EditorView } from '@milkdown/kit/prose/view'
 import type { Node as PMNode } from '@milkdown/kit/prose/model'
-import { findMatches, type SearchBlock, type SearchMatch, type TextRun } from './findMatches'
+import { closeHistory } from '@milkdown/kit/prose/history'
+import {
+  findMatches,
+  indexAtOrAfter,
+  nonOverlapping,
+  type SearchBlock,
+  type SearchMatch,
+  type TextRun
+} from './findMatches'
 
 export interface VisualSearchSnapshot {
   open: boolean
+  /** Whether the replace row is revealed; false when the box is closed. */
+  replaceOpen: boolean
   /** Zero-based index of the current match; 0 when there are none. */
   current: number
   total: number
 }
 
 export interface VisualSearchHandle {
-  /** Opens the box with an empty query. A no-op while it is already open. */
-  open: () => void
+  /** Opens the box with an empty query. A no-op while it is already open,
+   *  except that `replace` reveals the replace row on an already-open box. */
+  open: (replace?: boolean) => void
   /** Closes the box, removes highlights, and returns focus to the document. */
   close: () => void
   setQuery: (query: string) => void
   next: () => void
   previous: () => void
+  setReplaceOpen: (open: boolean) => void
+  setReplacement: (text: string) => void
+  replaceCurrent: () => void
+  replaceAll: () => void
 }
 
 interface VisualSearchState {
   open: boolean
+  replaceOpen: boolean
   query: string
+  replacement: string
   matches: SearchMatch[]
   current: number
   decos: DecorationSet
 }
 
 type SearchEffect =
-  | { type: 'open' }
+  | { type: 'open'; replace: boolean }
   | { type: 'query'; query: string }
   | { type: 'next' }
   | { type: 'previous' }
   | { type: 'close' }
+  | { type: 'replace-open'; open: boolean }
+  | { type: 'replacement'; text: string }
+  | { type: 'replaced'; anchor: number }
+  | { type: 'replaced-all' }
 
 const CLOSED: VisualSearchState = {
   open: false,
+  replaceOpen: false,
   query: '',
+  replacement: '',
   matches: [],
   current: 0,
   decos: DecorationSet.empty
@@ -131,16 +155,34 @@ function stateAfter(
     switch (effect.type) {
       case 'open': {
         // Re-opening while open keeps the query (a repeat Ctrl+F must not
-        // wipe what the user typed); a fresh open starts empty.
-        if (value.open) return value
-        return { open: true, query: '', matches: [], current: 0, decos: DecorationSet.empty }
+        // wipe what the user typed); a fresh open starts empty. A replace
+        // request reveals the replace row whether the box was open or not.
+        if (value.open) return effect.replace ? { ...value, replaceOpen: true } : value
+        return {
+          open: true,
+          replaceOpen: effect.replace,
+          query: '',
+          replacement: '',
+          matches: [],
+          current: 0,
+          decos: DecorationSet.empty
+        }
       }
       case 'close':
         return CLOSED
+      case 'replace-open': {
+        if (!value.open || value.replaceOpen === effect.open) return value
+        return { ...value, replaceOpen: effect.open }
+      }
+      case 'replacement': {
+        if (!value.open || value.replacement === effect.text) return value
+        return { ...value, replacement: effect.text }
+      }
       case 'query': {
         if (!value.open) return value
         const matches = computeMatches(effect.query, tr.doc)
         return {
+          ...value,
           open: true,
           query: effect.query,
           matches,
@@ -160,6 +202,18 @@ function stateAfter(
           decos: buildDecorations(tr.doc, value.matches, current)
         }
       }
+      case 'replaced': {
+        // The match total is recomputed from the edited document, never
+        // decremented (clarification 2026-09-26); the current match advances
+        // to the first occurrence after the inserted text.
+        const matches = computeMatches(value.query, tr.doc)
+        const current = indexAtOrAfter(matches, effect.anchor)
+        return { ...value, matches, current, decos: buildDecorations(tr.doc, matches, current) }
+      }
+      case 'replaced-all': {
+        const matches = computeMatches(value.query, tr.doc)
+        return { ...value, matches, current: 0, decos: buildDecorations(tr.doc, matches, 0) }
+      }
     }
   }
   if (!value.open) return value
@@ -169,8 +223,8 @@ function stateAfter(
   const matches = computeMatches(value.query, tr.doc)
   const current = matches.length === 0 ? 0 : Math.min(value.current, matches.length - 1)
   return {
+    ...value,
     open: true,
-    query: value.query,
     matches,
     current,
     decos: buildDecorations(tr.doc, matches, current)
@@ -226,6 +280,7 @@ export function visualSearchPlugin(
 ): Plugin<VisualSearchState> {
   const snapshotOf = (state: VisualSearchState): VisualSearchSnapshot => ({
     open: state.open,
+    replaceOpen: state.replaceOpen,
     current: state.current,
     total: state.matches.length
   })
@@ -271,6 +326,7 @@ export function visualSearchPlugin(
           const snapshot = snapshotOf(state)
           if (
             snapshot.open !== last.open ||
+            snapshot.replaceOpen !== last.replaceOpen ||
             snapshot.current !== last.current ||
             snapshot.total !== last.total
           ) {
@@ -279,7 +335,7 @@ export function visualSearchPlugin(
           }
         },
         destroy() {
-          onStateChange({ open: false, current: 0, total: 0 })
+          onStateChange({ open: false, replaceOpen: false, current: 0, total: 0 })
         }
       }
     }
@@ -295,9 +351,10 @@ export function visualSearchIsOpen(view: EditorView): boolean {
   return visualSearchKey.getState(view.state)?.open ?? false
 }
 
-/** Opens the search box. A no-op while it is already open. */
-export function openSearch(view: EditorView): void {
-  dispatchEffect(view, { type: 'open' })
+/** Opens the search box. A no-op while it is already open, except that
+ *  `replace` reveals the replace row on an already-open box. */
+export function openSearch(view: EditorView, replace = false): void {
+  dispatchEffect(view, { type: 'open', replace })
 }
 
 /** Closes the search box. Highlights are removed and the document, its dirty
@@ -324,4 +381,67 @@ export function findNextMatch(view: EditorView): void {
 
 export function findPreviousMatch(view: EditorView): void {
   dispatchEffect(view, { type: 'previous' })
+}
+
+export function setSearchReplaceOpen(view: EditorView, open: boolean): void {
+  dispatchEffect(view, { type: 'replace-open', open })
+}
+
+export function setSearchReplacement(view: EditorView, text: string): void {
+  dispatchEffect(view, { type: 'replacement', text })
+}
+
+/** Dispatches a document-changing replacement as its own undo step. The
+ *  leading `closeHistory` separates it from typing before it; the trailing
+ *  meta-only `closeHistory` resets the grouping timer so typing after it is a
+ *  separate step too (FR-006: one step per action, never merged with typing). */
+function dispatchIsolated(view: EditorView, tr: Transaction): void {
+  view.dispatch(closeHistory(tr))
+  view.dispatch(closeHistory(view.state.tr))
+}
+
+/** The marks to give inserted replacement text: the formatting in effect at
+ *  the match's first character. `nodeAfter` is the first character's text node
+ *  when the match starts a formatted run (the common case, and where resolving
+ *  at `from` alone would bias to the unmarked node before it); it is null
+ *  inside a run, where the position's own marks are the run's marks (FR-019). */
+function marksAtMatchStart(view: EditorView, from: number) {
+  const $from = view.state.doc.resolve(from)
+  const firstNode = $from.nodeAfter
+  return firstNode ? firstNode.marks : $from.marks()
+}
+
+function replacementNodes(view: EditorView, text: string, from: number) {
+  if (text === '') return []
+  return [view.state.schema.text(text, marksAtMatchStart(view, from))]
+}
+
+/** Replaces the current match only, then advances the current match past the
+ *  inserted text (FR-004). No-op while nothing matches or the box is closed. */
+export function replaceCurrentMatch(view: EditorView): void {
+  const state = visualSearchKey.getState(view.state)
+  if (!state?.open || state.matches.length === 0) return
+  const match = state.matches[state.current]
+  const tr = view.state.tr
+  tr.replaceWith(match.from, match.to, replacementNodes(view, state.replacement, match.from))
+  tr.setMeta(visualSearchKey, { type: 'replaced', anchor: match.from + state.replacement.length })
+  dispatchIsolated(view, tr)
+}
+
+/** Replaces every non-overlapping occurrence in one action (FR-005, FR-017).
+ *  Steps are applied last to first so the original positions stay valid; the
+ *  replacement text is never re-scanned, so a replacement containing the query
+ *  is not replaced again (FR-008). */
+export function replaceAllMatches(view: EditorView): void {
+  const state = visualSearchKey.getState(view.state)
+  if (!state?.open) return
+  const kept = nonOverlapping(state.matches)
+  if (kept.length === 0) return
+  const tr = view.state.tr
+  for (let index = kept.length - 1; index >= 0; index--) {
+    const match = kept[index]
+    tr.replaceWith(match.from, match.to, replacementNodes(view, state.replacement, match.from))
+  }
+  tr.setMeta(visualSearchKey, { type: 'replaced-all' })
+  dispatchIsolated(view, tr)
 }

@@ -1,13 +1,17 @@
 import { describe, it, expect } from 'vitest'
 import { EditorSelection, EditorState } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
+import { history, undo } from '@codemirror/commands'
 import {
   closeSourceSearch,
   closeSourceSearchAndRefocus,
   findNextSourceMatch,
   findPreviousSourceMatch,
   openSourceSearch,
+  replaceAllSourceMatches,
+  replaceCurrentSourceMatch,
   setSourceSearchQuery,
+  setSourceSearchReplacement,
   sourceSearchExtension,
   sourceSearchIsOpen,
   type SourceSearchSnapshot
@@ -30,6 +34,8 @@ function makeView(doc: string, anchor?: number): Harness {
       doc,
       selection: anchor === undefined ? undefined : EditorSelection.single(anchor),
       extensions: [
+        // Mirrors SourceView, which carries undo history for replace (spec 061).
+        history(),
         sourceSearchExtension((snapshot) => snapshots.push({ ...snapshot })),
         EditorView.updateListener.of((update) => {
           update.transactions.forEach((tr) => transactionEvents.push({ docChanged: tr.docChanged }))
@@ -218,7 +224,7 @@ describe('sourceSearch dismissal (spec 056 US3/FR-008/009/014)', () => {
     setSourceSearchQuery(harness.view, 'foo')
     expect(sourceSearchIsOpen(harness.view)).toBe(true)
     closeSourceSearchAndRefocus(harness.view)
-    expect(lastSnapshot(harness)).toEqual({ open: false, current: 0, total: 0 })
+    expect(lastSnapshot(harness)).toEqual({ open: false, replaceOpen: false, current: 0, total: 0 })
     expect(sourceSearchIsOpen(harness.view)).toBe(false)
     expect(harness.view.hasFocus).toBe(true)
     harness.destroy()
@@ -230,7 +236,7 @@ describe('sourceSearch dismissal (spec 056 US3/FR-008/009/014)', () => {
     setSourceSearchQuery(harness.view, 'foo')
     expect(sourceSearchIsOpen(harness.view)).toBe(true)
     closeSourceSearch(harness.view)
-    expect(lastSnapshot(harness)).toEqual({ open: false, current: 0, total: 0 })
+    expect(lastSnapshot(harness)).toEqual({ open: false, replaceOpen: false, current: 0, total: 0 })
     expect(sourceSearchIsOpen(harness.view)).toBe(false)
     expect(document.activeElement?.classList.contains('cm-content')).toBe(false)
     harness.destroy()
@@ -271,7 +277,7 @@ describe('sourceSearch dismissal (spec 056 US3/FR-008/009/014)', () => {
     setSourceSearchQuery(harness.view, 'foo')
     closeSourceSearchAndRefocus(harness.view)
     openSourceSearch(harness.view)
-    expect(lastSnapshot(harness)).toEqual({ open: true, current: 0, total: 0 })
+    expect(lastSnapshot(harness)).toEqual({ open: true, replaceOpen: false, current: 0, total: 0 })
     harness.destroy()
   })
 
@@ -281,6 +287,116 @@ describe('sourceSearch dismissal (spec 056 US3/FR-008/009/014)', () => {
     setSourceSearchQuery(harness.view, 'foo')
     openSourceSearch(harness.view)
     expect(lastSnapshot(harness)).toMatchObject({ open: true, current: 0, total: 2 })
+    harness.destroy()
+  })
+})
+
+describe('sourceSearch replace (spec 061 US1/US2/FR-004/005/008/009/017)', () => {
+  function replaceFixture(doc: string, query: string, replacement: string): Harness {
+    const harness = makeView(doc)
+    openSourceSearch(harness.view)
+    setSourceSearchQuery(harness.view, query)
+    setSourceSearchReplacement(harness.view, replacement)
+    return harness
+  }
+
+  it('replaces the current match only and advances to the next remaining one', () => {
+    const harness = replaceFixture('foo bar foo baz', 'foo', 'X')
+    expect(lastSnapshot(harness)).toMatchObject({ current: 0, total: 2 })
+    replaceCurrentSourceMatch(harness.view)
+    expect(harness.view.state.doc.toString()).toBe('X bar foo baz')
+    expect(lastSnapshot(harness)).toMatchObject({ current: 0, total: 1 })
+    expect(harness.view.state.selection.main.head).toBe(9)
+    harness.destroy()
+  })
+
+  it('an empty replacement deletes the matched text', () => {
+    const harness = replaceFixture('foo bar foo', 'foo', '')
+    replaceCurrentSourceMatch(harness.view)
+    expect(harness.view.state.doc.toString()).toBe(' bar foo')
+    harness.destroy()
+  })
+
+  it('replace all changes every non-overlapping occurrence in one action', () => {
+    const harness = replaceFixture('foo a foo b foo', 'foo', 'bar')
+    replaceAllSourceMatches(harness.view)
+    expect(harness.view.state.doc.toString()).toBe('bar a bar b bar')
+    expect(lastSnapshot(harness)).toMatchObject({ current: 0, total: 0 })
+    harness.destroy()
+  })
+
+  it('never re-processes inserted replacement text', () => {
+    const harness = replaceFixture('foo foo', 'foo', 'foofoo')
+    replaceAllSourceMatches(harness.view)
+    expect(harness.view.state.doc.toString()).toBe('foofoo foofoo')
+    // The four 'foo' occurrences inside the inserted text are counted but not
+    // replaced again.
+    expect(lastSnapshot(harness).total).toBe(4)
+    harness.destroy()
+  })
+
+  it('replace current never re-replaces the text it just inserted', () => {
+    const harness = replaceFixture('foo foo', 'foo', 'foofoo')
+    replaceCurrentSourceMatch(harness.view)
+    expect(harness.view.state.doc.toString()).toBe('foofoo foo')
+    // The current match advanced past the inserted 'foofoo', so a second
+    // replace changes the second original occurrence, not the inserted text.
+    replaceCurrentSourceMatch(harness.view)
+    expect(harness.view.state.doc.toString()).toBe('foofoo foofoo')
+    harness.destroy()
+  })
+
+  it('replace acts on the current content, not stale positions', () => {
+    const harness = replaceFixture('foo bar', 'foo', 'X')
+    // An edit arrives while the box is open (for example an external reload);
+    // the field rescans, so replace must use the shifted position.
+    harness.view.dispatch({ changes: { from: 0, insert: 'prefix ' } })
+    replaceCurrentSourceMatch(harness.view)
+    expect(harness.view.state.doc.toString()).toBe('prefix X bar')
+    harness.destroy()
+  })
+
+  it('replaces the leftmost non-overlapping set when candidates overlap', () => {
+    const harness = replaceFixture('banana', 'ana', 'X')
+    replaceAllSourceMatches(harness.view)
+    expect(harness.view.state.doc.toString()).toBe('bXna')
+    harness.destroy()
+  })
+
+  it('does nothing while the query matches nothing', () => {
+    const harness = replaceFixture('foo bar', 'zzz', 'X')
+    replaceCurrentSourceMatch(harness.view)
+    replaceAllSourceMatches(harness.view)
+    expect(harness.view.state.doc.toString()).toBe('foo bar')
+    harness.destroy()
+  })
+
+  it('replace all is a single undo step that restores the exact content', () => {
+    const harness = replaceFixture('foo a foo b foo', 'foo', 'bar')
+    replaceAllSourceMatches(harness.view)
+    expect(harness.view.state.doc.toString()).toBe('bar a bar b bar')
+    expect(undo(harness.view)).toBe(true)
+    expect(harness.view.state.doc.toString()).toBe('foo a foo b foo')
+    harness.destroy()
+  })
+
+  it('does not merge the replace with adjacent typing in one undo step', () => {
+    const harness = replaceFixture('foo x', 'foo', 'bar')
+    harness.view.dispatch({ changes: { from: harness.view.state.doc.length, insert: '!' } })
+    expect(harness.view.state.doc.toString()).toBe('foo x!')
+    replaceAllSourceMatches(harness.view)
+    expect(harness.view.state.doc.toString()).toBe('bar x!')
+    // One undo removes the replace and keeps the typed character.
+    expect(undo(harness.view)).toBe(true)
+    expect(harness.view.state.doc.toString()).toBe('foo x!')
+    harness.destroy()
+  })
+
+  it('replaces inside the frontmatter block', () => {
+    const harness = replaceFixture('---\ntitle: foo\n---\n\nfoo body', 'foo', 'bar')
+    expect(lastSnapshot(harness).total).toBe(2)
+    replaceAllSourceMatches(harness.view)
+    expect(harness.view.state.doc.toString()).toBe('---\ntitle: bar\n---\n\nbar body')
     harness.destroy()
   })
 })

@@ -7,7 +7,8 @@ import CrepeHost, { type CursorState } from './CrepeHost'
 import type { SpellingMenuState } from './spellcheckPlugin'
 import type { MarkdownSyntaxOptions } from './markdownSyntaxOptions'
 import SearchPanel from '../search/SearchPanel'
-import { useVisualSearch, type FindRequest } from '../search/useVisualSearch'
+import { useVisualSearch } from '../search/useVisualSearch'
+import type { FindRequest } from '../search/findRequest'
 import SourceView from './SourceView'
 import './editor.css'
 
@@ -159,11 +160,16 @@ function DocumentHost({
         <SearchPanel
           current={search.panel.current}
           total={search.panel.total}
+          replaceOpen={search.panel.replaceOpen}
           dock={{ mode: 'measure', hostRef }}
           onQueryChange={search.setQuery}
           onNext={search.next}
           onPrevious={search.previous}
           onClose={search.close}
+          onToggleReplace={search.setReplaceOpen}
+          onReplacementChange={search.setReplacement}
+          onReplace={search.replaceCurrent}
+          onReplaceAll={search.replaceAll}
         />
       )}
     </>

@@ -18,10 +18,15 @@ import {
   setSearchQuery,
   findNextMatch,
   findPreviousMatch,
+  setSearchReplaceOpen,
+  setSearchReplacement,
+  replaceCurrentMatch,
+  replaceAllMatches,
   visualSearchIsOpen,
   type VisualSearchHandle,
   type VisualSearchSnapshot
 } from '../search/visualSearch'
+import type { FindSignal } from '../search/findRequest'
 import { reconfigureEditor, isReconfigureSuppressed } from './markdownSyntaxRuntime'
 import { recordParse, recordIncomingSerialization, endOpen } from './openPerformance'
 import { applyCursorRestore, planBlockRestore, revealCaretInView } from './cursorRestore'
@@ -60,10 +65,10 @@ interface CrepeHostProps {
 
   /** Receives the imperative search handle once the editor exists. */
   searchHandleRef?: React.MutableRefObject<VisualSearchHandle | null>
-  /** Live search state for the panel (open, current of total). */
+  /** Live search state for the panel (open, replace row, current of total). */
   onSearchState?: (snapshot: VisualSearchSnapshot) => void
-  /** Increments to request opening search in this host; null does nothing. */
-  findSignal?: number | null
+  /** Requests opening search in this host; null does nothing. */
+  findSignal?: FindSignal | null
 }
 
 const VIEW_SOURCE_ICON = `
@@ -112,18 +117,24 @@ export default function CrepeHost({
   onSpellingMenuRef.current = onSpellingMenu
   const onCursorSyncAppliedRef = useRef(onCursorSyncApplied)
   onCursorSyncAppliedRef.current = onCursorSyncApplied
-  const onSearchStateRef = useRef(onSearchState)
+  const onSearchStateRef = useRef<((snapshot: VisualSearchSnapshot) => void) | undefined>(
+    onSearchState
+  )
   onSearchStateRef.current = onSearchState
   const findSignalRef = useRef(findSignal)
   findSignalRef.current = findSignal
-  const handledFindRef = useRef<number | null>(null)
+  // Seeded with the mount-time signal: a request from before this editor
+  // existed was already handled by the surface it was meant for (or by the
+  // editor this one replaces), so only a signal that arrives while create()
+  // is still running is replayed below.
+  const handledFindRef = useRef<number | null>(findSignal?.seq ?? null)
 
   function searchHandle(): VisualSearchHandle {
     const view = () => viewRef.current
     return {
-      open: () => {
+      open: (replace = false) => {
         const v = view()
-        if (v) openSearch(v)
+        if (v) openSearch(v, replace)
       },
       close: () => {
         const v = view()
@@ -140,6 +151,22 @@ export default function CrepeHost({
       previous: () => {
         const v = view()
         if (v) findPreviousMatch(v)
+      },
+      setReplaceOpen: (open) => {
+        const v = view()
+        if (v) setSearchReplaceOpen(v, open)
+      },
+      setReplacement: (text) => {
+        const v = view()
+        if (v) setSearchReplacement(v, text)
+      },
+      replaceCurrent: () => {
+        const v = view()
+        if (v) replaceCurrentMatch(v)
+      },
+      replaceAll: () => {
+        const v = view()
+        if (v) replaceAllMatches(v)
       }
     }
   }
@@ -264,10 +291,10 @@ export default function CrepeHost({
         active &&
         !lockedRef.current &&
         pendingFind != null &&
-        handledFindRef.current !== pendingFind
+        handledFindRef.current !== pendingFind.seq
       ) {
-        handledFindRef.current = pendingFind
-        openSearch(view)
+        handledFindRef.current = pendingFind.seq
+        openSearch(view, pendingFind.replace)
       }
       recordParse()
       scrollElementRef.current = view.dom.closest('.editor-host') ?? view.dom.parentElement
@@ -312,6 +339,12 @@ export default function CrepeHost({
       viewRef.current = null
       scrollElementRef.current = null
       if (searchHandleRef) searchHandleRef.current = null
+      // The destroy below is deferred, so the search plugin's own destroy
+      // notification would arrive after a replacement editor has already
+      // reported its state (for example a box reopened after returning from
+      // source editing) and would clobber it. This instance is going away, so
+      // silence its reporting; the replacement reports on creation.
+      onSearchStateRef.current = undefined
       // Same-tab replacement unmounts an entire Milkdown editor. Releasing its
       // resources during idle time lets the replacement editor paint first.
       window.requestIdleCallback(() => editor?.destroy(), { timeout: 1_000 })
@@ -333,19 +366,19 @@ export default function CrepeHost({
   }, [active, locked])
 
   useEffect(() => {
-    if (findSignal == null || findSignal === handledFindRef.current) return
+    if (findSignal == null || findSignal.seq === handledFindRef.current) return
     if (!active || locked) {
       // Consumed, not deferred: find is a no-op on a locked or background
       // surface, and replaying it on reactivation would surprise.
-      handledFindRef.current = findSignal
+      handledFindRef.current = findSignal.seq
       return
     }
     const handle = searchHandleRef?.current
     if (!handle) return
     // The editor is still creating; init() replays the pending signal once
     // the handle exists.
-    handledFindRef.current = findSignal
-    handle.open()
+    handledFindRef.current = findSignal.seq
+    handle.open(findSignal.replace)
   }, [findSignal, active, locked, searchHandleRef])
 
   useEffect(() => {

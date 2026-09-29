@@ -27,6 +27,7 @@ describe('hamburgerMenuStructure (spec 010)', () => {
       'Save As…',
       'Close Tab',
       'Find',
+      'Replace…',
       'separator',
       'Settings…',
       'separator',
@@ -50,7 +51,8 @@ describe('hamburgerMenuStructure (spec 010)', () => {
       'save',
       'save-as',
       'close-tab',
-      'find'
+      'find',
+      'replace'
     ])
   })
 
@@ -83,9 +85,10 @@ describe('hamburgerMenuStructure (spec 010)', () => {
       'Ctrl+S',
       'Ctrl+Shift+S',
       'Ctrl+W',
-      'Ctrl+F'
+      'Ctrl+F',
+      'Ctrl+H'
     ])
-    expect(labels(mac)).toEqual(['⌘N', '⌘O', '⇧⌘O', '⌘S', '⇧⌘S', '⌘W', '⌘F'])
+    expect(labels(mac)).toEqual(['⌘N', '⌘O', '⇧⌘O', '⌘S', '⇧⌘S', '⌘W', '⌘F', '⌘H'])
   })
 
   it('formats accelerators consistently', () => {
