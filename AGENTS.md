@@ -221,6 +221,7 @@ AGENTS.md                         This file
   `electronApp.evaluate`; the tree/editor are driven with normal locators.
   The suite must pass before the implementation is declared complete,
   alongside `npm run lint`, `npm run typecheck`, and `npm run test`.
+- **When Docker is available locally, use the Linux e2e image to reproduce CI failures before relying on a Windows-only run.** Build it from the repository root with `docker build -f tests/e2e/Dockerfile -t markdownmeister-e2e .`. Run an affected suite with `docker run --rm --shm-size=1g markdownmeister-e2e sh -lc 'xvfb-run -a env MM_E2E_HEADED=1 npm run test:e2e -- tests/e2e/file-association.spec.ts'`, replacing the test path as needed. For the full suite, run the same container command twice with `-- --shard=1/2` and `-- --shard=2/2` in place of the test path, one at a time to avoid competing Electron processes. Rebuild the image after source or dependency changes. Docker availability does not replace checking the PR's GitHub quality gates.
 - Generate standard English test document content with
   [claudem-ipsum](https://github.com/zcaceres/claudem-ipsum)
   (`npm install -g claudem-ipsum`, then for example
