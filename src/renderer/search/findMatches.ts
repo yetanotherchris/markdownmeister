@@ -91,3 +91,12 @@ export function nonOverlapping(matches: SearchMatch[]): SearchMatch[] {
   }
   return kept
 }
+
+/** Index of the first entry starting at or after `anchor`, wrapping to the
+ *  first entry when none does. Both editors' replace-current use this so the
+ *  rule "advance past the text just inserted" is defined once (FR-004). */
+export function indexAtOrAfter(items: readonly { from: number }[], anchor: number): number {
+  if (items.length === 0) return 0
+  const index = items.findIndex((item) => item.from >= anchor)
+  return index === -1 ? 0 : index
+}

@@ -13,7 +13,7 @@ import { EditorView, keymap } from '@codemirror/view'
 import { history, historyKeymap } from '@codemirror/commands'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import SearchPanel from '../search/SearchPanel'
-import type { FindSignal } from '../search/useVisualSearch'
+import type { FindSignal } from '../search/findRequest'
 import {
   closeSourceSearch,
   closeSourceSearchAndRefocus,

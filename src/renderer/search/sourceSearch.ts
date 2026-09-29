@@ -15,7 +15,7 @@ import {
 } from '@codemirror/view'
 import { isolateHistory } from '@codemirror/commands'
 import { SearchQuery } from '@codemirror/search'
-import { nonOverlapping } from './findMatches'
+import { indexAtOrAfter, nonOverlapping, type SearchMatch } from './findMatches'
 
 /** Glue between the shared SearchPanel and @codemirror/search for the source
  *  view (spec 056, extended by 061). The package's query engine does the
@@ -41,10 +41,7 @@ export interface SourceSearchSnapshot {
   total: number
 }
 
-interface SearchSpan {
-  from: number
-  to: number
-}
+type SearchSpan = SearchMatch
 
 const matchMark = Decoration.mark({ class: 'cm-searchMatch' })
 const currentMark = Decoration.mark({ class: 'cm-searchMatch cm-searchMatch-current' })
@@ -62,15 +59,15 @@ interface SourceSearchState {
   spans: SearchSpan[]
 }
 
-function emptyState(): SourceSearchState {
-  return { open: false, replaceOpen: false, query: buildQuery(''), replacement: '', spans: [] }
-}
-
 function buildQuery(term: string): SearchQuery {
   // A whitespace-only term counts as no query, and literal matching keeps
   // markdown characters out of pattern interpretation (FR-010).
   const search = term.trim() === '' ? '' : term
   return new SearchQuery({ search, caseSensitive: false, literal: true, regexp: false })
+}
+
+function emptyState(): SourceSearchState {
+  return { open: false, replaceOpen: false, query: buildQuery(''), replacement: '', spans: [] }
 }
 
 function scanSpans(query: SearchQuery, doc: Text): SearchSpan[] {
@@ -236,7 +233,7 @@ export function replaceCurrentSourceMatch(view: EditorView): void {
   // transaction instead of briefly resting on the text just inserted.
   const newDoc = view.state.doc.replace(span.from, span.to, view.state.toText(insert))
   const remaining = scanSpans(state.query, newDoc)
-  const target = remaining.find((candidate) => candidate.from >= end) ?? remaining[0]
+  const target = remaining.length > 0 ? remaining[indexAtOrAfter(remaining, end)] : undefined
   view.dispatch({
     changes: { from: span.from, to: span.to, insert },
     selection: EditorSelection.cursor(target ? target.to : end),

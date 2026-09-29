@@ -26,7 +26,7 @@ import {
   type VisualSearchHandle,
   type VisualSearchSnapshot
 } from '../search/visualSearch'
-import type { FindSignal } from '../search/useVisualSearch'
+import type { FindSignal } from '../search/findRequest'
 import { reconfigureEditor, isReconfigureSuppressed } from './markdownSyntaxRuntime'
 import { recordParse, recordIncomingSerialization, endOpen } from './openPerformance'
 import { applyCursorRestore, planBlockRestore, revealCaretInView } from './cursorRestore'

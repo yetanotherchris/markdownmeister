@@ -1,22 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import type { VisualSearchHandle, VisualSearchSnapshot } from './visualSearch'
-
-/** Requests opening search in the document with `id`; `seq` increments so a
- *  repeated request is distinguishable from the previous one. `replace`
- *  reveals the replace row as the box opens. */
-export interface FindRequest {
-  id: string
-  seq: number
-  replace?: boolean
-}
-
-/** The per-document signal handed to whichever editing surface owns the
- *  document: the sequence number dedupes repeated requests and the flag says
- *  whether the replace row should be revealed. */
-export interface FindSignal {
-  seq: number
-  replace: boolean
-}
+import type { FindRequest, FindSignal } from './findRequest'
 
 const CLOSED_SEARCH: VisualSearchSnapshot = {
   open: false,

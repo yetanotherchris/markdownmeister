@@ -6,6 +6,7 @@ import type { Node as PMNode } from '@milkdown/kit/prose/model'
 import { closeHistory } from '@milkdown/kit/prose/history'
 import {
   findMatches,
+  indexAtOrAfter,
   nonOverlapping,
   type SearchBlock,
   type SearchMatch,
@@ -65,16 +66,6 @@ const CLOSED: VisualSearchState = {
   matches: [],
   current: 0,
   decos: DecorationSet.empty
-}
-
-/** Index of the first match starting at or after `anchor`, wrapping to the
- *  first match when none does. This is where replace-current leaves the
- *  current match: past the text it just inserted, so that text is never
- *  replaced again by the same action (FR-004). */
-function firstIndexAtOrAfter(matches: SearchMatch[], anchor: number): number {
-  if (matches.length === 0) return 0
-  const index = matches.findIndex((match) => match.from >= anchor)
-  return index === -1 ? 0 : index
 }
 
 /** Block types whose content is rendered by node views rather than
@@ -216,7 +207,7 @@ function stateAfter(
         // decremented (clarification 2026-09-26); the current match advances
         // to the first occurrence after the inserted text.
         const matches = computeMatches(value.query, tr.doc)
-        const current = firstIndexAtOrAfter(matches, effect.anchor)
+        const current = indexAtOrAfter(matches, effect.anchor)
         return { ...value, matches, current, decos: buildDecorations(tr.doc, matches, current) }
       }
       case 'replaced-all': {
@@ -418,7 +409,7 @@ function marksAtMatchStart(view: EditorView, from: number) {
   return view.state.doc.resolve(Math.min(from + 1, view.state.doc.content.size)).marks()
 }
 
-function insertedText(view: EditorView, text: string, from: number) {
+function replacementNodes(view: EditorView, text: string, from: number) {
   if (text === '') return []
   return [view.state.schema.text(text, marksAtMatchStart(view, from))]
 }
@@ -430,7 +421,7 @@ export function replaceCurrentMatch(view: EditorView): void {
   if (!state?.open || state.matches.length === 0) return
   const match = state.matches[state.current]
   const tr = view.state.tr
-  tr.replaceWith(match.from, match.to, insertedText(view, state.replacement, match.from))
+  tr.replaceWith(match.from, match.to, replacementNodes(view, state.replacement, match.from))
   tr.setMeta(visualSearchKey, { type: 'replaced', anchor: match.from + state.replacement.length })
   dispatchIsolated(view, tr)
 }
@@ -447,7 +438,7 @@ export function replaceAllMatches(view: EditorView): void {
   const tr = view.state.tr
   for (let index = kept.length - 1; index >= 0; index--) {
     const match = kept[index]
-    tr.replaceWith(match.from, match.to, insertedText(view, state.replacement, match.from))
+    tr.replaceWith(match.from, match.to, replacementNodes(view, state.replacement, match.from))
   }
   tr.setMeta(visualSearchKey, { type: 'replaced-all' })
   dispatchIsolated(view, tr)
