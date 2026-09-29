@@ -1,5 +1,11 @@
 .git
 .env*
+**/.env*
+.npmrc
+**/.npmrc
+**/*.pem
+**/*.key
+.opencode
 .zolam
 node_modules
 out
