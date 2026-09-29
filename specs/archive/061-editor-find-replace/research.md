@@ -93,3 +93,14 @@ Findings that resolve the plan's open questions, with the evidence and the rejec
 **Alternatives rejected**:
 
 - _Workspace-wide replace_: the spec explicitly scopes replace to the single open document (FR-007, FR-018).
+
+## R9. A replaced editor must not report search state after it is gone
+
+**Decision**: When a visual editor host unmounts, stop routing its search plugin's snapshots to the panel before scheduling its deferred destroy.
+
+**Evidence**: Returning from source editing with an edited body remounts the visual editor (a `REFRESH_FROM_SOURCE` content-version bump). `CrepeHost` destroys the outgoing editor through `requestIdleCallback(..., { timeout: 1000 })`, and the search plugin reports a closed snapshot from its own `destroy()`. That late report arrived after the replacement editor had already reported its state, so reopening find with `Ctrl+F` right after a view switch opened and was then immediately closed again by the stale snapshot, leaving no box. The same remount also replayed the mount-time find request from its `handledFindRef` starting at null, which reopened the replace row from the earlier `Ctrl+H` and kept it after a plain `Ctrl+F`. The failures are pre-existing hazards of the shared per-document search state (they would also bite spec 055 find across any editor remount); spec 061 US3-5 ("switch view ... reopening the box starts empty") requires the box to reopen clean, so both fixes are in scope. Nulling the reporter on unmount is the smallest fix for the stale snapshot (the editor instance is going away, and a replacement reports its own state on creation); seeding `handledFindRef` from the mount-time signal, as `SourceView` already does, limits the create-time replay to a request that genuinely arrived while the replacement editor was still being created.
+
+**Alternatives rejected**:
+
+- _Remove the plugin's `destroy()` notification entirely_: also loses the reset when an editor is replaced without a new one, and changes spec 055 behaviour more broadly.
+- _Make `onStateChange` ignore snapshots when `open` is false after a remount_: loses the legitimate close signal when the user dismisses the box while an editor is remounting.

@@ -117,11 +117,17 @@ export default function CrepeHost({
   onSpellingMenuRef.current = onSpellingMenu
   const onCursorSyncAppliedRef = useRef(onCursorSyncApplied)
   onCursorSyncAppliedRef.current = onCursorSyncApplied
-  const onSearchStateRef = useRef(onSearchState)
+  const onSearchStateRef = useRef<((snapshot: VisualSearchSnapshot) => void) | undefined>(
+    onSearchState
+  )
   onSearchStateRef.current = onSearchState
   const findSignalRef = useRef(findSignal)
   findSignalRef.current = findSignal
-  const handledFindRef = useRef<number | null>(null)
+  // Seeded with the mount-time signal: a request from before this editor
+  // existed was already handled by the surface it was meant for (or by the
+  // editor this one replaces), so only a signal that arrives while create()
+  // is still running is replayed below.
+  const handledFindRef = useRef<number | null>(findSignal?.seq ?? null)
 
   function searchHandle(): VisualSearchHandle {
     const view = () => viewRef.current
@@ -333,6 +339,12 @@ export default function CrepeHost({
       viewRef.current = null
       scrollElementRef.current = null
       if (searchHandleRef) searchHandleRef.current = null
+      // The destroy below is deferred, so the search plugin's own destroy
+      // notification would arrive after a replacement editor has already
+      // reported its state (for example a box reopened after returning from
+      // source editing) and would clobber it. This instance is going away, so
+      // silence its reporting; the replacement reports on creation.
+      onSearchStateRef.current = undefined
       // Same-tab replacement unmounts an entire Milkdown editor. Releasing its
       // resources during idle time lets the replacement editor paint first.
       window.requestIdleCallback(() => editor?.destroy(), { timeout: 1_000 })

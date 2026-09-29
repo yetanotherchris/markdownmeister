@@ -119,7 +119,7 @@ export default function SearchPanel({
           className="search-button"
           aria-label="Toggle replace"
           aria-pressed={replaceOpen}
-          title="Toggle replace (Ctrl+H)"
+          title="Toggle replace"
           onClick={() => onToggleReplace(!replaceOpen)}
           data-testid="search-replace-toggle"
         >

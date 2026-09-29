@@ -401,12 +401,14 @@ function dispatchIsolated(view: EditorView, tr: Transaction): void {
 }
 
 /** The marks to give inserted replacement text: the formatting in effect at
- *  the match's first character. Resolving at `from` alone biases to the node
- *  before a mark boundary, which would drop the mark when a match starts a
- *  formatted run (the common case); `from + 1` lands on or just past that
- *  first character, so the mark is kept (FR-019). */
+ *  the match's first character. `nodeAfter` is the first character's text node
+ *  when the match starts a formatted run (the common case, and where resolving
+ *  at `from` alone would bias to the unmarked node before it); it is null
+ *  inside a run, where the position's own marks are the run's marks (FR-019). */
 function marksAtMatchStart(view: EditorView, from: number) {
-  return view.state.doc.resolve(Math.min(from + 1, view.state.doc.content.size)).marks()
+  const $from = view.state.doc.resolve(from)
+  const firstNode = $from.nodeAfter
+  return firstNode ? firstNode.marks : $from.marks()
 }
 
 function replacementNodes(view: EditorView, text: string, from: number) {
