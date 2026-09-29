@@ -1,0 +1,16 @@
+.git
+.env*
+**/.env*
+.npmrc
+**/.npmrc
+**/*.pem
+**/*.key
+.opencode
+.zolam
+node_modules
+out
+dist
+test-results
+playwright-report
+coverage
+.pr-*

@@ -1,5 +1,5 @@
 import { test, expect, ElectronApplication, Page } from '@playwright/test'
-import { _electron as electron } from '@playwright/test'
+import { spawn } from 'child_process'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
@@ -17,6 +17,18 @@ let window: Page
 let testFolder: string
 let configDir: string
 let userDataDir: string
+
+const ELECTRON_BINARY = path.join(
+  path.resolve(__dirname, '..', '..'),
+  'node_modules',
+  'electron',
+  'dist',
+  process.platform === 'win32'
+    ? 'electron.exe'
+    : process.platform === 'darwin'
+      ? 'Electron.app/Contents/MacOS/Electron'
+      : 'electron'
+)
 
 test.beforeEach(async () => {
   testFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'mm-osopen-e2e-'))
@@ -36,25 +48,40 @@ test.afterEach(async () => {
 /**
  * Launch a secondary instance with the SAME private user-data dir so the
  * single-instance lock is held by the primary; the secondary forwards its argv
- * to the primary's `second-instance` handler and then quits (FR-008). It quits
- * so fast Playwright may or may not attach, either way the argv is delivered.
- * A timeout guard ensures a stuck `electron.launch` (slow CI) can never hang
- * the test; the primary's assertions poll regardless.
+ * to the primary's `second-instance` handler and then quits (FR-008). Launch it
+ * without Playwright's CDP attachment, which races with this short-lived process.
  */
 async function launchSecondary(target: string): Promise<void> {
-  const env: Record<string, string> = { ...process.env } as Record<string, string>
-  env.MM_USER_DATA_DIR = userDataDir
-  env.MM_SINGLE_INSTANCE = '1'
-  try {
-    const second = await Promise.race([
-      electron.launch({ args: [...electronLaunchArgs, target], env }),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 10_000))
-    ])
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    await second?.close().catch(() => {})
-  } catch {
-    /* the secondary exited before Playwright attached, argv already forwarded */
-  }
+  // launch.ts supplies these Linux flags only for headless runs; CI uses
+  // MM_E2E_HEADED=1 under xvfb, where the child still needs --no-sandbox.
+  const args = [
+    ...(process.platform === 'linux' && process.env.MM_E2E_HEADED
+      ? ['--no-sandbox', '--disable-gpu']
+      : []),
+    ...electronLaunchArgs,
+    target
+  ]
+  const second = spawn(ELECTRON_BINARY, args, {
+    cwd: path.resolve(__dirname, '..', '..'),
+    stdio: 'ignore',
+    env: { ...process.env, MM_USER_DATA_DIR: userDataDir, MM_SINGLE_INSTANCE: '1' }
+  })
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      second.kill()
+      reject(new Error('Secondary Electron instance did not exit within 10 seconds'))
+    }, 10_000)
+    second.once('error', (error) => {
+      clearTimeout(timer)
+      reject(error)
+    })
+    second.once('exit', () => {
+      clearTimeout(timer)
+      // Linux can report a signal rather than an exit code. Each caller checks
+      // that the primary processed the path before the test passes.
+      resolve()
+    })
+  })
 }
 
 test('US1 an OS file open on first launch opens the file as a document', async () => {
@@ -89,18 +116,26 @@ test('US1/FR-008 an OS open while running is received by the primary instance', 
 })
 
 test('US1/FR-007 an already-open file OS-open activates its existing tab (no duplicate)', async () => {
+  fs.writeFileSync(path.join(testFolder, 'beta.md'), '# Beta')
   ;({ app, window } = await launchApp(configDir, testFolder, userDataDir, {
     MM_SINGLE_INSTANCE: '1'
   }))
   await openFolder(window)
   await window.getByRole('treeitem').getByText('alpha.md').click()
   await expect(window.getByRole('tab', { name: 'alpha.md' })).toBeVisible()
+  await window.getByRole('treeitem').getByText('beta.md').click({ button: 'middle' })
+  await expect(window.getByRole('tab')).toHaveCount(2)
+  await expect(window.getByRole('tab', { name: 'beta.md' })).toHaveAttribute('aria-selected', 'true')
 
   await launchSecondary(path.join(testFolder, 'alpha.md'))
 
   // FR-007: the existing tab is activated, the tab count never grows.
-  await expect(window.getByRole('tab', { name: 'alpha.md' })).toBeVisible({ timeout: 15000 })
-  await expect(window.getByRole('tab')).toHaveCount(1)
+  await expect(window.getByRole('tab', { name: 'alpha.md' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+    { timeout: 15000 }
+  )
+  await expect(window.getByRole('tab')).toHaveCount(2)
 })
 
 test('US2/FR-009 a folder OS-open preserves the unsaved-work confirmation', async () => {
