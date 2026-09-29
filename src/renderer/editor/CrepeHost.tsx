@@ -18,10 +18,15 @@ import {
   setSearchQuery,
   findNextMatch,
   findPreviousMatch,
+  setSearchReplaceOpen,
+  setSearchReplacement,
+  replaceCurrentMatch,
+  replaceAllMatches,
   visualSearchIsOpen,
   type VisualSearchHandle,
   type VisualSearchSnapshot
 } from '../search/visualSearch'
+import type { FindSignal } from '../search/useVisualSearch'
 import { reconfigureEditor, isReconfigureSuppressed } from './markdownSyntaxRuntime'
 import { recordParse, recordIncomingSerialization, endOpen } from './openPerformance'
 import { applyCursorRestore, planBlockRestore, revealCaretInView } from './cursorRestore'
@@ -60,10 +65,10 @@ interface CrepeHostProps {
 
   /** Receives the imperative search handle once the editor exists. */
   searchHandleRef?: React.MutableRefObject<VisualSearchHandle | null>
-  /** Live search state for the panel (open, current of total). */
+  /** Live search state for the panel (open, replace row, current of total). */
   onSearchState?: (snapshot: VisualSearchSnapshot) => void
-  /** Increments to request opening search in this host; null does nothing. */
-  findSignal?: number | null
+  /** Requests opening search in this host; null does nothing. */
+  findSignal?: FindSignal | null
 }
 
 const VIEW_SOURCE_ICON = `
@@ -121,9 +126,9 @@ export default function CrepeHost({
   function searchHandle(): VisualSearchHandle {
     const view = () => viewRef.current
     return {
-      open: () => {
+      open: (replace = false) => {
         const v = view()
-        if (v) openSearch(v)
+        if (v) openSearch(v, replace)
       },
       close: () => {
         const v = view()
@@ -140,6 +145,22 @@ export default function CrepeHost({
       previous: () => {
         const v = view()
         if (v) findPreviousMatch(v)
+      },
+      setReplaceOpen: (open) => {
+        const v = view()
+        if (v) setSearchReplaceOpen(v, open)
+      },
+      setReplacement: (text) => {
+        const v = view()
+        if (v) setSearchReplacement(v, text)
+      },
+      replaceCurrent: () => {
+        const v = view()
+        if (v) replaceCurrentMatch(v)
+      },
+      replaceAll: () => {
+        const v = view()
+        if (v) replaceAllMatches(v)
       }
     }
   }
@@ -264,10 +285,10 @@ export default function CrepeHost({
         active &&
         !lockedRef.current &&
         pendingFind != null &&
-        handledFindRef.current !== pendingFind
+        handledFindRef.current !== pendingFind.seq
       ) {
-        handledFindRef.current = pendingFind
-        openSearch(view)
+        handledFindRef.current = pendingFind.seq
+        openSearch(view, pendingFind.replace)
       }
       recordParse()
       scrollElementRef.current = view.dom.closest('.editor-host') ?? view.dom.parentElement
@@ -333,19 +354,19 @@ export default function CrepeHost({
   }, [active, locked])
 
   useEffect(() => {
-    if (findSignal == null || findSignal === handledFindRef.current) return
+    if (findSignal == null || findSignal.seq === handledFindRef.current) return
     if (!active || locked) {
       // Consumed, not deferred: find is a no-op on a locked or background
       // surface, and replaying it on reactivation would surprise.
-      handledFindRef.current = findSignal
+      handledFindRef.current = findSignal.seq
       return
     }
     const handle = searchHandleRef?.current
     if (!handle) return
     // The editor is still creating; init() replays the pending signal once
     // the handle exists.
-    handledFindRef.current = findSignal
-    handle.open()
+    handledFindRef.current = findSignal.seq
+    handle.open(findSignal.replace)
   }, [findSignal, active, locked, searchHandleRef])
 
   useEffect(() => {

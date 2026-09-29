@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { findMatches, foldCase, type SearchBlock } from '../../../src/renderer/search/findMatches'
+import {
+  findMatches,
+  foldCase,
+  nonOverlapping,
+  type SearchBlock
+} from '../../../src/renderer/search/findMatches'
 
 function block(...runs: Array<{ text: string; from: number }>): SearchBlock {
   return { runs }
@@ -129,6 +134,33 @@ describe('findMatches (spec 055 FR-002/010/011)', () => {
     const elapsed = performance.now() - started
     expect(matches.length).toBe(10_000)
     expect(elapsed).toBeLessThan(100)
+  })
+})
+
+describe('nonOverlapping (spec 061 FR-017)', () => {
+  it('keeps disjoint matches in order', () => {
+    const matches = findMatches('ab', [block(text(0, 'ab cd ab'))])
+    expect(nonOverlapping(matches)).toEqual([
+      { from: 0, to: 2 },
+      { from: 6, to: 8 }
+    ])
+  })
+
+  it('drops overlapping candidates, keeping the leftmost', () => {
+    // findMatches reports both 'ana' occurrences in 'banana'; replacement
+    // cannot change a character twice, so only the first is kept.
+    const matches = findMatches('ana', [block(text(0, 'banana'))])
+    expect(matches.length).toBe(2)
+    expect(nonOverlapping(matches)).toEqual([{ from: 1, to: 4 }])
+  })
+
+  it('never keeps two matches that touch the same character', () => {
+    const kept = nonOverlapping(findMatches('aa', [block(text(0, 'aaa'))]))
+    expect(kept).toEqual([{ from: 0, to: 2 }])
+  })
+
+  it('returns nothing for an empty match list', () => {
+    expect(nonOverlapping([])).toEqual([])
   })
 })
 

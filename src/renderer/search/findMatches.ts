@@ -75,3 +75,19 @@ function endOfBlock(runs: TextRun[]): number | null {
   const last = runs[runs.length - 1]
   return last ? last.from + last.text.length : null
 }
+
+/** The leftmost non-overlapping subset of `matches`: walking the ascending
+ *  list, a match is kept when it starts at or after the end of the last kept
+ *  match. Replace All uses this so no character is changed twice in one
+ *  action, even though find highlights overlapping candidates (FR-017). */
+export function nonOverlapping(matches: SearchMatch[]): SearchMatch[] {
+  const kept: SearchMatch[] = []
+  let end = -1
+  for (const match of matches) {
+    if (match.from >= end) {
+      kept.push(match)
+      end = match.to
+    }
+  }
+  return kept
+}

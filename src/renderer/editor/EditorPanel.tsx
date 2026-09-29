@@ -159,11 +159,16 @@ function DocumentHost({
         <SearchPanel
           current={search.panel.current}
           total={search.panel.total}
+          replaceOpen={search.panel.replaceOpen}
           dock={{ mode: 'measure', hostRef }}
           onQueryChange={search.setQuery}
           onNext={search.next}
           onPrevious={search.previous}
           onClose={search.close}
+          onToggleReplace={search.setReplaceOpen}
+          onReplacementChange={search.setReplacement}
+          onReplace={search.replaceCurrent}
+          onReplaceAll={search.replaceAll}
         />
       )}
     </>

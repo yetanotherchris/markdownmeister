@@ -29,6 +29,12 @@ describe('matchShortcut (spec 010 contracts/renderer.md)', () => {
     expect(matchShortcut(keyDown({ key: 'f', control: true, shift: true }))).toBeNull()
   })
 
+  it('maps the replace shortcut (spec 061 FR-001)', () => {
+    expect(matchShortcut(keyDown({ key: 'h', control: true }))).toBe('replace')
+    expect(matchShortcut(keyDown({ key: 'h', meta: true }))).toBe('replace')
+    expect(matchShortcut(keyDown({ key: 'h', control: true, shift: true }))).toBeNull()
+  })
+
   it('accepts the meta (Cmd) modifier identically to control', () => {
     expect(matchShortcut(keyDown({ key: 's', meta: true }))).toBe('save')
     expect(matchShortcut(keyDown({ key: 'o', meta: true, shift: true }))).toBe('open-folder')

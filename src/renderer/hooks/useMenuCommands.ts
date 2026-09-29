@@ -20,8 +20,9 @@ export function useMenuCommands(opts: {
   folder: Pick<WorkspaceFolderApi, 'runFolderOpenFlow'>
   dispatch: React.Dispatch<DocumentsAction>
   enforcePoolCap: (activeId: string | null) => void
-  /** Opens search in the given document (spec 055). */
-  requestFind: (id: string) => void
+  /** Opens search in the given document (spec 055); `replace` also reveals
+   *  the replace row (spec 061). */
+  requestFind: (id: string, replace?: boolean) => void
 }): MenuCommandsApi {
   const { sessionRef, dialog, session, folder, dispatch, enforcePoolCap, requestFind } = opts
   const { showOperationError } = dialog
@@ -81,6 +82,11 @@ export function useMenuCommands(opts: {
           // gates its own search box (spec 055 visual, spec 056 source), so
           // exactly one surface can open.
           if (active) requestFind(active.id)
+          break
+        }
+        case 'replace': {
+          // Same route as find, with the replace row revealed (spec 061).
+          if (active) requestFind(active.id, true)
           break
         }
         default:

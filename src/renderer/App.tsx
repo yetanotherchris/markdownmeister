@@ -188,9 +188,9 @@ export default function App() {
     folder,
     dispatch,
     enforcePoolCap: pool.enforcePoolCap,
-    requestFind: useCallback((id: string) => {
+    requestFind: useCallback((id: string, replace = false) => {
       findSeqRef.current += 1
-      setFindRequest({ id, seq: findSeqRef.current })
+      setFindRequest({ id, seq: findSeqRef.current, replace })
     }, [])
   })
   useOsOpen({ session: sessionApi, folder, onOpenFailed: setFooterNote })
