@@ -6,13 +6,13 @@ import { defineConfig } from '@playwright/test'
 export default defineConfig({
   testDir: './tests/e2e',
   timeout: 60_000,
-  // Tests stay serial within a file; spec files run concurrently across
-  // workers. Each test isolates its app through MM_CONFIG_DIR and
-  // MM_SINGLE_INSTANCE=0, so files are independent. Raise via PLAYWRIGHT_WORKERS
-  // on a bigger machine; two keeps a standard two-core CI runner busy without
-  // over-subscribing the Electron processes under xvfb.
+  // One Electron app at a time by default: two concurrent apps starve each
+  // other on a shared CI runner and make the large-file open in
+  // open-performance.spec.ts time out. The suite is parallelised by sharding
+  // across runners in quality.yml instead. Raise via PLAYWRIGHT_WORKERS on a
+  // machine with headroom.
   fullyParallel: false,
-  workers: Number(process.env.PLAYWRIGHT_WORKERS ?? 2),
+  workers: Number(process.env.PLAYWRIGHT_WORKERS ?? 1),
   reporter: [['list']],
   use: {
     trace: 'retain-on-failure'
