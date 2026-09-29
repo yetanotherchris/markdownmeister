@@ -73,5 +73,17 @@ jobs:
         run: docker build -f tests/e2e/Dockerfile -t markdownmeister-e2e .
       - name: End-to-end tests (shard ${{ matrix.shard }} of 2)
         run: >-
-          docker run --rm --shm-size=1g markdownmeister-e2e
+          docker run --name markdownmeister-e2e-${{ matrix.shard }} --shm-size=1g markdownmeister-e2e
           sh -lc 'xvfb-run -a env MM_E2E_HEADED=1 npm run test:e2e -- --shard=${{ matrix.shard }}/2'
+      - name: Copy failure traces
+        if: failure()
+        run: docker cp markdownmeister-e2e-${{ matrix.shard }}:/workspace/test-results ./test-results
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-traces-${{ matrix.shard }}
+          path: test-results/
+      - name: Remove e2e container
+        if: always()
+        run: docker rm -f markdownmeister-e2e-${{ matrix.shard }} || true
