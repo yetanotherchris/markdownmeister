@@ -475,8 +475,9 @@ test.describe('Spec 044 reliable source switching', () => {
   ): Promise<void> {
     // The top bar mounts after the ProseMirror surface, so both must be
     // awaited through Playwright's retry before the raw evaluate below runs;
-    // a same-tick query otherwise throws on slower runners.
-    await expect(window.locator('.ProseMirror:visible')).toBeVisible()
+    // a same-tick query otherwise throws on slower runners. A 10,000-line
+    // refresh can take longer than Playwright's default 5-second timeout.
+    await expect(window.locator('.ProseMirror:visible')).toBeVisible({ timeout: 30_000 })
     await expect(getViewSourceButton()).toBeVisible()
     await window.evaluate(async (edit) => {
       const pm = document.querySelector('.ProseMirror') as HTMLElement | null

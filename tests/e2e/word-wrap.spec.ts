@@ -2,7 +2,7 @@ import { test, expect, ElectronApplication, Page } from '@playwright/test'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { closeAppSafely, launchApp, openFile } from './launch'
+import { closeAppSafely, launchApp, openFile, pressShortcut } from './launch'
 
 /**
  * Spec 048 suite, migrated by spec 050 to the source view's header-bar toggle
@@ -278,7 +278,6 @@ test('US2 toggling mid-edit preserves text, dirty state, selection, and the typi
   // restores the caret to the preserved selection without moving it. Wait for
   // the editor's focus handler to land the restored selection before typing,
   // so a slow runner can never type at a stale caret.
-  const fullTextBefore = await source.textContent()
   await source.focus()
   await expect
     .poll(async () => window.evaluate(() => document.getSelection()?.toString() ?? ''), {
@@ -286,9 +285,11 @@ test('US2 toggling mid-edit preserves text, dirty state, selection, and the typi
     })
     .toBe(selectionBefore.text)
   await window.keyboard.type('X')
-  const text = await source.textContent()
-  expect(text).toBe('X' + fullTextBefore!.slice(selectionBefore.text.length))
   await expect(alphaTab.locator('.tab-dirty')).toBeVisible()
+  await pressShortcut(app, 's', ['control'])
+  await expect
+    .poll(() => fs.readFileSync(path.join(testFolder, 'alpha.md'), 'utf-8'))
+    .toBe('X' + LONG_LINE.slice(selectionBefore.text.length) + ' EDITED')
 })
 
 test('US1 the choice persists across a restart', async () => {
