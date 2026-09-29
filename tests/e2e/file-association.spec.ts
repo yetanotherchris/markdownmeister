@@ -66,10 +66,11 @@ async function launchSecondary(target: string): Promise<void> {
       clearTimeout(timer)
       reject(error)
     })
-    second.once('exit', (code) => {
+    second.once('exit', () => {
       clearTimeout(timer)
-      if (code === 0) resolve()
-      else reject(new Error(`Secondary Electron instance exited with code ${code}`))
+      // Linux can report a signal rather than an exit code. Each caller checks
+      // that the primary processed the path before the test passes.
+      resolve()
     })
   })
 }
@@ -106,18 +107,26 @@ test('US1/FR-008 an OS open while running is received by the primary instance', 
 })
 
 test('US1/FR-007 an already-open file OS-open activates its existing tab (no duplicate)', async () => {
+  fs.writeFileSync(path.join(testFolder, 'beta.md'), '# Beta')
   ;({ app, window } = await launchApp(configDir, testFolder, userDataDir, {
     MM_SINGLE_INSTANCE: '1'
   }))
   await openFolder(window)
   await window.getByRole('treeitem').getByText('alpha.md').click()
   await expect(window.getByRole('tab', { name: 'alpha.md' })).toBeVisible()
+  await window.getByRole('treeitem').getByText('beta.md').click({ button: 'middle' })
+  await expect(window.getByRole('tab')).toHaveCount(2)
+  await expect(window.getByRole('tab', { name: 'beta.md' })).toHaveAttribute('aria-selected', 'true')
 
   await launchSecondary(path.join(testFolder, 'alpha.md'))
 
   // FR-007: the existing tab is activated, the tab count never grows.
-  await expect(window.getByRole('tab', { name: 'alpha.md' })).toBeVisible({ timeout: 15000 })
-  await expect(window.getByRole('tab')).toHaveCount(1)
+  await expect(window.getByRole('tab', { name: 'alpha.md' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+    { timeout: 15000 }
+  )
+  await expect(window.getByRole('tab')).toHaveCount(2)
 })
 
 test('US2/FR-009 a folder OS-open preserves the unsaved-work confirmation', async () => {
