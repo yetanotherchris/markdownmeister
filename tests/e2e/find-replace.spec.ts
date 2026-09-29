@@ -40,6 +40,14 @@ function boldFixture(): string {
   return ['# Format demo', '', 'Some **bold** word and plain word.', ''].join('\n')
 }
 
+function spanFixture(): string {
+  return ['# Span demo', '', 'before **bo**ld after', ''].join('\n')
+}
+
+function advanceFixture(): string {
+  return ['# Advance demo', '', 'apple one', '', 'apple two', '', 'apple three', ''].join('\n')
+}
+
 function sourceFixture(): string {
   return [
     '---',
@@ -75,6 +83,8 @@ test.beforeAll(async () => {
   fs.writeFileSync(path.join(testFolder, 'recipe.md'), replaceFixture())
   fs.writeFileSync(path.join(testFolder, 'overlap.md'), overlapFixture())
   fs.writeFileSync(path.join(testFolder, 'bold.md'), boldFixture())
+  fs.writeFileSync(path.join(testFolder, 'span.md'), spanFixture())
+  fs.writeFileSync(path.join(testFolder, 'advance.md'), advanceFixture())
   fs.writeFileSync(path.join(testFolder, 'source.md'), sourceFixture())
   fs.writeFileSync(path.join(testFolder, 'other.md'), '# Other document\n\nUntouched words.')
   fs.writeFileSync(path.join(testFolder, 'huge.md'), buildHugeDoc())
@@ -205,6 +215,41 @@ test.describe('find and replace in visual editing (spec 061 US1/US2/US3)', () =>
     await expect(window.locator('.document-title')).toContainText('\u2022')
   })
 
+  test('replace current advances to the next remaining occurrence (US1-2, FR-004)', async () => {
+    await openFolder()
+    await openVisual('advance.md')
+    await revealReplaceWithQuery('apple')
+    await expect(searchCount()).toHaveText('1 of 3')
+    await enterReplacement('pear')
+    await replaceButton().click()
+    await expect(searchCount()).toHaveText('1 of 2')
+    const firstCurrent = await window
+      .locator('.mm-search-current')
+      .evaluate((el) => el.closest('p')?.textContent ?? '')
+    expect(firstCurrent).toContain('apple two')
+    await replaceButton().click()
+    await expect(searchCount()).toHaveText('1 of 1')
+    const secondCurrent = await window
+      .locator('.mm-search-current')
+      .evaluate((el) => el.closest('p')?.textContent ?? '')
+    expect(secondCurrent).toContain('apple three')
+  })
+
+  test('replace current never re-processes its own replacement (US1-2, FR-008)', async () => {
+    await openFolder()
+    await openVisual('recipe.md')
+    await revealReplaceWithQuery('apple')
+    await expect(searchCount()).toHaveText('1 of 6')
+    await enterReplacement('apples')
+    await replaceButton().click()
+    await expect(window.locator('.ProseMirror h1')).toHaveText('apples pie')
+    // The second replace changes the next original occurrence; the inserted
+    // 'apples' is skipped, so the heading is not corrupted.
+    await replaceButton().click()
+    await expect(window.locator('.ProseMirror h1')).toHaveText('apples pie')
+    await expect(window.locator('.ProseMirror')).toContainText('An apples a day')
+  })
+
   test('an empty replacement deletes the matched text (US1-3)', async () => {
     await openFolder()
     await openVisual('recipe.md')
@@ -299,7 +344,8 @@ test.describe('find and replace in visual editing (spec 061 US1/US2/US3)', () =>
     await revealReplaceWithQuery('apple')
     await enterReplacement('pear')
     await replaceButton().click()
-    expect(await highlightCount().count()).toBeGreaterThan(0)
+    // One of the six occurrences was replaced, so five highlights remain.
+    await expect(highlightCount()).toHaveCount(5)
     await searchInput().press('Escape')
     await expect(searchPanel()).toHaveCount(0)
     await expect(highlightCount()).toHaveCount(0)
@@ -316,6 +362,59 @@ test.describe('find and replace in visual editing (spec 061 US1/US2/US3)', () =>
     await expect(window.locator('.ProseMirror strong')).toHaveText('brave')
     await expect(window.locator('.ProseMirror p')).toHaveText('Some brave word and plain word.')
     await expect(window.locator('.document-title')).toContainText('\u2022')
+  })
+
+  test('a match spanning formatted text keeps the first character formatting (US3-7, FR-019)', async () => {
+    await openFolder()
+    await openVisual('span.md')
+    // The rendered run is "bold": "bo" is bold and "ld" is plain, so the match
+    // spans a formatting boundary.
+    await revealReplaceWithQuery('bold')
+    await expect(searchCount()).toHaveText('1 of 1')
+    await enterReplacement('X')
+    await replaceButton().click()
+    await expect(window.locator('.ProseMirror strong')).toHaveText('X')
+    await expect(window.locator('.ProseMirror p')).toHaveText('before X after')
+  })
+
+  test('typing after a replace is a separate undo step (FR-006)', async () => {
+    await openFolder()
+    await openVisual('recipe.md')
+    await revealReplaceWithQuery('apple')
+    await enterReplacement('pear')
+    await replaceAllButton().click()
+    await searchInput().press('Escape')
+    await window.locator('.ProseMirror p', { hasText: 'An pear a day' }).click()
+    await window.keyboard.press('End')
+    await window.keyboard.type('ZED')
+    await expect(window.locator('.ProseMirror')).toContainText('ZED')
+    // One undo removes only the typing; the replace survives.
+    await window.keyboard.press('Control+z')
+    await expect(window.locator('.ProseMirror')).not.toContainText('ZED')
+    await expect(window.locator('.ProseMirror h1')).toHaveText('pear pie')
+    // The next undo removes the replace.
+    await window.keyboard.press('Control+z')
+    await expect(window.locator('.ProseMirror h1')).toHaveText('Apple pie')
+  })
+
+  test('replace state does not survive a view switch (FR-015)', async () => {
+    await openFolder()
+    await openVisual('recipe.md')
+    await revealReplaceWithQuery('apple')
+    await enterReplacement('pear')
+    await expect(replaceInput()).toHaveValue('pear')
+    await window.getByRole('button', { name: 'View source' }).click()
+    await expect(window.getByTestId('source-view')).toBeVisible()
+    await expect(searchPanel()).toHaveCount(0)
+    await window.getByRole('button', { name: 'Back to visual editing' }).click()
+    // The visual host stays mounted behind the source overlay, so wait for the
+    // overlay itself to go before reopening.
+    await expect(window.getByTestId('source-view')).toHaveCount(0)
+    await expect(window.locator('.ProseMirror:visible')).toBeVisible()
+    await pressShortcut(app, 'f', ['control'])
+    await expect(searchPanel()).toBeVisible()
+    await expect(replaceInput()).toHaveCount(0)
+    await expect(searchInput()).toHaveValue('')
   })
 
   test('an edit made before the replace stays undoable after it (US3-6, FR-006)', async () => {
@@ -421,6 +520,8 @@ test.describe('find and replace in source editing (spec 061 US3)', () => {
     await expect(source).toContainText('title: thread hunt')
     await expect(source).toContainText('# thread in the body')
     await expect(source).toContainText('And thread once more by the sea.')
+    // Replace does not touch the word wrap setting (FR-016).
+    await expect(window.getByTestId('source-word-wrap')).not.toBeChecked()
   })
 
   test('source replace is a single undo step (FR-006)', async () => {

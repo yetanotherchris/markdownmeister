@@ -335,6 +335,27 @@ describe('sourceSearch replace (spec 061 US1/US2/FR-004/005/008/009/017)', () =>
     harness.destroy()
   })
 
+  it('replace current never re-replaces the text it just inserted', () => {
+    const harness = replaceFixture('foo foo', 'foo', 'foofoo')
+    replaceCurrentSourceMatch(harness.view)
+    expect(harness.view.state.doc.toString()).toBe('foofoo foo')
+    // The current match advanced past the inserted 'foofoo', so a second
+    // replace changes the second original occurrence, not the inserted text.
+    replaceCurrentSourceMatch(harness.view)
+    expect(harness.view.state.doc.toString()).toBe('foofoo foofoo')
+    harness.destroy()
+  })
+
+  it('replace acts on the current content, not stale positions', () => {
+    const harness = replaceFixture('foo bar', 'foo', 'X')
+    // An edit arrives while the box is open (for example an external reload);
+    // the field rescans, so replace must use the shifted position.
+    harness.view.dispatch({ changes: { from: 0, insert: 'prefix ' } })
+    replaceCurrentSourceMatch(harness.view)
+    expect(harness.view.state.doc.toString()).toBe('prefix X bar')
+    harness.destroy()
+  })
+
   it('replaces the leftmost non-overlapping set when candidates overlap', () => {
     const harness = replaceFixture('banana', 'ana', 'X')
     replaceAllSourceMatches(harness.view)
