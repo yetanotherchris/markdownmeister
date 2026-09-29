@@ -52,7 +52,16 @@ test.afterEach(async () => {
  * without Playwright's CDP attachment, which races with this short-lived process.
  */
 async function launchSecondary(target: string): Promise<void> {
-  const second = spawn(ELECTRON_BINARY, [...electronLaunchArgs, target], {
+  // launch.ts supplies these Linux flags only for headless runs; CI uses
+  // MM_E2E_HEADED=1 under xvfb, where the child still needs --no-sandbox.
+  const args = [
+    ...(process.platform === 'linux' && process.env.MM_E2E_HEADED
+      ? ['--no-sandbox', '--disable-gpu']
+      : []),
+    ...electronLaunchArgs,
+    target
+  ]
+  const second = spawn(ELECTRON_BINARY, args, {
     cwd: path.resolve(__dirname, '..', '..'),
     stdio: 'ignore',
     env: { ...process.env, MM_USER_DATA_DIR: userDataDir, MM_SINGLE_INSTANCE: '1' }
