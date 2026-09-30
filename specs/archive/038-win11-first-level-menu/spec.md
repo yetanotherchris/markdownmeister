@@ -158,7 +158,7 @@ The component that powers the first-level entry runs inside Explorer's process. 
 
 - **Maintainer sign-off recorded**: The maintainer decided the classic-mechanism folder fallback required by FR-013 is NOT needed. FR-013 is therefore dropped, not delivered, and the unmet-MUST status recorded on 2026-08-23 is closed. The Store channel's Explorer folder action is a Windows 11 capability; on Windows versions without the modern menu, users open folders from the app's own Open Folder command.
 - **No fallback work in this spec**: A fallback, if ever wanted, will be captured as a new spec rather than reopening this archived one.
-- **Recorded in**: `specs/062-windows-store-distribution/spec.md` (FR-019 and its 2026-09-26 maintainer-decision clarification).
+- **Recorded in**: `specs/archive/062-windows-store-distribution/spec.md` (FR-019 and its 2026-09-26 maintainer-decision clarification).
 
 ## Assumptions
 
