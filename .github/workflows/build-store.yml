@@ -2,9 +2,23 @@ name: Build Microsoft Store package
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to submit, matching the release tag (for example 1.6.58).'
+        required: true
+        type: string
+      publishedVersion:
+        description: 'Currently published Store version. Leave blank for the first submission.'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
+
+concurrency:
+  group: build-store
+  cancel-in-progress: false
 
 jobs:
   build-store:
@@ -16,6 +30,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # actions/checkout v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # actions/setup-node v7.0.0
@@ -38,6 +55,28 @@ jobs:
           echo "::error::npm ci failed after 3 attempts."
           exit 1
 
+      - name: Validate submission inputs
+        env:
+          STORE_IDENTITY_NAME: ${{ vars.STORE_IDENTITY_NAME }}
+          STORE_PUBLISHER: ${{ vars.STORE_PUBLISHER }}
+          VERSION: ${{ inputs.version }}
+          PUBLISHED_VERSION: ${{ inputs.publishedVersion }}
+        shell: pwsh
+        run: |
+          node scripts/store-submission.mjs validate `
+            --identity-name "$env:STORE_IDENTITY_NAME" `
+            --publisher "$env:STORE_PUBLISHER" `
+            --version "$env:VERSION" `
+            --published "$env:PUBLISHED_VERSION"
+
+      - name: Assert the version matches the dispatched release tag
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        run: |
+          node scripts/store-submission.mjs assert-tag `
+            --version "${{ inputs.version }}" `
+            --ref "${{ github.ref_name }}"
+
       - name: Build shell extension
         shell: pwsh
         run: ./scripts/build-shell-extension.ps1
@@ -50,12 +89,36 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
           STORE_IDENTITY_NAME: ${{ vars.STORE_IDENTITY_NAME }}
           STORE_PUBLISHER: ${{ vars.STORE_PUBLISHER }}
+          VERSION: ${{ inputs.version }}
         shell: pwsh
         run: |
-          $builderArgs = @('--win', 'appx', '--x64', '--publish', 'never')
+          $builderArgs = @('--win', 'appx', '--x64', '--publish', 'never', "-c.extraMetadata.version=$env:VERSION")
           if ($env:STORE_IDENTITY_NAME) { $builderArgs += "-c.appx.identityName=$env:STORE_IDENTITY_NAME" }
           if ($env:STORE_PUBLISHER) { $builderArgs += "-c.appx.publisher=$env:STORE_PUBLISHER" }
           npx electron-builder @builderArgs
+
+      - name: Verify packaged identity and version
+        env:
+          STORE_IDENTITY_NAME: ${{ vars.STORE_IDENTITY_NAME }}
+          STORE_PUBLISHER: ${{ vars.STORE_PUBLISHER }}
+          VERSION: ${{ inputs.version }}
+        shell: pwsh
+        run: |
+          $appx = Get-ChildItem -Path dist -Filter 'markdownmeister-*.appx' | Select-Object -First 1
+          if (-not $appx) {
+            Write-Error 'No .appx artifact was produced.'
+            exit 1
+          }
+          $zip = Join-Path $env:RUNNER_TEMP 'store-package.zip'
+          $dest = Join-Path $env:RUNNER_TEMP 'store-package'
+          Copy-Item -LiteralPath $appx.FullName -Destination $zip -Force
+          if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
+          Expand-Archive -LiteralPath $zip -DestinationPath $dest -Force
+          node scripts/store-submission.mjs validate-manifest `
+            --manifest (Join-Path $dest 'AppxManifest.xml') `
+            --identity-name "$env:STORE_IDENTITY_NAME" `
+            --publisher "$env:STORE_PUBLISHER" `
+            --version "$env:VERSION"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # actions/upload-artifact v7.0.1
