@@ -34,7 +34,7 @@ permissions:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -61,7 +61,7 @@ jobs:
   # large-file open in open-performance.spec.ts time out on a shared runner.
   # Sharding halves the wall-clock without that contention.
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -69,12 +69,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-      - name: Use Node.js 22
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
+      - name: Build e2e image
+        run: docker build -f tests/e2e/Dockerfile -t markdownmeister-e2e .
       - name: End-to-end tests (shard ${{ matrix.shard }} of 2)
-        run: xvfb-run -a env MM_E2E_HEADED=1 npm run test:e2e -- --shard=${{ matrix.shard }}/2
+        run: >-
+          docker run --name markdownmeister-e2e-${{ matrix.shard }} --shm-size=1g markdownmeister-e2e
+          sh -lc 'xvfb-run -a env MM_E2E_HEADED=1 npm run test:e2e -- --shard=${{ matrix.shard }}/2'
+      - name: Copy failure traces
+        if: failure()
+        run: docker cp markdownmeister-e2e-${{ matrix.shard }}:/workspace/test-results ./test-results
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-traces-${{ matrix.shard }}
+          path: test-results/
+      - name: Remove e2e container
+        if: always()
+        run: docker rm -f markdownmeister-e2e-${{ matrix.shard }} || true
