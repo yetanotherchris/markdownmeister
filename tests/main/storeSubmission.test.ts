@@ -1,0 +1,162 @@
+import { describe, it, expect } from 'vitest'
+import { execFileSync } from 'node:child_process'
+import * as fs from 'node:fs'
+import * as os from 'node:os'
+import * as path from 'node:path'
+import {
+  PLACEHOLDER_IDENTITY_NAME,
+  PLACEHOLDER_PUBLISHER,
+  identityProblems,
+  isPlaceholderIdentity,
+  assertRealIdentity,
+  toWindowsVersion,
+  compareWindowsVersions,
+  isVersionGreaterThan,
+  parseManifestIdentity,
+  manifestProblems
+} from '../../scripts/store-submission.mjs'
+
+const SCRIPT = path.resolve(__dirname, '..', '..', 'scripts', 'store-submission.mjs')
+const REAL_IDENTITY = {
+  identityName: '12345Chris.MarkdownMeister',
+  publisher: 'CN=11111111-2222-3333-4444-555555555555'
+}
+
+function runCli(args: string[]): void {
+  execFileSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf-8', stdio: 'pipe' })
+}
+
+describe('store submission: identity guard', () => {
+  it('rejects missing and placeholder values', () => {
+    expect(isPlaceholderIdentity('', '')).toBe(true)
+    expect(isPlaceholderIdentity(PLACEHOLDER_IDENTITY_NAME, REAL_IDENTITY.publisher)).toBe(true)
+    expect(isPlaceholderIdentity(REAL_IDENTITY.identityName, PLACEHOLDER_PUBLISHER)).toBe(true)
+    expect(identityProblems('', '')).toHaveLength(2)
+  })
+
+  it('accepts real Partner Center values', () => {
+    expect(isPlaceholderIdentity(REAL_IDENTITY.identityName, REAL_IDENTITY.publisher)).toBe(false)
+    expect(identityProblems(REAL_IDENTITY.identityName, REAL_IDENTITY.publisher)).toEqual([])
+    expect(() =>
+      assertRealIdentity(REAL_IDENTITY.identityName, REAL_IDENTITY.publisher)
+    ).not.toThrow()
+    expect(() => assertRealIdentity(PLACEHOLDER_IDENTITY_NAME, PLACEHOLDER_PUBLISHER)).toThrow(
+      /not submittable/
+    )
+  })
+})
+
+describe('store submission: version derivation', () => {
+  it('derives the four-part Store version with a zero revision', () => {
+    expect(toWindowsVersion('1.6.58')).toBe('1.6.58.0')
+    expect(toWindowsVersion('2.0.1')).toBe('2.0.1.0')
+  })
+
+  it('rejects malformed and zero-major versions', () => {
+    expect(() => toWindowsVersion('1.6')).toThrow(/major\.minor\.patch/)
+    expect(() => toWindowsVersion('1.6.58-beta')).toThrow(/major\.minor\.patch/)
+    expect(() => toWindowsVersion('0.1.0')).toThrow(/non-zero major/)
+  })
+
+  it('compares three- and four-part versions correctly', () => {
+    expect(compareWindowsVersions('1.6.58.0', '1.6.57.0')).toBe(1)
+    expect(compareWindowsVersions('1.6.58.0', '1.6.58.0')).toBe(0)
+    expect(compareWindowsVersions('1.6.58.0', '1.6.59')).toBe(-1)
+    expect(isVersionGreaterThan('1.6.58', '1.6.57.0')).toBe(true)
+    expect(isVersionGreaterThan('1.6.58', '1.6.58.0')).toBe(false)
+    expect(isVersionGreaterThan('1.6.58', '')).toBe(true)
+  })
+})
+
+describe('store submission: manifest inspection', () => {
+  it('reads the Identity element regardless of quote style', () => {
+    const single = `<Package><Identity Name='12345Chris.MarkdownMeister' ProcessorArchitecture='x64' Publisher='CN=abc' Version='1.6.58.0' /></Package>`
+    const double = `<Package><Identity Name="12345Chris.MarkdownMeister" Publisher="CN=abc" Version="1.6.58.0" /></Package>`
+    expect(parseManifestIdentity(single)).toEqual({
+      name: '12345Chris.MarkdownMeister',
+      publisher: 'CN=abc',
+      version: '1.6.58.0'
+    })
+    expect(parseManifestIdentity(double).version).toBe('1.6.58.0')
+  })
+
+  it('reports disagreements between the manifest and the submission inputs', () => {
+    const manifest = `<Identity Name="${PLACEHOLDER_IDENTITY_NAME}" Publisher="${PLACEHOLDER_PUBLISHER}" Version="1.6.58.0" />`
+    const problems = manifestProblems(manifest, { ...REAL_IDENTITY, version: '1.6.58' })
+    expect(problems).toHaveLength(2)
+    expect(problems.join(' ')).toMatch(/identity name/)
+
+    const agree = `<Identity Name="${REAL_IDENTITY.identityName}" Publisher="${REAL_IDENTITY.publisher}" Version="1.6.58.0" />`
+    expect(manifestProblems(agree, { ...REAL_IDENTITY, version: '1.6.58' })).toEqual([])
+  })
+})
+
+describe('store submission: CLI gates', () => {
+  it('exits non-zero on a placeholder identity', () => {
+    expect(() =>
+      runCli([
+        'validate',
+        '--identity-name',
+        PLACEHOLDER_IDENTITY_NAME,
+        '--publisher',
+        REAL_IDENTITY.publisher,
+        '--version',
+        '1.6.58'
+      ])
+    ).toThrow()
+  })
+
+  it('exits non-zero when the version is not greater than the published one', () => {
+    expect(() =>
+      runCli([
+        'validate',
+        '--identity-name',
+        REAL_IDENTITY.identityName,
+        '--publisher',
+        REAL_IDENTITY.publisher,
+        '--version',
+        '1.6.58',
+        '--published',
+        '1.6.58.0'
+      ])
+    ).toThrow()
+  })
+
+  it('exits zero for valid inputs and a matching manifest', () => {
+    expect(() =>
+      runCli([
+        'validate',
+        '--identity-name',
+        REAL_IDENTITY.identityName,
+        '--publisher',
+        REAL_IDENTITY.publisher,
+        '--version',
+        '1.6.58',
+        '--published',
+        '1.6.57.0'
+      ])
+    ).not.toThrow()
+
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mm-store-manifest-'))
+    try {
+      const manifest = path.join(dir, 'AppxManifest.xml')
+      fs.writeFileSync(
+        manifest,
+        `<Identity Name="${REAL_IDENTITY.identityName}" Publisher="${REAL_IDENTITY.publisher}" Version="1.6.58.0" />`
+      )
+      runCli([
+        'validate-manifest',
+        '--manifest',
+        manifest,
+        '--identity-name',
+        REAL_IDENTITY.identityName,
+        '--publisher',
+        REAL_IDENTITY.publisher,
+        '--version',
+        '1.6.58'
+      ])
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true })
+    }
+  })
+})

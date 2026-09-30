@@ -97,6 +97,14 @@ describe('site contract: index.html required elements', () => {
     }
   })
 
+  it('links the Microsoft Store availability to the Store search page', () => {
+    const storeLink = tagsOf(indexHtml, 'a').find((tag) =>
+      (attrValue(tag, 'href') ?? '').startsWith('https://apps.microsoft.com/')
+    )
+    expect(storeLink).toBeDefined()
+    expect(attrValue(storeLink ?? '', 'target')).toBeUndefined()
+  })
+
   it('shows a deploy-time version without JavaScript in both meta and visible span', () => {
     const metaTag = tagsOf(indexHtml, 'meta').find(
       (tag) => attrValue(tag, 'name') === 'deploy-version'
@@ -158,10 +166,11 @@ describe('site contract: zero external resources', () => {
     expect(stylesCss.match(/@import\s+(?:url\(\s*)?['"]?(?:https?:)?\/\//i)).toBeNull()
   })
 
-  // github.com appears legitimately as the FR-002 navigation targets (download
-  // button, repository link); those are navigations, not loaded resources.
-  it('names no external host besides api.github.com and the repository navigations', () => {
-    const allowedHosts = new Set(['api.github.com', 'github.com'])
+  // github.com and apps.microsoft.com appear legitimately as the navigation
+  // targets (download button, repository link, Store listing); those are
+  // navigations, not loaded resources.
+  it('names no external host besides api.github.com and the repository and Store navigations', () => {
+    const allowedHosts = new Set(['api.github.com', 'github.com', 'apps.microsoft.com'])
     const foundHosts = new Set(
       [...`${indexHtml}\n${stylesCss}`.matchAll(/(?:https?:)?\/\/([^/"'\s)>]+)/gi)].map((m) =>
         m[1].toLowerCase()
