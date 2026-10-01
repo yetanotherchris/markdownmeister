@@ -61,6 +61,10 @@ appx:
   publisherDisplayName: MarkdownMeister
   displayName: MarkdownMeister
   applicationId: MarkdownMeister
+  # Spec 062 FR-011: the only capability a full-trust desktop app needs. Do not
+  # add others; the package must not declare capabilities it does not use.
+  capabilities:
+    - runFullTrust
   minVersion: 10.0.19041.0
   maxVersionTested: 10.0.26100.0
   # The alias + packaged-COM + windows.fileExplorerContextMenus declarations,

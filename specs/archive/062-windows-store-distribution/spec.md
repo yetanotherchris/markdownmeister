@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-26
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "I want the app to be available through the Windows store"
 
@@ -163,7 +163,7 @@ The Store listing presents the correct product name, a short and accurate descri
 - **Supported Windows versions (decided)**: The Store package installs and runs on the Windows versions its manifest declares (currently Windows 10 build 19041 and later). The Explorer folder action is available on Windows 11 only; on Windows 10 the app is used and folders are opened from its own Open Folder command.
 - **Free developer account**: Store registration for individual developers is free; the maintainer will use an individual account unless a company account is separately chosen. No developer-purchased certificate is needed because the Store re-signs the package.
 - **Certification lag**: Store review adds days-to-weeks versus a GitHub release, and this is accepted as the cost of the channel. The submission may be rejected; the direct-download release is unaffected.
-- **Listing ownership**: Screenshots, the description, and the support/privacy URLs are maintainer-provided; the privacy policy is required by the Store even though the app collects no personal data.
+- **Listing ownership**: Screenshots and the description are maintainer-provided; the support URL (GitHub Issues) and the privacy policy (a page on the project site) are recorded in the listing content pack. The privacy policy is required by the Store even though the app collects no personal data.
 - **Channel isolation continues**: Existing registrations from specs 006/035/038 remain the source of truth for the non-Store channels and are not modified by this feature.
 - **Verification is largely manual**: Real Store discovery, certification, install, update, and uninstall cannot be exercised by the automated test suite; verification is performed against the real listing and installed artifacts, supplemented by the automated channel-isolation tests that already exist.
 
@@ -188,3 +188,9 @@ The Store listing presents the correct product name, a short and accurate descri
 - Consequence: the Store channel's Explorer folder action is a Windows 11 capability. On Windows 10, or any configuration without the modern menu, users install the app normally and open folders from the app's own Open Folder command; no Explorer folder entry is registered.
 - The Store listing must state the Windows 11 requirement for the folder action (FR-019).
 - If a fallback is ever wanted, it will be a new spec, not a reopening of spec 038.
+
+### 2026-09-30 (maintainer decisions during planning)
+
+- **Listing links**: the support URL is the repository's GitHub Issues page and the privacy URL is a new page served by the existing GitHub Pages site (`docs/site/privacy.html`), chosen because the app collects no personal data and the site already deploys a static tree. The listing content pack (`docs/store-listing.md`) records both so the Store submission uses reachable URLs.
+- **Advertising before publication**: the README and project site link to the Microsoft Store search URL for the product name until the product page exists, then switch to the published product page. This satisfies FR-012 discoverability without knowing the Store product ID in advance.
+- **Identity and version gating**: the CI submission build reads identity from repository variables and fails on placeholder values, and takes the intended release version as a dispatched input verified against the package manifest, so a placeholder or stale version cannot be packaged (FR-003, FR-010, FR-017).

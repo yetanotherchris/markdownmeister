@@ -46,7 +46,7 @@
 - [x] T011 Run gates in order until green: `npm run lint`; `npm run typecheck`; `npm test`; `npm run check`; append new src/test files to package.json format:check list and run `npx prettier --check` on them; LAST `npm run test:e2e` (retry apparent contention failures up to 3 times).
 - [x] T012 Archive: `git mv specs/038-win11-first-level-menu specs/archive/038-win11-first-level-menu`, set **Status** to Archived in spec.md, commit `docs(specs)`.
 - [ ] T013 Manual follow-ups (NOT automatable here): Partner Center identity + submission per docs/store-release.md; run quickstart.md US1–US5 matrices against real artifacts including fault injection; record evidence separately. Never claim Explorer behaviour not observed.
-- [X] T014 FR-013 follow-up: DROPPED by maintainer decision 2026-09-26. The classic-mechanism folder fallback is not needed; the Store folder action is a Windows 11 capability and folders on other versions are opened from the app. If a fallback is ever wanted it will be a new spec. See spec.md Clarifications 2026-09-26 post-archive decision and specs/062-windows-store-distribution/spec.md FR-019.
+- [X] T014 FR-013 follow-up: DROPPED by maintainer decision 2026-09-26. The classic-mechanism folder fallback is not needed; the Store folder action is a Windows 11 capability and folders on other versions are opened from the app. If a fallback is ever wanted it will be a new spec. See spec.md Clarifications 2026-09-26 post-archive decision and specs/archive/062-windows-store-distribution/spec.md FR-019.
 
 ---
 

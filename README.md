@@ -1,19 +1,20 @@
-# markdownmeister
+<p align="center">
+  <img src="docs/site/public/assets/logo.png" alt="MarkdownMeister" width="112" />
+</p>
 
-Can AI create a Markdown editor using Electron and OSS frameworks? Milkdown, React
+# MarkdownMeister
 
-## Installation
+A free markdown editor for Windows, macOS and Linux. Write with a live preview or the raw source, browse a folder in the sidebar, and keep several documents open in tabs. Your files stay plain markdown on disk.
 
-Install the latest release without building from source.
+[Project site](https://yetanotherchris.github.io/markdownmeister/) · [Releases](https://github.com/yetanotherchris/markdownmeister/releases/latest) · [Issues](https://github.com/yetanotherchris/markdownmeister/issues)
 
-### macOS / Linux (Homebrew)
+![The MarkdownMeister main window with the folder explorer on the left and the markdown editor on the right](docs/site/public/assets/screenshot-1.png)
 
-```sh
-brew tap markdownmeister https://github.com/yetanotherchris/markdownmeister
-brew install markdownmeister
-```
+## Install
 
-Launch the app via your terminal window.
+### Windows (Microsoft Store)
+
+Search for **MarkdownMeister** in the Microsoft Store, or open the [Store search page](https://apps.microsoft.com/search?query=MarkdownMeister). Installing from the Store carries Microsoft's own signing, so there is no developer-certificate or SmartScreen warning.
 
 ### Windows (Scoop)
 
@@ -22,12 +23,20 @@ scoop bucket add markdownmeister https://github.com/yetanotherchris/markdownmeis
 scoop install markdownmeister
 ```
 
-Launch the app via the start menu.
+### macOS and Linux (Homebrew)
 
-## Opening folders from your file manager
+```sh
+brew tap markdownmeister https://github.com/yetanotherchris/markdownmeister
+brew install markdownmeister
+```
 
-On Windows, right-click a folder and choose **Open in MarkdownMeister** (on Windows 11, under "Show more options"). Uninstalling removes that entry together with the **Open with MarkdownMeister** entries for `.md`/`.markdown` files.
+## Technology
 
-On macOS, hand a folder to the app via a Dock drop, `open -a MarkdownMeister <folder>`, or Open With in third-party file managers; Finder itself offers no context-menu entry for folders.
+- Milkdown for the WYSIWYG editor, CodeMirror for the source view.
+- Electron and TypeScript.
+- Built spec-first with [Spec Kit](https://github.com/github/spec-kit): the specification is the source of truth, and code follows it.
+- Developed with DeepSeek, Claude, GPT, and GLM.
 
-On Linux, launching the AppImage registers a user-level **Open With** entry for folders in desktop environments that follow the freedesktop desktop-entry mechanism (Nautilus, Dolphin); it never becomes the default folder handler. Remove it with `markdownmeister --remove-folder-action`. Desktop environments without a standard mechanism for third-party folder actions are unsupported — no menu entry is created there.
+## Learn more
+
+Features, keyboard shortcuts, settings, and folder actions are documented on the [project site](https://yetanotherchris.github.io/markdownmeister/). MarkdownMeister is free and open source under the [MIT licence](LICENSE).
