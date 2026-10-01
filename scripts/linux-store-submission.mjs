@@ -60,9 +60,7 @@ export function containsVersionToken(file, version) {
 export function isSnapArtifactName(name, version) {
   const file = path.basename((name ?? '').trim())
   return (
-    file.startsWith(`${SNAP_NAME}`) &&
-    file.endsWith('.snap') &&
-    containsVersionToken(file, version)
+    file.startsWith(`${SNAP_NAME}`) && file.endsWith('.snap') && containsVersionToken(file, version)
   )
 }
 
