@@ -29,4 +29,4 @@
 ## Phase 5: Gates and lifecycle
 
 - [x] T007 Run `npm run docs:build`, `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm run check`, `npm test`, and the docs e2e.
-- [ ] T008 Manual follow-up: add real screenshots when available.
+- [x] T008 Add real screenshots (`docs/site/public/assets/screenshot-1.png`, `screenshot-2.png`) referenced by the built site.
