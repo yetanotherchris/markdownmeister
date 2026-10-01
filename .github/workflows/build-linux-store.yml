@@ -19,6 +19,8 @@ on:
       - '.github/workflows/build-linux-store.yml'
       - 'electron-builder.yml'
       - 'scripts/linux-store-submission.mjs'
+      - 'package.json'
+      - 'package-lock.json'
 
 permissions:
   contents: read
