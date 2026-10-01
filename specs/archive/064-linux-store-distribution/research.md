@@ -2,7 +2,7 @@
 
 Date: 2026-10-01. Each decision states the choice, the evidence, and the rejected alternatives. electron-builder behaviour was verified against the installed 26.15.3 source in `node_modules/`; platform requirements cite Flathub and Snapcraft documentation.
 
-## D1: The snap is built by electron-builder's core22 template path, so CI needs no `snapcraft` or VM
+## D1: The snap is built by electron-builder's base core20 template path, so CI needs no `snapcraft` or VM
 
 **Decision**: Configure the legacy `snap` target and let electron-builder use its template path (`useTemplateApp`, the default for x64 when `buildPackages`/`stagePackages` are not customised). The build downloads the prebuilt Electron snap template and packs the stage with `mksquashfs`; it does not run a snapcraft build or a virtual machine on the host.
 
@@ -10,6 +10,7 @@ Date: 2026-10-01. Each decision states the choice, the evidence, and the rejecte
 
 - `SnapTarget` merges the `snapcraft` and legacy `snap` config (`node_modules/app-builder-lib/out/targets/snap/SnapTarget.js:26-27`).
 - The legacy core computes `isUseTemplateApp` as `useTemplateApp !== false && arch is x64/armv7l && no custom buildPackages && stagePackages equals the default set` (`coreLegacy.js:57-58`), and `buildWithTemplate` downloads the template then runs `mksquashfs` directly (`coreLegacy.js:242-271`). `buildWithoutTemplate` is the path that needs the snapcraft CLI (`coreLegacy.js:273`).
+- The bundled template descriptor is `base: core20` (`node_modules/app-builder-lib/templates/snap/snapcraft.yaml:1`). The app's config sets neither `base` nor a custom `snapcraft` block, so the template's core20 base is used.
 - The snap name is `packager.executableName.toLowerCase()` (`coreLegacy.js:48`), and `executableName` is `markdownmeister` (`electron-builder.yml`), so the snap is `markdownmeister`. The snap version is `appInfo.version` (`coreLegacy.js:104`), which the workflow overrides with `-c.extraMetadata.version`.
 
 **Alternatives considered**:
@@ -27,13 +28,14 @@ Date: 2026-10-01. Each decision states the choice, the evidence, and the rejecte
 
 ## D3: An explicit minimal plug set, with the unused defaults removed
 
-**Decision**: Declare `plugs` explicitly as `desktop`, `desktop-legacy`, `home`, `x11`, `wayland`, `unity7`, `browser-support`, `gsettings`, `opengl`. Do not declare the electron-builder defaults `network`, `audio-playback`, or `pulseaudio`. Leave `removable-media` undeclared and document that the user connects it manually for folders outside the home directory.
+**Decision**: Declare `plugs` explicitly as `desktop`, `desktop-legacy`, `home`, `x11`, `wayland`, `unity7`, `browser-support`, `gsettings`, `opengl`, and `removable-media`. Do not declare the electron-builder defaults `network`, `audio-playback`, or `pulseaudio`. `removable-media` is declared but not auto-connected, so a folder outside `$HOME` is reachable only when the user chooses to connect it.
 
 **Evidence**:
 
 - electron-builder's default plug list is `desktop`, `desktop-legacy`, `home`, `x11`, `wayland`, `unity7`, `browser-support`, `network`, `gsettings`, `audio-playback`, `pulseaudio`, `opengl` (`coreLegacy.js:37`).
 - `home` is what makes folder enumeration, creation, watching, and atomic saves work for any workspace inside `$HOME` (FR-006). `desktop`/`desktop-legacy` are what let `shell.openExternal` and `shell.openPath` reach the desktop's handlers (`src/main/ipc/handlers/build.ts`, `src/main/ipc/handlers/files.ts`). `x11`/`wayland`/`opengl` are the display and GPU interfaces, and `browser-support` is Chromium's own sandbox, required by Electron. `gsettings` reads desktop appearance, and `unity7` keeps launcher/menu integration on Ubuntu.
-- A search of `src/` finds no `fetch`, `http(s)`, or updater call in the application (the release-version refresh is site JavaScript, not app code), so `network` is unused; the app plays no audio, so `audio-playback`/`pulseaudio` are unused. FR-019 forbids unused interfaces.
+- A search of `src/` finds no `fetch`, `http(s)`, or updater call in the application (the release-version refresh is site JavaScript, not app code), so `network` is unused. Spellcheck is the bundled JavaScript `nspell` checker with Hunspell dictionaries imported as raw assets (`src/renderer/assets/dictionaries/README.md`), so omitting `network` loses no dictionary download. The app plays no audio, so `audio-playback`/`pulseaudio` are unused. FR-019 forbids unused interfaces.
+- `removable-media` is needed for FR-008's explicit-grant path. Because it is not auto-connected, declaring it exposes the interface without granting any access until the user runs `snap connect markdownmeister:removable-media`; the docs use exactly that command.
 
 **Alternatives considered**:
 
@@ -63,7 +65,7 @@ Date: 2026-10-01. Each decision states the choice, the evidence, and the rejecte
 
 **Decision**: Keep `src/main/linuxDesktopEntry.ts` gated on `process.env.APPIMAGE` (unchanged). Rely on the platform identities: the AppImage owns `~/.local/share/applications/markdownmeister.desktop`, the snap's desktop file is installed by snapd under its snap-qualified name, and a Flatpak owns a `<application-id>.desktop`. A test asserts the AppImage entry name and the snap name differ and that the self-write remains APPIMAGE-gated.
 
-**Evidence**: `src/main/index.ts:108` returns early unless `process.env.APPIMAGE` is set, so a snap or Flatpak launch never writes or removes the AppImage's entry; snapd prefixes a snap's desktop file, and the Flatpak target names its desktop file `${appId}.desktop` (`FlatpakTarget.js:57`). This is what FR-017 requires: installing or removing a store build cannot mask the AppImage entry, and uninstalling a channel removes only its own.
+**Evidence**: `src/main/index.ts:108` returns early unless `process.env.APPIMAGE` is set, so a snap or Flatpak launch never writes or removes the AppImage's entry; snapd prefixes a snap's desktop file, and the Flatpak target names its desktop file `${appId}.desktop` (`FlatpakTarget.js:57`). This is what FR-017 requires: installing or removing a store build cannot mask the AppImage entry, and uninstalling a channel removes only its own. The snap also cannot self-register a folder entry at all, because strict confinement's `home` interface excludes hidden paths such as `~/.local`, which is the FR-009 fallback recorded in the plan's Complexity Tracking.
 
 **Alternatives considered**: Rejected: *rename the AppImage entry to a reverse-domain name*. It gains nothing (the identities are already distinct) and would orphan every existing AppImage user's entry.
 

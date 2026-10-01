@@ -47,7 +47,7 @@
 ## Phase 8: Gates and lifecycle
 
 - [x] T008 Add the new `scripts`/`tests` files to `package.json`'s `format:check` list and the site sources already there; run `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm run check`, `npm test`, `npm run docs:build`, and LAST `npm run test:e2e` (using the Linux Docker image for the Linux-specific checks).
-- [ ] T009 Manual follow-ups (NOT automatable here): register the `markdownmeister` snap name, set the `SNAPCRAFT_STORE_CREDENTIALS` secret, dispatch `build-linux-store.yml` from a release tag, complete the store listing (summary, description, screenshots, icon, licence, homepage), verify snap install/upgrade/removal and the folder-sandbox matrix on a real Ubuntu machine, and, for Flathub, have the maintainer author the manifest and open the submission. Record evidence separately. Never claim a store behaviour not observed.
+- [ ] T009 Manual follow-ups (NOT automatable here): register the `markdownmeister` snap name, set the `SNAPCRAFT_STORE_CREDENTIALS` secret, dispatch `build-linux-store.yml` from a release tag, complete the store listing (summary, description, screenshots, icon, licence, homepage), verify snap install/upgrade/removal and the folder-sandbox matrix on a real Ubuntu machine (including the folder Open With fallback of FR-009 and the `removable-media` connection for folders outside `$HOME`), and, for Flathub, have the maintainer author the manifest and open the submission. Record evidence separately. Never claim a store behaviour not observed.
 - [x] T010 Archive the spec (`git mv specs/064-linux-store-distribution specs/archive/064-linux-store-distribution`, set **Status** to Archived) as part of the implementation PR.
 
 ---

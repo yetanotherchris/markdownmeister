@@ -6,7 +6,7 @@ For the Windows Store channel, see `store-release.md`.
 
 ## What ships
 
-The Snap Store package is the same application as the direct-download AppImage, packed by electron-builder from its core22 Electron snap template with strict confinement. The snap name is `markdownmeister`, taken from `executableName` lowercased. No application code changes: the snap is a packaging target, selected only by the Linux store workflow.
+The Snap Store package is the same application as the direct-download AppImage, packed by electron-builder from its base core20 Electron snap template with strict confinement. The snap name is `markdownmeister`, taken from `executableName` lowercased. No application code changes: the snap is a packaging target, selected only by the Linux store workflow.
 
 The Flatpak is built from a manifest that lives in the maintainer's Flathub repository, not in this repository. Flathub's published policy forbids AI-generated or AI-assisted manifest content and forbids an AI agent from opening or automating the submission, so the manifest and the submission are maintainer-authored (spec FR-016). This repository supplies the application and its icon; it does not contain the manifest.
 
@@ -27,7 +27,7 @@ These identifiers are public: they appear in the shipped snap metadata and in th
 ### One-time setup
 
 1. Sign in to the Snap Store with an Ubuntu One account and accept the developer terms.
-2. Register the name if it is not already held: `snapcraft register markdownmeister`. A name that is already registered to another publisher cannot be used; pick a distinct name and update `SNAP_NAME` in `scripts/linux-store-submission.mjs` and `snap.title`/config if that ever happens.
+2. Register the name if it is not already held: `snapcraft register markdownmeister`. A name already registered to another publisher cannot be used. The snap name is derived from `executableName` lowercased and is shared with the AppImage, so a new name would have to change both the electron-builder config and `SNAP_NAME` in `scripts/linux-store-submission.mjs` together.
 3. Export a credential and store it as a repository secret named `SNAPCRAFT_STORE_CREDENTIALS` (Settings, Secrets and variables, Actions, Secrets): `snapcraft export-login - | base64 -w0`. The credential is read from the environment by the workflow's publish step and is never written into the repository (FR-012).
 4. Fill the store listing: name, summary, description, icon, screenshots (at least one per supported desktop), licence (MIT), homepage, and a support link (the GitHub Issues page). The summary and description in `electron-builder.yml`'s `snap` block are the snap's own metadata; the listing text is entered in the store dashboard.
 
@@ -46,7 +46,7 @@ npm run build
 npx electron-builder --linux snap --x64 --publish never -c.extraMetadata.version=1.7.0
 ```
 
-electron-builder downloads its core22 Electron snap template and `mksquashfs` toolset, so no `snapcraft` install is needed to produce the `.snap`. The artifact is `dist/markdownmeister-<version>-linux-x64.snap`.
+electron-builder downloads its base core20 Electron snap template and `mksquashfs` toolset, so no `snapcraft` install is needed to produce the `.snap`. The artifact is `dist/markdownmeister-<version>-linux-x64.snap`.
 
 ### Mandatory pre-submission verification
 
@@ -55,9 +55,13 @@ CI verifies the version and artifact name only. Before publishing, install the b
 1. Install the candidate: `snap install --dangerous ./dist/markdownmeister-<version>-linux-x64.snap`.
 2. Open a user-chosen folder, enumerate it, create a file, change a file from outside the app, edit it, save it, and reopen the workspace. Every step must behave as in the AppImage (FR-006).
 3. Hand a folder to the app from the file manager. The path is untrusted and is validated in the main process; a path outside the workspace is refused (FR-007).
-4. Confirm the app cannot read or write user documents outside the workspace. Under strict confinement the `home` interface grants `$HOME`; a folder outside `$HOME` requires the user to connect `removable-media` (`sudo snap connect markdownmeister:removable-media`). Blanket home access is deliberately not requested (FR-008).
+4. Confirm the app cannot read or write user documents outside the workspace. Under strict confinement the `home` interface grants non-hidden files under `$HOME`. A folder outside `$HOME` (on removable media) is reached by the user connecting the declared `removable-media` interface (`sudo snap connect markdownmeister:removable-media`); it is declared but not auto-connected, so the grant stays the user's explicit choice (FR-008). Blanket home access is deliberately not requested.
 5. Review the declared interfaces against actual use and remove any proven unused (FR-019). The declared set is `desktop`, `desktop-legacy`, `home`, `x11`, `wayland`, `unity7`, `browser-support`, `gsettings`, `opengl`; `browser-support` is Chromium's sandbox, and `wayland`/`x11` are the display backends.
 6. Confirm the AppImage's own desktop entry still appears and works beside the snap, and that removing the snap removes only the snap's entry (FR-017).
+
+### Folder Open With (FR-009)
+
+The AppImage registers a folder entry by writing `~/.local/share/applications/markdownmeister.desktop` at launch. A strictly-confined snap cannot do this: the `home` interface excludes hidden paths, so `~/.local` is not writable, and the app's self-write stays AppImage-only. The snap therefore relies on snapd's desktop integration for its launcher, and the folder Open With entry falls under FR-009's "where the desktop does not support it" case: the app still opens folders through its own Open Folder control, and no broken entry is left behind. Verify this on the real machine (step 2 above covers opening a folder). The Flathub manifest can provide the entry instead, by adding `MimeType=inode/directory;` to its own `.desktop` file (FR-009).
 
 ### Publish
 
@@ -82,7 +86,7 @@ The maintainer authors the manifest and opens the submission. Use this list as t
 - **Lint**: `flatpak-builder-lint manifest <manifest>` and the appstream/metainfo lint pass before submission (FR-011).
 - **Local gate**: build and launch the Flatpak locally before opening the submission (FR-011).
 
-Then open the submission pull request against the Flathub repository, with maintainer-written text, and answer review personally (FR-016).
+Then open the submission pull request against the Flathub repository, with maintainer-written text, and answer review personally (FR-016). If any application material was AI-generated, it must be disclosed to Flathub as its policy requires (FR-016).
 
 ## Channel identity
 
