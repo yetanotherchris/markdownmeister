@@ -86,10 +86,34 @@ async function openWorkspace(): Promise<void> {
   await expect(window.getByRole('treeitem').getByText('small.md')).toBeVisible()
 }
 
+/** Resolves once the editor DOM has stopped mutating for a short quiet period.
+ *  Toggling a settings option reconfigures the editor and replaces its nodes,
+ *  so a click issued mid-reconfigure can be dropped. */
+async function waitForEditorStable(): Promise<void> {
+  await window.evaluate(() => {
+    const host = document.querySelector('.editor-host:not(.has-source)')
+    if (!host) return
+    return new Promise<void>((resolve) => {
+      let quiet: ReturnType<typeof setTimeout>
+      const done = () => {
+        observer.disconnect()
+        resolve()
+      }
+      const observer = new MutationObserver(() => {
+        clearTimeout(quiet)
+        quiet = setTimeout(done, 150)
+      })
+      observer.observe(host, { childList: true, subtree: true, characterData: true })
+      quiet = setTimeout(done, 150)
+      setTimeout(done, 3000)
+    })
+  })
+}
+
 /** Single-click a file and wait until it is presented (atomic swap done). */
 async function openFile(name: string): Promise<void> {
   await window.getByRole('treeitem').getByText(name).click()
-  await expect(window.locator('.document-title')).toContainText(name)
+  await expect(window.locator('.document-title')).toContainText(name, { timeout: 10_000 })
   await expect(window.locator('.ProseMirror:visible')).toBeVisible()
 }
 
@@ -197,6 +221,8 @@ test('SC-002 flip side: an open with CHANGED display settings legitimately re-pa
   await dialog.locator('.settings-switch', { hasText: 'Strikethrough formatting' }).click()
   await dialog.getByRole('button', { name: 'Close', exact: true }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)
+  // The syntax change reconfigures the editor; let it settle before opening.
+  await waitForEditorStable()
 
   await resetCounters()
   await openFile('large.md')
