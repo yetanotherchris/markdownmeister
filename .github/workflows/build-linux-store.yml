@@ -70,6 +70,12 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
         run: node scripts/linux-store-submission.mjs assert-tag --version "$VERSION" --ref "$REF_NAME"
 
+      - name: Require a release tag to publish
+        if: ${{ inputs.publish && github.ref_type != 'tag' }}
+        run: |
+          echo "::error::Publishing to the Snap Store requires dispatching from a release tag."
+          exit 1
+
       - name: Build app
         run: npm run build
 
@@ -88,14 +94,13 @@ jobs:
           node scripts/linux-store-submission.mjs check-artifact --name "$(basename "$snap_file")" --version "$VERSION"
 
       - name: Publish to the Snap Store (stable)
-        if: ${{ inputs.publish }}
+        if: ${{ inputs.publish && github.ref_type == 'tag' }}
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
-          VERSION: ${{ inputs.version }}
         shell: bash
         run: |
           node scripts/linux-store-submission.mjs require-credentials
-          sudo snap install snapcraft --classic
+          sudo snap install snapcraft --classic || true
           snap_file="$(ls dist/*.snap | head -n 1)"
           snapcraft upload --release=stable "$snap_file"
 

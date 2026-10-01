@@ -36,6 +36,20 @@ export function assertVersionMatchesTag(version, ref) {
   }
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * True when `version` appears in `file` as a whole dotted token, so `1.7.0`
+ * matches `markdownmeister-1.7.0-linux-x64.snap` but not `11.7.0` or `1.7.01`.
+ */
+export function containsVersionToken(file, version) {
+  const value = (version ?? '').trim()
+  if (value === '') return false
+  return new RegExp(`(^|[^0-9.])${escapeRegExp(value)}([^0-9.]|$)`).test(file)
+}
+
 /**
  * True when `name` is the `.snap` artifact electron-builder produces for this
  * app at `version`. The `linux.artifactName` pattern is inherited by the snap
@@ -48,7 +62,7 @@ export function isSnapArtifactName(name, version) {
   return (
     file.startsWith(`${SNAP_NAME}`) &&
     file.endsWith('.snap') &&
-    file.includes((version ?? '').trim())
+    containsVersionToken(file, version)
   )
 }
 
