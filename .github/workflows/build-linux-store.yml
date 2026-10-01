@@ -65,9 +65,19 @@ jobs:
           echo "::error::npm ci failed after 3 attempts."
           exit 1
 
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Validate the version
         env:
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: node scripts/linux-store-submission.mjs validate --version "$VERSION"
 
       - name: Assert the version matches the dispatched release tag
@@ -88,12 +98,12 @@ jobs:
 
       - name: Package the snap
         env:
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: npx electron-builder --linux snap --x64 --publish never -c.extraMetadata.version="$VERSION"
 
       - name: Verify the produced snap
         env:
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
         shell: bash
         run: |
           snap_file="$(ls dist/*.snap | head -n 1)"
