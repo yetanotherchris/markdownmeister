@@ -175,8 +175,8 @@ export function DocumentationSite(): ReactElement {
             </p>
             <h3>Linux (Snap Store)</h3>
             <p>
-              Not yet published. Once the snap is live it installs with{' '}
-              <a href={snapStoreUrl}>Snap Store</a>:
+              Not yet published. Once the snap is live it will be listed on the{' '}
+              <a href={snapStoreUrl}>Snap Store</a> and installs with:
             </p>
             <Code>{'sudo snap install markdownmeister'}</Code>
             <h3>Linux (Flathub)</h3>

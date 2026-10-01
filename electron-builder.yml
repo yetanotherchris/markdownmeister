@@ -106,7 +106,7 @@ linux:
 # core20 Electron snap template, so the CI host needs no snapcraft and no VM.
 snap:
   title: MarkdownMeister
-  summary: A free WYSIWYG markdown editor for Windows, macOS and Linux.
+  summary: A free WYSIWYG markdown editor for Windows, macOS and Linux
   description: |
     MarkdownMeister is a free, open-source markdown editor. Write with a live
     preview or edit the raw source, browse a folder in the sidebar, and keep

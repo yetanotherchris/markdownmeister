@@ -32,7 +32,7 @@ brew install markdownmeister
 
 ### Linux (Snap Store)
 
-Not yet published. Once the snap is live, install it with:
+Not yet published. Once the snap is live it will be listed on the [Snap Store](https://snapcraft.io/markdownmeister) and installs with:
 
 ```sh
 sudo snap install markdownmeister
