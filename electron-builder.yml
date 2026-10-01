@@ -99,3 +99,31 @@ linux:
   target:
     - target: AppImage
       arch: [x64]
+
+# Spec 064: the Snap Store channel. Deliberately absent from linux.target so
+# the direct-download AppImage build is unchanged; build-linux-store.yml
+# selects it with `--linux snap`. electron-builder packs it from the core22
+# Electron snap template, so the CI host needs no snapcraft and no VM.
+snap:
+  title: MarkdownMeister
+  summary: A free WYSIWYG markdown editor for Windows, macOS and Linux.
+  description: |
+    MarkdownMeister is a free, open-source markdown editor. Write with a live
+    preview or edit the raw source, browse a folder in the sidebar, and keep
+    several documents open in tabs. Your files stay plain markdown on disk.
+  confinement: strict
+  grade: stable
+  # The interfaces this app actually uses (spec 064 FR-019). The electron-builder
+  # defaults `network`, `audio-playback`, and `pulseaudio` are omitted because
+  # the app makes no network or audio calls; `removable-media` is left
+  # undeclared and connected by the user for folders outside $HOME.
+  plugs:
+    - desktop
+    - desktop-legacy
+    - home
+    - x11
+    - wayland
+    - unity7
+    - browser-support
+    - gsettings
+    - opengl

@@ -62,5 +62,5 @@
 
 ## Notes
 
-- Never modify the non-Store channel registration surface: `scripts/installer.nsh`, `scripts/open-with.ps1`, `markdownmeister.json`, `Formula/`, `updatescoop.ps1`, `updatebrew.ps1`, `updatepackagejson.ps1`, or the existing AppImage values in `electron-builder.yml` (`linux.artifactName`, `linux.icon`, `linux.target`) beyond the additive `linux.description`/`linux.synopsis`/`linux.category` the snap inherits.
+- Never modify the non-Store channel registration surface: `scripts/installer.nsh`, `scripts/open-with.ps1`, `markdownmeister.json`, `Formula/`, `updatescoop.ps1`, `updatebrew.ps1`, `updatepackagejson.ps1`, or the existing AppImage values in `electron-builder.yml` (`linux.artifactName`, `linux.icon`, `linux.target`). The `snap` block is a new top-level key only.
 - Structural vs behavioural changes never share a commit (Tidy First).
