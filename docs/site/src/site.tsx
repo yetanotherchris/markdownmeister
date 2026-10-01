@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactElement, ReactNode } from 'react'
 import {
   features,
@@ -73,12 +73,6 @@ function Code({ children }: { children: string }) {
 
 export function DocumentationSite(): ReactElement {
   const version = useReleaseVersion()
-  const [query, setQuery] = useState('')
-  const normalized = query.trim().toLowerCase()
-  const filteredSettings = useMemo(
-    () => settingsReference.filter((entry) => entry.join(' ').toLowerCase().includes(normalized)),
-    [normalized]
-  )
 
   return (
     <div className="site-shell">
@@ -88,17 +82,10 @@ export function DocumentationSite(): ReactElement {
           MarkdownMeister
         </a>
         <div className="header-actions">
-          <label className="search-label" htmlFor="site-search">
-            Search
-          </label>
-          <input
-            id="site-search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search settings"
-          />
-          <a className="button" href={releasesUrl}>
-            Download
+          <a className="icon-link" href={repositoryUrl} aria-label="MarkdownMeister on GitHub">
+            <svg viewBox="0 0 16 16" width="24" height="24" fill="currentColor" aria-hidden="true">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+            </svg>
           </a>
         </div>
       </header>
@@ -137,7 +124,9 @@ export function DocumentationSite(): ReactElement {
               <a className="button" href={storeSearchUrl}>
                 Get it from the Microsoft Store
               </a>
-              <a href={releasesUrl}>Download for macOS and Linux</a>
+              <a className="button" href={releasesUrl}>
+                Download
+              </a>
             </div>
             <figure className="hero-shot">
               <img
@@ -175,15 +164,15 @@ export function DocumentationSite(): ReactElement {
               Store carries Microsoft’s own signing, so there is no developer-certificate or
               SmartScreen warning.
             </p>
+            <h3>Windows (Scoop)</h3>
+            <Code>{`scoop bucket add markdownmeister ${repositoryUrl}\nscoop install markdownmeister`}</Code>
+            <h3>macOS and Linux (Homebrew)</h3>
+            <Code>{`brew tap markdownmeister ${repositoryUrl}\nbrew install markdownmeister`}</Code>
             <h3>Windows (Microsoft Store)</h3>
             <p>
               Search for <strong>MarkdownMeister</strong> in the Microsoft Store, or open the{' '}
               <a href={storeSearchUrl}>Store search page</a>.
             </p>
-            <h3>Windows (Scoop)</h3>
-            <Code>{`scoop bucket add markdownmeister ${repositoryUrl}\nscoop install markdownmeister`}</Code>
-            <h3>macOS and Linux (Homebrew)</h3>
-            <Code>{`brew tap markdownmeister ${repositoryUrl}\nbrew install markdownmeister`}</Code>
             <p className="callout">{windowsFolderNote}</p>
           </Section>
 
@@ -212,7 +201,6 @@ export function DocumentationSite(): ReactElement {
           </Section>
 
           <Section id="settings" title="Settings">
-            <p>Search the settings by name, description, or value.</p>
             <div className="table-wrap">
               <table>
                 <thead>
@@ -223,7 +211,7 @@ export function DocumentationSite(): ReactElement {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredSettings.map(([name, description, values]) => (
+                  {settingsReference.map(([name, description, values]) => (
                     <tr key={name}>
                       <td>
                         <code>{name}</code>
@@ -235,9 +223,6 @@ export function DocumentationSite(): ReactElement {
                 </tbody>
               </table>
             </div>
-            {filteredSettings.length === 0 && (
-              <p className="callout">No settings match “{query}”.</p>
-            )}
           </Section>
 
           <Section id="privacy" title="Privacy">

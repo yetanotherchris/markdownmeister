@@ -16,6 +16,12 @@ test('home page presents the product, screenshots, install options, and the fold
 
   const storeLink = page.getByRole('link', { name: 'Get it from the Microsoft Store' })
   await expect(storeLink).toHaveAttribute('href', /apps\.microsoft\.com/)
+
+  const githubLink = page.getByRole('link', { name: 'MarkdownMeister on GitHub' })
+  await expect(githubLink).toHaveAttribute(
+    'href',
+    'https://github.com/yetanotherchris/markdownmeister'
+  )
 })
 
 test('sidebar navigation moves to each section', async ({ page }) => {
@@ -24,13 +30,11 @@ test('sidebar navigation moves to each section', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Keyboard shortcuts' })).toBeInViewport()
 })
 
-test('the settings search filters the reference table', async ({ page }) => {
+test('the settings reference lists the options', async ({ page }) => {
   await page.goto(`${BASE}/`)
-  await page.getByLabel('Search').fill('word wrap')
-
   const table = page.locator('table').last()
   await expect(table.getByText('Word wrap')).toBeVisible()
-  await expect(table.getByText('Rustic')).toHaveCount(0)
+  await expect(table.getByText('Rustic')).toBeVisible()
 })
 
 test('the privacy policy is served as a static page', async ({ page }) => {
