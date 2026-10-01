@@ -2,7 +2,13 @@ import { test, expect, ElectronApplication, Page } from '@playwright/test'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { launchApp, closeAppSafely, openFolder } from './launch'
+import {
+  launchApp,
+  closeAppSafely,
+  openFolder,
+  stubMessageBox,
+  messageBoxCallCount
+} from './launch'
 
 /**
  * Spec 058: creating a new file in the explorer opens it in a new active tab
@@ -184,9 +190,16 @@ test('US3/FR-003 a creation whose path is already open focuses the existing tab,
 
   // Remove the file on disk while its tab stays open, so a new creation of the
   // same name succeeds and its path collides with the open tab.
+  await stubMessageBox(app, 'OK')
   fs.rmSync(path.join(testFolder, 'sub', 'gamma.md'))
+  // Let the watcher update the tree and acknowledge the deletion before naming
+  // a new entry. A late removal update can reset the inline naming input.
+  await expect(window.getByRole('treeitem').getByText('gamma.md')).toHaveCount(0)
+  await expect.poll(() => messageBoxCallCount(app)).toBe(1)
 
   await createEntryIn('sub', 'New File', 'gamma.md')
+  await expect.poll(() => fs.existsSync(path.join(testFolder, 'sub', 'gamma.md'))).toBe(true)
+  await expect(window.getByRole('treeitem').getByText('gamma.md')).toBeVisible()
 
   // The existing tab is focused; no duplicate tab is opened.
   await expect(window.getByRole('tab')).toHaveCount(1)
@@ -195,9 +208,7 @@ test('US3/FR-003 a creation whose path is already open focuses the existing tab,
     'true'
   )
   await expect(window.locator('.document-title')).toContainText('gamma.md')
-  // The on-disk write lands a beat after the tab is focused, so poll rather
-  // than sampling once.
-  await expect.poll(() => fs.existsSync(path.join(testFolder, 'sub', 'gamma.md'))).toBe(true)
+  await expect(window.locator('.ProseMirror:visible')).toHaveText('Gamma')
 })
 
 test('FR-008 the untitled-document flow is unchanged', async () => {
