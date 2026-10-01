@@ -195,7 +195,9 @@ test('US3/FR-003 a creation whose path is already open focuses the existing tab,
     'true'
   )
   await expect(window.locator('.document-title')).toContainText('gamma.md')
-  expect(fs.existsSync(path.join(testFolder, 'sub', 'gamma.md'))).toBe(true)
+  // The on-disk write lands a beat after the tab is focused, so poll rather
+  // than sampling once.
+  await expect.poll(() => fs.existsSync(path.join(testFolder, 'sub', 'gamma.md'))).toBe(true)
 })
 
 test('FR-008 the untitled-document flow is unchanged', async () => {
