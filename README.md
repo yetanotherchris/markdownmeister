@@ -4,7 +4,7 @@
 
 # MarkdownMeister
 
-A WYSIWYG markdown editor for Windows, macOS and Linux. Write in a formatted view or the raw source, browse a folder in the sidebar, and keep several documents open in tabs. Your files stay plain markdown on disk.
+A free, open-source markdown editor for Windows, macOS and Linux. Write with a live preview or the raw source, browse a folder in the sidebar, and keep several documents open in tabs. Your files stay plain markdown on disk.
 
 [Project site](https://yetanotherchris.github.io/markdownmeister/) · [Releases](https://github.com/yetanotherchris/markdownmeister/releases/latest) · [Issues](https://github.com/yetanotherchris/markdownmeister/issues)
 

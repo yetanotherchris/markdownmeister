@@ -5,7 +5,9 @@ const BASE = 'http://localhost:4173'
 test('home page presents the product, screenshots, and install options', async ({ page }) => {
   await page.goto(`${BASE}/`)
 
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('markdown editor')
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(
+    'free, open-source markdown editor'
+  )
   await expect(page.getByAltText(/main window/i)).toBeVisible()
   await expect(page.getByAltText(/File menu/i)).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Features' })).toBeVisible()
