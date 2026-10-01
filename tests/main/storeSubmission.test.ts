@@ -52,10 +52,11 @@ describe('store submission: version derivation', () => {
     expect(toWindowsVersion('2.0.1')).toBe('2.0.1.0')
   })
 
-  it('rejects malformed and zero-major versions', () => {
+  it('rejects malformed, zero-major, and oversized versions', () => {
     expect(() => toWindowsVersion('1.6')).toThrow(/major\.minor\.patch/)
     expect(() => toWindowsVersion('1.6.58-beta')).toThrow(/major\.minor\.patch/)
     expect(() => toWindowsVersion('0.1.0')).toThrow(/non-zero major/)
+    expect(() => toWindowsVersion('1.6.70000')).toThrow(/above 65535/)
   })
 
   it('compares three- and four-part versions correctly', () => {
@@ -88,6 +89,13 @@ describe('store submission: manifest inspection', () => {
 
     const agree = `<Identity Name="${REAL_IDENTITY.identityName}" Publisher="${REAL_IDENTITY.publisher}" Version="1.6.58.0" />`
     expect(manifestProblems(agree, { ...REAL_IDENTITY, version: '1.6.58' })).toEqual([])
+  })
+
+  it('reports a packaged version that disagrees with the release version', () => {
+    const manifest = `<Identity Name="${REAL_IDENTITY.identityName}" Publisher="${REAL_IDENTITY.publisher}" Version="1.6.57.0" />`
+    const problems = manifestProblems(manifest, { ...REAL_IDENTITY, version: '1.6.58' })
+    expect(problems).toHaveLength(1)
+    expect(problems[0]).toMatch(/version "1\.6\.57\.0" does not match "1\.6\.58\.0"/)
   })
 })
 

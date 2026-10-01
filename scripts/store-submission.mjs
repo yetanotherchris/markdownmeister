@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Spec 062: submission gates for the Microsoft Store package.
 //
 // The workflow runs this twice: `validate` before packaging (identity present
@@ -8,6 +7,8 @@
 // intended. Everything fails closed with a non-zero exit.
 
 import * as fs from 'node:fs'
+import * as path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 export const PLACEHOLDER_IDENTITY_NAME = 'ReplaceWithPartnerCenterIdentity.MarkdownMeister'
 export const PLACEHOLDER_PUBLISHER = 'CN=00000000-0000-0000-0000-000000000000'
@@ -46,6 +47,9 @@ export function toWindowsVersion(version) {
   if (!match) throw new Error(`version "${version}" must be major.minor.patch`)
   const [major, minor, patch] = [Number(match[1]), Number(match[2]), Number(match[3])]
   if (major === 0) throw new Error(`version "${version}" must have a non-zero major part`)
+  if ([major, minor, patch].some((part) => part > 65535)) {
+    throw new Error(`version "${version}" has a part above 65535`)
+  }
   return `${major}.${minor}.${patch}.0`
 }
 
@@ -150,11 +154,21 @@ function runAssertTag(args) {
   process.stdout.write(`store-submission: version matches tag ${args.ref}\n`)
 }
 
-const [command, ...rest] = process.argv.slice(2)
-if (command) {
-  const args = parseArgs(rest)
-  if (command === 'validate') runValidate(args)
-  else if (command === 'validate-manifest') runValidateManifest(args)
-  else if (command === 'assert-tag') runAssertTag(args)
-  else fail(`unknown command "${command}"`)
+const thisFile = fileURLToPath(import.meta.url)
+const isEntry =
+  typeof process.argv[1] === 'string' &&
+  process.argv[1].length > 0 &&
+  path.resolve(process.argv[1]) === thisFile
+
+if (isEntry) {
+  try {
+    const [command, ...rest] = process.argv.slice(2)
+    const args = parseArgs(rest)
+    if (command === 'validate') runValidate(args)
+    else if (command === 'validate-manifest') runValidateManifest(args)
+    else if (command === 'assert-tag') runAssertTag(args)
+    else fail(`unknown command "${command}"`)
+  } catch (error) {
+    fail(error instanceof Error ? error.message : String(error))
+  }
 }
