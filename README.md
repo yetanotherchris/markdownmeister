@@ -1,4 +1,4 @@
-<p align="center">
+<p>
   <img src="docs/site/public/assets/logo.png" alt="MarkdownMeister" width="112" />
 </p>
 
@@ -11,10 +11,6 @@ A free markdown editor for Windows, macOS and Linux. Write with a live preview o
 ![The MarkdownMeister main window with the folder explorer on the left and the markdown editor on the right](docs/site/public/assets/screenshot-1.png)
 
 ## Install
-
-### Windows (Microsoft Store)
-
-Search for **MarkdownMeister** in the Microsoft Store, or open the [Store search page](https://apps.microsoft.com/search?query=MarkdownMeister). Installing from the Store carries Microsoft's own signing, so there is no developer-certificate or SmartScreen warning.
 
 ### Windows (Scoop)
 
@@ -29,6 +25,10 @@ scoop install markdownmeister
 brew tap markdownmeister https://github.com/yetanotherchris/markdownmeister
 brew install markdownmeister
 ```
+
+### Windows (Microsoft Store)
+
+Search for **MarkdownMeister** in the Microsoft Store, or open the [Store search page](https://apps.microsoft.com/search?query=MarkdownMeister). Installing from the Store carries Microsoft's own signing, so there is no developer-certificate or SmartScreen warning.
 
 ### Linux (Snap Store)
 
