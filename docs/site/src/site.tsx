@@ -131,6 +131,9 @@ export function DocumentationSite(): ReactElement {
               disk.
             </p>
             <div className="hero-links">
+              <a className="button" href="#install">
+                Install using Scoop/Homebrew
+              </a>
               <a className="button" href={storeSearchUrl}>
                 Get it from the Microsoft Store
               </a>
