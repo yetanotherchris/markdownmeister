@@ -82,11 +82,15 @@ describe('linux store submission: version and artifact gates', () => {
 describe('linux store submission: CLI exit codes', () => {
   it('passes a valid version and tag', () => {
     expect(() => runCli(['validate', '--version', '1.7.0'])).not.toThrow()
+    expect(() => runCli(['assert-tag', '--version', '1.7.0', '--ref', 'v1.7.0'])).not.toThrow()
     expect(() =>
-      runCli(['assert-tag', '--version', '1.7.0', '--ref', 'v1.7.0'])
-    ).not.toThrow()
-    expect(() =>
-      runCli(['check-artifact', '--name', 'markdownmeister-1.7.0-linux-x64.snap', '--version', '1.7.0'])
+      runCli([
+        'check-artifact',
+        '--name',
+        'markdownmeister-1.7.0-linux-x64.snap',
+        '--version',
+        '1.7.0'
+      ])
     ).not.toThrow()
   })
 
@@ -142,7 +146,9 @@ describe('linux store workflow (FR-012, FR-013, FR-018)', () => {
   })
 
   it('pins every action to a full commit SHA with a version comment', () => {
-    const uses = [...storeWorkflow.matchAll(/uses:\s*(actions\/[a-z-]+)@([0-9a-f]{40})\s*#[^\n]*v\d+/g)]
+    const uses = [
+      ...storeWorkflow.matchAll(/uses:\s*(actions\/[a-z-]+)@([0-9a-f]{40})\s*#[^\n]*v\d+/g)
+    ]
     expect(uses.length).toBeGreaterThan(0)
     for (const [, name] of uses) expect(name).toMatch(/^actions\//)
   })

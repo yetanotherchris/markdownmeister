@@ -45,7 +45,11 @@ export function assertVersionMatchesTag(version, ref) {
  */
 export function isSnapArtifactName(name, version) {
   const file = path.basename((name ?? '').trim())
-  return file.startsWith(`${SNAP_NAME}`) && file.endsWith('.snap') && file.includes((version ?? '').trim())
+  return (
+    file.startsWith(`${SNAP_NAME}`) &&
+    file.endsWith('.snap') &&
+    file.includes((version ?? '').trim())
+  )
 }
 
 export function assertSnapArtifactName(name, version) {
@@ -56,7 +60,10 @@ export function assertSnapArtifactName(name, version) {
 
 /** True when a Snap Store credential is present in the environment. */
 export function hasSnapCredentials(env) {
-  return typeof env?.SNAPCRAFT_STORE_CREDENTIALS === 'string' && env.SNAPCRAFT_STORE_CREDENTIALS.trim() !== ''
+  return (
+    typeof env?.SNAPCRAFT_STORE_CREDENTIALS === 'string' &&
+    env.SNAPCRAFT_STORE_CREDENTIALS.trim() !== ''
+  )
 }
 
 function parseArgs(argv) {
@@ -93,7 +100,9 @@ if (isEntry) {
     } else if (command === 'check-artifact') {
       assertSemver(args.version)
       assertSnapArtifactName(args.name, args.version)
-      process.stdout.write(`linux-store-submission: artifact ${args.name} is version ${args.version}\n`)
+      process.stdout.write(
+        `linux-store-submission: artifact ${args.name} is version ${args.version}\n`
+      )
     } else if (command === 'require-credentials') {
       if (!hasSnapCredentials(process.env)) {
         fail('no Snap Store credential is set (SNAPCRAFT_STORE_CREDENTIALS)')
