@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'docs/site/**'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/pages-deploy.yml'
 
 permissions:
@@ -30,6 +32,17 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # actions/setup-node v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        run: npm ci
+
       - name: Compute deploy version
         id: version
         run: |
@@ -37,23 +50,21 @@ jobs:
           if [ -z "$VERSION" ]; then
             VERSION="$(npm pkg get version | tr -d '"')"
           fi
-          # Repository-controlled string: reject anything that could terminate
-          # the sed program early or smuggle extra GITHUB_OUTPUT fields.
+          # Repository-controlled string: reject anything that could break the
+          # JSON file or smuggle extra output fields.
           if ! [[ "$VERSION" =~ ^[0-9A-Za-z][0-9A-Za-z.+-]*$ ]]; then
             echo "::error::Refusing unsafe version string: ${VERSION}"
             exit 1
           fi
-          {
-            echo "version<<MM_VERSION_EOF"
-            echo "${VERSION#v}"
-            echo "MM_VERSION_EOF"
-          } >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION#v}" >> "$GITHUB_OUTPUT"
 
-      - name: Stamp deploy version into the page
+      - name: Stamp the deploy version into the site
         env:
           VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          sed -i "s/__MM_DEPLOY_VERSION__/${VERSION}/g" docs/site/index.html
+        run: printf '{"version":"%s"}\n' "$VERSION" > docs/site/public/version.json
+
+      - name: Build the site
+        run: npm run docs:build
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # actions/configure-pages v6.0.0
@@ -63,7 +74,7 @@ jobs:
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # actions/upload-pages-artifact v5.0.0
         with:
-          path: docs/site
+          path: docs/site/dist
 
       - name: Deploy to GitHub Pages
         id: deployment

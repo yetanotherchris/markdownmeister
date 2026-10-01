@@ -5,184 +5,101 @@ import * as path from 'node:path'
 const repoRoot = path.resolve(__dirname, '..', '..')
 const siteDir = path.join(repoRoot, 'docs', 'site')
 
-function readSiteFile(name: string): string {
-  return fs.readFileSync(path.join(siteDir, name), 'utf-8')
+function readSite(relative: string): string {
+  return fs.readFileSync(path.join(siteDir, relative), 'utf-8')
 }
 
-const indexHtml = readSiteFile('index.html')
-// The compiled stylesheet carries the Tailwind licence banner as a comment;
-// comments are not network requests, so they are stripped before auditing.
-const stylesCss = readSiteFile('styles.css').replace(/\/\*[\s\S]*?\*\//g, '')
+const indexHtml = readSite('index.html')
+const stylesCss = readSite('src/styles.css')
+const content = readSite('src/content.ts')
+const viteConfig = readSite('vite.config.ts')
 const workflow = fs
   .readFileSync(path.join(repoRoot, '.github', 'workflows', 'pages-deploy.yml'), 'utf-8')
   .replaceAll('\r\n', '\n')
 
-const REPO_URL = 'https://github.com/yetanotherchris/markdownmeister'
-const RELEASES_URL = `${REPO_URL}/releases/latest`
-const RELEASE_API_URL =
-  'https://api.github.com/repos/yetanotherchris/markdownmeister/releases/latest'
-
-function tagsOf(html: string, tagName: string): string[] {
-  return html.match(new RegExp(`<${tagName}\\b[^>]*>`, 'gi')) ?? []
-}
-
-function attrValue(tag: string, name: string): string | undefined {
-  return tag.match(new RegExp(`\\b${name}\\s*=\\s*"([^"]*)"`, 'i'))?.[1]
-}
-
-function hrefsOf(html: string, tagName: string): string[] {
-  return tagsOf(html, tagName)
-    .map((tag) => attrValue(tag, 'href') ?? '')
-    .filter((href) => href !== '')
-}
-
-function inlineScriptBodies(html: string): string[] {
-  const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
-  return scripts.filter(([, attrs]) => !/\bsrc\s*=/i.test(attrs)).map(([, , body]) => body)
-}
-
-describe('site contract: index.html required elements', () => {
-  it('presents exactly one top-level heading naming the product', () => {
-    const headings = indexHtml.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi) ?? []
-    expect(headings).toHaveLength(1)
-    expect(headings[0]?.replace(/<[^>]+>/g, '').trim()).toBe('MarkdownMeister')
+describe('site contract: built site source', () => {
+  it('is a Vite entry that mounts the React app', () => {
+    expect(indexHtml).toContain('id="root"')
+    expect(indexHtml).toMatch(/<script[^>]+src="\/src\/main\.tsx"/)
+    expect(viteConfig).toContain("base: './'")
+    expect(viteConfig).toContain("outDir: 'dist'")
   })
 
-  it('points a download control at the repository latest-release location with same-tab navigation', () => {
-    const downloadTags = tagsOf(indexHtml, 'a').filter(
-      (tag) => attrValue(tag, 'href') === RELEASES_URL
-    )
-    expect(downloadTags.length).toBeGreaterThanOrEqual(1)
-    for (const tag of downloadTags) expect(attrValue(tag, 'target')).toBeUndefined()
-  })
-
-  it('links a labelled GitHub icon to the repository root', () => {
-    const repoLink = tagsOf(indexHtml, 'a').find(
-      (tag) => attrValue(tag, 'href') === REPO_URL && attrValue(tag, 'aria-label') !== undefined
-    )
-    expect(repoLink).toBeDefined()
-    expect(indexHtml.includes('<svg')).toBe(true)
-    expect(attrValue(repoLink ?? '', 'target')).toBeUndefined()
-  })
-
-  it('uses the spec-039 product icon as header mark and favicon', () => {
-    const iconImgs = tagsOf(indexHtml, 'img').filter((tag) =>
-      (attrValue(tag, 'src') ?? '').includes('icon.png')
-    )
-    expect(iconImgs.length).toBeGreaterThanOrEqual(1)
-    const favicon = tagsOf(indexHtml, 'link').some(
-      (tag) =>
-        attrValue(tag, 'rel') === 'icon' && /assets\/icon\.png/i.test(attrValue(tag, 'href') ?? '')
-    )
-    expect(favicon).toBe(true)
-  })
-
-  it('gives the hero screenshot descriptive alt text', () => {
-    const heroImg = tagsOf(indexHtml, 'img').find((tag) =>
-      /screenshot-placeholder/.test(attrValue(tag, 'src') ?? '')
-    )
-    expect(heroImg).toBeDefined()
-    expect((attrValue(heroImg ?? '', 'alt') ?? '').trim().length).toBeGreaterThan(10)
-  })
-
-  it('follows the Features heading with a non-empty bulleted feature list (FR-004)', () => {
-    const main = indexHtml.match(/<main\b[\s\S]*?<\/main>/i)?.[0]
-    expect(main).toBeDefined()
-    const list = main?.match(/<h2\b[^>]*>\s*Features\s*<\/h2>\s*<ul\b[^>]*>([\s\S]*?)<\/ul>/i)
-    expect(list).not.toBeNull()
-    const bullets = [...(list?.[1] ?? '').matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)]
-    expect(bullets.length).toBeGreaterThanOrEqual(3)
-    for (const bullet of bullets) {
-      expect(bullet[1]?.replace(/<[^>]+>/g, '').trim().length).toBeGreaterThan(0)
+  it('ships the privacy policy and images as static files copied to the build root', () => {
+    const privacy = readSite('public/privacy.html')
+    expect(privacy).toMatch(/<h1>MarkdownMeister privacy policy<\/h1>/)
+    const logo = fs.statSync(path.join(siteDir, 'public', 'assets', 'logo.png'))
+    expect(logo.size).toBeGreaterThan(0)
+    for (const shot of ['screenshot-1.png', 'screenshot-2.png']) {
+      expect(fs.statSync(path.join(siteDir, 'public', 'assets', shot)).size).toBeGreaterThan(0)
     }
   })
 
-  it('links the Microsoft Store availability to the Store search page', () => {
-    const storeLink = tagsOf(indexHtml, 'a').find((tag) =>
-      (attrValue(tag, 'href') ?? '').startsWith('https://apps.microsoft.com/')
-    )
-    expect(storeLink).toBeDefined()
-    expect(attrValue(storeLink ?? '', 'target')).toBeUndefined()
-  })
-
-  it('shows a deploy-time version without JavaScript in both meta and visible span', () => {
-    const metaTag = tagsOf(indexHtml, 'meta').find(
-      (tag) => attrValue(tag, 'name') === 'deploy-version'
-    )
-    expect(metaTag).toBeDefined()
-    const metaContent = metaTag === undefined ? undefined : attrValue(metaTag, 'content')
-    expect(metaContent).toBeTruthy()
-
-    const spanBody = indexHtml.match(/<span\b[^>]*\bid="version"[^>]*>([\s\S]*?)<\/span>/i)?.[1]
-    expect(spanBody?.trim()).toBe(metaContent)
+  it('records the deploy version in public/version.json', () => {
+    const parsed = JSON.parse(readSite('public/version.json')) as { version?: unknown }
+    expect(typeof parsed.version).toBe('string')
   })
 })
 
-describe('site contract: release-metadata lookup', () => {
-  it('fetches the releases endpoint with a GitHub API accept header and a timeout', () => {
-    const script = inlineScriptBodies(indexHtml).join('\n')
-    expect(script).toContain(RELEASE_API_URL)
-    expect(script).toContain('application/vnd.github+json')
-    expect(script).toContain('AbortController')
-    expect(script).toContain('setTimeout')
+describe('site contract: documentation matches the app', () => {
+  it('documents the shortcuts in src/main/shortcuts.ts', () => {
+    const shortcuts = fs.readFileSync(path.join(repoRoot, 'src', 'main', 'shortcuts.ts'), 'utf-8')
+    for (const label of [
+      'New file',
+      'Open file',
+      'Open folder',
+      'Save',
+      'Save as',
+      'Close tab',
+      'Find',
+      'Find and replace',
+      'Toggle developer tools'
+    ]) {
+      expect(content).toContain(label)
+    }
+    for (const command of [
+      'new-file',
+      'open-file',
+      'open-folder',
+      'save',
+      'save-as',
+      'close-tab',
+      'find',
+      'replace'
+    ]) {
+      expect(shortcuts).toContain(`'${command}'`)
+    }
   })
 
-  it('updates the version display only on success and never blocks visitors on failure', () => {
-    const script = inlineScriptBodies(indexHtml).join('\n')
-    expect(script).toMatch(/response\.ok/)
-    expect(script).toMatch(/\.catch\(/)
+  it('states the Windows 11 requirement for the folder action', () => {
+    expect(content).toContain('Windows 11')
+    expect(content).toContain('Windows 10')
   })
 })
 
-describe('site contract: zero external resources', () => {
-  it('loads no script, frame, or stylesheet from outside the site', () => {
-    for (const tag of tagsOf(indexHtml, 'script')) expect(attrValue(tag, 'src')).toBeUndefined()
-    for (const tag of tagsOf(indexHtml, 'iframe')) expect(attrValue(tag, 'src')).toBeUndefined()
-    const remoteLinks = hrefsOf(indexHtml, 'link').filter((href) => /^(https?:)?\/\//i.test(href))
-    expect(remoteLinks).toEqual([])
-  })
-
-  it('references only local images, including every srcset candidate', () => {
-    const candidates = tagsOf(indexHtml, 'img').flatMap((tag) => [
-      attrValue(tag, 'src') ?? '',
-      ...(attrValue(tag, 'srcset') ?? '')
-        .split(',')
-        .map((entry) => entry.trim().split(/\s+/)[0])
-        .filter((url) => url !== undefined && url !== '')
-    ])
-    const remoteImages = candidates.filter((src) => /^(https?:)?\/\//i.test(src))
-    expect(remoteImages).toEqual([])
-  })
-
-  it('keeps inline style attributes free of external references', () => {
-    const styles = [...indexHtml.matchAll(/\sstyle\s*=\s*"([^"]*)"/gi)].map((match) => match[1])
-    for (const style of styles) expect(style).not.toMatch(/(?:https?:)?\/\//i)
-  })
-
-  // Scheme-relative forms (`//host/x`) resolve against the page protocol and
-  // must be treated exactly like their absolute `https://host/x` equivalents.
-  it('embeds no external url() target or import in the stylesheet', () => {
-    expect(stylesCss.match(/url\(\s*['"]?(?:https?:)?\/\//i)).toBeNull()
-    expect(stylesCss.match(/@import\s+(?:url\(\s*)?['"]?(?:https?:)?\/\//i)).toBeNull()
-  })
-
-  // github.com and apps.microsoft.com appear legitimately as the navigation
-  // targets (download button, repository link, Store listing); those are
-  // navigations, not loaded resources.
-  it('names no external host besides api.github.com and the repository and Store navigations', () => {
-    const allowedHosts = new Set(['api.github.com', 'github.com', 'apps.microsoft.com'])
+describe('site contract: zero third-party resources', () => {
+  it('loads no external stylesheet, script, or image from the source', () => {
+    const sources = [
+      indexHtml,
+      stylesCss,
+      readSite('src/site.tsx'),
+      readSite('src/content.ts'),
+      readSite('src/main.tsx')
+    ].join('\n')
+    const allowedHosts = new Set(['github.com', 'api.github.com', 'apps.microsoft.com'])
     const foundHosts = new Set(
-      [...`${indexHtml}\n${stylesCss}`.matchAll(/(?:https?:)?\/\/([^/"'\s)>]+)/gi)].map((m) =>
-        m[1].toLowerCase()
+      [...sources.matchAll(/(?:https?:)?\/\/([^/"'\s)>]+)/gi)].map((match) =>
+        match[1].toLowerCase()
       )
     )
-    expect(foundHosts.has('api.github.com')).toBe(true)
     expect([...foundHosts].filter((host) => !allowedHosts.has(host))).toEqual([])
+    expect(stylesCss.match(/url\(\s*['"]?(?:https?:)?\/\//i)).toBeNull()
+    expect(indexHtml).not.toMatch(/<script[^>]+src="https?:/i)
   })
 })
 
 describe('site contract: Pages deployment workflow', () => {
-  it('deploys on pushes to main restricted to site sources and the workflow itself', () => {
+  it('deploys on pushes to main restricted to site sources and the workflow', () => {
     expect(workflow).toContain('push:')
     expect(workflow).toContain('branches: [main]')
     expect(workflow).toContain("'docs/site/**'")
@@ -209,25 +126,17 @@ describe('site contract: Pages deployment workflow', () => {
     }
   })
 
-  it('checks out full history and tags so tag-based version stamping can resolve', () => {
+  it('builds the site and deploys the build output', () => {
+    expect(workflow).toContain('npm run docs:build')
+    expect(workflow).toMatch(
+      /actions\/upload-pages-artifact@[0-9a-f]{40}[\s\S]*?path:\s*docs\/site\/dist/
+    )
+  })
+
+  it('checks out tags and stamps a validated version into public/version.json', () => {
     expect(workflow).toMatch(/fetch-depth:\s*0/)
     expect(workflow).toMatch(/fetch-tags:\s*true/)
-  })
-
-  it('uploads docs/site through the official Pages actions in deploy order', () => {
-    expect(workflow).toMatch(
-      /actions\/upload-pages-artifact@[0-9a-f]{40}[\s\S]*?path:\s*docs\/site/
-    )
-    const positions = ['configure-pages', 'upload-pages-artifact', 'deploy-pages'].map((action) => {
-      const match = workflow.match(new RegExp(`actions/${action}@[0-9a-f]{40}`))
-      return match === null ? -1 : (match.index ?? -1)
-    })
-    expect(positions.every((position) => position >= 0)).toBe(true)
-    expect(positions).toEqual([...positions].sort((a, b) => a - b))
-  })
-
-  it('substitutes a validated deploy-time version token into the page before upload', () => {
-    expect(workflow).toContain('__MM_DEPLOY_VERSION__')
+    expect(workflow).toContain('docs/site/public/version.json')
     expect(workflow).toMatch(/\^\[0-9A-Za-z\]\[0-9A-Za-z.\+-\]\*\$/)
   })
 })

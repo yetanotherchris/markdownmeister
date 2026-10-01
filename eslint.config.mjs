@@ -90,6 +90,16 @@ export default tseslint.config(
     }
   },
   {
-    ignores: ['out/', 'node_modules/', 'dist/', 'build/', 'coverage/', '*.min.js']
+    ignores: [
+      'out/',
+      'node_modules/',
+      'dist/',
+      'build/',
+      'coverage/',
+      '*.min.js',
+      'docs/site/dist/',
+      'test-results/',
+      'playwright-report/'
+    ]
   }
 )
