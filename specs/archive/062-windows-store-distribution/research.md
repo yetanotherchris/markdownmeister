@@ -27,7 +27,7 @@ Date: 2026-09-30. Each decision states the choice, the evidence, and the rejecte
 
 **Alternatives considered**:
 
-- Rejected: *commit the real identity to `electron-builder.yml`*. Partner Center identity values would then appear in public git history and in every fork; repository variables keep them out of the tree and are the documented no-file-edit path (`docs/store-release.md`).
+- Rejected: *commit the real identity to `electron-builder.yml`*. The identifiers are public (they ship in every package manifest), so secrecy is not the reason; committing them would make a generic build file carry one product's channel identity and force every fork and local build to rewrite it. The placeholders keep the file generic, and repository variables give CI one explicit injection path. The values themselves are recorded in `docs/store-release.md` for maintainers.
 
 ## D3: Version comes from a dispatched input and is checked against the release tag
 

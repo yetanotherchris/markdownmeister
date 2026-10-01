@@ -10,6 +10,21 @@ A single `.appx`/`.msix` package containing the regular Electron app plus `app\r
 
 The package declares exactly one restricted capability, `runFullTrust` (spec 062 FR-011), and registers no file association (FR-016). `.md`/`.markdown` shell association stays with the classic NSIS/Scoop channels.
 
+## Product identity
+
+Recorded from Partner Center (Product setup, Product identity). These identifiers are not secret: they are inside the shipped package manifest and readable on any machine with `Get-AppxPackage`. They are listed here so the maintainer, the README link, and the listing all refer to the same values. The build still injects identity from the repository variables, not from this table, and `electron-builder.yml` keeps its placeholders.
+
+| Field | Value |
+| --- | --- |
+| Package/Identity Name | `yetanotherchris.dev.markdownmeister` |
+| Package/Identity Publisher | `CN=003FD62F-3FAA-48D7-96BE-2F9DEAFA3CCF` |
+| Publisher Display Name | `yetanotherchris.dev` |
+| Package Family Name | `yetanotherchris.dev.markdownmeister_y1y9c52xk6eer` |
+| Store ID | `9PJX3ZXLFH6K` |
+| Web Store URL | `https://apps.microsoft.com/detail/9PJX3ZXLFH6K` (live once the product is published) |
+
+Update this table if the product is ever re-reserved or renamed.
+
 ## One-time setup: Partner Center identity
 
 1. Enroll a Microsoft Partner Center developer account (individual accounts are free; spec 038 Clarifications).
@@ -21,7 +36,7 @@ The package declares exactly one restricted capability, `runFullTrust` (spec 062
    - `STORE_IDENTITY_NAME` = the identity name from step 3.
    - `STORE_PUBLISHER` = the publisher string from step 3.
    The Store workflow reads these and injects them at build time. It fails if either is unset or still a placeholder, so a build with placeholder identity cannot produce an artifact.
-5. `electron-builder.yml` keeps placeholder identity values so local packaging runs; do not commit the real values to the file. A local build can pass them with `-c.appx.identityName=... -c.appx.publisher=...` instead.
+5. `electron-builder.yml` keeps placeholder identity values so local packaging runs; do not commit the real values to the file. A local build can pass them with `-c.appx.identityName=... -c.appx.publisher=...` instead. The values themselves are recorded under Product identity above.
 
 ## Build the submission candidate
 
