@@ -29,14 +29,16 @@ Update this table if the product is ever re-reserved or renamed.
 
 1. Enroll a Microsoft Partner Center developer account (individual accounts are free; spec 038 Clarifications).
 2. Reserve the app name **MarkdownMeister** (Dashboard, Apps and Games, New product). The reserved name must match the package display name.
-3. Copy the two identity values Partner Center assigns under Product setup:
+3. Copy the identity values Partner Center assigns under Product setup:
    - **Package/Identity Name** (individual accounts look like `12345YourName.MarkdownMeister`).
    - **Publisher** (format `CN=<GUID>`).
+   - **Publisher Display Name** (the account's publisher name, for example `yetanotherchris.dev`). The manifest's `PublisherDisplayName` must equal this exactly; using the product name here fails certification.
 4. Store them as repository variables, Settings, Secrets and variables, Actions, Variables:
    - `STORE_IDENTITY_NAME` = the identity name from step 3.
    - `STORE_PUBLISHER` = the publisher string from step 3.
-   The Store workflow reads these and injects them at build time. It fails if either is unset or still a placeholder, so a build with placeholder identity cannot produce an artifact.
-5. `electron-builder.yml` keeps placeholder identity values so local packaging runs; do not commit the real values to the file. A local build can pass them with `-c.appx.identityName=... -c.appx.publisher=...` instead. The values themselves are recorded under Product identity above.
+   - `STORE_PUBLISHER_DISPLAY_NAME` = the publisher display name from step 3.
+   The Store workflow reads these, injects identity at build time, and verifies the packaged manifest against all three. It fails if an identity value is unset or still a placeholder, or if the packaged `PublisherDisplayName` disagrees, so a mismatched package cannot be produced.
+5. `electron-builder.yml` keeps placeholder identity values and the account's publisher display name so local packaging runs; the workflow overrides both from the variables. A local build can pass them with `-c.appx.identityName=... -c.appx.publisher=... -c.appx.publisherDisplayName=...` instead. The values themselves are recorded under Product identity above.
 
 ## Build the submission candidate
 

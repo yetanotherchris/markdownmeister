@@ -62,6 +62,7 @@ jobs:
         env:
           STORE_IDENTITY_NAME: ${{ vars.STORE_IDENTITY_NAME }}
           STORE_PUBLISHER: ${{ vars.STORE_PUBLISHER }}
+          STORE_PUBLISHER_DISPLAY_NAME: ${{ vars.STORE_PUBLISHER_DISPLAY_NAME }}
           VERSION: ${{ inputs.version }}
           PUBLISHED_VERSION: ${{ inputs.publishedVersion }}
         shell: pwsh
@@ -69,6 +70,7 @@ jobs:
           node scripts/store-submission.mjs validate `
             --identity-name "$env:STORE_IDENTITY_NAME" `
             --publisher "$env:STORE_PUBLISHER" `
+            --display-name "$env:STORE_PUBLISHER_DISPLAY_NAME" `
             --version "$env:VERSION" `
             --published "$env:PUBLISHED_VERSION"
 
@@ -95,18 +97,21 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
           STORE_IDENTITY_NAME: ${{ vars.STORE_IDENTITY_NAME }}
           STORE_PUBLISHER: ${{ vars.STORE_PUBLISHER }}
+          STORE_PUBLISHER_DISPLAY_NAME: ${{ vars.STORE_PUBLISHER_DISPLAY_NAME }}
           VERSION: ${{ inputs.version }}
         shell: pwsh
         run: |
           $builderArgs = @('--win', 'appx', '--x64', '--publish', 'never', "-c.extraMetadata.version=$env:VERSION")
           if ($env:STORE_IDENTITY_NAME) { $builderArgs += "-c.appx.identityName=$env:STORE_IDENTITY_NAME" }
           if ($env:STORE_PUBLISHER) { $builderArgs += "-c.appx.publisher=$env:STORE_PUBLISHER" }
+          if ($env:STORE_PUBLISHER_DISPLAY_NAME) { $builderArgs += "-c.appx.publisherDisplayName=$env:STORE_PUBLISHER_DISPLAY_NAME" }
           npx electron-builder @builderArgs
 
       - name: Verify packaged identity and version
         env:
           STORE_IDENTITY_NAME: ${{ vars.STORE_IDENTITY_NAME }}
           STORE_PUBLISHER: ${{ vars.STORE_PUBLISHER }}
+          STORE_PUBLISHER_DISPLAY_NAME: ${{ vars.STORE_PUBLISHER_DISPLAY_NAME }}
           VERSION: ${{ inputs.version }}
         shell: pwsh
         run: |
@@ -124,6 +129,7 @@ jobs:
             --manifest (Join-Path $dest 'AppxManifest.xml') `
             --identity-name "$env:STORE_IDENTITY_NAME" `
             --publisher "$env:STORE_PUBLISHER" `
+            --display-name "$env:STORE_PUBLISHER_DISPLAY_NAME" `
             --version "$env:VERSION"
 
       - name: Upload artifacts

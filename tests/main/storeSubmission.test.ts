@@ -19,8 +19,11 @@ import {
 const SCRIPT = path.resolve(__dirname, '..', '..', 'scripts', 'store-submission.mjs')
 const REAL_IDENTITY = {
   identityName: '12345Chris.MarkdownMeister',
-  publisher: 'CN=11111111-2222-3333-4444-555555555555'
+  publisher: 'CN=11111111-2222-3333-4444-555555555555',
+  publisherDisplayName: 'Chris Dev'
 }
+
+const PROPERTIES = `<Properties><PublisherDisplayName>${REAL_IDENTITY.publisherDisplayName}</PublisherDisplayName></Properties>`
 
 function runCli(args: string[]): void {
   execFileSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf-8', stdio: 'pipe' })
@@ -82,17 +85,25 @@ describe('store submission: manifest inspection', () => {
   })
 
   it('reports disagreements between the manifest and the submission inputs', () => {
-    const manifest = `<Identity Name="${PLACEHOLDER_IDENTITY_NAME}" Publisher="${PLACEHOLDER_PUBLISHER}" Version="1.6.58.0" />`
+    const manifest = `<Package><Identity Name="${PLACEHOLDER_IDENTITY_NAME}" Publisher="${PLACEHOLDER_PUBLISHER}" Version="1.6.58.0" /><Properties><PublisherDisplayName>MarkdownMeister</PublisherDisplayName></Properties></Package>`
     const problems = manifestProblems(manifest, { ...REAL_IDENTITY, version: '1.6.58' })
-    expect(problems).toHaveLength(2)
+    expect(problems).toHaveLength(3)
     expect(problems.join(' ')).toMatch(/identity name/)
+    expect(problems.join(' ')).toMatch(/publisher display name/)
 
-    const agree = `<Identity Name="${REAL_IDENTITY.identityName}" Publisher="${REAL_IDENTITY.publisher}" Version="1.6.58.0" />`
+    const agree = `<Package><Identity Name="${REAL_IDENTITY.identityName}" Publisher="${REAL_IDENTITY.publisher}" Version="1.6.58.0" />${PROPERTIES}</Package>`
     expect(manifestProblems(agree, { ...REAL_IDENTITY, version: '1.6.58' })).toEqual([])
   })
 
+  it('reports a publisher display name that disagrees with the account', () => {
+    const manifest = `<Package><Identity Name="${REAL_IDENTITY.identityName}" Publisher="${REAL_IDENTITY.publisher}" Version="1.6.58.0" /><Properties><PublisherDisplayName>MarkdownMeister</PublisherDisplayName></Properties></Package>`
+    const problems = manifestProblems(manifest, { ...REAL_IDENTITY, version: '1.6.58' })
+    expect(problems).toHaveLength(1)
+    expect(problems[0]).toMatch(/publisher display name "MarkdownMeister" does not match/)
+  })
+
   it('reports a packaged version that disagrees with the release version', () => {
-    const manifest = `<Identity Name="${REAL_IDENTITY.identityName}" Publisher="${REAL_IDENTITY.publisher}" Version="1.6.57.0" />`
+    const manifest = `<Package><Identity Name="${REAL_IDENTITY.identityName}" Publisher="${REAL_IDENTITY.publisher}" Version="1.6.57.0" />${PROPERTIES}</Package>`
     const problems = manifestProblems(manifest, { ...REAL_IDENTITY, version: '1.6.58' })
     expect(problems).toHaveLength(1)
     expect(problems[0]).toMatch(/version "1\.6\.57\.0" does not match "1\.6\.58\.0"/)
@@ -100,12 +111,37 @@ describe('store submission: manifest inspection', () => {
 })
 
 describe('store submission: CLI gates', () => {
+  const base = [
+    '--identity-name',
+    REAL_IDENTITY.identityName,
+    '--publisher',
+    REAL_IDENTITY.publisher,
+    '--display-name',
+    REAL_IDENTITY.publisherDisplayName
+  ]
+
   it('exits non-zero on a placeholder identity', () => {
     expect(() =>
       runCli([
         'validate',
         '--identity-name',
         PLACEHOLDER_IDENTITY_NAME,
+        '--publisher',
+        REAL_IDENTITY.publisher,
+        '--display-name',
+        REAL_IDENTITY.publisherDisplayName,
+        '--version',
+        '1.6.58'
+      ])
+    ).toThrow()
+  })
+
+  it('exits non-zero when the publisher display name is missing', () => {
+    expect(() =>
+      runCli([
+        'validate',
+        '--identity-name',
+        REAL_IDENTITY.identityName,
         '--publisher',
         REAL_IDENTITY.publisher,
         '--version',
@@ -116,33 +152,13 @@ describe('store submission: CLI gates', () => {
 
   it('exits non-zero when the version is not greater than the published one', () => {
     expect(() =>
-      runCli([
-        'validate',
-        '--identity-name',
-        REAL_IDENTITY.identityName,
-        '--publisher',
-        REAL_IDENTITY.publisher,
-        '--version',
-        '1.6.58',
-        '--published',
-        '1.6.58.0'
-      ])
+      runCli(['validate', ...base, '--version', '1.6.58', '--published', '1.6.58.0'])
     ).toThrow()
   })
 
   it('exits zero for valid inputs and a matching manifest', () => {
     expect(() =>
-      runCli([
-        'validate',
-        '--identity-name',
-        REAL_IDENTITY.identityName,
-        '--publisher',
-        REAL_IDENTITY.publisher,
-        '--version',
-        '1.6.58',
-        '--published',
-        '1.6.57.0'
-      ])
+      runCli(['validate', ...base, '--version', '1.6.58', '--published', '1.6.57.0'])
     ).not.toThrow()
 
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mm-store-manifest-'))
@@ -150,7 +166,7 @@ describe('store submission: CLI gates', () => {
       const manifest = path.join(dir, 'AppxManifest.xml')
       fs.writeFileSync(
         manifest,
-        `<Identity Name="${REAL_IDENTITY.identityName}" Publisher="${REAL_IDENTITY.publisher}" Version="1.6.58.0" />`
+        `<Package><Identity Name="${REAL_IDENTITY.identityName}" Publisher="${REAL_IDENTITY.publisher}" Version="1.6.58.0" />${PROPERTIES}</Package>`
       )
       runCli([
         'validate-manifest',
@@ -160,6 +176,8 @@ describe('store submission: CLI gates', () => {
         REAL_IDENTITY.identityName,
         '--publisher',
         REAL_IDENTITY.publisher,
+        '--display-name',
+        REAL_IDENTITY.publisherDisplayName,
         '--version',
         '1.6.58'
       ])
