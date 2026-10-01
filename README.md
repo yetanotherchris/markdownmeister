@@ -30,6 +30,12 @@ brew tap markdownmeister https://github.com/yetanotherchris/markdownmeister
 brew install markdownmeister
 ```
 
+## Technology
+
+- Electron and TypeScript.
+- Built spec-first with [Spec Kit](https://github.com/github/spec-kit): the specification is the source of truth, and code follows it.
+- Developed with DeepSeek, Claude, GPT, and GLM.
+
 ## Learn more
 
 Features, keyboard shortcuts, settings, and folder actions are documented on the [project site](https://yetanotherchris.github.io/markdownmeister/). MarkdownMeister is free and open source under the [MIT licence](LICENSE).
