@@ -28,20 +28,19 @@ Someone arriving from a release, the Store, or a search reads what MarkdownMeist
 
 1. **Given** the site is deployed, **When** a visitor loads the home page, **Then** the hero names MarkdownMeister and a real description, not placeholder text or art.
 2. **Given** the home page, **When** the visitor reads the install section, **Then** the Microsoft Store, Homebrew, and Scoop options are described with correct commands and links.
-3. **Given** the home page, **When** the visitor uses the sidebar navigation, **Then** each entry moves to its section and the header search filters the reference table.
+3. **Given** the home page, **When** the visitor uses the sidebar navigation, **Then** each entry moves to its section.
 
 ### User Story 2 - The site documents behaviour that matches the app (Priority: P1)
 
-The documented features, folder actions, shortcuts, and settings match what the application actually does.
+The documented features, shortcuts, and settings match what the application actually does.
 
 **Why this priority**: Documentation that contradicts the app is worse than none.
 
-**Independent Test**: Compare each documented shortcut and folder-action statement against `src/main/shortcuts.ts` and the app's own behaviour.
+**Independent Test**: Compare each documented shortcut against `src/main/shortcuts.ts` and the app's own behaviour.
 
 **Acceptance Scenarios**:
 
 1. **Given** the shortcuts reference, **When** it lists an accelerator, **Then** the accelerator matches `src/main/shortcuts.ts`.
-2. **Given** the folder-action section, **When** it describes Windows, **Then** it states the Windows 11 first-level menu for the Store build, the "Show more options" entry for the classic channels, and the Windows 10 in-app Open Folder path.
 
 ### User Story 3 - The privacy policy stays reachable (Priority: P1)
 
@@ -59,13 +58,13 @@ The Microsoft Store listing's privacy URL continues to resolve after the rebuild
 
 ### Functional Requirements
 
-- **FR-001**: The site MUST present a header, sidebar navigation, a hero, feature, install, folder-action, reference, and footer content, in the structure used by the `app-20-desktop` documentation site.
+- **FR-001**: The site MUST present a header, sidebar navigation, a hero, and feature, install, keyboard-shortcut, settings, and privacy sections, and a footer, in the structure used by the `app-20-desktop` documentation site.
 - **FR-002**: The site MUST be produced by a build step from source under `docs/site/`, and the deployed artifact MUST be the build output, not the source tree.
 - **FR-003**: The deployed site MUST load no third-party stylesheet, script, or font; only the project's own built assets.
 - **FR-004**: The privacy policy MUST remain reachable at `https://yetanotherchris.github.io/markdownmeister/privacy.html` as a static page.
 - **FR-005**: The site MUST show the current release version, sourced from the release tag at deploy time and refreshed from the repository's release metadata where available.
-- **FR-006**: The site MUST link to the Microsoft Store, the GitHub releases, and the repository, and MUST state that the Explorer folder action requires Windows 11.
-- **FR-007**: The documented keyboard shortcuts and folder-action behaviour MUST match the application.
+- **FR-006**: The site MUST link to the Microsoft Store, the GitHub releases, and the repository.
+- **FR-007**: The documented keyboard shortcuts MUST match the application.
 - **FR-008**: The GitHub Pages deployment MUST build the site and deploy its output on pushes to `main` that change the site sources or the workflow.
 - **FR-009**: The site sources MUST be covered by the existing lint, typecheck, and format gates.
 

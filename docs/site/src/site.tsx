@@ -9,8 +9,7 @@ import {
   repositoryUrl,
   settingsReference,
   shortcuts,
-  storeSearchUrl,
-  windowsFolderNote
+  storeSearchUrl
 } from './content'
 
 const RELEASE_API = `${repositoryUrl.replace('github.com', 'api.github.com/repos')}/releases/latest`
@@ -173,7 +172,6 @@ export function DocumentationSite(): ReactElement {
               Search for <strong>MarkdownMeister</strong> in the Microsoft Store, or open the{' '}
               <a href={storeSearchUrl}>Store search page</a>.
             </p>
-            <p className="callout">{windowsFolderNote}</p>
           </Section>
 
           <Section id="shortcuts" title="Keyboard shortcuts">

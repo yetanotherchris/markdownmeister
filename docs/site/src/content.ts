@@ -21,9 +21,6 @@ export const features = [
   'Plain markdown files on disk.'
 ] as const
 
-export const windowsFolderNote =
-  'On Windows 11, right-click a folder and choose "Open in MarkdownMeister" to open it as your workspace. The folder action requires Windows 11; on Windows 10, open folders from the app\u2019s own Open Folder command.'
-
 export interface Shortcut {
   keys: string
   action: string

@@ -70,11 +70,6 @@ describe('site contract: documentation matches the app', () => {
       expect(shortcuts).toContain(`'${command}'`)
     }
   })
-
-  it('states the Windows 11 requirement for the folder action', () => {
-    expect(content).toContain('Windows 11')
-    expect(content).toContain('Windows 10')
-  })
 })
 
 describe('site contract: zero third-party resources', () => {

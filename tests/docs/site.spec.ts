@@ -2,9 +2,7 @@ import { test, expect } from '@playwright/test'
 
 const BASE = 'http://localhost:4173'
 
-test('home page presents the product, screenshots, install options, and the folder note', async ({
-  page
-}) => {
+test('home page presents the product, screenshots, and install options', async ({ page }) => {
   await page.goto(`${BASE}/`)
 
   await expect(page.getByRole('heading', { level: 1 })).toContainText('markdown editor')
@@ -12,7 +10,6 @@ test('home page presents the product, screenshots, install options, and the fold
   await expect(page.getByAltText(/File menu/i)).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Features' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Install' })).toBeVisible()
-  await expect(page.getByText('The folder action requires Windows 11')).toBeVisible()
 
   const storeLink = page.getByRole('link', { name: 'Get it from the Microsoft Store' })
   await expect(storeLink).toHaveAttribute('href', /apps\.microsoft\.com/)

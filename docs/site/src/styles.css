@@ -5,8 +5,8 @@
   --muted: #5f5f5f;
   --panel: #f7f7f5;
   --border: #e2e2df;
-  --accent: #333333;
-  --accent-fg: #ffffff;
+  --accent: #d6d6d6;
+  --accent-fg: #1c1c1c;
   --focus: #333333;
   --code-bg: #f0efec;
   --radius: 8px;
@@ -20,7 +20,7 @@
     --muted: #a3a3a3;
     --panel: #1b1b1b;
     --border: #2c2c2c;
-    --accent: #3a3a3a;
+    --accent: #4a4a4a;
     --accent-fg: #f5f5f5;
     --focus: #c8c8c8;
     --code-bg: #202020;
