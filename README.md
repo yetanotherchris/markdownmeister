@@ -30,6 +30,18 @@ brew tap markdownmeister https://github.com/yetanotherchris/markdownmeister
 brew install markdownmeister
 ```
 
+### Linux (Snap Store)
+
+Not yet published. Once the snap is live, install it with:
+
+```sh
+sudo snap install markdownmeister
+```
+
+### Linux (Flathub)
+
+Not yet published. Once the Flatpak is live it is available from [Flathub](https://flathub.org/apps/io.github.yetanotherchris.MarkdownMeister) and any software centre.
+
 ## Technology
 
 - Milkdown for the WYSIWYG editor, CodeMirror for the source view.

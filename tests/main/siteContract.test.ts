@@ -81,7 +81,13 @@ describe('site contract: zero third-party resources', () => {
       readSite('src/content.ts'),
       readSite('src/main.tsx')
     ].join('\n')
-    const allowedHosts = new Set(['github.com', 'api.github.com', 'apps.microsoft.com'])
+    const allowedHosts = new Set([
+      'github.com',
+      'api.github.com',
+      'apps.microsoft.com',
+      'flathub.org',
+      'snapcraft.io'
+    ])
     const foundHosts = new Set(
       [...sources.matchAll(/(?:https?:)?\/\/([^/"'\s)>]+)/gi)].map((match) =>
         match[1].toLowerCase()
