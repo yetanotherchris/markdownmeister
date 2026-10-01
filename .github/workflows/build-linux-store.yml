@@ -12,6 +12,13 @@ on:
         required: false
         type: boolean
         default: false
+  # TEMPORARY: lets this branch iterate the snap smoke test before merge. Remove.
+  push:
+    branches: [spec-064-linux-store-distribution]
+    paths:
+      - '.github/workflows/build-linux-store.yml'
+      - 'electron-builder.yml'
+      - 'scripts/linux-store-submission.mjs'
 
 permissions:
   contents: read
@@ -110,3 +117,49 @@ jobs:
           name: artifacts-linux-x64-snap
           path: dist/*.snap
           if-no-files-found: error
+
+      - name: Install the snap for the smoke test
+        shell: bash
+        run: |
+          snap_file="$(ls dist/*.snap | head -n 1)"
+          sudo snap install --dangerous "$snap_file"
+          snap list markdownmeister
+
+      - name: Assert the auto-connected interfaces are present
+        shell: bash
+        run: |
+          connections="$(snap connections markdownmeister)"
+          echo "$connections"
+          for plug in home x11 wayland gsettings browser-support; do
+            if ! grep -q "markdownmeister:$plug" <<<"$connections"; then
+              echo "::error::expected interface markdownmeister:$plug is not present"
+              exit 1
+            fi
+          done
+
+      - name: Smoke-run the snap under Xvfb (FR-006)
+        shell: bash
+        run: |
+          sudo apt-get install -y xvfb
+          mkdir -p "$HOME/smoke-workspace"
+          printf '# smoke\n\nhello from the snap\n' > "$HOME/smoke-workspace/smoke.md"
+          set +e
+          xvfb-run -a timeout --signal=TERM 30 snap run markdownmeister "$HOME/smoke-workspace" >"$RUNNER_TEMP/mm-smoke.log" 2>&1
+          code=$?
+          set -e
+          echo "snap run exit code: $code"
+          cat "$RUNNER_TEMP/mm-smoke.log" || true
+          # 124 means the timeout killed a still-running app, which is what we want.
+          if [ "$code" -ne 124 ]; then
+            echo "::error::the snap exited before the timeout (code $code); it must stay running."
+            exit 1
+          fi
+
+      - name: Remove the snap and check it left no desktop entry (FR-017)
+        shell: bash
+        run: |
+          sudo snap remove markdownmeister
+          if [ -f "$HOME/.local/share/applications/markdownmeister.desktop" ]; then
+            echo "::error::removing the snap left a desktop entry behind"
+            exit 1
+          fi
