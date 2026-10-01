@@ -13,7 +13,8 @@ export const navigation = [
 ] as const
 
 export const features = [
-  'WYSIWYG markdown editing with a source view when you want the raw text.',
+  'Visual markdown editing powered by Milkdown, with a source view for the raw text.',
+  'Tables, task lists, strikethrough, and math.',
   'A folder explorer that browses, renames, moves, creates, and deletes files.',
   'Tabbed documents that keep each file’s undo history, cursor, and scroll position.',
   'Open a folder straight from your file manager on Windows, macOS, and Linux.',
