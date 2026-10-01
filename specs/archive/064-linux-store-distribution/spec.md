@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-26
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "I want the app to be available through the equivalent Linux (i'm not sure what stores are available, please confirm)". The two relevant stores are Flathub (cross-distribution Flatpak) and the Snap Store (Ubuntu/Canonical); both are in scope.
 

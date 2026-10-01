@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ReactElement, ReactNode } from 'react'
 import {
   features,
+  flathubUrl,
   issuesUrl,
   navigation,
   privacyUrl,
@@ -9,6 +10,7 @@ import {
   repositoryUrl,
   settingsReference,
   shortcuts,
+  snapStoreUrl,
   storeSearchUrl
 } from './content'
 
@@ -170,6 +172,17 @@ export function DocumentationSite(): ReactElement {
             <p>
               Search for <strong>MarkdownMeister</strong> in the Microsoft Store, or open the{' '}
               <a href={storeSearchUrl}>Store search page</a>.
+            </p>
+            <h3>Linux (Snap Store)</h3>
+            <p>
+              Not yet published. Once the snap is live it will be listed on the{' '}
+              <a href={snapStoreUrl}>Snap Store</a> and installs with:
+            </p>
+            <Code>{'sudo snap install markdownmeister'}</Code>
+            <h3>Linux (Flathub)</h3>
+            <p>
+              Not yet published. Once the Flatpak is live it is available from{' '}
+              <a href={flathubUrl}>Flathub</a> and any software centre.
             </p>
           </Section>
 
