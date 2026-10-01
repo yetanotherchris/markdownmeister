@@ -16,11 +16,13 @@ export interface ManifestIdentity {
 }
 
 export function parseManifestIdentity(xml: string): ManifestIdentity
+export function parseManifestPublisherDisplayName(xml: string): string | undefined
 
 export interface SubmissionIdentity {
   identityName: string
   publisher: string
   version: string
+  publisherDisplayName: string
 }
 
 export function manifestProblems(xml: string, identity: SubmissionIdentity): string[]

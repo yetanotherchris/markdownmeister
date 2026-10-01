@@ -90,8 +90,15 @@ export function parseManifestIdentity(xml) {
   }
 }
 
+/** The Properties/PublisherDisplayName value; must equal the Partner Center
+ *  account's publisher display name or certification rejects the package. */
+export function parseManifestPublisherDisplayName(xml) {
+  const match = /<PublisherDisplayName\b[^>]*>([^<]*)<\/PublisherDisplayName>/i.exec(xml ?? '')
+  return match ? match[1].trim() : undefined
+}
+
 /** Reasons the packaged manifest disagrees with the submission inputs. */
-export function manifestProblems(xml, { identityName, publisher, version }) {
+export function manifestProblems(xml, { identityName, publisher, version, publisherDisplayName }) {
   const identity = parseManifestIdentity(xml)
   const expected = toWindowsVersion(version)
   const problems = []
@@ -103,6 +110,12 @@ export function manifestProblems(xml, { identityName, publisher, version }) {
   }
   if (identity.version !== expected) {
     problems.push(`manifest version "${identity.version}" does not match "${expected}"`)
+  }
+  const displayName = parseManifestPublisherDisplayName(xml)
+  if (displayName !== (publisherDisplayName ?? '').trim()) {
+    problems.push(
+      `manifest publisher display name "${displayName}" does not match "${publisherDisplayName}"`
+    )
   }
   return problems
 }
@@ -126,6 +139,9 @@ function runValidate(args) {
   if (isPlaceholderIdentity(args['identity-name'], args.publisher)) {
     fail(identityProblems(args['identity-name'], args.publisher).join('; '))
   }
+  if ((args['display-name'] ?? '').trim() === '') {
+    fail('the publisher display name is not set')
+  }
   const expected = toWindowsVersion(args.version)
   if (!isVersionGreaterThan(args.version, args.published)) {
     fail(`version ${expected} is not greater than the published version ${args.published}`)
@@ -138,7 +154,8 @@ function runValidateManifest(args) {
   const problems = manifestProblems(xml, {
     identityName: args['identity-name'],
     publisher: args.publisher,
-    version: args.version
+    version: args.version,
+    publisherDisplayName: args['display-name']
   })
   if (problems.length > 0) fail(problems.join('; '))
   process.stdout.write(

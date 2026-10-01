@@ -58,7 +58,9 @@ appx:
   identityName: ReplaceWithPartnerCenterIdentity.MarkdownMeister
   # Partner Center, Product setup, Publisher (format "CN=<GUID>").
   publisher: CN=00000000-0000-0000-0000-000000000000
-  publisherDisplayName: MarkdownMeister
+  # Must equal the Partner Center account's publisher display name, not the
+  # product name, or certification rejects the package.
+  publisherDisplayName: yetanotherchris.dev
   displayName: MarkdownMeister
   applicationId: MarkdownMeister
   # Spec 062 FR-011: the only capability a full-trust desktop app needs. Do not
