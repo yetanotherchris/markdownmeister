@@ -102,8 +102,8 @@ linux:
 
 # Spec 064: the Snap Store channel. Deliberately absent from linux.target so
 # the direct-download AppImage build is unchanged; build-linux-store.yml
-# selects it with `--linux snap`. electron-builder packs it from the core22
-# Electron snap template, so the CI host needs no snapcraft and no VM.
+# selects it with `--linux snap`. electron-builder packs it from its base
+# core20 Electron snap template, so the CI host needs no snapcraft and no VM.
 snap:
   title: MarkdownMeister
   summary: A free WYSIWYG markdown editor for Windows, macOS and Linux.
@@ -115,8 +115,10 @@ snap:
   grade: stable
   # The interfaces this app actually uses (spec 064 FR-019). The electron-builder
   # defaults `network`, `audio-playback`, and `pulseaudio` are omitted because
-  # the app makes no network or audio calls; `removable-media` is left
-  # undeclared and connected by the user for folders outside $HOME.
+  # the app makes no network or audio calls (spellcheck uses bundled nspell
+  # dictionaries, not Chromium's downloader). `removable-media` is declared but
+  # not auto-connected, so the user can reach folders on removable media by
+  # choosing to connect it, which is the platform's normal mechanism (FR-008).
   plugs:
     - desktop
     - desktop-legacy
@@ -127,3 +129,4 @@ snap:
     - browser-support
     - gsettings
     - opengl
+    - removable-media
