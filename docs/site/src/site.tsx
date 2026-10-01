@@ -110,7 +110,7 @@ export function DocumentationSite(): ReactElement {
           <section className="hero">
             <img className="hero-logo" src="./assets/logo.png" alt="" width="88" height="88" />
             <p className="eyebrow">MarkdownMeister · v{version}</p>
-            <h1>A free, open-source markdown editor</h1>
+            <h1>A free markdown editor</h1>
             <p className="lead">
               Write with a live preview or edit the raw source, browse a folder in the sidebar, and
               keep documents open in tabs. Your files stay plain markdown on disk.
