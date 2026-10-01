@@ -12,15 +12,6 @@ on:
         required: false
         type: boolean
         default: false
-  # TEMPORARY: lets this branch iterate the snap smoke test before merge. Remove.
-  push:
-    branches: [spec-064-linux-store-distribution]
-    paths:
-      - '.github/workflows/build-linux-store.yml'
-      - 'electron-builder.yml'
-      - 'scripts/linux-store-submission.mjs'
-      - 'package.json'
-      - 'package-lock.json'
 
 permissions:
   contents: read
