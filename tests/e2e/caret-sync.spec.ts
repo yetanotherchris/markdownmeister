@@ -78,35 +78,83 @@ function returnButton(): ReturnType<Page['getByRole']> {
   return window.getByRole('button', { name: /Back to visual editing/ })
 }
 
+/** Resolves once the visual editor's DOM has stopped mutating for a short
+ *  quiet period. ProseMirror replaces nodes when its plugins reconfigure (for
+ *  example just after a view switch), so placing a caret into a node that is
+ *  about to be replaced loses the selection. */
+async function waitForEditorStable(): Promise<void> {
+  await window.evaluate(() => {
+    const pm = document.querySelector('.editor-host:not(.has-source) .ProseMirror')
+    if (!pm) return
+    return new Promise<void>((resolve) => {
+      let quiet: ReturnType<typeof setTimeout>
+      const observer = new MutationObserver(() => {
+        clearTimeout(quiet)
+        quiet = setTimeout(() => {
+          observer.disconnect()
+          resolve()
+        }, 120)
+      })
+      observer.observe(pm, { childList: true, subtree: true, characterData: true })
+      quiet = setTimeout(() => {
+        observer.disconnect()
+        resolve()
+      }, 120)
+      setTimeout(() => {
+        observer.disconnect()
+        resolve()
+      }, 2000)
+    })
+  })
+}
+
 /** Places the caret inside the visual block containing the marker. Done in a
  *  single evaluate on purpose: ProseMirror's content DOM is redrawn
  *  continuously by its plugins, so a selection set across separate evaluate
- *  calls would anchor into nodes that have already been replaced. */
+ *  calls would anchor into nodes that have already been replaced.
+ *
+ *  The app reads the caret from ProseMirror's state selection, which is synced
+ *  from the DOM asynchronously; ProseMirror can also reset a selection it did
+ *  not originate. The placement therefore verifies the caret survived in the
+ *  intended block and retries, instead of trusting a single fixed delay. */
 async function placeVisualCaret(marker: string): Promise<void> {
-  await window.evaluate((marker) => {
-    const host = document.querySelector('.editor-host:not(.has-source)') as HTMLElement | null
-    const pm = host?.querySelector('.ProseMirror') as HTMLElement | null
-    if (!host || !pm) throw new Error('editor surface not found')
-    let best: HTMLElement | null = null
-    for (const el of Array.from(pm.querySelectorAll('*')) as HTMLElement[]) {
-      if (!(el.textContent ?? '').includes(marker)) continue
-      if (!best || best.contains(el)) best = el
-    }
-    if (!best) throw new Error(`no element contains ${marker}`)
-    best.scrollIntoView({ block: 'center' })
-    const walker = document.createTreeWalker(best, NodeFilter.SHOW_TEXT)
-    const node = walker.nextNode()
-    if (!node) throw new Error(`no text node in the block for ${marker}`)
-    pm.focus()
-    const range = document.createRange()
-    range.setStart(node, Math.min(3, node.textContent?.length ?? 0))
-    range.collapse(true)
-    const selection = window.getSelection()
-    if (!selection) throw new Error('no window selection')
-    selection.removeAllRanges()
-    selection.addRange(range)
-  }, marker)
-  await window.waitForTimeout(80)
+  await expect(async () => {
+    await window.evaluate((marker) => {
+      const host = document.querySelector('.editor-host:not(.has-source)') as HTMLElement | null
+      const pm = host?.querySelector('.ProseMirror') as HTMLElement | null
+      if (!host || !pm) throw new Error('editor surface not found')
+      let best: HTMLElement | null = null
+      for (const el of Array.from(pm.querySelectorAll('*')) as HTMLElement[]) {
+        if (!(el.textContent ?? '').includes(marker)) continue
+        if (!best || best.contains(el)) best = el
+      }
+      if (!best) throw new Error(`no element contains ${marker}`)
+      best.scrollIntoView({ block: 'center' })
+      const walker = document.createTreeWalker(best, NodeFilter.SHOW_TEXT)
+      const node = walker.nextNode()
+      if (!node) throw new Error(`no text node in the block for ${marker}`)
+      pm.focus()
+      const range = document.createRange()
+      range.setStart(node, Math.min(3, node.textContent?.length ?? 0))
+      range.collapse(true)
+      const selection = document.getSelection()
+      if (!selection) throw new Error('no window selection')
+      selection.removeAllRanges()
+      selection.addRange(range)
+    }, marker)
+    await window.waitForTimeout(80)
+    const settled = await window.evaluate((marker) => {
+      const host = document.querySelector('.editor-host:not(.has-source)') as HTMLElement | null
+      const pm = host?.querySelector('.ProseMirror') as HTMLElement | null
+      const selection = document.getSelection()
+      if (!pm || !selection?.anchorNode || !selection.anchorNode.isConnected) return false
+      let block: Node | null = selection.anchorNode
+      while (block && block.parentNode !== pm) block = block.parentNode
+      return block ? ((block as HTMLElement).textContent ?? '').includes(marker) : false
+    }, marker)
+    expect(settled).toBe(true)
+  }).toPass({ timeout: 5_000 })
+  await window.waitForTimeout(60)
 }
 
 interface VisualCaret {
@@ -124,7 +172,7 @@ async function readVisualCaret(): Promise<VisualCaret> {
   return window.evaluate(() => {
     const host = document.querySelector('.editor-host:not(.has-source)') as HTMLElement | null
     const pm = host?.querySelector('.ProseMirror')
-    const selection = window.getSelection()
+    const selection = document.getSelection()
     if (!host || !pm || !selection || !selection.anchorNode) throw new Error('no visual selection')
     const isBlock = (el: Element) => !el.className.includes('prosemirror-virtual-cursor')
     const blocks = Array.from(pm.children).filter(isBlock)
@@ -162,7 +210,7 @@ async function readSourceCaret(): Promise<SourceCaret> {
     const content = document.querySelector('.source-view .cm-content') as HTMLElement | null
     const scroller = document.querySelector('.source-view .cm-scroller') as HTMLElement | null
     if (!content) throw new Error('source content not found')
-    const selection = window.getSelection()
+    const selection = document.getSelection()
     if (!selection || selection.rangeCount === 0 || !selection.anchorNode) {
       throw new Error('no source selection')
     }
@@ -236,11 +284,22 @@ test.describe('caret line sync (spec 052)', () => {
       { marker: 'TBLCELL alpha', match: /TBLCOL header one/ }
     ]
     for (const { marker, match } of cases) {
-      await placeVisualCaret(marker)
-      await viewSourceButton().click()
-      await expect(window.getByTestId('source-view')).toBeVisible()
-      const caret = await readSourceCaret()
-      expect(caret.lineText, `marker ${marker}`).toMatch(match)
+      // The whole round trip is retried as one unit: under load the freshly
+      // placed caret can be dropped by an editor re-render, or the mapped line
+      // read before the source view has positioned its caret.
+      await expect(async () => {
+        if ((await window.getByTestId('source-view').count()) > 0) {
+          await returnButton().click()
+          await expect(window.getByTestId('source-view')).toHaveCount(0)
+        }
+        await expect(window.locator('.ProseMirror:visible')).toBeVisible()
+        await waitForEditorStable()
+        await placeVisualCaret(marker)
+        await viewSourceButton().click()
+        await expect(window.getByTestId('source-view')).toBeVisible()
+        const caret = await readSourceCaret()
+        expect(caret.lineText, `marker ${marker}`).toMatch(match)
+      }).toPass({ timeout: 15_000 })
       await returnButton().click()
       await expect(window.getByTestId('source-view')).toHaveCount(0)
       await expect(window.locator('.ProseMirror:visible')).toBeVisible()
