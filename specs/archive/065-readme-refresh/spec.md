@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-26
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "Update the README to have a clear and concise description, not overly detailed and includes installation options (terminal and app stores), and screenshot, and logo at the top"
 

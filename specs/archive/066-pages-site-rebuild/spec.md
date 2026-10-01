@@ -1,10 +1,10 @@
 # Feature Specification: Project Site Rebuild
 
-**Feature Branch**: `spec-062-windows-store-distribution`
+**Feature Branch**: `spec-066-pages-site-rebuild`
 
 **Created**: 2026-09-30
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "the current GitHub Pages site is a placeholder; copy the app-20-desktop setup for GitHub Pages."
 

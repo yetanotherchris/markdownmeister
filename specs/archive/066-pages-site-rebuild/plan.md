@@ -1,6 +1,6 @@
 # Implementation Plan: Project Site Rebuild
 
-**Branch**: `spec-062-windows-store-distribution` | **Date**: 2026-09-30 | **Spec**: [spec.md](spec.md)
+**Branch**: `spec-066-pages-site-rebuild` | **Date**: 2026-09-30 | **Spec**: [spec.md](spec.md)
 
 ## Summary
 
