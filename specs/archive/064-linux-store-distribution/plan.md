@@ -10,7 +10,7 @@ Deliver the Snap Store channel end to end and specify the Flathub channel as a m
 
 **Language/Version**: YAML for the build config and workflow; Node.js 22 ESM for the validation script; TypeScript 5.8 strict for tests. No application (Electron/React) runtime change.
 
-**Primary Dependencies**: None new. electron-builder 26.15.3 already ships the `snap` target (`node_modules/app-builder-lib/out/targets/snap/`), and its base core20 template path downloads a prebuilt Electron snap template and packs it with `mksquashfs`, so the snap build needs neither `snapcraft` nor a virtual machine on the CI host (research D1). Publishing to the Snap Store uses the `snapcraft` CLI with `SNAPCRAFT_STORE_CREDENTIALS`, which is only installed in the opt-in publish step.
+**Primary Dependencies**: electron-builder, bumped from 26.15.3 to `^26.17.0` for the `.tar.7z` snap-template extraction fix (research D7). It ships the `snap` target (`node_modules/app-builder-lib/out/targets/snap/`), and its base core20 template path downloads a prebuilt Electron snap template and packs it with `mksquashfs`, so the snap build needs neither `snapcraft` nor a virtual machine on the CI host (research D1). Publishing to the Snap Store uses the `snapcraft` CLI with `SNAPCRAFT_STORE_CREDENTIALS`, which is only installed in the opt-in publish step.
 
 **Storage**: No application storage. The workflow reads the dispatched `version` input and the `SNAPCRAFT_STORE_CREDENTIALS` secret, and writes only the `.snap` artifact into `dist/`.
 

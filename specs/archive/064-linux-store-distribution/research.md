@@ -69,6 +69,17 @@ Date: 2026-10-01. Each decision states the choice, the evidence, and the rejecte
 
 **Alternatives considered**: Rejected: *rename the AppImage entry to a reverse-domain name*. It gains nothing (the identities are already distinct) and would orphan every existing AppImage user's entry.
 
+## D7: electron-builder is floored at 26.16 and the snap is smoke-tested in CI
+
+**Decision**: Bump the `electron-builder` devDependency to `^26.17.0`, and add a smoke test to `build-linux-store.yml` that installs the built snap, asserts its interfaces, runs it under Xvfb, and removes it.
+
+**Evidence**: electron-builder 26.15.0 to 26.15.6 mis-extracted the `.tar.7z` snap template: `extractArchive` sent `.tar.7z` to the plain-`.7z` branch, so the stage received the inner `snap-template` tar file instead of its contents and the snap shipped without `desktop-init.sh`, failing to launch with exit 127. Upstream issue #10002; fixed from 26.16.0, where `.tar.7z` is handled before the `.7z` branch (`app-builder-lib/out/util/electronGet.js:219`), and the cache-dir name was changed to evict the broken extraction (`:555-557`). Verified locally by running `extractArchive` from both versions against the template: 26.15.3 yields only `snap-template`, 26.17.0 yields the tree including `desktop-init.sh`. The first CI smoke run caught this, which is the point of having it.
+
+**Alternatives considered**:
+
+- Rejected: *keep 26.15.3 and stage the desktop scripts by hand*. There is no config hook to inject files into a template build that does not read a scripts directory.
+- Rejected: *switch to the snapshot-authors' custom `snapcraft.yaml` or the beta core24 path*. Both replace a fixed upstream bug with more moving parts (a hand-maintained recipe, or snapcraft plus LXD in CI) than a patch-release bump.
+
 ## References
 
 - electron-builder source: `node_modules/app-builder-lib/out/targets/snap/{SnapTarget,coreLegacy,snapcraftBuilder}.js`, `out/options/SnapOptions.d.ts`, `out/targets/FlatpakTarget.js`.
