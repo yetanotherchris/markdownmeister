@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-02
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "I got this rejection from microsoft partner center: The available product tile icons include a default image. Tile icons must uniquely represent product so users associate icons with the appropriate products and do not confuse one product for another." This is a defect in the Windows Store channel delivered by spec 062: the submitted package ships generic placeholder tile images instead of the product artwork, and the Store listing logos were not sourced from the project's branded set.
 

@@ -2,7 +2,7 @@
 
 **Branch**: `spec-067-windows-store-tile-assets` | **Date**: 2026-10-02 | **Spec**: [spec.md](spec.md)
 
-**Input**: Feature specification from `/specs/067-windows-store-tile-assets/spec.md`
+**Input**: Feature specification from `/specs/archive/067-windows-store-tile-assets/spec.md`
 
 ## Summary
 
@@ -43,7 +43,7 @@ All gates pass. No deviations recorded.
 ### Documentation (this feature)
 
 ```text
-specs/067-windows-store-tile-assets/
+specs/archive/067-windows-store-tile-assets/
 ├── plan.md              # This file
 ├── research.md          # D1–D6 decisions with evidence
 ├── tasks.md             # Ordered, independently verifiable work items
