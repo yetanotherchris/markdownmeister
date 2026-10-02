@@ -34,7 +34,7 @@ Date: 2026-10-02. Each decision states the choice, the evidence, and the rejecte
 
 **Decision**: `Wide310x150Logo.png` is the square master scaled to fit a safe area and centred on a transparent 310×150 canvas, preserving aspect ratio. The mark is not stretched.
 
-**Evidence**: The maintainer chose this composition during specification (spec Clarifications). The existing committed promotional listing art (`store-assets/wide-310x150.png`) fills the frame with a wide redraw; that is a marketing composition and is explicitly out of scope, so it is not the model for the package tile. Windows composites the tile image over the manifest background colour, so a transparent canvas lets the background show around the centred mark.
+**Evidence**: The maintainer chose this composition during specification (spec Clarifications). The existing committed promotional listing art (`assets/windows-store/wide-310x150.png`) fills the frame with a wide redraw; that is a marketing composition and is explicitly out of scope, so it is not the model for the package tile. Windows composites the tile image over the manifest background colour, so a transparent canvas lets the background show around the centred mark.
 
 **Alternatives considered**:
 

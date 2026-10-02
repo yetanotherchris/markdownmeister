@@ -32,7 +32,7 @@
 ## Phase 4: Provenance and listing documentation (FR-002, FR-008, FR-009, SC-002)
 
 - [ ] T005 [P] [US3] Update `docs/icon-provenance.md`: add the appx tile set to the derivation chain diagram and the consumers list, and note the wide tile is a centred composition. Commit `docs(067)`.
-- [ ] T006 [P] [US2] Update `docs/store-listing.md`: replace the line claiming default package tiles are acceptable with instructions to upload the branded `store-assets/` logos and to confirm the package's branded tiles before submitting; add the tile assets to the pre-submission checklist. Commit `docs(067)`.
+- [ ] T006 [P] [US2] Update `docs/store-listing.md`: replace the line claiming default package tiles are acceptable with instructions to upload the branded `assets/windows-store/` logos and to confirm the package's branded tiles before submitting; add the tile assets to the pre-submission checklist. Commit `docs(067)`.
 
 ## Phase 5: Tests (FR-001, FR-003, FR-006, SC-003)
 
@@ -41,7 +41,7 @@
 ## Phase 6: Gates and lifecycle
 
 - [ ] T008 Run gates until green: append the new test file to `package.json`'s `format:check` list; `npm run format:check`; `npm run lint`; `npm run typecheck`; `npm run check`; `npm test`; LAST `npm run test:e2e`.
-- [ ] T009 Manual follow-ups (NOT automatable here): upload the branded `store-assets/` tile logos to Partner Center's Store logos for the reserved product; rebuild the Store package; confirm the packaged `assets\*.png` are the branded files (unpack the `.appx` and compare against `resources/appx/`); re-submit and record the outcome. Never claim Store behaviour not observed.
+- [ ] T009 Manual follow-ups (NOT automatable here): upload the branded `assets/windows-store/` tile logos to Partner Center's Store logos for the reserved product; rebuild the Store package; confirm the packaged `assets\*.png` are the branded files (unpack the `.appx` and compare against `resources/appx/`); re-submit and record the outcome. Never claim Store behaviour not observed.
 - [ ] T010 Archive the spec (`git mv specs/067-windows-store-tile-assets specs/archive/067-windows-store-tile-assets`, set **Status** to Archived) as part of the implementation PR.
 
 ---

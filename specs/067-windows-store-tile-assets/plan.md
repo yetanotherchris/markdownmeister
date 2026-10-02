@@ -65,6 +65,8 @@ resources/
     ├── LargeTile.png           #   310x310 (Square310x310Logo)
     ├── SmallTile.png           #   71x71  (Square71x71Logo)
     └── Wide310x150Logo.png     #   310x150 (centred mark, transparent background)
+assets/
+└── windows-store/              # MOVED: Partner Center listing art (was store-assets/)
 electron-builder.yml            # CHANGED: directories.buildResources + appx.backgroundColor
 docs/
 ├── icon-provenance.md          # CHANGED: tile set added to the derivation chain and consumers
@@ -74,7 +76,7 @@ tests/main/
 └── storeTileAssets.test.ts     # NEW: asset presence, dimensions, wiring
 ```
 
-**Structure Decision**: The appx tile assets live under `resources/appx/` because the packager reads tile images from `<buildResources>/appx/` and the build-resources root is repointed to `resources/`, which is already the directory holding the packager's per-platform icon assets. This avoids committing generated files into the gitignored `build/` and keeps every packager-consumed asset in one tracked place. The derivation stays in `scripts/generate-icons.ps1` so the tile set inherits the spec 043 one-master rule rather than becoming a second, parallel source of icon assets.
+**Structure Decision**: The appx tile assets live under `resources/appx/` because the packager reads tile images from `<buildResources>/appx/` and the build-resources root is repointed to `resources/`, which is already the directory holding the packager's per-platform icon assets. This avoids committing generated files into the gitignored `build/` and keeps every packager-consumed asset in one tracked place. The derivation stays in `scripts/generate-icons.ps1` so the tile set inherits the spec 043 one-master rule rather than becoming a second, parallel source of icon assets. The promotional Partner Center listing art moves from the top-level `store-assets/` to `assets/windows-store/`, grouping the hand-authored source artwork under `assets/`; nothing reads the directory, so the move has no build effect.
 
 ## Complexity Tracking
 
