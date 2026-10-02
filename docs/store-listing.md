@@ -52,7 +52,9 @@ Partner Center requires at least one screenshot and recommends up to nine. Provi
   2. The source view of the same document, to show raw markdown editing.
   3. Several tabs open, one marked dirty, to show tabbed documents.
   4. The Settings dialog showing the light/dark appearance choice.
-- **Store logos and tiles**: Partner Center derives listing imagery from the uploaded package and from these screenshots. The package's own tile assets currently come from electron-builder's default assets; branded tiles are a packaging follow-up (spec 038's packaging scope) and are not required to submit.
+- **Store logos and tiles**: upload the branded logos from `assets/windows-store/` in Partner Center's Store logos section (the 1:1 tiles at 44, 50, 71, 150, 300 and 310 px and the wide `wide-310x150.png`). Do not leave any Store logo field at its Partner Center default: a listing tile that is a default image is rejected exactly like a default package tile (spec 067). The package itself now ships branded tile assets (`resources/appx/`); launching the listing with a package that still substituted a default tile was the rejection this checklist is intended to catch.
+
+  To confirm the package is branded before submitting, unpack the `.appx` and check that `assets\StoreLogo.png`, `assets\Square44x44Logo.png`, `assets\Square150x150Logo.png`, `assets\LargeTile.png`, `assets\SmallTile.png` and `assets\Wide310x150Logo.png` are the files from `resources/appx/` and not `SampleAppx`-style placeholder art.
 
 ## Capabilities justification (certification notes)
 
@@ -71,5 +73,7 @@ Taken from spec 062 SC-006 and the spec 038 quickstart.
 - [ ] Listing name, short and full description reviewed against this file.
 - [ ] Support and privacy links resolve.
 - [ ] Screenshots uploaded and show real content.
+- [ ] Store logos uploaded from `assets/windows-store/`, including the wide tile, with no Partner Center default left in place.
+- [ ] Packaged tile assets confirmed branded (unpack the `.appx`; no `SampleAppx` placeholder under `assets\`).
 - [ ] Category and age rating set.
 - [ ] The Windows 11 folder-action requirement is stated in the listing.
