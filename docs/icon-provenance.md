@@ -22,12 +22,21 @@ scripts/generate-icons.ps1        zero-dependency GDI+ derivation
         ├─► resources/icons/NxN.png           ladder: 16,20,24,32,40,48,64,96,128,256,512
         ├─► resources/icon.png                512×512 convenience master (Linux runtime window icon)
         ├─► resources/icon.ico                ICO: PNG frames 16–256 (256 stored as byte 0)
-        └─► resources/icon.icns               ICNS: ic07/ic08/ic09/ic10 (128/256/512 ladder
-                                              entries; ic10 a true 1024×1024 downsample)
+        ├─► resources/icon.icns               ICNS: ic07/ic08/ic09/ic10 (128/256/512 ladder
+        │                                     entries; ic10 a true 1024×1024 downsample)
+        └─► resources/appx/                   Windows Store package tile set (spec 067):
+                                              StoreLogo.png 50×50, Square44x44Logo.png 44×44,
+                                              Square150x150Logo.png 150×150, LargeTile.png 310×310,
+                                              SmallTile.png 71×71, and Wide310x150Logo.png, the
+                                              mark centred on a transparent 310×150 canvas
 docs/site/assets/icon.png         byte copy of the 256 ladder entry (website icon)
 ```
 
-Consumers: electron-builder (`win.icon`, `mac.icon`, `linux.icon`), the BrowserWindow window icon (on Windows the multi-size `resources/icon.ico` shipped via extraResources; on Linux the `resources/icon.png` copy), the Linux desktop-entry mechanism (copies what it finds inside the AppImage), and the website asset copy. Never edit derived assets by hand; replace `assets/icon/master.png` and regenerate everything at once so no platform drifts (FR-004).
+Consumers: electron-builder (`win.icon`, `mac.icon`, `linux.icon`), the BrowserWindow window icon (on Windows the multi-size `resources/icon.ico` shipped via extraResources; on Linux the `resources/icon.png` copy), the Linux desktop-entry mechanism (copies what it finds inside the AppImage), the Windows Store package's Start-menu and Store tile surfaces (the `resources/appx/` set), and the website asset copy. Never edit derived assets by hand; replace `assets/icon/master.png` and regenerate everything at once so no platform drifts (FR-004).
+
+## The Windows Store tile set
+
+The names and sizes in `resources/appx/` are fixed by app-builder-lib's `AppxTarget`, which reads them from `<buildResources>/appx/`: `electron-builder.yml` sets `directories.buildResources: resources` for exactly this reason. If a file is missing the target substitutes a generic `SampleAppx` image, which is the "default image" Store certification rejects. The wide tile is the only composed output: the square mark is scaled to a safe area and centred on a transparent canvas, so Windows paints `appx.backgroundColor` (the master's navy) around it rather than a stretched mark. Regenerating from the master reproduces the whole set, so a logo change never leaves a tile behind.
 
 The script validates the master before deriving (square, at least 1024×1024, 8-bit RGBA, parsed from raw bytes) and never writes the master itself.
 
