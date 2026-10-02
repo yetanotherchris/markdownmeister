@@ -207,9 +207,12 @@ test.describe('US3 status footer', () => {
 
     // Wait for the async open-dialog -> REPLACE -> render roundtrip before
     // reading text: a read-once textContent() right after the click races the
-    // footer still showing the placeholder.
+    // footer still showing the placeholder. `text-overflow` is a static style
+    // and does not mean the workspace is set, so wait on the title attribute,
+    // which carries the full path and is absent while no folder is open.
     const workspace = window.getByTestId('footer-workspace')
     await expect(workspace).toHaveCSS('text-overflow', 'ellipsis')
+    await expect(workspace).toHaveAttribute('title', new RegExp(longName))
     const workspaceText = await workspace.getAttribute('title')
     expect(workspaceText).toContain('very-long-workspace-folder-name-that-will-not-fit')
     // The final folder name survives whole (FR-010).
