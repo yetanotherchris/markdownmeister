@@ -3,6 +3,11 @@ productName: MarkdownMeister
 executableName: markdownmeister
 directories:
   output: dist
+  # electron-builder reads appx tile assets from <buildResources>/appx/ and
+  # substitutes generic SampleAppx images when it cannot find them, which Store
+  # certification rejects (spec 067). resources/ already holds the packager's
+  # per-platform icon assets, so the branded tiles live at resources/appx.
+  buildResources: resources
 
 # electron-vite build output (out/**) is the packaged runtime; package.json is
 # the entry (main: ./out/main/index.js). Production node_modules are included
@@ -63,6 +68,10 @@ appx:
   publisherDisplayName: yetanotherchris.dev
   displayName: MarkdownMeister
   applicationId: MarkdownMeister
+  # Tile background painted behind transparent tile images. Matches the navy
+  # fill of the master artwork (assets/icon/master.png) so the centred wide
+  # mark composites as one brand-coloured tile; the default #464646 clashes.
+  backgroundColor: "#222540"
   # Spec 062 FR-011: the only capability a full-trust desktop app needs. Do not
   # add others; the package must not declare capabilities it does not use.
   capabilities:
