@@ -12,6 +12,17 @@
 #   resources/icon.icns               macOS ic07/ic08/ic09/ic10 chunks (PNG-encoded)
 #   resources/icon.png                512x512 convenience master for electron-builder
 #   resources/icons/{16,20,24,32,40,48,64,96,128,256,512}.png
+#   resources/appx/StoreLogo.png       50x50  Windows Store package logo
+#   resources/appx/Square44x44Logo.png 44x44  small tile
+#   resources/appx/Square150x150Logo.png 150x150 medium tile
+#   resources/appx/LargeTile.png       310x310 large tile
+#   resources/appx/SmallTile.png       71x71  small tile
+#   resources/appx/Wide310x150Logo.png 310x150 wide tile (mark centred on transparent canvas)
+#
+# The resources/appx files are named exactly as app-builder-lib's AppxTarget
+# expects. When one is missing it substitutes a generic SampleAppx image, which
+# is what Store certification rejects (spec 067). electron-builder.yml points
+# directories.buildResources at resources/ so the appx target finds appx/.
 #
 # Do not write generated icons to build/, which is ignored by Git.
 param(
@@ -35,6 +46,21 @@ $IcnsChunks = @(
     @{ Type = 'ic09'; Size = 512 },
     @{ Type = 'ic10'; Size = 1024 }
 )
+
+# Windows Store appx tile assets. The names are fixed by app-builder-lib's
+# AppxTarget; a missing file makes it substitute a generic SampleAppx image,
+# which Store certification rejects (spec 067).
+$AppxSquareTiles = @(
+    @{ Name = 'StoreLogo.png'; Size = 50 },
+    @{ Name = 'Square44x44Logo.png'; Size = 44 },
+    @{ Name = 'Square150x150Logo.png'; Size = 150 },
+    @{ Name = 'LargeTile.png'; Size = 310 },
+    @{ Name = 'SmallTile.png'; Size = 71 }
+)
+# The wide tile is a composition, not a downscale: the square mark is scaled to
+# a safe area and centred on a transparent canvas so Windows composites it over
+# the tile background colour (appx.backgroundColor) without distortion.
+$WideTile = @{ Name = 'Wide310x150Logo.png'; Width = 310; Height = 150; Padding = 20 }
 
 # The master must satisfy the committed contract before anything derives
 # from it: square, at least 1024x1024, 8-bit-per-channel truecolour with
@@ -94,6 +120,30 @@ function Save-Png {
     $dir = Split-Path -Parent $Path
     if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
     $Bmp.Save($Path, [System.Drawing.Imaging.ImageFormat]::Png)
+}
+
+function Save-WideTile {
+    # Compose the non-square wide tile: the square master scaled to fit a safe
+    # area and centred on a transparent canvas. Stretching the master would
+    # distort the mark, which spec 067 forbids.
+    param([System.Drawing.Bitmap]$Master, [string]$Path, [int]$Width, [int]$Height, [int]$Padding)
+    $bmp = New-Object System.Drawing.Bitmap($Width, $Height, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    try {
+        $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+        $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+        $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::Half
+        $g.Clear([System.Drawing.Color]::Transparent)
+        $mark = [Math]::Min($Width - (2 * $Padding), $Height - (2 * $Padding))
+        $x = [int](($Width - $mark) / 2)
+        $y = [int](($Height - $mark) / 2)
+        $g.DrawImage($Master, $x, $y, $mark, $mark)
+        Save-Png -Bmp $bmp -Path $Path
+    }
+    finally {
+        $g.Dispose()
+        $bmp.Dispose()
+    }
 }
 
 function Get-PngBytes {
@@ -215,6 +265,22 @@ try {
     }
     Write-Icns -Path (Join-Path $RepoRoot 'resources\icon.icns') -PngBytesBySize $icnsBytes
     Write-Host '  wrote resources\icon.icns'
+
+    $appxDir = Join-Path $RepoRoot 'resources\appx'
+    New-Item -ItemType Directory -Force -Path $appxDir | Out-Null
+    foreach ($tile in $AppxSquareTiles) {
+        $resized = Resize-Master -Master $master -TargetSize $tile.Size
+        try {
+            Save-Png -Bmp $resized -Path (Join-Path $appxDir $tile.Name)
+            Write-Host "  wrote resources\appx\$($tile.Name)"
+        }
+        finally {
+            $resized.Dispose()
+        }
+    }
+    Save-WideTile -Master $master -Path (Join-Path $appxDir $WideTile.Name) `
+        -Width $WideTile.Width -Height $WideTile.Height -Padding $WideTile.Padding
+    Write-Host "  wrote resources\appx\$($WideTile.Name)"
 }
 finally {
     $master.Dispose()
