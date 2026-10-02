@@ -213,14 +213,20 @@ AGENTS.md                         This file
 - Do not use em dashes in authored prose or comments. Use a period, comma, colon, or parentheses instead.
 - **Do not hard-wrap lines in Markdown files to ~80 columns.** Write prose as flowing paragraphs with a single newline between blocks; let the renderer wrap. This keeps diffs clean (same rule as PR bodies below).
 - **Source code lines: aim for 100–120 columns, never over 120.** Match the surrounding file's existing width rather than imposing a strict style, but hard-limit at 120.
-- **Write Playwright e2e tests for every spec implementation, and run them.**
-  Each spec that adds user-visible behaviour gets an e2e suite in
-  `tests/e2e/` covering its acceptance scenarios against the real built app
-  (`npm run test:e2e`, which builds then launches Electron via Playwright).
-  Native dialogs are stubbed in the main process with
-  `electronApp.evaluate`; the tree/editor are driven with normal locators.
-  The suite must pass before the implementation is declared complete,
-  alongside `npm run lint`, `npm run typecheck`, and `npm run test`.
+- **Write Playwright e2e tests for every spec implementation that adds user-visible behaviour.**
+  Such a spec gets an e2e suite in `tests/e2e/` covering its acceptance
+  scenarios against the real built app (`npm run test:e2e`, which builds then
+  launches Electron via Playwright). Native dialogs are stubbed in the main
+  process with `electronApp.evaluate`; the tree/editor are driven with normal
+  locators.
+- **Run the quality gates only for a code change.** A code change touches
+  source, tests, a build or test config file, or an asset the build or its tests
+  consume; the exact path set is defined under "Check the GitHub checks" below,
+  which is also what `quality.yml` watches. Run `npm run lint`, `npm run typecheck`,
+  `npm run test`, and `npm run test:e2e` for a code change and keep all four green.
+  A documentation-only or specification-only change (markdown, `specs/`, PR
+  bodies) runs none of them, locally or in CI. An asset-only change still runs
+  them, because a wrong asset ships silently.
 - **When Docker is available locally, use the Linux e2e image to reproduce CI failures before relying on a Windows-only run.** Build it from the repository root with `docker build -f tests/e2e/Dockerfile -t markdownmeister-e2e .`. Run an affected suite with `docker run --rm --shm-size=1g markdownmeister-e2e sh -lc 'xvfb-run -a env MM_E2E_HEADED=1 npm run test:e2e -- tests/e2e/file-association.spec.ts'`, replacing the test path as needed. For the full suite, run the same container command twice with `-- --shard=1/2` and `-- --shard=2/2` in place of the test path, one at a time to avoid competing Electron processes. Rebuild the image after source or dependency changes. Docker availability does not replace checking the PR's GitHub quality gates.
 - Generate standard English test document content with
   [claudem-ipsum](https://github.com/zcaceres/claudem-ipsum)
@@ -287,19 +293,22 @@ AGENTS.md                         This file
   - **Nit** findings may be fixed or acknowledged in the same reply.
   - Reply to every review comment, including "no action needed", so no
     comment is left without a disposition.
-  - After addressing findings on an implementation PR, re-run `npm run lint`,
-    `npm run typecheck`, `npm run test`, and `npm run test:e2e`; the PR is not
-    ready to merge until all four are green.
+  - After addressing findings on an implementation PR, re-run the gates for a
+    code change (`npm run lint`, `npm run typecheck`, `npm run test`, and
+    `npm run test:e2e`); the PR is not ready to merge until every gate that
+    applies to it is green.
 - **Check the GitHub checks before declaring any PR ready.** Run
   `gh pr checks <number>` (or `gh pr checks` on the checked-out branch), wait
   for in-progress runs to finish, and treat a failed check as blocking. The CI
   gate (`quality.yml`) runs `format:check`, `lint`, `typecheck`, the
   maintainability check, unit tests, and e2e tests, but only on PRs that touch
-  `src/`, `tests/`, `scripts/`, `package.json`, `package-lock.json`, or the
-  build and test config files (`electron-builder.yml`, `electron.vite.config.ts`,
-  `eslint.config.mjs`, `playwright.config.ts`, `tsconfig*.json`,
-  `vitest.config.ts`); a documentation-only or specification-only PR
-  usually triggers no checks, which is fine. If checks did run, they must be
+  `src/`, `tests/`, `scripts/`, `resources/`, `assets/`, `package.json`,
+  `package-lock.json`, or the build and test config files
+  (`electron-builder.yml`, `electron.vite.config.ts`, `eslint.config.mjs`,
+  `playwright.config.ts`, `tsconfig*.json`, `vitest.config.ts`); a
+  documentation-only or specification-only PR triggers no checks, which is fine.
+  This path set is the definition of a code change for the gate rule above; it
+  must match the `paths:` filters in `quality.yml`. If checks did run, they must be
   green before a readiness summary or a merge request is appropriate. The
   gate's `format:check` step compares against `.prettierrc`, so a code-touching
   PR must be prettier-clean; on Windows a local prettier check can misreport
