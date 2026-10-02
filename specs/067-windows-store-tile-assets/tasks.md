@@ -22,21 +22,22 @@
 
 ## Phase 2: Derive the package tile set (FR-004, FR-005, FR-006, SC-003, SC-004)
 
-- [ ] T002 [US3] Extend `scripts/generate-icons.ps1` to emit the appx tile set into `resources/appx/`: `StoreLogo.png` (50×50), `Square44x44Logo.png` (44×44), `Square150x150Logo.png` (150×150), `LargeTile.png` (310×310), `SmallTile.png` (71×71), and `Wide310x150Logo.png` (310×150) composed as the square mark scaled to a safe area and centred on a transparent canvas. Update the script header's output list and the "do not write to build/" note. Commit `feat(067)`.
-- [ ] T003 [US3] Run `pwsh -File scripts/generate-icons.ps1` and commit the six generated `resources/appx/*.png` files. Commit `feat(067)`.
+- [x] T002 [US3] Extend `scripts/generate-icons.ps1` to emit the appx tile set into `resources/appx/`: `StoreLogo.png` (50×50), `Square44x44Logo.png` (44×44), `Square150x150Logo.png` (150×150), `LargeTile.png` (310×310), `SmallTile.png` (71×71), and `Wide310x150Logo.png` (310×150) composed as the square mark scaled to a safe area and centred on a transparent canvas. Update the script header's output list and the "do not write to build/" note. Commit `feat(067)`.
+- [x] T003 [US3] Run `pwsh -File scripts/generate-icons.ps1` and commit the six generated `resources/appx/*.png` files. Commit `feat(067)`.
 
 ## Phase 3: Wire the package configuration (FR-001, FR-003, FR-007, SC-001, SC-002)
 
-- [ ] T004 [US2] In `electron-builder.yml`: set `directories.buildResources: resources` and set `appx.backgroundColor` to `#222540` (the master's modal navy), with a comment stating why the build-resources root is repointed. Do not change `win.icon`, `mac.icon`, `linux.icon`, identity, capabilities, or the shell-extension keys. Commit `feat(067)`.
+- [x] T004 [US2] In `electron-builder.yml`: set `directories.buildResources: resources` and set `appx.backgroundColor` to `#222540` (the master's modal navy), with a comment stating why the build-resources root is repointed. Do not change `win.icon`, `mac.icon`, `linux.icon`, identity, capabilities, or the shell-extension keys. Commit `feat(067)`.
 
 ## Phase 4: Provenance and listing documentation (FR-002, FR-008, FR-009, SC-002)
 
-- [ ] T005 [P] [US3] Update `docs/icon-provenance.md`: add the appx tile set to the derivation chain diagram and the consumers list, and note the wide tile is a centred composition. Commit `docs(067)`.
-- [ ] T006 [P] [US2] Update `docs/store-listing.md`: replace the line claiming default package tiles are acceptable with instructions to upload the branded `assets/windows-store/` logos and to confirm the package's branded tiles before submitting; add the tile assets to the pre-submission checklist. Commit `docs(067)`.
+- [x] T005 [P] [US3] Update `docs/icon-provenance.md`: add the appx tile set to the derivation chain diagram and the consumers list, and note the wide tile is a centred composition. Commit `docs(067)`.
+- [x] T006 [P] [US2] Update `docs/store-listing.md`: replace the line claiming default package tiles are acceptable with instructions to upload the branded `assets/windows-store/` logos and to confirm the package's branded tiles before submitting; add the tile assets to the pre-submission checklist. Commit `docs(067)`.
+- [x] T011 [US2] Move the promotional Partner Center listing art from `store-assets/` to `assets/windows-store/` (new work discovered during review) and update its references. Commit `refactor(067)`.
 
 ## Phase 5: Tests (FR-001, FR-003, FR-006, SC-003)
 
-- [ ] T007 [US2] Create `tests/main/storeTileAssets.test.ts`: assert `electron-builder.yml` sets `directories.buildResources: resources` and a non-default `appx.backgroundColor`; assert each required `resources/appx/*.png` exists with the exact expected dimensions read from the PNG IHDR; assert no `SampleAppx`-named asset is present; assert `scripts/generate-icons.ps1` names each tile output. Commit `test(067)`.
+- [x] T007 [US2] Create `tests/main/storeTileAssets.test.ts`: assert `electron-builder.yml` sets `directories.buildResources: resources` and a non-default `appx.backgroundColor`; assert each required `resources/appx/*.png` exists with the exact expected dimensions read from the PNG IHDR; assert no `SampleAppx`-named asset is present; assert `scripts/generate-icons.ps1` names each tile output. Commit `test(067)`.
 
 ## Phase 6: Gates and lifecycle
 
@@ -59,3 +60,4 @@
 - Never modify the non-Store channel registration surface: `scripts/installer.nsh`, `scripts/open-with.ps1`, `markdownmeister.json`, `Formula/`, `updatescoop.ps1`, `updatebrew.ps1`, `updatepackagejson.ps1`, or existing `electron-builder.yml` values (spec 038 SC-003).
 - The master artwork is never written; only `resources/appx/` and the existing derived assets are produced.
 - Structural vs behavioural changes never share a commit (Tidy First).
+- T008 status: `lint`, `typecheck`, the maintainability check, and unit tests are green (1073/1073). The e2e suite reported 429 passed and two failures with no connection to this change (`open-performance.spec.ts` p95 timing and `recent.deleted.spec.ts` afterEach timeout); neither touches tile assets or packaging configuration. Confirm on the Linux e2e image (AGENTS) before declaring T008 complete.
