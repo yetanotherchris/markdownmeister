@@ -1,7 +1,7 @@
 {
   "homepage": "https://github.com/yetanotherchris/markdownmeister",
   "description": "A WYSIWYG markdown editor for Windows, macOS, and Linux, built with Electron and Milkdown.",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "license": "MIT",
   "shortcuts": [
     [
@@ -17,8 +17,8 @@
   ],
   "architecture": {
     "64bit": {
-      "url": "https://github.com/yetanotherchris/markdownmeister/releases/download/v1.7.0/markdownmeister-1.7.0-windows-x64.zip",
-      "hash": "7466088fe4fe1b5ee0f8e0601817d16cc6c340e1e73c48670702972941140c95",
+      "url": "https://github.com/yetanotherchris/markdownmeister/releases/download/v1.8.0/markdownmeister-1.8.0-windows-x64.zip",
+      "hash": "47afe5f3258fb93efbd8a2bf23f551aba86a093259f8b247dbc9e91f9ea86889",
       "bin": [
         [
           "markdownmeister.exe",

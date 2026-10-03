@@ -1,16 +1,16 @@
 class Markdownmeister < Formula
   desc "A WYSIWYG markdown editor for Windows, macOS, and Linux, built with Electron and Milkdown."
   homepage "https://github.com/yetanotherchris/markdownmeister"
-  version "1.7.0"
+  version "1.8.0"
   license "MIT"
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://github.com/yetanotherchris/markdownmeister/releases/download/v1.7.0/markdownmeister-1.7.0-macos-arm64.zip"
-      sha256 "a98ed982b8822ea4f04cb0277141b0b0fd5208e0d0fb2424064555d21c5d4872"
+      url "https://github.com/yetanotherchris/markdownmeister/releases/download/v1.8.0/markdownmeister-1.8.0-macos-arm64.zip"
+      sha256 "18f45df4ee0efbd5a5942fc3b067575df8c1ce4576caa9420118223fd3bd73b3"
     else
-      url "https://github.com/yetanotherchris/markdownmeister/releases/download/v1.7.0/markdownmeister-1.7.0-macos-x64.zip"
-      sha256 "b3e7a920342df650f74697112e2e6617ae58c2437eff63c5f6267690dc486af9"
+      url "https://github.com/yetanotherchris/markdownmeister/releases/download/v1.8.0/markdownmeister-1.8.0-macos-x64.zip"
+      sha256 "1e52ff882487d36de74bc7abb7c7f1623664147bb563872dd32701dbe75c0b1b"
     end
   end
 
@@ -18,8 +18,8 @@ class Markdownmeister < Formula
     if Hardware::CPU.arm?
       odie "MarkdownMeister does not provide a Linux arm64 build"
     else
-      url "https://github.com/yetanotherchris/markdownmeister/releases/download/v1.7.0/markdownmeister-1.7.0-linux-x64.AppImage"
-      sha256 "89013bf49a42d973ab7c1c17fd171b62b51e66a23cb614195fb4bab3f5c4e654"
+      url "https://github.com/yetanotherchris/markdownmeister/releases/download/v1.8.0/markdownmeister-1.8.0-linux-x64.AppImage"
+      sha256 "6e644a7f17aa8a69973d68c2fdd8d1ea6a06a9ef790fbf8f371686a54779af2c"
     end
   end
 
@@ -27,7 +27,7 @@ class Markdownmeister < Formula
     if OS.mac?
       app.install "MarkdownMeister.app"
     else
-      bin.install "markdownmeister-1.7.0-linux-x64.AppImage" => "markdownmeister"
+      bin.install "markdownmeister-1.8.0-linux-x64.AppImage" => "markdownmeister"
     end
   end
 
