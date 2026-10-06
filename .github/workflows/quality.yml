@@ -86,7 +86,7 @@ jobs:
         run: docker cp markdownmeister-e2e-${{ matrix.shard }}:/workspace/test-results ./test-results
       - name: Upload failure traces
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-traces-${{ matrix.shard }}
           path: test-results/
