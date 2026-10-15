@@ -1,7 +1,6 @@
 import { BrowserWindow, Menu, session } from 'electron'
 import { spellcheckMenuActions } from './spellcheckMenu'
 
-
 export function registerSpellcheckContextMenu(window: BrowserWindow): void {
   window.webContents.on('context-menu', (_event, params) => {
     const actions = spellcheckMenuActions(params)

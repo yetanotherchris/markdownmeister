@@ -1,4 +1,3 @@
-
 export interface Violation {
   rule: 'size' | 'size-orch' | 'size-css' | 'complexity' | 'cycle' | 'unused'
   file: string

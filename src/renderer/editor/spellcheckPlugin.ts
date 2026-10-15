@@ -3,9 +3,11 @@ import { Decoration, DecorationSet } from '@milkdown/kit/prose/view'
 import type { EditorView } from '@milkdown/kit/prose/view'
 import type { Node as PMNode } from '@milkdown/kit/prose/model'
 import { findMisspellings } from '../domain/spellcheck'
-import { spellcheckRuntime, updateSpellcheckRuntime, onSpellcheckRuntimeChange } from './spellcheckRuntime'
-
-
+import {
+  spellcheckRuntime,
+  updateSpellcheckRuntime,
+  onSpellcheckRuntimeChange
+} from './spellcheckRuntime'
 
 export interface SpellingMenuState {
   x: number
@@ -29,12 +31,10 @@ const MAX_SUGGESTIONS = 5
 
 const INITIAL_PASS_IDLE_TIMEOUT_MS = 2_000
 
-
 function isSkippedNode(node: PMNode): boolean {
   const name = node.type.name
   return name === 'code_block' || name === 'fence' || name === 'math'
 }
-
 
 const INLINE_CODE_MARKS = new Set(['inlineCode', 'n'])
 
@@ -64,7 +64,11 @@ export function computeSpellcheckDecorations(view: EditorView): DecorationSet {
 
   const decorations: Decoration[] = []
   for (const segment of collectTextSegments(view.state.doc)) {
-    for (const misspelling of findMisspellings(segment.text, runtime.checker, runtime.customWords)) {
+    for (const misspelling of findMisspellings(
+      segment.text,
+      runtime.checker,
+      runtime.customWords
+    )) {
       decorations.push(
         Decoration.inline(segment.from + misspelling.start, segment.from + misspelling.end, {
           class: 'mm-spelling-error'
@@ -206,7 +210,7 @@ function handleContextMenu(
         // Notify every editor + re-check now; persist in main (the local set
         // is authoritative for this session).
         updateSpellcheckRuntime({ customWords: spellcheckRuntime.customWords })
-        window.api.addSpellcheckWord(wordKey).catch(() => {  })
+        window.api.addSpellcheckWord(wordKey).catch(() => {})
       }
       applyDecorations(view)
       onMenu(null)

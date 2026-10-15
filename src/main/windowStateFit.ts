@@ -1,14 +1,11 @@
 import type { WindowState } from './windowStateFile'
 
-
-
 export interface Rect {
   x: number
   y: number
   width: number
   height: number
 }
-
 
 export const DEFAULT_WINDOW = { width: 1200, height: 800 }
 
@@ -19,10 +16,13 @@ function clamp(value: number, min: number, max: number): number {
 function displayContainsCenter(display: Rect, bounds: Rect): boolean {
   const cx = bounds.x + bounds.width / 2
   const cy = bounds.y + bounds.height / 2
-  return cx >= display.x && cx <= display.x + display.width &&
-    cy >= display.y && cy <= display.y + display.height
+  return (
+    cx >= display.x &&
+    cx <= display.x + display.width &&
+    cy >= display.y &&
+    cy <= display.y + display.height
+  )
 }
-
 
 export function fitWindowToDisplays(bounds: Rect, displays: Rect[]): Rect {
   // Skip zero-area work-areas (a disabled display can still be listed): fitting
@@ -36,7 +36,6 @@ export function fitWindowToDisplays(bounds: Rect, displays: Rect[]): Rect {
   const y = clamp(bounds.y, target.y, target.y + target.height - height)
   return { x, y, width, height }
 }
-
 
 export function centerIn(display: Rect): Rect {
   const width = Math.min(DEFAULT_WINDOW.width, display.width)

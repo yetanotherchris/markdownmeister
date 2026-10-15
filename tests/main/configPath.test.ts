@@ -10,9 +10,21 @@ import {
   type ConfigPathParts
 } from '../../src/main/configPath'
 
-const WIN: ConfigPathParts = { homeDir: 'C:\\Users\\alice', platform: 'win32', appDataDir: 'C:\\Users\\alice\\AppData\\Roaming' }
-const DARWIN: ConfigPathParts = { homeDir: '/Users/alice', platform: 'darwin', appDataDir: '/Users/alice/Library/Application Support' }
-const LINUX: ConfigPathParts = { homeDir: '/home/alice', platform: 'linux', appDataDir: '/home/alice/.config' }
+const WIN: ConfigPathParts = {
+  homeDir: 'C:\\Users\\alice',
+  platform: 'win32',
+  appDataDir: 'C:\\Users\\alice\\AppData\\Roaming'
+}
+const DARWIN: ConfigPathParts = {
+  homeDir: '/Users/alice',
+  platform: 'darwin',
+  appDataDir: '/Users/alice/Library/Application Support'
+}
+const LINUX: ConfigPathParts = {
+  homeDir: '/home/alice',
+  platform: 'linux',
+  appDataDir: '/home/alice/.config'
+}
 
 // The pure functions use the native `path.join`, so expectations must be built
 // with the same join (forward-slashed literals would only hold on POSIX).
@@ -21,23 +33,33 @@ const winPath = (...parts: string[]): string => path.join(...parts)
 
 describe('configPath — universal location (FR-001/002)', () => {
   it('resolves ~/.config/markdownmeister on Windows', () => {
-    expect(universalConfigPath(WIN)).toBe(winPath('C:\\Users\\alice', '.config', 'markdownmeister', 'config.json'))
+    expect(universalConfigPath(WIN)).toBe(
+      winPath('C:\\Users\\alice', '.config', 'markdownmeister', 'config.json')
+    )
   })
 
   it('resolves ~/.config/markdownmeister on macOS', () => {
-    expect(universalConfigPath(DARWIN)).toBe(homeConfig('/Users/alice', '.config', 'markdownmeister', 'config.json'))
+    expect(universalConfigPath(DARWIN)).toBe(
+      homeConfig('/Users/alice', '.config', 'markdownmeister', 'config.json')
+    )
   })
 
   it('resolves ~/.config/markdownmeister on Linux', () => {
-    expect(universalConfigPath(LINUX)).toBe(homeConfig('/home/alice', '.config', 'markdownmeister', 'config.json'))
+    expect(universalConfigPath(LINUX)).toBe(
+      homeConfig('/home/alice', '.config', 'markdownmeister', 'config.json')
+    )
   })
 
   it('honours $XDG_CONFIG_HOME on Linux', () => {
-    expect(universalConfigPath({ ...LINUX, xdgConfigHome: '/xdg' })).toBe(homeConfig('/xdg', 'markdownmeister', 'config.json'))
+    expect(universalConfigPath({ ...LINUX, xdgConfigHome: '/xdg' })).toBe(
+      homeConfig('/xdg', 'markdownmeister', 'config.json')
+    )
   })
 
   it('ignores XDG_CONFIG_HOME off-Linux', () => {
-    expect(universalConfigDir({ ...WIN, xdgConfigHome: '/xdg' })).toBe(winPath('C:\\Users\\alice', '.config', 'markdownmeister'))
+    expect(universalConfigDir({ ...WIN, xdgConfigHome: '/xdg' })).toBe(
+      winPath('C:\\Users\\alice', '.config', 'markdownmeister')
+    )
   })
 })
 
@@ -47,7 +69,9 @@ describe('configPath — legacy location (FR-005)', () => {
   })
 
   it('macOS legacy is ~/Library/Application Support/markdownmeister/config.json', () => {
-    expect(legacyConfigPath(DARWIN)).toBe(homeConfig('/Users/alice', 'Library/Application Support', 'markdownmeister', 'config.json'))
+    expect(legacyConfigPath(DARWIN)).toBe(
+      homeConfig('/Users/alice', 'Library/Application Support', 'markdownmeister', 'config.json')
+    )
   })
 
   it('Linux legacy equals the universal path (nothing to migrate)', () => {
@@ -60,7 +84,9 @@ describe('configPath — legacy location (FR-005)', () => {
   })
 
   it('falls back to homeDir when appDataDir is absent', () => {
-    expect(legacyConfigPath({ homeDir: '/home/alice', platform: 'linux' })).toBe(universalConfigPath(LINUX))
+    expect(legacyConfigPath({ homeDir: '/home/alice', platform: 'linux' })).toBe(
+      universalConfigPath(LINUX)
+    )
   })
 })
 
@@ -76,7 +102,9 @@ describe('migrateConfigFile (FR-004/006/007/008)', () => {
   })
 
   it('does nothing when neither file exists', () => {
-    expect(migrateConfigFile(path.join(dir, 'legacy'), path.join(dir, 'nested', 'config.json'))).toBe('nothing')
+    expect(
+      migrateConfigFile(path.join(dir, 'legacy'), path.join(dir, 'nested', 'config.json'))
+    ).toBe('nothing')
   })
 
   it('migrates an existing legacy config (rename, parents created)', () => {

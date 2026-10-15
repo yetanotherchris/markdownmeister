@@ -5,7 +5,10 @@ import * as path from 'path'
 import * as os from 'os'
 
 function createTempDir(): string {
-  const dir = path.join(os.tmpdir(), `mm-trash-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+  const dir = path.join(
+    os.tmpdir(),
+    `mm-trash-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  )
   fs.mkdirSync(dir, { recursive: true })
   return dir
 }

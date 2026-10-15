@@ -5,14 +5,24 @@ const path = require('path')
 
 const DLL_NAME = 'MarkdownMeisterShellExtension.dll'
 // Keep this path aligned with the defaults in build-shell-extension.ps1.
-const SOURCE_DLL = path.join(__dirname, '..', 'native', 'shell-extension', 'out', 'x64', 'Release', DLL_NAME)
+const SOURCE_DLL = path.join(
+  __dirname,
+  '..',
+  'native',
+  'shell-extension',
+  'out',
+  'x64',
+  'Release',
+  DLL_NAME
+)
 const DEST_DIR_NAME = 'shell-extension'
 
 /** electron-builder lifecycle hook signature. Returns Promise<void>. */
 module.exports = async function copyShellExtension(context) {
   if (process.platform !== 'win32') return
 
-  const wantsAppx = Array.isArray(context.targets) && context.targets.some((target) => target?.name === 'appx')
+  const wantsAppx =
+    Array.isArray(context.targets) && context.targets.some((target) => target?.name === 'appx')
   if (!fs.existsSync(SOURCE_DLL)) {
     // The Appx manifest declares the DLL at this path.
     if (wantsAppx) {

@@ -1,6 +1,3 @@
-
-
-
 .tab-bar {
   display: flex;
   flex-direction: row;
@@ -44,7 +41,6 @@
   white-space: nowrap;
 }
 
-
 .tab-edit-icon {
   width: 14px;
   height: 14px;
@@ -58,7 +54,6 @@
 }
 
 .tab-warning {
-
   color: #b8453a;
   font-weight: 700;
 }
@@ -91,7 +86,6 @@
   outline: 2px solid var(--mm-accent);
   outline-offset: 1px;
 }
-
 
 .tab-new {
   position: sticky;

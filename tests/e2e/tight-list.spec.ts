@@ -8,23 +8,11 @@ let app: ElectronApplication
 let window: Page
 let testFolder: string
 
-const TIGHT_LIST = [
-  '- Item one',
-  '  - Item two',
-  '- Item three'
-].join('\n')
+const TIGHT_LIST = ['- Item one', '  - Item two', '- Item three'].join('\n')
 
-const LOOSE_LIST = [
-  '- Item one',
-  '',
-  '- Item two'
-].join('\n')
+const LOOSE_LIST = ['- Item one', '', '- Item two'].join('\n')
 
-const TASK_LIST = [
-  '- [x] done',
-  '- [ ] todo',
-  '  - [ ] subtask'
-].join('\n')
+const TASK_LIST = ['- [x] done', '- [ ] todo', '  - [ ] subtask'].join('\n')
 
 test.beforeAll(async () => {
   testFolder = fs.mkdtempSync(path.join(os.tmpdir(), 'mm-tightlist-e2e-'))

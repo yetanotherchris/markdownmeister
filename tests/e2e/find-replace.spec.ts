@@ -557,6 +557,8 @@ test.describe('find and replace in source editing (spec 061 US3)', () => {
     await enterReplacement('++')
     await replaceAllButton().click()
     await expect(searchCount()).toHaveText('No matches')
-    await expect(window.getByTestId('source-view')).toContainText('Some ++bold++ word and plain word.')
+    await expect(window.getByTestId('source-view')).toContainText(
+      'Some ++bold++ word and plain word.'
+    )
   })
 })

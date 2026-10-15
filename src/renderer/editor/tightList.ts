@@ -1,5 +1,3 @@
-
-
 import { bulletListSchema } from '@milkdown/kit/preset/commonmark'
 import { extendListItemSchemaForTask } from '@milkdown/kit/preset/gfm'
 
@@ -32,7 +30,10 @@ export const fixedListItemSchema = extendListItemSchemaForTask.extendSchema((pre
           base.toMarkdown.runner(state, node)
           return
         }
-        state.openNode('listItem', void 0, { spread: node.attrs.spread === 'true' }).next(node.content).closeNode()
+        state
+          .openNode('listItem', void 0, { spread: node.attrs.spread === 'true' })
+          .next(node.content)
+          .closeNode()
       }
     }
   }

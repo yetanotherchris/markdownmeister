@@ -5,7 +5,10 @@ import * as path from 'path'
 import * as os from 'os'
 
 function createTempDir(): string {
-  const dir = path.join(os.tmpdir(), `mm-describe-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+  const dir = path.join(
+    os.tmpdir(),
+    `mm-describe-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  )
   fs.mkdirSync(dir, { recursive: true })
   return dir
 }
@@ -98,7 +101,11 @@ describe('describeEntry', () => {
     fs.writeFileSync(path.join(outside, 'secret.md'), 'secret')
     fs.mkdirSync(path.join(root, 'notes'))
     try {
-      fs.symlinkSync(outside, path.join(root, 'notes', 'link.md'), process.platform === 'win32' ? 'junction' : undefined)
+      fs.symlinkSync(
+        outside,
+        path.join(root, 'notes', 'link.md'),
+        process.platform === 'win32' ? 'junction' : undefined
+      )
     } catch {
       cleanupTempDir(outside)
       return

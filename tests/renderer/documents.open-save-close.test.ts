@@ -25,9 +25,9 @@ describe('documents reducer', () => {
       const s1 = documentsReducer(createSession(), { type: 'OPEN_NEW' })
       const s2 = documentsReducer(s1, { type: 'OPEN_NEW' })
       const s3 = documentsReducer(s2, { type: 'OPEN_NEW' })
-      expect(s1.documents.map(d => d.title)).toEqual(['Untitled-1'])
-      expect(s2.documents.map(d => d.title)).toEqual(['Untitled-1', 'Untitled-2'])
-      expect(s3.documents.map(d => d.title)).toEqual(['Untitled-1', 'Untitled-2', 'Untitled-3'])
+      expect(s1.documents.map((d) => d.title)).toEqual(['Untitled-1'])
+      expect(s2.documents.map((d) => d.title)).toEqual(['Untitled-1', 'Untitled-2'])
+      expect(s3.documents.map((d) => d.title)).toEqual(['Untitled-1', 'Untitled-2', 'Untitled-3'])
     })
 
     it('is pure: a double-invoked OPEN_NEW (React StrictMode) burns no numbers', () => {
@@ -47,7 +47,9 @@ describe('documents reducer', () => {
     it('opens a new document from payload', () => {
       const state = documentsReducer(createSession(), {
         type: 'OPEN_EXISTING',
-        payload: { value: { path: 'readme.md', name: 'readme.md', content: '# Hello', mtimeMs: 100, size: 8 } }
+        payload: {
+          value: { path: 'readme.md', name: 'readme.md', content: '# Hello', mtimeMs: 100, size: 8 }
+        }
       })
       expect(state.documents).toHaveLength(1)
       const doc = state.documents[0]
@@ -152,7 +154,7 @@ describe('documents reducer', () => {
       const s5 = documentsReducer(s4, { type: 'CLOSE', payload: { id: secondId } })
 
       expect(s5.documents).toHaveLength(2)
-      expect(s5.documents.find(d => d.id === secondId)).toBeUndefined()
+      expect(s5.documents.find((d) => d.id === secondId)).toBeUndefined()
       expect(s5.activeId).toBe(thirdId)
     })
 

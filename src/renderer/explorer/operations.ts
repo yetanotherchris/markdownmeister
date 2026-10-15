@@ -35,7 +35,6 @@ export function moveTargetPath(fromPath: string, targetDirId: string): string | 
   return targetDirId ? `${targetDirId}/${name}` : name
 }
 
-
 export function wouldMoveIntoOwnDescendant(fromPath: string, targetDirId: string): boolean {
   return isWithinOrEqual(targetDirId, fromPath)
 }
@@ -44,7 +43,11 @@ export function wouldMoveIntoOwnDescendant(fromPath: string, targetDirId: string
  * Client-side name validation for rename/create. Main performs the real
  * containment check; this exists for immediate, actionable feedback.
  */
-export function validateEntryName(kind: EntryKind, currentName: string, newName: string): string | null {
+export function validateEntryName(
+  kind: EntryKind,
+  currentName: string,
+  newName: string
+): string | null {
   const trimmed = newName.trim()
   if (trimmed.length === 0) return 'Name cannot be empty'
   if (trimmed === currentName) return null
@@ -68,20 +71,18 @@ export interface DeletePlan {
   dirtyBlockers: DocumentState[]
 }
 
-
 export function planDelete(
   documents: DocumentState[],
   targetPath: string,
-  isDirty: (doc: DocumentState) => boolean = d => d.dirty
+  isDirty: (doc: DocumentState) => boolean = (d) => d.dirty
 ): DeletePlan {
-  const open = documents.filter(d => d.path !== null && isWithinOrEqual(d.path, targetPath))
+  const open = documents.filter((d) => d.path !== null && isWithinOrEqual(d.path, targetPath))
   return {
     open,
-    cleanToClose: open.filter(d => !isDirty(d)),
-    dirtyBlockers: open.filter(d => isDirty(d))
+    cleanToClose: open.filter((d) => !isDirty(d)),
+    dirtyBlockers: open.filter((d) => isDirty(d))
   }
 }
-
 
 export function deleteDescription(info: EntryInfo): string {
   const parts: string[] = []
@@ -89,7 +90,9 @@ export function deleteDescription(info: EntryInfo): string {
     parts.push('This folder is not empty and its entire contents will be deleted.')
   }
   if (info.kind === 'directory' && info.hasHiddenFiles) {
-    parts.push('It also contains files that are not shown in the explorer, which will be deleted too.')
+    parts.push(
+      'It also contains files that are not shown in the explorer, which will be deleted too.'
+    )
   }
   return parts.join(' ')
 }

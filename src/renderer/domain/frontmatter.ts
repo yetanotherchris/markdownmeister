@@ -1,5 +1,3 @@
-
-
 export interface FrontmatterParts {
   frontmatter: string
   body: string
@@ -12,7 +10,6 @@ function lineEndIndex(text: string, start: number): number {
   return idx === -1 ? text.length : idx + 1
 }
 
-
 function lineContent(text: string, start: number, end: number): string {
   let content = text.slice(start, end)
   if (content.endsWith('\n')) content = content.slice(0, -1)
@@ -20,11 +17,9 @@ function lineContent(text: string, start: number, end: number): string {
   return content
 }
 
-
 function isDelimiter(text: string, start: number, end: number): boolean {
   return lineContent(text, start, end) === '---'
 }
-
 
 export function splitFrontmatter(text: string): FrontmatterParts {
   const firstLineEnd = lineEndIndex(text, 0)
@@ -44,7 +39,6 @@ export function splitFrontmatter(text: string): FrontmatterParts {
 
   return { frontmatter: '', body: text }
 }
-
 
 export function joinFrontmatter(frontmatter: string, body: string): string {
   return frontmatter + body

@@ -64,7 +64,9 @@ interface PerfCounters {
 
 async function resetCounters(): Promise<void> {
   await window.evaluate(() => {
-    ;(window as unknown as { __mmOpenPerformance?: { reset: () => void } }).__mmOpenPerformance?.reset()
+    ;(
+      window as unknown as { __mmOpenPerformance?: { reset: () => void } }
+    ).__mmOpenPerformance?.reset()
   })
 }
 
@@ -215,9 +217,7 @@ test('SC-002 flip side: an open with CHANGED display settings legitimately re-pa
   const dialog = window.getByTestId('settings-dialog')
   await dialog.waitFor()
   await dialog.getByRole('button', { name: 'Markdown' }).click()
-  await dialog
-    .locator('.settings-switch-text', { hasText: 'Strikethrough formatting' })
-    .waitFor()
+  await dialog.locator('.settings-switch-text', { hasText: 'Strikethrough formatting' }).waitFor()
   await dialog.locator('.settings-switch', { hasText: 'Strikethrough formatting' }).click()
   await dialog.getByRole('button', { name: 'Close', exact: true }).click()
   await expect(window.getByTestId('settings-dialog')).toHaveCount(0)

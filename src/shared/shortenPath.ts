@@ -1,11 +1,11 @@
-
 export function shortenPath(path: string, maxLength: number): string {
   if (maxLength <= 0) return '…'
   if (path.length === 0) return ''
   if (path.length <= maxLength) return path
-  const sep = /^[a-zA-Z]:[\\/]/.test(path) || /^\\/.test(path) || (!path.includes('/') && path.includes('\\'))
-    ? '\\'
-    : '/'
+  const sep =
+    /^[a-zA-Z]:[\\/]/.test(path) || /^\\/.test(path) || (!path.includes('/') && path.includes('\\'))
+      ? '\\'
+      : '/'
   const segments = path.split(/[\\/]/).filter((s) => s.length > 0)
   const final = segments[segments.length - 1] ?? path
   let tail = final

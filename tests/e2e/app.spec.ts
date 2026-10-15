@@ -95,7 +95,10 @@ test('editor shows the persistent menu bar instead of the floating toolbar', asy
 
 test('bullet and ordered list markers both render (clip-path neutralised)', async () => {
   // A second hidden editor must not clip list markers in the active editor.
-  fs.writeFileSync(path.join(testFolder, 'list.md'), '- bullet one\n- bullet two\n\n1. first\n2. second')
+  fs.writeFileSync(
+    path.join(testFolder, 'list.md'),
+    '- bullet one\n- bullet two\n\n1. first\n2. second'
+  )
   fs.writeFileSync(path.join(testFolder, 'other.md'), '- other bullet')
   await clickHamburgerItem(window, 'Open Folder…')
 

@@ -4,7 +4,7 @@ import {
   getDirtyDocuments,
   planQuit,
   EditingSession,
-  DocumentState,
+  DocumentState
 } from '../../src/renderer/state/documents'
 
 function createSession(): EditingSession {
@@ -57,6 +57,6 @@ describe('quit guard (FR-023)', () => {
       payload: { id: b.id, content: 'beta edited' }
     })
     const dirty = getDirtyDocuments(state)
-    expect(dirty.map(d => d.title)).toEqual(['a.md', 'b.md'])
+    expect(dirty.map((d) => d.title)).toEqual(['a.md', 'b.md'])
   })
 })

@@ -5,10 +5,14 @@ import type { NativeDialogDecision, NativeDialogRequest, ErrorCode } from '../sh
 
 let confirmationInFlight = false
 
-
-export async function showNativeConfirmation(window: BrowserWindow, request: NativeDialogRequest): Promise<NativeDialogDecision> {
+export async function showNativeConfirmation(
+  window: BrowserWindow,
+  request: NativeDialogRequest
+): Promise<NativeDialogDecision> {
   if (confirmationInFlight) {
-    throw Object.assign(new Error('A native confirmation dialog is already open'), { code: 'IO' as ErrorCode })
+    throw Object.assign(new Error('A native confirmation dialog is already open'), {
+      code: 'IO' as ErrorCode
+    })
   }
   confirmationInFlight = true
   try {

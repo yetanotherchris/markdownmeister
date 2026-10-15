@@ -8,11 +8,13 @@ import {
   validateEntryName,
   isWithinOrEqual,
   planDelete,
-  deleteDescription,
+  deleteDescription
 } from '../../src/renderer/explorer/operations'
 import type { DocumentState } from '../../src/renderer/state/documents'
 
-function makeDoc(patch: Partial<DocumentState> & { id: string; path: string | null }): DocumentState {
+function makeDoc(
+  patch: Partial<DocumentState> & { id: string; path: string | null }
+): DocumentState {
   return {
     title: patch.path?.split('/').pop() || patch.id,
     baseline: '',
@@ -111,21 +113,21 @@ describe('planDelete', () => {
 
   it('finds clean and dirty open documents for a file target', () => {
     const plan = planDelete(docs, 'x.md')
-    expect(plan.open.map(d => d.id)).toEqual(['x.md'])
-    expect(plan.cleanToClose.map(d => d.id)).toEqual(['x.md'])
+    expect(plan.open.map((d) => d.id)).toEqual(['x.md'])
+    expect(plan.cleanToClose.map((d) => d.id)).toEqual(['x.md'])
     expect(plan.dirtyBlockers).toHaveLength(0)
   })
 
   it('flags dirty documents inside a deleted folder as blockers', () => {
     const plan = planDelete(docs, 'notes')
-    expect(plan.dirtyBlockers.map(d => d.id)).toEqual(['notes/a.md'])
+    expect(plan.dirtyBlockers.map((d) => d.id)).toEqual(['notes/a.md'])
     expect(plan.cleanToClose).toHaveLength(0)
   })
 
   it('ignores unrelated and unsaved documents', () => {
     const plan = planDelete(docs, 'other.md')
-    expect(plan.open.map(d => d.id)).toEqual(['other.md'])
-    expect(plan.cleanToClose.map(d => d.id)).toEqual(['other.md'])
+    expect(plan.open.map((d) => d.id)).toEqual(['other.md'])
+    expect(plan.cleanToClose.map((d) => d.id)).toEqual(['other.md'])
   })
 })
 
@@ -142,9 +144,7 @@ describe('deleteDescription', () => {
   })
 
   it('says nothing extra for empty folders and files', () => {
-    expect(deleteDescription({ kind: 'directory', isEmpty: true, hasHiddenFiles: false }))
-      .toBe('')
-    expect(deleteDescription({ kind: 'file', isEmpty: false, hasHiddenFiles: false }))
-      .toBe('')
+    expect(deleteDescription({ kind: 'directory', isEmpty: true, hasHiddenFiles: false })).toBe('')
+    expect(deleteDescription({ kind: 'file', isEmpty: false, hasHiddenFiles: false })).toBe('')
   })
 })

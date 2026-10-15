@@ -3,8 +3,6 @@ import * as path from 'path'
 
 import { atomicWrite } from './fs/atomicWrite'
 
-
-
 export const PRODUCT_NAME = 'MarkdownMeister'
 export const DESKTOP_ENTRY_FILE_NAME = 'markdownmeister.desktop'
 const ICON_BASE_NAME = DESKTOP_ENTRY_FILE_NAME.replace(/\.desktop$/, '.png')
@@ -22,7 +20,6 @@ export interface FolderActionLocations {
   iconFile: string
 }
 
-
 export function resolveXdgDataHome(env: { XDG_DATA_HOME?: string; HOME?: string }): string | null {
   const xdgDataHome = env.XDG_DATA_HOME?.trim()
   if (xdgDataHome && path.isAbsolute(xdgDataHome)) return xdgDataHome
@@ -39,7 +36,6 @@ export function folderActionLocations(dataHome: string): FolderActionLocations {
     iconFile: path.join(dataHome, 'icons', 'hicolor', ICON_THEME_SIZE, 'apps', ICON_BASE_NAME)
   }
 }
-
 
 function encodeExecArgument(argument: string): string {
   const quoted = `"${argument.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/%/g, '%%')}"`
@@ -61,7 +57,6 @@ export function renderDesktopEntry(appImagePath: string, options?: { iconName?: 
   if (options?.iconName) lines.push(`Icon=${options.iconName}`)
   return lines.join('\n') + '\n'
 }
-
 
 export function findAppImageIcon(mountRoot: string): string | null {
   const candidates = [path.join(mountRoot, '.DirIcon'), path.join(mountRoot, ICON_BASE_NAME)]
@@ -125,7 +120,6 @@ export function ensureFolderAction(input: {
   }
 }
 
-
 function installIcon(iconSource: string, iconFile: string): boolean {
   try {
     if (!isPng(iconSource)) return false
@@ -143,7 +137,6 @@ export interface RemoveFolderActionResult {
   removedEntry: boolean
   removedIcon: boolean
 }
-
 
 export function removeFolderAction(locations: FolderActionLocations): RemoveFolderActionResult {
   return {

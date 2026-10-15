@@ -4,7 +4,11 @@ import { createRoot, type Root } from 'react-dom/client'
 import type { Crepe } from '@milkdown/crepe'
 import { useDocumentSession } from '../../src/renderer/hooks/useDocumentSession'
 import { instancePool } from '../../src/renderer/editor/instancePool'
-import type { DocumentsAction, EditingSession, DocumentState } from '../../src/renderer/state/documents'
+import type {
+  DocumentsAction,
+  EditingSession,
+  DocumentState
+} from '../../src/renderer/state/documents'
 
 /**
  * Spec 033 (contract C2): SAVE_SUCCESS moves `editorBaseline` without a

@@ -1,6 +1,5 @@
 import { Menu, app } from 'electron'
 
-
 export function createApplicationMenu(): void {
   if (process.platform !== 'darwin') return
   const template: Electron.MenuItemConstructorOptions[] = [

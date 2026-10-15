@@ -6,10 +6,20 @@ import { recentItemsConfigPath } from '../../recentItemsPath'
 import { reportRecentItemsWarning, notifyRecentItemsOk } from '../../recentItemsWarning'
 import type { Result, OpenedFile, RecentItem } from '../../../shared/ipc-contract'
 import {
-  ctx, ok, err, ensureString, validateShape, sanitizeError, toAppError,
-  isRecentEntry, recordRecent, removeRecent, canonicalPath, openFileFromPath, isAuthorizedRenderer
+  ctx,
+  ok,
+  err,
+  ensureString,
+  validateShape,
+  sanitizeError,
+  toAppError,
+  isRecentEntry,
+  recordRecent,
+  removeRecent,
+  canonicalPath,
+  openFileFromPath,
+  isAuthorizedRenderer
 } from './context'
-
 
 export function registerRecentHandlers(window: Electron.BrowserWindow, _ctx: typeof ctx): void {
   ipcMain.handle('recent:openFile', (event, args: unknown): Result<OpenedFile> => {
@@ -26,7 +36,9 @@ export function registerRecentHandlers(window: Electron.BrowserWindow, _ctx: typ
       try {
         const opened = openFileFromPath(requestedPath)
         recordRecent(
-          canonicalPath(opened.path ? path.resolve(ctx.workspaceRoot!, opened.path) : requestedPath),
+          canonicalPath(
+            opened.path ? path.resolve(ctx.workspaceRoot!, opened.path) : requestedPath
+          ),
           'file',
           opened.name
         )

@@ -66,7 +66,6 @@ export function readFile(root: string, relativePath: string): OpenedFile {
   }
 }
 
-
 export function describeEntry(root: string, relativePath: string): EntryInfo {
   const { resolved } = resolveWithinRoot(root, relativePath)
   const stat = fs.statSync(resolved)
@@ -75,7 +74,10 @@ export function describeEntry(root: string, relativePath: string): EntryInfo {
     return { kind: 'file', isEmpty: false, hasHiddenFiles: false }
   }
 
-  const scan = (dirPath: string, state: { any: boolean; hidden: boolean; error: boolean }): boolean => {
+  const scan = (
+    dirPath: string,
+    state: { any: boolean; hidden: boolean; error: boolean }
+  ): boolean => {
     let entries: fs.Dirent[]
     try {
       entries = fs.readdirSync(dirPath, { withFileTypes: true })

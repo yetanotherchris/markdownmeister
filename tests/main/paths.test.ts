@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { resolveWithinRoot, resolveDirectory, resolveFile, resolveNonExistent } from '../../src/main/fs/paths'
+import {
+  resolveWithinRoot,
+  resolveDirectory,
+  resolveFile,
+  resolveNonExistent
+} from '../../src/main/fs/paths'
 import { readFile, readDir } from '../../src/main/fs/read'
 import * as fs from 'fs'
 import * as path from 'path'
@@ -126,7 +131,11 @@ describe('resolveWithinRoot', () => {
     // containment check resolves through the link and must fail closed.
     const outside = createTempDir()
     try {
-      fs.symlinkSync(outside, path.join(root, 'escape'), process.platform === 'win32' ? 'junction' : undefined)
+      fs.symlinkSync(
+        outside,
+        path.join(root, 'escape'),
+        process.platform === 'win32' ? 'junction' : undefined
+      )
     } catch {
       cleanupTempDir(outside)
       return

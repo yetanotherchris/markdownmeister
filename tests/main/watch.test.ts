@@ -5,7 +5,10 @@ import * as path from 'path'
 import * as os from 'os'
 
 function createTempDir(): string {
-  const dir = path.join(os.tmpdir(), `mm-watch-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+  const dir = path.join(
+    os.tmpdir(),
+    `mm-watch-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  )
   fs.mkdirSync(dir, { recursive: true })
   return dir
 }
@@ -17,7 +20,7 @@ function cleanupTempDir(dir: string): void {
 }
 
 function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 describe('WorkspaceWatcher', () => {
@@ -38,7 +41,7 @@ describe('WorkspaceWatcher', () => {
       fs.writeFileSync(path.join(root, 'new.md'), '# test')
       await delay(300)
 
-      const added = events.filter(e => e.path === 'new.md' && e.kind === 'added')
+      const added = events.filter((e) => e.path === 'new.md' && e.kind === 'added')
       expect(added.length).toBeGreaterThanOrEqual(1)
     } finally {
       watcher.stop()
@@ -65,7 +68,7 @@ describe('WorkspaceWatcher', () => {
       fs.writeFileSync(path.join(root, 'existing.md'), '# new')
       await delay(500)
 
-      const changed = events.filter(e => e.path === 'existing.md' && e.kind === 'changed')
+      const changed = events.filter((e) => e.path === 'existing.md' && e.kind === 'changed')
       expect(changed.length).toBeGreaterThanOrEqual(1)
     } finally {
       watcher.stop()
@@ -93,7 +96,7 @@ describe('WorkspaceWatcher', () => {
       // Directory not watched yet: changes inside it are not reported.
       fs.writeFileSync(path.join(sub, 'hidden.md'), '# test')
       await delay(300)
-      expect(events.filter(e => e.path === 'sub/hidden.md').length).toBe(0)
+      expect(events.filter((e) => e.path === 'sub/hidden.md').length).toBe(0)
 
       // Add the directory to the watch set, then changes inside it are reported.
       watcher.addPath(sub)
@@ -101,7 +104,7 @@ describe('WorkspaceWatcher', () => {
       fs.writeFileSync(path.join(sub, 'visible.md'), '# test')
       await delay(500)
 
-      const added = events.filter(e => e.path === 'sub/visible.md' && e.kind === 'added')
+      const added = events.filter((e) => e.path === 'sub/visible.md' && e.kind === 'added')
       expect(added.length).toBeGreaterThanOrEqual(1)
     } finally {
       watcher.stop()
@@ -129,7 +132,7 @@ describe('WorkspaceWatcher', () => {
       fs.writeFileSync(targetPath, '# self')
       await delay(500)
 
-      const selfEvents = events.filter(e => e.path === 'self.md')
+      const selfEvents = events.filter((e) => e.path === 'self.md')
       expect(selfEvents.length).toBe(0)
     } finally {
       watcher.stop()

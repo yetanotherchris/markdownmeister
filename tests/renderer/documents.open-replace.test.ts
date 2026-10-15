@@ -3,7 +3,13 @@ import { documentsReducer, openFile } from '../../src/renderer/state/documents'
 import type { EditingSession } from '../../src/renderer/state/documents'
 import { createSession } from './helpers'
 
-const file = (path: string, name = path) => ({ path, name, content: `# ${name}`, mtimeMs: 1, size: name.length + 3 })
+const file = (path: string, name = path) => ({
+  path,
+  name,
+  content: `# ${name}`,
+  mtimeMs: 1,
+  size: name.length + 3
+})
 
 function openExisting(state: EditingSession, path: string, mode?: 'replace'): EditingSession {
   return documentsReducer(state, { type: 'OPEN_EXISTING', payload: { value: file(path), mode } })
@@ -35,11 +41,11 @@ describe('handleOpenExisting — spec 024 replace mode', () => {
     let s1 = openExisting(createSession(), 'a.md')
     const aId = s1.activeId!
     s1 = dirty(s1, aId)
-    expect(s1.documents.find(d => d.id === aId)?.dirty).toBe(true)
+    expect(s1.documents.find((d) => d.id === aId)?.dirty).toBe(true)
 
     const s2 = openExisting(s1, 'b.md', 'replace')
     expect(s2.documents).toHaveLength(2)
-    expect(s2.documents.find(d => d.id === aId)?.dirty).toBe(true)
+    expect(s2.documents.find((d) => d.id === aId)?.dirty).toBe(true)
     expect(s2.activeId).not.toBe(aId)
   })
 
@@ -60,7 +66,7 @@ describe('handleOpenExisting — spec 024 replace mode', () => {
 
     expect(s3.documents).toHaveLength(2)
     expect(s3.activeId).toBe(s1.documents[0].id)
-    expect(s3.documents.map(d => d.path)).toEqual(['a.md', 'b.md'])
+    expect(s3.documents.map((d) => d.path)).toEqual(['a.md', 'b.md'])
   })
 
   it('FR-004 with no active tab a new tab is created', () => {
@@ -86,7 +92,7 @@ describe('handleOpenExisting — spec 024 replace mode', () => {
     expect(replaced.baseline).toBe('# b.md')
     expect(replaced.dirty).toBe(false)
     // The old document identity (and its undo history) is gone.
-    expect(s3.documents.some(d => d.id === aId)).toBe(false)
+    expect(s3.documents.some((d) => d.id === aId)).toBe(false)
   })
 
   it('cancels a staged replacement without changing the outgoing document', () => {

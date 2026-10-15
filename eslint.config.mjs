@@ -6,22 +6,32 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     rules: {
-      'no-restricted-imports': ['error', {
-        patterns: [
-          {
-            group: ['fs', 'fs/promises', 'path', 'os', 'child_process', 'electron'],
-            message: 'Node and Electron modules are only allowed in src/main/. Use the preload API instead.'
-          }
-        ]
-      }],
-      'no-restricted-globals': ['error', {
-        name: 'require',
-        message: 'Use import syntax instead of require.'
-      }],
-      '@typescript-eslint/no-unused-vars': ['error', {
-        argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_'
-      }]
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['fs', 'fs/promises', 'path', 'os', 'child_process', 'electron'],
+              message:
+                'Node and Electron modules are only allowed in src/main/. Use the preload API instead.'
+            }
+          ]
+        }
+      ],
+      'no-restricted-globals': [
+        'error',
+        {
+          name: 'require',
+          message: 'Use import syntax instead of require.'
+        }
+      ],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_'
+        }
+      ]
     }
   },
   {
