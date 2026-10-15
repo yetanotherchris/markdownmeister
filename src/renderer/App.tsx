@@ -1,7 +1,7 @@
 import { useReducer, useEffect, useCallback, useRef, useState } from 'react'
 import { Panel, Group, Separator, usePanelRef } from 'react-resizable-panels'
 import type { TreeApi } from 'react-arborist'
-import { Squares2X2Icon } from '@heroicons/react/24/outline'
+import { PanelLeft } from 'lucide-react'
 import {
   EditingSession,
   documentsReducer,
@@ -348,7 +348,7 @@ export default function App() {
             onClick={sidebar.handleToggleExplorer}
             disabled={!hasWorkspace}
           >
-            <Squares2X2Icon className="chrome-icon" aria-hidden="true" />
+            <PanelLeft className="chrome-icon" strokeWidth={1.5} aria-hidden="true" />
           </button>
         </div>
         <TabBar
