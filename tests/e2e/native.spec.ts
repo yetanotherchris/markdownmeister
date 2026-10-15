@@ -117,7 +117,8 @@ test.describe('US2 chrome action buttons use icons', () => {
     await expect(window.getByRole('button', { name: 'Toggle file explorer' })).toBeVisible()
     await expect(window.getByRole('button', { name: 'New file' })).toBeVisible()
 
-    // Each carries a heroicon inside the button.
+    // Each button contains one svg. The menu glyph is a Heroicon. The explorer
+    // toggle is the left-sidebar window.
     const menuIcon = await window.getByRole('button', { name: 'Open menu' }).locator('svg').count()
     const toggleIcon = await window
       .getByRole('button', { name: 'Toggle file explorer' })
