@@ -32,7 +32,7 @@ Search for **MarkdownMeister** in the Microsoft Store, or open the [Store search
 
 ### Linux (Snap Store)
 
-Not yet published. Once the snap is live it will be listed on the [Snap Store](https://snapcraft.io/markdownmeister) and installs with:
+Available on the [Snap Store](https://snapcraft.io/markdownmeister) and installs with:
 
 ```sh
 sudo snap install markdownmeister
