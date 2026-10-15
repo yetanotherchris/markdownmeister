@@ -2,9 +2,10 @@ import { inputRulesCtx, SchemaReady } from '@milkdown/kit/core'
 import { InputRule } from '@milkdown/kit/prose/inputrules'
 import type { EditorState, Transaction } from '@milkdown/kit/prose/state'
 import type { Ctx, MilkdownPlugin } from '@milkdown/kit/ctx'
-import { DEFAULT_MARKDOWN_SYNTAX_OPTIONS, type MarkdownSyntaxOptions } from './markdownSyntaxOptions'
-
-
+import {
+  DEFAULT_MARKDOWN_SYNTAX_OPTIONS,
+  type MarkdownSyntaxOptions
+} from './markdownSyntaxOptions'
 
 type InputRuleHandler = (
   state: EditorState,

@@ -105,10 +105,12 @@ test('US1 reopening an entry moves it to the front without a duplicate', async (
   // main only after that round trip completes. Position-based so a missing
   // bump is detectable.
   await clickRecentItem(ctx, 'external.md')
-  await expect.poll(async () => {
-    const state = await recentItemsState(ctx)
-    return state.findIndex((i) => i.label.includes('external.md'))
-  }).toBe(1)
+  await expect
+    .poll(async () => {
+      const state = await recentItemsState(ctx)
+      return state.findIndex((i) => i.label.includes('external.md'))
+    })
+    .toBe(1)
   const itemsAfter = await recentItemsState(ctx)
   expect(itemsAfter.filter((i) => i.label.includes('external.md'))).toHaveLength(1)
   expect(itemsAfter.findIndex((i) => i.label.includes('external2.md'))).toBe(2)

@@ -218,9 +218,15 @@ function TreeNode({ node, style, dragHandle, onRowContextMenu }: TreeNodeProps) 
         </button>
       )}
       <span className="tree-node-icon" aria-hidden="true">
-        {isDir
-          ? (node.isOpen ? <FolderOpen size={14} /> : <Folder size={14} />)
-          : <FileText size={14} />}
+        {isDir ? (
+          node.isOpen ? (
+            <FolderOpen size={14} />
+          ) : (
+            <Folder size={14} />
+          )
+        ) : (
+          <FileText size={14} />
+        )}
       </span>
       {node.isEditing ? (
         <RenameInput node={node} />
@@ -247,7 +253,17 @@ interface TreeRowProps extends RowRendererProps<TreeNode> {
  * Row would be a new component type per render, remounting all rows' DOM and
  * dropping the inline-rename caret).
  */
-function TreeRow({ node, attrs, innerRef, children, onKeyboardMenu, onRenameKey, onDeleteKey, onOpenNewTab, onFileOpen }: TreeRowProps) {
+function TreeRow({
+  node,
+  attrs,
+  innerRef,
+  children,
+  onKeyboardMenu,
+  onRenameKey,
+  onDeleteKey,
+  onOpenNewTab,
+  onFileOpen
+}: TreeRowProps) {
   const isDir = node.data.kind === 'directory'
 
   // Keyboard access to the row operations (WCAG 2.1.1): F2 renames, Delete
@@ -373,37 +389,40 @@ export default function Tree({
     setEditingId(pendingEditId)
   }, [pendingEditId])
 
-  const startEditing = useCallback(async (id: string) => {
-    if (editingInFlightRef.current) return
-    editingInFlightRef.current = true
-    try {
-      let node = treeRef.current?.get(id)
-      if (!node) {
-        // The node exists in the data but its parent is closed in arborist's
-        // own visibility state (create flow). Opening the parent fires our
-        // onToggle, which lazy-loads the folder if needed and then leaves the
-        // already-loaded data alone, see App.handleTreeToggle.
-        const parent = parentPathOf(id)
-        if (parent) treeRef.current?.open(parent)
-        for (let i = 0; i < 20 && !node; i++) {
-          await new Promise((resolve) => setTimeout(resolve, 25))
-          node = treeRef.current?.get(id)
+  const startEditing = useCallback(
+    async (id: string) => {
+      if (editingInFlightRef.current) return
+      editingInFlightRef.current = true
+      try {
+        let node = treeRef.current?.get(id)
+        if (!node) {
+          // The node exists in the data but its parent is closed in arborist's
+          // own visibility state (create flow). Opening the parent fires our
+          // onToggle, which lazy-loads the folder if needed and then leaves the
+          // already-loaded data alone, see App.handleTreeToggle.
+          const parent = parentPathOf(id)
+          if (parent) treeRef.current?.open(parent)
+          for (let i = 0; i < 20 && !node; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 25))
+            node = treeRef.current?.get(id)
+          }
         }
-      }
-      if (!node) {
-        onEditingCancelled(id)
+        if (!node) {
+          onEditingCancelled(id)
+          setEditingId((current) => (current === id ? null : current))
+          return
+        }
+        const result = await node.edit()
+        if (result.cancelled) {
+          onEditingCancelled(id)
+        }
         setEditingId((current) => (current === id ? null : current))
-        return
+      } finally {
+        editingInFlightRef.current = false
       }
-      const result = await node.edit()
-      if (result.cancelled) {
-        onEditingCancelled(id)
-      }
-      setEditingId((current) => (current === id ? null : current))
-    } finally {
-      editingInFlightRef.current = false
-    }
-  }, [onEditingCancelled])
+    },
+    [onEditingCancelled]
+  )
 
   useEffect(() => {
     if (editingId) {
@@ -434,61 +453,77 @@ export default function Tree({
     }
   }, [contextMenu, closeContextMenu])
 
-  const handleSelect = useCallback((nodes: NodeApi<TreeNode>[]) => {
-    const first = nodes[0]
-    onSelect(first?.id ?? null)
-  }, [onSelect])
+  const handleSelect = useCallback(
+    (nodes: NodeApi<TreeNode>[]) => {
+      const first = nodes[0]
+      onSelect(first?.id ?? null)
+    },
+    [onSelect]
+  )
 
-  const handleActivate = useCallback((node: NodeApi<TreeNode>) => {
-    onActivate(node.id)
-  }, [onActivate])
+  const handleActivate = useCallback(
+    (node: NodeApi<TreeNode>) => {
+      onActivate(node.id)
+    },
+    [onActivate]
+  )
 
-  const handleToggle = useCallback((id: string) => {
-    const node = findNodeById(data, id)
-    if (!node) return
-    onToggle(id, node.loadState === 'loaded')
-  }, [data, onToggle])
+  const handleToggle = useCallback(
+    (id: string) => {
+      const node = findNodeById(data, id)
+      if (!node) return
+      onToggle(id, node.loadState === 'loaded')
+    },
+    [data, onToggle]
+  )
 
-  const handleRename = useCallback(async (args: {
-    id: string
-    name: string
-    node: NodeApi<TreeNode>
-  }) => {
-    const node = findNodeById(data, args.id)
-    if (!node) return
-    await onRename(node, args.name)
-  }, [data, onRename])
+  const handleRename = useCallback(
+    async (args: { id: string; name: string; node: NodeApi<TreeNode> }) => {
+      const node = findNodeById(data, args.id)
+      if (!node) return
+      await onRename(node, args.name)
+    },
+    [data, onRename]
+  )
 
-  const handleMove = useCallback((args: {
-    dragIds: string[]
-    dragNodes: NodeApi<TreeNode>[]
-    parentId: string | null
-    parentNode: NodeApi<TreeNode> | null
-    index: number
-  }) => {
-    // A drop on empty space targets the root: parentNode is the internal root
-    // node (its data has no kind), which maps to the workspace root ''.
-    const targetParentId = args.parentNode && !args.parentNode.isRoot
-      ? args.parentNode.data.id
-      : ''
-    for (const id of args.dragIds) {
-      const target = treeMoveTarget(id, targetParentId)
-      if (!target) continue
-      onMove(id, targetParentId)
-    }
-  }, [onMove])
+  const handleMove = useCallback(
+    (args: {
+      dragIds: string[]
+      dragNodes: NodeApi<TreeNode>[]
+      parentId: string | null
+      parentNode: NodeApi<TreeNode> | null
+      index: number
+    }) => {
+      // A drop on empty space targets the root: parentNode is the internal root
+      // node (its data has no kind), which maps to the workspace root ''.
+      const targetParentId =
+        args.parentNode && !args.parentNode.isRoot ? args.parentNode.data.id : ''
+      for (const id of args.dragIds) {
+        const target = treeMoveTarget(id, targetParentId)
+        if (!target) continue
+        onMove(id, targetParentId)
+      }
+    },
+    [onMove]
+  )
 
   const handleRowContextMenu = useCallback((node: TreeNode, x: number, y: number) => {
     setContextMenu({ x, y, node })
   }, [])
 
-  const handleRenameKey = useCallback((node: TreeNode) => {
-    startEditing(node.id)
-  }, [startEditing])
+  const handleRenameKey = useCallback(
+    (node: TreeNode) => {
+      startEditing(node.id)
+    },
+    [startEditing]
+  )
 
-  const handleDeleteKey = useCallback((node: TreeNode) => {
-    onDeleteRequest(node)
-  }, [onDeleteRequest])
+  const handleDeleteKey = useCallback(
+    (node: TreeNode) => {
+      onDeleteRequest(node)
+    },
+    [onDeleteRequest]
+  )
 
   const handleKeyboardMenu = useCallback((node: TreeNode, x: number, y: number) => {
     setContextMenu({ x, y, node })
@@ -497,33 +532,42 @@ export default function Tree({
   // Stable render callbacks: fresh identities on every Tree render would make
   // react-arborist remount every visible row (perf M1), rows are keyed by
   // node id, but component-type identity changes force full remounts.
-  const renderNode = useCallback((nodeProps: NodeRendererProps<TreeNode>) => (
-    <TreeNode
-      {...nodeProps}
-      onRowContextMenu={handleRowContextMenu}
-    />
-  ), [handleRowContextMenu])
+  const renderNode = useCallback(
+    (nodeProps: NodeRendererProps<TreeNode>) => (
+      <TreeNode {...nodeProps} onRowContextMenu={handleRowContextMenu} />
+    ),
+    [handleRowContextMenu]
+  )
 
-  const renderRow = useCallback((rowProps: RowRendererProps<TreeNode>) => (
-    <TreeRow
-      {...rowProps}
-      onKeyboardMenu={handleKeyboardMenu}
-      onRenameKey={handleRenameKey}
-      onDeleteKey={handleDeleteKey}
-      onOpenNewTab={onOpenNewTab}
-      onFileOpen={onFileOpen}
-    />
-  ), [handleKeyboardMenu, handleRenameKey, handleDeleteKey, onOpenNewTab, onFileOpen])
+  const renderRow = useCallback(
+    (rowProps: RowRendererProps<TreeNode>) => (
+      <TreeRow
+        {...rowProps}
+        onKeyboardMenu={handleKeyboardMenu}
+        onRenameKey={handleRenameKey}
+        onDeleteKey={handleDeleteKey}
+        onOpenNewTab={onOpenNewTab}
+        onFileOpen={onFileOpen}
+      />
+    ),
+    [handleKeyboardMenu, handleRenameKey, handleDeleteKey, onOpenNewTab, onFileOpen]
+  )
 
-  const disableDrop = useCallback(({ parentNode, dragNodes }: {
-    parentNode: NodeApi<TreeNode>
-    dragNodes: NodeApi<TreeNode>[]
-  }) => {
-    if (!parentNode.isRoot && parentNode.data.kind !== 'directory') return true
-    return dragNodes.some(dn =>
-      parentNode.isRoot ? false : treeWouldMoveIntoOwnDescendant(dn.id, parentNode.data.id)
-    )
-  }, [])
+  const disableDrop = useCallback(
+    ({
+      parentNode,
+      dragNodes
+    }: {
+      parentNode: NodeApi<TreeNode>
+      dragNodes: NodeApi<TreeNode>[]
+    }) => {
+      if (!parentNode.isRoot && parentNode.data.kind !== 'directory') return true
+      return dragNodes.some((dn) =>
+        parentNode.isRoot ? false : treeWouldMoveIntoOwnDescendant(dn.id, parentNode.data.id)
+      )
+    },
+    []
+  )
 
   const handleContainerContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
@@ -635,11 +679,7 @@ export default function Tree({
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="tree-container"
-      onContextMenu={handleContainerContextMenu}
-    >
+    <div ref={containerRef} className="tree-container" onContextMenu={handleContainerContextMenu}>
       <ExplorerSearchInput
         searchTerm={searchTerm}
         onSearchTermChange={onSearchTermChange}

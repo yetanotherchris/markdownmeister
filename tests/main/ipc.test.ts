@@ -1,9 +1,18 @@
 import { describe, it, expect } from 'vitest'
 import { validateSettingsPatch } from '../../src/main/settingsFile'
 import type {
-  Result, WorkspaceInfo, DirEntry, OpenedFile,
-  WriteReceipt, TrashReceipt, ErrorCode, MenuCommand, RecentItem,
-  DesktopApi, NativeDialogRequest, NativeDialogDecision
+  Result,
+  WorkspaceInfo,
+  DirEntry,
+  OpenedFile,
+  WriteReceipt,
+  TrashReceipt,
+  ErrorCode,
+  MenuCommand,
+  RecentItem,
+  DesktopApi,
+  NativeDialogRequest,
+  NativeDialogDecision
 } from '../../src/shared/ipc-contract'
 
 describe('IPC contract types', () => {
@@ -26,9 +35,16 @@ describe('IPC contract types', () => {
 
   it('ErrorCode is a closed set', () => {
     const validCodes: ErrorCode[] = [
-      'OUTSIDE_WORKSPACE', 'NOT_FOUND', 'CONFLICT', 'PERMISSION',
-      'LOCKED', 'TOO_LARGE', 'NOT_TEXT', 'TRASH_UNAVAILABLE',
-      'NO_WORKSPACE', 'IO'
+      'OUTSIDE_WORKSPACE',
+      'NOT_FOUND',
+      'CONFLICT',
+      'PERMISSION',
+      'LOCKED',
+      'TOO_LARGE',
+      'NOT_TEXT',
+      'TRASH_UNAVAILABLE',
+      'NO_WORKSPACE',
+      'IO'
     ]
     expect(validCodes.length).toBe(10)
   })
@@ -76,8 +92,18 @@ describe('IPC contract types', () => {
   })
 
   it('RecentItem carries an absolute path, kind, name and timestamp', () => {
-    const file: RecentItem = { path: '/home/me/notes/a.md', kind: 'file', name: 'a.md', lastOpenedAt: 1000 }
-    const folder: RecentItem = { path: '/home/me/notes', kind: 'folder', name: 'notes', lastOpenedAt: 2000 }
+    const file: RecentItem = {
+      path: '/home/me/notes/a.md',
+      kind: 'file',
+      name: 'a.md',
+      lastOpenedAt: 1000
+    }
+    const folder: RecentItem = {
+      path: '/home/me/notes',
+      kind: 'folder',
+      name: 'notes',
+      lastOpenedAt: 2000
+    }
     expect(file.kind).toBe('file')
     expect(folder.kind).toBe('folder')
     expect(folder.lastOpenedAt).toBeGreaterThan(file.lastOpenedAt)
@@ -93,8 +119,10 @@ describe('DesktopApi recent-items operations', () => {
   it('types the two-phase folder-open operations', () => {
     // Type-level: each assignment compiles only if DesktopApi exposes the
     // operation with the documented signature.
-    const prepare: DesktopApi['prepareFolderOpen'] = () => Promise.resolve({ ok: true, value: null })
-    const commit: DesktopApi['commitFolderOpen'] = () => Promise.resolve({ ok: false, code: 'NO_WORKSPACE', message: 'none' })
+    const prepare: DesktopApi['prepareFolderOpen'] = () =>
+      Promise.resolve({ ok: true, value: null })
+    const commit: DesktopApi['commitFolderOpen'] = () =>
+      Promise.resolve({ ok: false, code: 'NO_WORKSPACE', message: 'none' })
     const cancel: DesktopApi['cancelFolderOpen'] = () => Promise.resolve({ ok: true, value: null })
     expect(typeof prepare).toBe('function')
     expect(typeof commit).toBe('function')
@@ -102,7 +130,8 @@ describe('DesktopApi recent-items operations', () => {
   })
 
   it('types the recent-file open and the warning/ok events', () => {
-    const open: DesktopApi['openRecentFile'] = () => Promise.resolve({ ok: false, code: 'NOT_FOUND', message: 'none' })
+    const open: DesktopApi['openRecentFile'] = () =>
+      Promise.resolve({ ok: false, code: 'NOT_FOUND', message: 'none' })
     const warn: DesktopApi['onRecentItemsWarning'] = () => () => {}
     const ok: DesktopApi['onRecentItemsOk'] = () => () => {}
     expect(typeof open).toBe('function')
@@ -114,31 +143,66 @@ describe('DesktopApi recent-items operations', () => {
 describe('DesktopApi native-dialog operations (spec 008)', () => {
   it('types every NativeDialogRequest member with the right fields', () => {
     const close: NativeDialogRequest = { kind: 'unsaved-close', documentTitle: 'a.md' }
-    const quit: NativeDialogRequest = { kind: 'unsaved-quit', documentTitles: ['a.md', 'b.md'], error: 'Could not save a.md.' }
+    const quit: NativeDialogRequest = {
+      kind: 'unsaved-quit',
+      documentTitles: ['a.md', 'b.md'],
+      error: 'Could not save a.md.'
+    }
     const folder: NativeDialogRequest = { kind: 'folder-open', documentTitles: ['a.md'] }
     const changed: NativeDialogRequest = { kind: 'external-changed', documentTitle: 'a.md' }
-    const removed: NativeDialogRequest = { kind: 'external-removed', documentTitle: 'a.md', error: 'Could not save a.md.' }
-    const trash: NativeDialogRequest = { kind: 'delete-to-trash', targetName: 'b.md', detail: '', cleanToCloseTitles: ['a.md'] }
-    const permanent: NativeDialogRequest = { kind: 'permanent-delete', targetName: 'b.md', detail: '', cleanToCloseTitles: [] }
-    const blocked: NativeDialogRequest = { kind: 'delete-blocked', targetName: 'b.md', blockerTitles: ['a.md'] }
-    const failed: NativeDialogRequest = { kind: 'operation-failed', message: 'File or directory not found' }
+    const removed: NativeDialogRequest = {
+      kind: 'external-removed',
+      documentTitle: 'a.md',
+      error: 'Could not save a.md.'
+    }
+    const trash: NativeDialogRequest = {
+      kind: 'delete-to-trash',
+      targetName: 'b.md',
+      detail: '',
+      cleanToCloseTitles: ['a.md']
+    }
+    const permanent: NativeDialogRequest = {
+      kind: 'permanent-delete',
+      targetName: 'b.md',
+      detail: '',
+      cleanToCloseTitles: []
+    }
+    const blocked: NativeDialogRequest = {
+      kind: 'delete-blocked',
+      targetName: 'b.md',
+      blockerTitles: ['a.md']
+    }
+    const failed: NativeDialogRequest = {
+      kind: 'operation-failed',
+      message: 'File or directory not found'
+    }
     const all = [close, quit, folder, changed, removed, trash, permanent, blocked, failed]
     expect(all).toHaveLength(9)
-    expect(all.every(r => typeof r.kind === 'string')).toBe(true)
+    expect(all.every((r) => typeof r.kind === 'string')).toBe(true)
   })
 
   it('NativeDialogDecision is the closed set of 12', () => {
     const decisions: NativeDialogDecision[] = [
-      'save', 'discard', 'save-all', 'discard-all',
-      'keep', 'reload', 'ok', 'save-as',
-      'delete', 'delete-permanent', 'acknowledge', 'cancel'
+      'save',
+      'discard',
+      'save-all',
+      'discard-all',
+      'keep',
+      'reload',
+      'ok',
+      'save-as',
+      'delete',
+      'delete-permanent',
+      'acknowledge',
+      'cancel'
     ]
     expect(new Set(decisions).size).toBe(12)
   })
 
   it('types DesktopApi.showConfirmation', () => {
     const op: DesktopApi['showConfirmation'] = () => Promise.resolve({ ok: true, value: 'cancel' })
-    const opErr: DesktopApi['showConfirmation'] = () => Promise.resolve({ ok: false, code: 'IO', message: 'none' })
+    const opErr: DesktopApi['showConfirmation'] = () =>
+      Promise.resolve({ ok: false, code: 'IO', message: 'none' })
     expect(typeof op).toBe('function')
     expect(typeof opErr).toBe('function')
   })
@@ -156,8 +220,7 @@ describe('settings:update patch validation (spec 008)', () => {
   })
 
   it('rejects a fileOpenBehavior outside the closed union', () => {
-    expect(() => validateSettingsPatch({ fileOpenBehavior: 'split' }))
-      .toThrow(/fileOpenBehavior/)
+    expect(() => validateSettingsPatch({ fileOpenBehavior: 'split' })).toThrow(/fileOpenBehavior/)
   })
 
   it('does not reject the removed developerToolsEnabled key (no longer validated)', () => {
@@ -171,6 +234,8 @@ describe('settings:update patch validation (spec 008)', () => {
 
   it('does not reject unrelated legacy fields (tolerant merge handles them)', () => {
     expect(() => validateSettingsPatch({ sidebarWidth: 42, editorFont: 'serif' })).not.toThrow()
-    expect(() => validateSettingsPatch({ themeOverride: 'dark', spellcheckEnabled: false })).not.toThrow()
+    expect(() =>
+      validateSettingsPatch({ themeOverride: 'dark', spellcheckEnabled: false })
+    ).not.toThrow()
   })
 })

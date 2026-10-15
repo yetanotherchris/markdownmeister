@@ -7,11 +7,9 @@ interface SpellingMenuProps {
   onDismiss: () => void
 }
 
-
 function clamp(value: number, max: number): number {
   return Math.max(0, Math.min(value, max))
 }
-
 
 export default function SpellingMenu({ menu, onDismiss }: SpellingMenuProps) {
   const rootRef = useRef<HTMLDivElement>(null)

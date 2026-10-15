@@ -58,7 +58,10 @@ function insertSorted(nodes: TreeNode[], node: TreeNode): TreeNode[] {
   return copy
 }
 
-function findParentAndIndex(nodes: TreeNode[], parentPath: string): {
+function findParentAndIndex(
+  nodes: TreeNode[],
+  parentPath: string
+): {
   parent: TreeNode | null
   siblings: TreeNode[]
   index: number
@@ -77,8 +80,8 @@ function findParentAndIndex(nodes: TreeNode[], parentPath: string): {
 
 function removeNode(nodes: TreeNode[], id: string): TreeNode[] {
   return nodes
-    .filter(n => n.id !== id)
-    .map(n => {
+    .filter((n) => n.id !== id)
+    .map((n) => {
       if (n.kind === 'directory' && n.children) {
         return { ...n, children: removeNode(n.children, id) }
       }
@@ -98,8 +101,12 @@ export function findNodeById(nodes: TreeNode[], id: string): TreeNode | null {
   return null
 }
 
-function updateNode(nodes: TreeNode[], id: string, updater: (node: TreeNode) => TreeNode): TreeNode[] {
-  return nodes.map(n => {
+function updateNode(
+  nodes: TreeNode[],
+  id: string,
+  updater: (node: TreeNode) => TreeNode
+): TreeNode[] {
+  return nodes.map((n) => {
     if (n.id === id) return updater(n)
     if (n.kind === 'directory' && n.children) {
       return { ...n, children: updateNode(n.children, id, updater) }
@@ -138,7 +145,7 @@ function insertEntry(state: WorkspaceState, parentPath: string, entry: DirEntry)
   if (findNodeById(found.parent.children ?? [], entry.path)) return state
   return {
     ...state,
-    nodes: updateNode(state.nodes, parentPath, n => ({
+    nodes: updateNode(state.nodes, parentPath, (n) => ({
       ...n,
       children: insertSorted(n.children ?? [], entryToNode(entry))
     }))
@@ -166,13 +173,18 @@ function addTopLevel(state: WorkspaceState, path: string, isDirectory: boolean):
 }
 
 /** Insert a newly-added watched node under a loaded parent, deduped. */
-function addNested(state: WorkspaceState, parent: string, path: string, isDirectory: boolean): WorkspaceState {
+function addNested(
+  state: WorkspaceState,
+  parent: string,
+  path: string,
+  isDirectory: boolean
+): WorkspaceState {
   const found = findParentAndIndex(state.nodes, parent)
   if (!found || !found.parent || found.parent.loadState !== 'loaded') return state
   if (findNodeById(found.parent.children ?? [], path)) return state
   return {
     ...state,
-    nodes: updateNode(state.nodes, parent, n => ({
+    nodes: updateNode(state.nodes, parent, (n) => ({
       ...n,
       children: insertSorted(n.children ?? [], watchedNode(path, isDirectory))
     }))
@@ -202,12 +214,14 @@ function applyWatchEvent(state: WorkspaceState, event: WatchEvent): WorkspaceSta
   if (!existing) return state
   return {
     ...state,
-    nodes: updateNode(state.nodes, path, n => ({ ...n, name: n.name }))
+    nodes: updateNode(state.nodes, path, (n) => ({ ...n, name: n.name }))
   }
 }
 
-
-export function handleReplace(state: WorkspaceState, payload: { name: string | null; root: string | null; entries: DirEntry[] }): WorkspaceState {
+export function handleReplace(
+  state: WorkspaceState,
+  payload: { name: string | null; root: string | null; entries: DirEntry[] }
+): WorkspaceState {
   const { name, root, entries } = payload
   return {
     name,
@@ -222,15 +236,18 @@ export function handleExpandStart(state: WorkspaceState, payload: { id: string }
   const { id } = payload
   return {
     ...state,
-    nodes: updateNode(state.nodes, id, n => ({ ...n, loadState: 'loading', children: [] }))
+    nodes: updateNode(state.nodes, id, (n) => ({ ...n, loadState: 'loading', children: [] }))
   }
 }
 
-export function handleExpandSuccess(state: WorkspaceState, payload: { id: string; entries: DirEntry[] }): WorkspaceState {
+export function handleExpandSuccess(
+  state: WorkspaceState,
+  payload: { id: string; entries: DirEntry[] }
+): WorkspaceState {
   const { id, entries } = payload
   return {
     ...state,
-    nodes: updateNode(state.nodes, id, n => ({
+    nodes: updateNode(state.nodes, id, (n) => ({
       ...n,
       loadState: 'loaded',
       children: entries.map(entryToNode).sort(sortNodes)
@@ -238,16 +255,22 @@ export function handleExpandSuccess(state: WorkspaceState, payload: { id: string
   }
 }
 
-export function handleExpandError(state: WorkspaceState, payload: { id: string; error: string }): WorkspaceState {
+export function handleExpandError(
+  state: WorkspaceState,
+  payload: { id: string; error: string }
+): WorkspaceState {
   const { id, error } = payload
   return {
     ...state,
-    nodes: updateNode(state.nodes, id, n => ({ ...n, loadState: 'error', children: [] })),
+    nodes: updateNode(state.nodes, id, (n) => ({ ...n, loadState: 'error', children: [] })),
     error
   }
 }
 
-export function handleSelect(state: WorkspaceState, payload: { id: string | null }): WorkspaceState {
+export function handleSelect(
+  state: WorkspaceState,
+  payload: { id: string | null }
+): WorkspaceState {
   const { id } = payload
   return { ...state, selectedId: id }
 }
@@ -256,7 +279,10 @@ export function handleApplyWatchEvent(state: WorkspaceState, event: WatchEvent):
   return applyWatchEvent(state, event)
 }
 
-export function handleInsertEntry(state: WorkspaceState, payload: { parentPath: string; entry: DirEntry }): WorkspaceState {
+export function handleInsertEntry(
+  state: WorkspaceState,
+  payload: { parentPath: string; entry: DirEntry }
+): WorkspaceState {
   // Application-originated create (the watcher event for it is suppressed
   // in main, so the renderer applies it directly, T061).
   const { parentPath, entry } = payload
@@ -272,7 +298,10 @@ export function handleRemoveEntry(state: WorkspaceState, payload: { id: string }
   }
 }
 
-export function handleMoveEntry(state: WorkspaceState, payload: { fromPath: string; toPath: string; entry: DirEntry }): WorkspaceState {
+export function handleMoveEntry(
+  state: WorkspaceState,
+  payload: { fromPath: string; toPath: string; entry: DirEntry }
+): WorkspaceState {
   // Application-originated rename/move. The relocated node is removed from
   // its old position; it is inserted into the target parent only when that
   // parent is currently loaded (otherwise it appears when the parent is
@@ -283,9 +312,8 @@ export function handleMoveEntry(state: WorkspaceState, payload: { fromPath: stri
   const parent = parentPathOf(toPath)
   if (parent === '') {
     const moved = entryToNode(entry)
-    const normalized: TreeNode = entry.kind === 'directory'
-      ? { ...moved, loadState: 'unloaded', children: [] }
-      : moved
+    const normalized: TreeNode =
+      entry.kind === 'directory' ? { ...moved, loadState: 'unloaded', children: [] } : moved
     if (findNodeById(nodesWithout, normalized.id)) return { ...state, nodes: nodesWithout }
     return {
       ...state,
@@ -297,13 +325,13 @@ export function handleMoveEntry(state: WorkspaceState, payload: { fromPath: stri
     return { ...state, nodes: nodesWithout }
   }
   const moved = entryToNode(entry)
-  const normalized: TreeNode = entry.kind === 'directory'
-    ? { ...moved, loadState: 'unloaded', children: [] }
-    : moved
-  if (findNodeById(found.parent.children ?? [], normalized.id)) return { ...state, nodes: nodesWithout }
+  const normalized: TreeNode =
+    entry.kind === 'directory' ? { ...moved, loadState: 'unloaded', children: [] } : moved
+  if (findNodeById(found.parent.children ?? [], normalized.id))
+    return { ...state, nodes: nodesWithout }
   return {
     ...state,
-    nodes: updateNode(nodesWithout, parent, n => ({
+    nodes: updateNode(nodesWithout, parent, (n) => ({
       ...n,
       children: insertSorted(n.children ?? [], normalized)
     }))

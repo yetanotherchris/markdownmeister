@@ -47,14 +47,14 @@ describe('documents reducer', () => {
         payload: { id: a.id, cursorOffset: 42, scrollTop: 137 }
       })
 
-      const aAfter = state.documents.find(d => d.id === a.id)!
+      const aAfter = state.documents.find((d) => d.id === a.id)!
       expect(aAfter.cursorOffset).toBe(42)
       expect(aAfter.scrollTop).toBe(137)
       expect(aAfter.editorState).toBe('live')
       expect(aAfter.content).toBe('alpha')
 
       // The dirty tab keeps its state while hidden.
-      const bAfter = state.documents.find(d => d.id === b.id)!
+      const bAfter = state.documents.find((d) => d.id === b.id)!
       expect(bAfter.dirty).toBe(true)
       expect(bAfter.content).toBe('beta edited')
 
@@ -63,7 +63,7 @@ describe('documents reducer', () => {
       // to restore when the editor becomes active again (REACTIVATE test).
       state = documentsReducer(state, { type: 'ACTIVATE', payload: { id: b.id } })
       expect(state.activeId).toBe(b.id)
-      expect(state.documents.find(d => d.id === b.id)!.dirty).toBe(true)
+      expect(state.documents.find((d) => d.id === b.id)!.dirty).toBe(true)
       expect(aAfter.cursorOffset).toBe(42)
       expect(aAfter.scrollTop).toBe(137)
     })
@@ -72,7 +72,7 @@ describe('documents reducer', () => {
       const s1 = openTwoFiles()
       const doc = s1.documents[0]
       const s2 = documentsReducer(s1, { type: 'EVICT', payload: { id: doc.id } })
-      const evicted = s2.documents.find(d => d.id === doc.id)!
+      const evicted = s2.documents.find((d) => d.id === doc.id)!
       expect(evicted.editorState).toBe('evicted')
       expect(evicted.content).toBe('alpha')
       expect(evicted.baseline).toBe('alpha')
@@ -87,7 +87,7 @@ describe('documents reducer', () => {
         type: 'REACTIVATE',
         payload: { id: doc.id, cursorOffset: 42, scrollTop: 137 }
       })
-      const restored = s3.documents.find(d => d.id === doc.id)!
+      const restored = s3.documents.find((d) => d.id === doc.id)!
       expect(restored.editorState).toBe('live')
       expect(restored.cursorOffset).toBe(42)
       expect(restored.scrollTop).toBe(137)
@@ -100,14 +100,14 @@ describe('documents reducer', () => {
         type: 'EXTERNAL_CHANGE',
         payload: { path: 'a.md', kind: 'changed' }
       })
-      const before = state.documents.find(d => d.id === doc.id)!
+      const before = state.documents.find((d) => d.id === doc.id)!
       expect(before.externalState).toBe('changedOnDisk')
 
       state = documentsReducer(state, {
         type: 'RELOAD',
         payload: { id: doc.id, content: 'new content from disk' }
       })
-      const after = state.documents.find(d => d.id === doc.id)!
+      const after = state.documents.find((d) => d.id === doc.id)!
       expect(after.content).toBe('new content from disk')
       expect(after.baseline).toBe('new content from disk')
       expect(after.dirty).toBe(false)
@@ -121,7 +121,7 @@ describe('documents reducer', () => {
       expect(planClose(s1, doc.id)).toBe('close')
       const s2 = documentsReducer(s1, { type: 'CLOSE', payload: { id: doc.id } })
       expect(s2.documents).toHaveLength(1)
-      expect(s2.documents.find(d => d.id === doc.id)).toBeUndefined()
+      expect(s2.documents.find((d) => d.id === doc.id)).toBeUndefined()
     })
 
     it('planClose asks for confirmation for a dirty document', () => {
@@ -145,7 +145,7 @@ describe('documents reducer', () => {
         type: 'REROUTE_PATHS',
         payload: { fromPath: 'a.md', toPath: 'renamed.md' }
       })
-      const moved = s2.documents.find(d => d.id === doc.id)!
+      const moved = s2.documents.find((d) => d.id === doc.id)!
       expect(moved).toBeDefined()
       expect(moved.path).toBe('renamed.md')
       expect(moved.title).toBe('renamed.md')
@@ -156,7 +156,11 @@ describe('documents reducer', () => {
 
     it('reroutes every open document inside a moved folder', () => {
       let state = createSession()
-      for (const [path, name] of [['notes/a.md', 'a.md'], ['notes/sub/b.md', 'b.md'], ['other/c.md', 'c.md']] as const) {
+      for (const [path, name] of [
+        ['notes/a.md', 'a.md'],
+        ['notes/sub/b.md', 'b.md'],
+        ['other/c.md', 'c.md']
+      ] as const) {
         state = documentsReducer(state, {
           type: 'OPEN_EXISTING',
           payload: { value: { path, name, content: name, mtimeMs: 1, size: 1 } }
@@ -166,7 +170,7 @@ describe('documents reducer', () => {
         type: 'REROUTE_PATHS',
         payload: { fromPath: 'notes', toPath: 'archive/notes' }
       })
-      const paths = state.documents.map(d => d.path)
+      const paths = state.documents.map((d) => d.path)
       expect(paths).toContain('archive/notes/a.md')
       expect(paths).toContain('archive/notes/sub/b.md')
       expect(paths).toContain('other/c.md')
@@ -179,9 +183,9 @@ describe('documents reducer', () => {
         payload: { fromPath: 'a.md', toPath: 'b.md' }
       })
       expect(s2.documents).toHaveLength(2)
-      expect(s2.documents.find(d => d.path === 'b.md')).toBeDefined()
+      expect(s2.documents.find((d) => d.path === 'b.md')).toBeDefined()
       // The rerouted document keeps its identity (id), so tabs never merge.
-      expect(s2.documents.find(d => d.id === 'a.md')?.path).toBe('b.md')
+      expect(s2.documents.find((d) => d.id === 'a.md')?.path).toBe('b.md')
     })
 
     it('ignores documents without a path and non-matching paths', () => {
@@ -204,7 +208,7 @@ describe('documents reducer', () => {
         type: 'REROUTE_PATHS',
         payload: { fromPath: 'a.md', toPath: 'renamed.md' }
       })
-      const moved = s2.documents.find(d => d.id === 'a.md')!
+      const moved = s2.documents.find((d) => d.id === 'a.md')!
       expect(moved.path).toBe('renamed.md')
       expect(moved.content).toBe('edited')
       expect(moved.dirty).toBe(true)

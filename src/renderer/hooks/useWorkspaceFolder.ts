@@ -17,7 +17,6 @@ export interface WorkspaceFolderApi {
   revealExplorer: () => void
 }
 
-
 export function useWorkspaceFolder(opts: {
   dispatchWorkspace: React.Dispatch<WorkspaceAction>
   sessionRef: React.MutableRefObject<EditingSession>
@@ -31,15 +30,18 @@ export function useWorkspaceFolder(opts: {
   const pendingFolderOpenRef = useRef<WorkspaceInfo | null>(null)
 
   const dirtyWorkspaceRelativeDocs = useCallback(
-    () => sessionRef.current.documents.filter(
-      d => session.isDirtyLive(d) && !!d.path && isWorkspaceRelative(d.path)
-    ),
+    () =>
+      sessionRef.current.documents.filter(
+        (d) => session.isDirtyLive(d) && !!d.path && isWorkspaceRelative(d.path)
+      ),
     [session, sessionRef]
   )
 
   const revealExplorer = useCallback(() => {
     updateSettings({ explorerVisible: true })
-    window.api.updateSettings({ explorerVisible: true }).catch(() => { /* ignore */ })
+    window.api.updateSettings({ explorerVisible: true }).catch(() => {
+      /* ignore */
+    })
     const panel = sidebarPanelRef.current
     if (panel && panel.isCollapsed()) panel.expand()
   }, [sidebarPanelRef])
@@ -129,13 +131,7 @@ export function useWorkspaceFolder(opts: {
         releaseDialogSurface()
       }
     },
-    [
-      commitFolderOpen,
-      dialogInFlightRef,
-      dirtyWorkspaceRelativeDocs,
-      releaseDialogSurface,
-      session
-    ]
+    [commitFolderOpen, dialogInFlightRef, dirtyWorkspaceRelativeDocs, releaseDialogSurface, session]
   )
 
   const runFolderOpenFlow = useCallback(

@@ -26,14 +26,18 @@ function dialogErrorString(val: unknown): string {
 
 function dialogStringList(val: unknown, name: string): string[] {
   if (!Array.isArray(val) || val.length > MAX_LIST) {
-    throw Object.assign(new Error(`${name} must be an array of strings`), { code: 'IO' as ErrorCode })
+    throw Object.assign(new Error(`${name} must be an array of strings`), {
+      code: 'IO' as ErrorCode
+    })
   }
   return val.map((v, i) => dialogString(v, `${name}[${i}]`))
 }
 
 export function validateNativeDialogRequest(val: unknown): NativeDialogRequest {
   if (!val || typeof val !== 'object') {
-    throw Object.assign(new Error('Invalid dialog request: expected an object'), { code: 'IO' as ErrorCode })
+    throw Object.assign(new Error('Invalid dialog request: expected an object'), {
+      code: 'IO' as ErrorCode
+    })
   }
   const req = val as Record<string, unknown>
   const kind = req.kind

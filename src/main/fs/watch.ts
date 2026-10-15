@@ -39,30 +39,38 @@ export class WorkspaceWatcher {
         clearTimeout(debounced.get(debounceKey))
       }
 
-      debounced.set(debounceKey, setTimeout(() => {
-        debounced.delete(debounceKey)
+      debounced.set(
+        debounceKey,
+        setTimeout(() => {
+          debounced.delete(debounceKey)
 
-        if (this.isSuppressed(filePath)) {
-          return
-        }
-
-        const rel = filePath.slice(root.length).replace(/^[/\\]/, '').split('\\').join('/')
-
-        if (!isDir && !isMarkdown(filePath)) {
-          return
-        }
-
-        const kind = eventType === 'add' ? 'added' : eventType === 'unlink' ? 'removed' : 'changed'
-
-        const cbRef = this.callback
-        if (cbRef) {
-          cbRef.onWorkspaceChanged({ path: rel, kind, isDirectory: isDir })
-
-          if (!isDir && (kind === 'changed' || kind === 'removed')) {
-            cbRef.onDocumentChanged({ path: rel, kind })
+          if (this.isSuppressed(filePath)) {
+            return
           }
-        }
-      }, 100))
+
+          const rel = filePath
+            .slice(root.length)
+            .replace(/^[/\\]/, '')
+            .split('\\')
+            .join('/')
+
+          if (!isDir && !isMarkdown(filePath)) {
+            return
+          }
+
+          const kind =
+            eventType === 'add' ? 'added' : eventType === 'unlink' ? 'removed' : 'changed'
+
+          const cbRef = this.callback
+          if (cbRef) {
+            cbRef.onWorkspaceChanged({ path: rel, kind, isDirectory: isDir })
+
+            if (!isDir && (kind === 'changed' || kind === 'removed')) {
+              cbRef.onDocumentChanged({ path: rel, kind })
+            }
+          }
+        }, 100)
+      )
     }
 
     this.watcher.on('add', (p: string) => emit('add', p, false))
@@ -84,10 +92,9 @@ export class WorkspaceWatcher {
     }
   }
 
-
   private isSuppressed(filePath: string): boolean {
     const now = Date.now()
-    const norm = (p: string): string => process.platform === 'win32' ? p.toLowerCase() : p
+    const norm = (p: string): string => (process.platform === 'win32' ? p.toLowerCase() : p)
     const key = norm(filePath)
     for (const [suppressedRaw, timestamp] of this.suppressedPaths.entries()) {
       if (now - timestamp > 2000) {
@@ -95,8 +102,11 @@ export class WorkspaceWatcher {
         continue
       }
       const suppressed = norm(suppressedRaw)
-      if (key === suppressed || key.startsWith(suppressed + '/') ||
-          key.startsWith(suppressed + '\\')) {
+      if (
+        key === suppressed ||
+        key.startsWith(suppressed + '/') ||
+        key.startsWith(suppressed + '\\')
+      ) {
         this.suppressedPaths.set(suppressedRaw, now)
         return true
       }

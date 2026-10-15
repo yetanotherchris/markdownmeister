@@ -8,8 +8,10 @@ import type { SpellcheckLanguage } from '../shared/ipc-contract'
  */
 let systemLanguages: string[] | null = null
 
-
-export function applySpellcheckSetting(enabled: boolean, language: SpellcheckLanguage | null): void {
+export function applySpellcheckSetting(
+  enabled: boolean,
+  language: SpellcheckLanguage | null
+): void {
   const sess = session.defaultSession
   if (systemLanguages === null) {
     systemLanguages = sess.getSpellCheckerLanguages()

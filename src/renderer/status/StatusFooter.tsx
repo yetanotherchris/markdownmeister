@@ -11,9 +11,7 @@ interface StatusFooterProps {
   note?: string | null
 }
 
-
 const CHAR_WIDTH_PX = 8
-
 
 export default function StatusFooter({ activeDoc, workspaceRoot, note }: StatusFooterProps) {
   const [regionRef, regionSize] = useElementSize<HTMLDivElement>()
@@ -33,16 +31,18 @@ export default function StatusFooter({ activeDoc, workspaceRoot, note }: StatusF
   return (
     <footer className="app-footer" data-testid="status-footer">
       <span className="document-title" data-testid="footer-document">
-        {activeDoc
-          ? <>
-              {activeDoc.title}
-              {activeDoc.dirty && (
-                <span className="footer-dirty" aria-label="unsaved changes" title="Unsaved changes">
-                  {' \u2022'}
-                </span>
-              )}
-            </>
-          : <span className="footer-placeholder">No document open</span>}
+        {activeDoc ? (
+          <>
+            {activeDoc.title}
+            {activeDoc.dirty && (
+              <span className="footer-dirty" aria-label="unsaved changes" title="Unsaved changes">
+                {' \u2022'}
+              </span>
+            )}
+          </>
+        ) : (
+          <span className="footer-placeholder">No document open</span>
+        )}
       </span>
       <div ref={regionRef} className="footer-workspace-region">
         <span
@@ -50,7 +50,11 @@ export default function StatusFooter({ activeDoc, workspaceRoot, note }: StatusF
           data-testid="footer-workspace"
           title={workspaceRoot ?? undefined}
         >
-          {hasWorkspace ? displayPath() : <span className="footer-placeholder">No folder open</span>}
+          {hasWorkspace ? (
+            displayPath()
+          ) : (
+            <span className="footer-placeholder">No folder open</span>
+          )}
         </span>
       </div>
       {note && (

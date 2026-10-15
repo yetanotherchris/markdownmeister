@@ -1,5 +1,3 @@
-
-
 export interface ToolbarLabel {
   title: string
   ariaLabel: string

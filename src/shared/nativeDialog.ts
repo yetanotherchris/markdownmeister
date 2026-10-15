@@ -45,14 +45,16 @@ const OK = 'OK'
 /** Save / Discard / Cancel, the shape shared by unsaved-close, unsaved-quit
  *  and folder-open. `save` is the default (Return) on every platform; Cancel is
  *  the Escape choice. */
-function saveDiscardCancel(saveLabel: string, discardLabel: string): Record<DialogPlatform, ButtonLayout> {
+function saveDiscardCancel(
+  saveLabel: string,
+  discardLabel: string
+): Record<DialogPlatform, ButtonLayout> {
   return {
     win32: { buttons: [saveLabel, discardLabel, CANCEL], defaultId: 0, cancelId: 2 },
     darwin: { buttons: [saveLabel, CANCEL, discardLabel], defaultId: 0, cancelId: 1 },
     linux: { buttons: [CANCEL, discardLabel, saveLabel], defaultId: 2, cancelId: 0 }
   }
 }
-
 
 const keepReplace: Record<DialogPlatform, ButtonLayout> = {
   win32: { buttons: ['Keep My Version', 'Reload from Disk'], defaultId: 0, cancelId: 0 },
@@ -67,13 +69,11 @@ const okSaveAs: Record<DialogPlatform, ButtonLayout> = {
   linux: { buttons: [OK, 'Save As...'], defaultId: 1, cancelId: 0 }
 }
 
-
 const deleteCancel: Record<DialogPlatform, ButtonLayout> = {
   win32: { buttons: ['Delete', CANCEL], defaultId: 0, cancelId: 1 },
   darwin: { buttons: ['Delete', CANCEL], defaultId: 0, cancelId: 1 },
   linux: { buttons: [CANCEL, 'Delete'], defaultId: 1, cancelId: 0 }
 }
-
 
 const permanentDeleteCancel: Record<DialogPlatform, ButtonLayout> = {
   win32: { buttons: ['Delete Permanently', CANCEL], defaultId: 1, cancelId: 1 },
@@ -106,17 +106,19 @@ function layoutFor(platform: DialogPlatform, request: NativeDialogRequest): Butt
   }
 }
 
-
 type MessageResult = { type: NativeDialogLayout['type']; message: string; detail: string }
 
 function joinList(header: string, titles: string[], error: string | undefined): string[] {
   const lines: string[] = []
-  if (titles.length > 0) lines.push(header, ...titles.map(t => `• ${t}`))
+  if (titles.length > 0) lines.push(header, ...titles.map((t) => `• ${t}`))
   if (error) lines.push(error)
   return lines
 }
 
-const messagesForKind: Record<NativeDialogRequest['kind'], (req: NativeDialogRequest) => MessageResult> = {
+const messagesForKind: Record<
+  NativeDialogRequest['kind'],
+  (req: NativeDialogRequest) => MessageResult
+> = {
   'unsaved-close': (req) => {
     const request = req as Extract<NativeDialogRequest, { kind: 'unsaved-close' }>
     const lines = ["Your changes will be lost if you don't save them."]
@@ -129,7 +131,11 @@ const messagesForKind: Record<NativeDialogRequest['kind'], (req: NativeDialogReq
   },
   'unsaved-quit': (req) => {
     const request = req as Extract<NativeDialogRequest, { kind: 'unsaved-quit' }>
-    const lines = joinList('The following documents have unsaved changes:', request.documentTitles, undefined)
+    const lines = joinList(
+      'The following documents have unsaved changes:',
+      request.documentTitles,
+      undefined
+    )
     lines.push("Your changes will be lost if you don't save them.")
     if (request.error) lines.push(request.error)
     return {
@@ -140,7 +146,11 @@ const messagesForKind: Record<NativeDialogRequest['kind'], (req: NativeDialogReq
   },
   'folder-open': (req) => {
     const request = req as Extract<NativeDialogRequest, { kind: 'folder-open' }>
-    const lines = joinList('The following documents have unsaved changes:', request.documentTitles, undefined)
+    const lines = joinList(
+      'The following documents have unsaved changes:',
+      request.documentTitles,
+      undefined
+    )
     lines.push("Your changes will be lost if you don't save them.")
     if (request.error) lines.push(request.error)
     return {
@@ -169,7 +179,7 @@ const messagesForKind: Record<NativeDialogRequest['kind'], (req: NativeDialogReq
     const request = req as Extract<NativeDialogRequest, { kind: 'delete-to-trash' }>
     const lines = [request.detail]
     if (request.cleanToCloseTitles.length > 0) {
-      lines.push(...request.cleanToCloseTitles.map(t => `This will close ${t}.`))
+      lines.push(...request.cleanToCloseTitles.map((t) => `This will close ${t}.`))
     }
     lines.push('It will be moved to the recycle bin or trash.')
     return {
@@ -184,7 +194,7 @@ const messagesForKind: Record<NativeDialogRequest['kind'], (req: NativeDialogReq
       `${request.targetName} could not be moved to the recycle bin or trash on this system. Deleting it permanently cannot be undone.`
     ]
     if (request.cleanToCloseTitles.length > 0) {
-      lines.push(...request.cleanToCloseTitles.map(t => `This will close ${t}.`))
+      lines.push(...request.cleanToCloseTitles.map((t) => `This will close ${t}.`))
     }
     lines.push('Delete permanently anyway?')
     return {
@@ -221,7 +231,10 @@ function messagesFor(request: NativeDialogRequest): MessageResult {
 
 /** Builds `showMessageBox` options for a request. An empty title lets the
  * operating system display the application name. */
-export function buildNativeDialogOptions(platform: string, request: NativeDialogRequest): NativeDialogLayout {
+export function buildNativeDialogOptions(
+  platform: string,
+  request: NativeDialogRequest
+): NativeDialogLayout {
   const p = platformOf(platform)
   const layout = layoutFor(p, request)
   const { type, message, detail } = messagesFor(request)
@@ -237,8 +250,11 @@ export function buildNativeDialogOptions(platform: string, request: NativeDialog
   }
 }
 
-
-export function decisionFromResponse(platform: string, request: NativeDialogRequest, response: number): NativeDialogDecision {
+export function decisionFromResponse(
+  platform: string,
+  request: NativeDialogRequest,
+  response: number
+): NativeDialogDecision {
   const p = platformOf(platform)
   const { buttons, cancelId } = layoutFor(p, request)
   if (response === cancelId) {
@@ -271,7 +287,6 @@ export function decisionFromResponse(platform: string, request: NativeDialogRequ
   // input mapped in main: fail closed to the safe outcome.
   return cancelDecision(request)
 }
-
 
 function cancelDecision(request: NativeDialogRequest): NativeDialogDecision {
   switch (request.kind) {

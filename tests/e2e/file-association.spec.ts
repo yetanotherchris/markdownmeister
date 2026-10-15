@@ -3,7 +3,13 @@ import { spawn } from 'child_process'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { launchApp, closeAppSafely, openFolder, electronLaunchArgs, messageBoxCallCount } from './launch'
+import {
+  launchApp,
+  closeAppSafely,
+  openFolder,
+  electronLaunchArgs,
+  messageBoxCallCount
+} from './launch'
 
 /**
  * Spec 006 suite (contracts/os-open.md): OS-initiated opens, the Windows
@@ -125,7 +131,10 @@ test('US1/FR-007 an already-open file OS-open activates its existing tab (no dup
   await expect(window.getByRole('tab', { name: 'alpha.md' })).toBeVisible()
   await window.getByRole('treeitem').getByText('beta.md').click({ button: 'middle' })
   await expect(window.getByRole('tab')).toHaveCount(2)
-  await expect(window.getByRole('tab', { name: 'beta.md' })).toHaveAttribute('aria-selected', 'true')
+  await expect(window.getByRole('tab', { name: 'beta.md' })).toHaveAttribute(
+    'aria-selected',
+    'true'
+  )
 
   await launchSecondary(path.join(testFolder, 'alpha.md'))
 
@@ -156,9 +165,7 @@ test('US2/FR-009 a folder OS-open preserves the unsaved-work confirmation', asyn
     // FR-009: the dirty workspace-relative document triggers the folder-open
     // confirmation (stubbed to Cancel), the OS folder is never committed.
     await expect.poll(async () => messageBoxCallCount(app)).toBeGreaterThanOrEqual(1)
-    await expect(window.getByTestId('footer-workspace')).toContainText(
-      path.basename(testFolder)
-    )
+    await expect(window.getByTestId('footer-workspace')).toContainText(path.basename(testFolder))
     await expect(window.getByTestId('footer-workspace')).not.toContainText(
       path.basename(otherFolder)
     )

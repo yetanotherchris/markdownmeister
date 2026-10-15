@@ -41,7 +41,11 @@ export function createFile(root: string, parentRelativePath: string, name: strin
   }
 }
 
-export function moveEntry(root: string, fromRelativePath: string, toRelativePath: string): DirEntry {
+export function moveEntry(
+  root: string,
+  fromRelativePath: string,
+  toRelativePath: string
+): DirEntry {
   const { resolved: fromResolved } = resolveWithinRoot(root, fromRelativePath)
   const { resolved: toResolved } = resolveNonExistent(root, toRelativePath)
 
@@ -58,8 +62,8 @@ export function moveEntry(root: string, fromRelativePath: string, toRelativePath
   // no-op and the case change would be lost.
   const toLexical = path.resolve(root, toRelativePath)
 
-  const caseOnlyRename = fs.existsSync(toResolved) &&
-    fromReal.toLowerCase() === toLexical.toLowerCase()
+  const caseOnlyRename =
+    fs.existsSync(toResolved) && fromReal.toLowerCase() === toLexical.toLowerCase()
 
   if (fs.existsSync(toResolved) && !caseOnlyRename) {
     throw Object.assign(new Error('Target already exists'), { code: 'CONFLICT' })
@@ -82,7 +86,11 @@ export function moveEntry(root: string, fromRelativePath: string, toRelativePath
   }
 }
 
-export async function trashEntry(root: string, relativePath: string, permanent?: boolean): Promise<TrashReceipt> {
+export async function trashEntry(
+  root: string,
+  relativePath: string,
+  permanent?: boolean
+): Promise<TrashReceipt> {
   const { resolved } = resolveWithinRoot(root, relativePath)
 
   if (permanent) {

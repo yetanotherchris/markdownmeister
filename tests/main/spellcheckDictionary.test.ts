@@ -46,10 +46,12 @@ describe('addSpellcheckWord', () => {
   })
 
   it('dedupes and preserves sibling keys (settings/recentItems)', () => {
-    const file = tempConfig(JSON.stringify({
-      recentItems: [],
-      settings: { sidebarWidth: 30 }
-    }))
+    const file = tempConfig(
+      JSON.stringify({
+        recentItems: [],
+        settings: { sidebarWidth: 30 }
+      })
+    )
     addSpellcheckWord(file, 'recieve')
     addSpellcheckWord(file, 'recieve')
     const whole = JSON.parse(fs.readFileSync(file, 'utf-8'))

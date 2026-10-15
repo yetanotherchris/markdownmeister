@@ -2,7 +2,6 @@ import type NSpell from 'nspell'
 import type { SpellcheckLanguage } from '../../shared/ipc-contract'
 import { getChecker } from '../domain/spellcheck'
 
-
 export interface SpellcheckRuntime {
   enabled: boolean
   language: SpellcheckLanguage | null
@@ -18,7 +17,6 @@ export const spellcheckRuntime: SpellcheckRuntime = {
   version: 0,
   checker: getChecker(null)
 }
-
 
 const listeners = new Set<() => void>()
 

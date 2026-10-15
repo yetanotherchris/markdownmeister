@@ -63,7 +63,11 @@ describe('loadWindowStateFile (spec 011 FR-004/FR-006)', () => {
 
   it('rejects non-finite or non-positive geometry', () => {
     const bad: Array<Partial<typeof VALID>> = [
-      { x: NaN }, { y: Infinity }, { width: 0 }, { width: -5 }, { height: -1 }
+      { x: NaN },
+      { y: Infinity },
+      { width: 0 },
+      { width: -5 },
+      { height: -1 }
     ]
     for (const patch of bad) {
       const file = tempConfigFile(JSON.stringify({ windowState: { ...VALID, ...patch } }))
@@ -73,10 +77,18 @@ describe('loadWindowStateFile (spec 011 FR-004/FR-006)', () => {
   })
 
   it('defaults isMaximized to false when the field is missing', () => {
-    const file = tempConfigFile(JSON.stringify({
-      windowState: { x: 1, y: 2, width: 300, height: 200 }
-    }))
-    expect(loadWindowStateFile(file)).toEqual({ x: 1, y: 2, width: 300, height: 200, isMaximized: false })
+    const file = tempConfigFile(
+      JSON.stringify({
+        windowState: { x: 1, y: 2, width: 300, height: 200 }
+      })
+    )
+    expect(loadWindowStateFile(file)).toEqual({
+      x: 1,
+      y: 2,
+      width: 300,
+      height: 200,
+      isMaximized: false
+    })
     fs.rmSync(path.dirname(file), { recursive: true, force: true })
   })
 })
@@ -91,13 +103,27 @@ describe('writeWindowStateFile (FR-003 read-modify-write)', () => {
 
   it('preserves a pre-existing recentItems and settings section', () => {
     const file = tempConfigFile()
-    const recentItems: RecentItem[] = [{
-      path: '/w/notes.md', kind: 'file', name: 'notes.md', lastOpenedAt: 123
-    }]
-    fs.writeFileSync(file, JSON.stringify({
-      recentItems,
-      settings: { sidebarWidth: 30, themeOverride: null, explorerVisible: true, editorFont: 'serif' }
-    }), 'utf-8')
+    const recentItems: RecentItem[] = [
+      {
+        path: '/w/notes.md',
+        kind: 'file',
+        name: 'notes.md',
+        lastOpenedAt: 123
+      }
+    ]
+    fs.writeFileSync(
+      file,
+      JSON.stringify({
+        recentItems,
+        settings: {
+          sidebarWidth: 30,
+          themeOverride: null,
+          explorerVisible: true,
+          editorFont: 'serif'
+        }
+      }),
+      'utf-8'
+    )
 
     writeWindowStateFile(file, VALID)
     const whole = readConfigFile(file)
@@ -124,7 +150,11 @@ describe('snapshotToState (FR-008: never persist while minimized)', () => {
 
   it('returns the state for a normal window', () => {
     expect(snapshotToState(snapshot)).toEqual({
-      x: 10, y: 20, width: 800, height: 600, isMaximized: false
+      x: 10,
+      y: 20,
+      width: 800,
+      height: 600,
+      isMaximized: false
     })
   })
 

@@ -196,7 +196,8 @@ test('US4 Clear Recent Items empties the history, untouched session, persists ac
   expect((await recentItemsState(ctx)).length).toBe(2)
 
   await clickMenuAction(ctx, 'Clear Recent Items')
-  await expect.poll(async () => await recentItemsState(ctx))
+  await expect
+    .poll(async () => await recentItemsState(ctx))
     .toEqual([{ label: 'No Recent Items', enabled: false }])
   expect(await recentItemsState(ctx)).toEqual([{ label: 'No Recent Items', enabled: false }])
 
@@ -227,7 +228,9 @@ test('FR-011 a config write failure is a quiet footer note and does not fail the
   await expect(ctx.window.locator('.document-title')).toContainText('external.md')
 
   // ...and the persistence failure surfaces as a quiet, non-modal footer note.
-  await expect(ctx.window.getByTestId('footer-note')).toContainText('Recent Items could not be saved')
+  await expect(ctx.window.getByTestId('footer-note')).toContainText(
+    'Recent Items could not be saved'
+  )
 })
 
 test('FR-011 a config write failure during a FOLDER open is non-fatal', async () => {
@@ -241,7 +244,9 @@ test('FR-011 a config write failure during a FOLDER open is non-fatal', async ()
   // The folder still commits as the workspace (FR-003/FR-011)...
   await expect(ctx.window.getByRole('treeitem').getByText('alpha.md')).toBeVisible()
   // ...and the persistence failure surfaces as a quiet footer note.
-  await expect(ctx.window.getByTestId('footer-note')).toContainText('Recent Items could not be saved')
+  await expect(ctx.window.getByTestId('footer-note')).toContainText(
+    'Recent Items could not be saved'
+  )
 })
 
 test('FR-011 Clear Recent Items with a broken config reports quietly', async () => {
@@ -256,6 +261,8 @@ test('FR-011 Clear Recent Items with a broken config reports quietly', async () 
 
   // The clear is best-effort: the failure is a quiet note, never a modal, and
   // the session is untouched.
-  await expect(ctx.window.getByTestId('footer-note')).toContainText('Recent Items could not be cleared')
+  await expect(ctx.window.getByTestId('footer-note')).toContainText(
+    'Recent Items could not be cleared'
+  )
   await expect(ctx.window.locator('.document-title')).toContainText('external.md')
 })

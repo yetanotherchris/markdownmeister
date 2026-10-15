@@ -10,10 +10,9 @@ import {
   moveTargetPath,
   validateEntryName,
   entryName,
-  planDelete,
-  deleteDescription,
-  DeletePlan,
+  type DeletePlan
 } from '../explorer/operations'
+import { useTreeDelete } from './useTreeDelete'
 import type { DialogQueue } from './useDialogQueue'
 import type { DocumentSessionApi } from './useDocumentSession'
 import { useFileOpenGesture } from './useFileOpenGesture'
@@ -49,7 +48,6 @@ export interface WorkspaceTreeApi {
   handleTreeMove: (id: string, targetParentId: string) => void
 }
 
-
 export function useWorkspaceTree(opts: {
   dispatch: React.Dispatch<DocumentsAction>
   dispatchWorkspace: React.Dispatch<WorkspaceAction>
@@ -73,215 +71,188 @@ export function useWorkspaceTree(opts: {
     createCounterRef,
     setPendingEditId
   } = opts
-  const { dialogInFlightRef, releaseDialogSurface, showOperationError } = dialog
-  const { doClose, isDirtyLive, openFileFromExplorer } = session
+  const { showOperationError } = dialog
+  const { openFileFromExplorer } = session
+  const { cleanupAfterDelete, runDeleteConfirmation } = useTreeDelete({
+    dispatchWorkspace,
+    sessionRef,
+    workspaceRef,
+    dialog,
+    session
+  })
 
-  const handleTreeSelect = useCallback((id: string | null) => {
-    dispatchWorkspace({ type: 'SELECT', payload: { id } })
-  }, [dispatchWorkspace])
+  const handleTreeSelect = useCallback(
+    (id: string | null) => {
+      dispatchWorkspace({ type: 'SELECT', payload: { id } })
+    },
+    [dispatchWorkspace]
+  )
 
-  const handleTreeActivate = useCallback(async (id: string) => {
-    const node = findNodeById(workspaceRef.current.nodes, id)
-    if (!node || node.kind !== 'file') return
+  const handleTreeActivate = useCallback(
+    async (id: string) => {
+      const node = findNodeById(workspaceRef.current.nodes, id)
+      if (!node || node.kind !== 'file') return
 
-    const result = await window.api.readFile(id)
-    if (result.ok) {
-      openFileFromExplorer(result.value)
-    }
-  }, [openFileFromExplorer, workspaceRef])
+      const result = await window.api.readFile(id)
+      if (result.ok) {
+        openFileFromExplorer(result.value)
+      }
+    },
+    [openFileFromExplorer, workspaceRef]
+  )
 
   const { handleFileOpen } = useFileOpenGesture({ sessionRef, session })
 
-  const handleTreeToggle = useCallback(async (id: string, isLoaded: boolean) => {
-    if (isLoaded) {
-      return
-    }    dispatchWorkspace({ type: 'EXPAND_START', payload: { id } })
-    const result = await window.api.readDir(id)
-    if (result.ok) {
-      dispatchWorkspace({ type: 'EXPAND_SUCCESS', payload: { id, entries: result.value } })
-    } else {
-      dispatchWorkspace({ type: 'EXPAND_ERROR', payload: { id, error: result.message } })
-    }
-  }, [dispatchWorkspace])
+  const handleTreeToggle = useCallback(
+    async (id: string, isLoaded: boolean) => {
+      if (isLoaded) {
+        return
+      }
+      dispatchWorkspace({ type: 'EXPAND_START', payload: { id } })
+      const result = await window.api.readDir(id)
+      if (result.ok) {
+        dispatchWorkspace({ type: 'EXPAND_SUCCESS', payload: { id, entries: result.value } })
+      } else {
+        dispatchWorkspace({ type: 'EXPAND_ERROR', payload: { id, error: result.message } })
+      }
+    },
+    [dispatchWorkspace]
+  )
 
-  const applyMove = useCallback(async (fromPath: string, toPath: string) => {
-    const result = await window.api.moveEntry(fromPath, toPath)
-    if (!result.ok) {
-      void showOperationError(result.message)
-      return false
-    }
-    dispatchWorkspace({ type: 'MOVE_ENTRY', payload: { fromPath, toPath, entry: result.value } })
-    dispatchWorkspace({ type: 'SELECT', payload: { id: toPath } })
-    dispatch({ type: 'REROUTE_PATHS', payload: { fromPath, toPath } })
-    return true
-  }, [dispatch, dispatchWorkspace, showOperationError])
+  const applyMove = useCallback(
+    async (fromPath: string, toPath: string) => {
+      const result = await window.api.moveEntry(fromPath, toPath)
+      if (!result.ok) {
+        void showOperationError(result.message)
+        return false
+      }
+      dispatchWorkspace({ type: 'MOVE_ENTRY', payload: { fromPath, toPath, entry: result.value } })
+      dispatchWorkspace({ type: 'SELECT', payload: { id: toPath } })
+      dispatch({ type: 'REROUTE_PATHS', payload: { fromPath, toPath } })
+      return true
+    },
+    [dispatch, dispatchWorkspace, showOperationError]
+  )
 
   // T058: inline rename commit from the tree (also used to name new entries).
-  const handleRename = useCallback(async (node: TreeNode, newName: string): Promise<boolean> => {
-    const error = validateEntryName(node.kind, node.name, newName)
-    if (error) {
-      void showOperationError(error)
-      return false
-    }
-    const fromPath = node.id
-    const toPath = renameTargetPath(fromPath, newName.trim())
-    // A confirmed creation commit opens the just-named file in a new active tab
-    // (FR-001); a failed commit (e.g. a name collision) leaves the placeholder
-    // pending so a retry still opens a tab.
-    const wasFileCreation = pendingCreateRef.current.has(fromPath) && node.kind === 'file'
-    setPendingEditId(null)
-    const moved = toPath === fromPath ? true : await applyMove(fromPath, toPath)
-    if (moved) {
-      pendingCreateRef.current.delete(fromPath)
-      if (wasFileCreation) await openCreatedFile(toPath, openFileFromExplorer, showOperationError)
-    }
-    return moved
-  }, [applyMove, openFileFromExplorer, pendingCreateRef, setPendingEditId, showOperationError])
-
-  const handleEditingCancelled = useCallback((id: string) => {
-    // A new entry the user declined to name: remove the placeholder.
-    if (!pendingCreateRef.current.has(id)) return
-    pendingCreateRef.current.delete(id)
-    setPendingEditId(null)
-    window.api.trashEntry(id).then((result) => {
-      if (result.ok) {
-        dispatchWorkspace({ type: 'REMOVE_ENTRY', payload: { id } })
-        return
+  const handleRename = useCallback(
+    async (node: TreeNode, newName: string): Promise<boolean> => {
+      const error = validateEntryName(node.kind, node.name, newName)
+      if (error) {
+        void showOperationError(error)
+        return false
       }
-      // The placeholder is still on disk; surface it so the user can retry.
-      const name = entryName(id)
-      void showOperationError(`Could not remove "${name}". It is still on disk — right-click and delete it, or remove it manually.`)
-    })
-  }, [dispatchWorkspace, pendingCreateRef, setPendingEditId, showOperationError])
-
-  // T057: create a file or folder from the tree context menu, ready to be named.
-  const handleCreate = useCallback(async (parent: TreeNode | null, kind: EntryKind) => {
-    const parentNode = parent ? findNodeById(workspaceRef.current.nodes, parent.id) : null
-    if (parentNode && parentNode.kind === 'directory' && parentNode.loadState !== 'loaded') {
-      // The target folder is collapsed: expand it first so the new entry is
-      // visible and can be named inline.
-      dispatchWorkspace({ type: 'EXPAND_START', payload: { id: parentNode.id } })
-      const read = await window.api.readDir(parentNode.id)
-      if (!read.ok) {
-        dispatchWorkspace({ type: 'EXPAND_ERROR', payload: { id: parentNode.id, error: read.message } })
-        return
+      const fromPath = node.id
+      const toPath = renameTargetPath(fromPath, newName.trim())
+      // A confirmed creation commit opens the just-named file in a new active tab
+      // (FR-001); a failed commit (e.g. a name collision) leaves the placeholder
+      // pending so a retry still opens a tab.
+      const wasFileCreation = pendingCreateRef.current.has(fromPath) && node.kind === 'file'
+      setPendingEditId(null)
+      const moved = toPath === fromPath ? true : await applyMove(fromPath, toPath)
+      if (moved) {
+        pendingCreateRef.current.delete(fromPath)
+        if (wasFileCreation) await openCreatedFile(toPath, openFileFromExplorer, showOperationError)
       }
-      dispatchWorkspace({ type: 'EXPAND_SUCCESS', payload: { id: parentNode.id, entries: read.value } })
-    }
+      return moved
+    },
+    [applyMove, openFileFromExplorer, pendingCreateRef, setPendingEditId, showOperationError]
+  )
 
-    // createCounterRef resets on app restart, so a leftover placeholder from a
-    // previous session can make the first name collide (CONFLICT); retry.
-    let result: Awaited<ReturnType<typeof window.api.createEntry>> | null = null
-    for (let attempt = 0; attempt < 5; attempt++) {
-      createCounterRef.current++
-      const placeholder = kind === 'file'
-        ? `new-file-${createCounterRef.current}.md`
-        : `new-folder-${createCounterRef.current}`
-      const attemptResult = await window.api.createEntry(parent ? parent.id : '.', placeholder, kind)
-      if (attemptResult.ok || attemptResult.code !== 'CONFLICT') {
-        result = attemptResult
-        break
-      }
-    }
-    if (!result || !result.ok) {
-      void showOperationError(result?.message ?? 'Could not create the new entry')
-      return
-    }
-    const entry = result.value
-    pendingCreateRef.current.add(entry.path)
-    dispatchWorkspace({
-      type: 'INSERT_ENTRY',
-      payload: { parentPath: parent ? parent.id : '', entry }
-    })
-    dispatchWorkspace({ type: 'SELECT', payload: { id: entry.path } })
-    setPendingEditId(entry.path)
-  }, [createCounterRef, dispatchWorkspace, pendingCreateRef, setPendingEditId, showOperationError, workspaceRef])
-
-  const cleanupAfterDelete = useCallback((node: TreeNode, plan: DeletePlan) => {
-    for (const doc of plan.cleanToClose) {
-      const fresh = sessionRef.current.documents.find(d => d.id === doc.id)
-      if (fresh && isDirtyLive(fresh)) continue
-      doClose(doc.id)
-    }
-    dispatchWorkspace({ type: 'REMOVE_ENTRY', payload: { id: node.id } })
-    const selected = workspaceRef.current.selectedId
-    // A descendant may have been selected (e.g. a file inside a deleted
-    // folder); it is gone too, so clear the selection as well.
-    if (selected === node.id || (selected !== null && selected.startsWith(node.id + '/'))) {
-      dispatchWorkspace({ type: 'SELECT', payload: { id: null } })
-    }
-  }, [dispatchWorkspace, doClose, isDirtyLive, sessionRef, workspaceRef])
-
-  const runDeleteConfirmation = useCallback(async (node: TreeNode) => {
-    if (dialogInFlightRef.current) return
-    dialogInFlightRef.current = true
-    try {
-      // ---- describe: gather the entry info for the confirmation ----
-      const result = await window.api.describeEntry(node.id)
-      if (!result.ok) {
-        // The guard is held, so the error is queued and shown once released.
-        void showOperationError(result.message)
-        return
-      }
-      const info = result.value
-
-      // ---- plan: which open documents the delete touches ----
-      const plan = planDelete(sessionRef.current.documents, node.id, isDirtyLive)
-
-      // ---- block-if-dirty: refuse while a blocker has unsaved changes ----
-      if (plan.dirtyBlockers.length > 0) {
-        const blocked = await window.api.showConfirmation({
-          kind: 'delete-blocked',
-          targetName: node.name,
-          blockerTitles: plan.dirtyBlockers.map(d => d.title)
-        })
-        if (!blocked.ok) void showOperationError(blocked.message)
-        return
-      }
-
-      // ---- confirm-trash: the primary confirmation ----
-      const deleteDecision = await window.api.showConfirmation({
-        kind: 'delete-to-trash',
-        targetName: node.name,
-        detail: deleteDescription(info),
-        cleanToCloseTitles: plan.cleanToClose.map(d => d.title)
-      })
-      if (!deleteDecision.ok || deleteDecision.value !== 'delete') return
-
-      // ---- trash, with the permanent-delete fallback ----
-      const trashed = await window.api.trashEntry(node.id)
-      if (trashed.ok) {
-        cleanupAfterDelete(node, plan)
-        return
-      }
-      if (trashed.code === 'TRASH_UNAVAILABLE') {
-        const permanent = await window.api.showConfirmation({
-          kind: 'permanent-delete',
-          targetName: node.name,
-          detail: deleteDescription(info),
-          cleanToCloseTitles: plan.cleanToClose.map(d => d.title)
-        })
-        if (!permanent.ok || permanent.value !== 'delete-permanent') return
-        const deleted = await window.api.trashEntry(node.id, true)
-        if (deleted.ok) {
-          cleanupAfterDelete(node, plan)
+  const handleEditingCancelled = useCallback(
+    (id: string) => {
+      // A new entry the user declined to name: remove the placeholder.
+      if (!pendingCreateRef.current.has(id)) return
+      pendingCreateRef.current.delete(id)
+      setPendingEditId(null)
+      window.api.trashEntry(id).then((result) => {
+        if (result.ok) {
+          dispatchWorkspace({ type: 'REMOVE_ENTRY', payload: { id } })
           return
         }
-        void showOperationError(deleted.message)
+        // The placeholder is still on disk; surface it so the user can retry.
+        const name = entryName(id)
+        void showOperationError(
+          `Could not remove "${name}". It is still on disk — right-click and delete it, or remove it manually.`
+        )
+      })
+    },
+    [dispatchWorkspace, pendingCreateRef, setPendingEditId, showOperationError]
+  )
+
+  // T057: create a file or folder from the tree context menu, ready to be named.
+  const handleCreate = useCallback(
+    async (parent: TreeNode | null, kind: EntryKind) => {
+      const parentNode = parent ? findNodeById(workspaceRef.current.nodes, parent.id) : null
+      if (parentNode && parentNode.kind === 'directory' && parentNode.loadState !== 'loaded') {
+        // The target folder is collapsed: expand it first so the new entry is
+        // visible and can be named inline.
+        dispatchWorkspace({ type: 'EXPAND_START', payload: { id: parentNode.id } })
+        const read = await window.api.readDir(parentNode.id)
+        if (!read.ok) {
+          dispatchWorkspace({
+            type: 'EXPAND_ERROR',
+            payload: { id: parentNode.id, error: read.message }
+          })
+          return
+        }
+        dispatchWorkspace({
+          type: 'EXPAND_SUCCESS',
+          payload: { id: parentNode.id, entries: read.value }
+        })
+      }
+
+      // createCounterRef resets on app restart, so a leftover placeholder from a
+      // previous session can make the first name collide (CONFLICT); retry.
+      let result: Awaited<ReturnType<typeof window.api.createEntry>> | null = null
+      for (let attempt = 0; attempt < 5; attempt++) {
+        createCounterRef.current++
+        const placeholder =
+          kind === 'file'
+            ? `new-file-${createCounterRef.current}.md`
+            : `new-folder-${createCounterRef.current}`
+        const attemptResult = await window.api.createEntry(
+          parent ? parent.id : '.',
+          placeholder,
+          kind
+        )
+        if (attemptResult.ok || attemptResult.code !== 'CONFLICT') {
+          result = attemptResult
+          break
+        }
+      }
+      if (!result || !result.ok) {
+        void showOperationError(result?.message ?? 'Could not create the new entry')
         return
       }
-      void showOperationError(trashed.message)
-    } finally {
-      releaseDialogSurface()
-    }
-  }, [cleanupAfterDelete, dialogInFlightRef, isDirtyLive, releaseDialogSurface, sessionRef, showOperationError])
+      const entry = result.value
+      pendingCreateRef.current.add(entry.path)
+      dispatchWorkspace({
+        type: 'INSERT_ENTRY',
+        payload: { parentPath: parent ? parent.id : '', entry }
+      })
+      dispatchWorkspace({ type: 'SELECT', payload: { id: entry.path } })
+      setPendingEditId(entry.path)
+    },
+    [
+      createCounterRef,
+      dispatchWorkspace,
+      pendingCreateRef,
+      setPendingEditId,
+      showOperationError,
+      workspaceRef
+    ]
+  )
 
   // T059: drag-and-drop move between folders.
-  const handleTreeMove = useCallback((id: string, targetParentId: string) => {
-    const target = moveTargetPath(id, targetParentId)
-    if (!target) return
-    applyMove(id, target)
-  }, [applyMove])
+  const handleTreeMove = useCallback(
+    (id: string, targetParentId: string) => {
+      const target = moveTargetPath(id, targetParentId)
+      if (!target) return
+      applyMove(id, target)
+    },
+    [applyMove]
+  )
 
   return {
     handleTreeSelect,

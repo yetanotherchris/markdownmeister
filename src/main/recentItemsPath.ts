@@ -3,7 +3,6 @@ import * as path from 'path'
 import * as os from 'os'
 import { universalConfigPath } from './configPath'
 
-
 export function recentItemsConfigPath(): string {
   const override = process.env.MM_CONFIG_DIR
   if (override && override.length > 0) {

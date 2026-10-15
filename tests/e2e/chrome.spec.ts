@@ -2,7 +2,14 @@ import { test, expect, ElectronApplication, Page } from '@playwright/test'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { launchApp, closeAppSafely, closeAppDiscardingQuit, openFolder as openWorkspaceFolder, typeInEditor as typeSharedInEditor, pressShortcut as pressSharedShortcut } from './launch'
+import {
+  launchApp,
+  closeAppSafely,
+  closeAppDiscardingQuit,
+  openFolder as openWorkspaceFolder,
+  typeInEditor as typeSharedInEditor,
+  pressShortcut as pressSharedShortcut
+} from './launch'
 
 /**
  * Spec 010 chrome suite (contracts/renderer.md §E2e): the hamburger menu, the
@@ -65,11 +72,17 @@ test('US1 chrome buttons sit top-left and the active tab is the #EAEAEA pill', a
   // The chrome bar (hamburger + explorer toggle) is the first element of the
   // single header row; the tabs follow it.
   await expect(window.locator('.header-bar > .chrome-bar')).toBeVisible()
-  await expect(window.locator('.chrome-bar').getByRole('button', { name: 'Open menu' })).toBeVisible()
-  await expect(window.locator('.chrome-bar').getByRole('button', { name: 'Toggle file explorer' })).toBeVisible()
-  const chromeFirst = await window.locator('.header-bar > .chrome-bar').evaluate(
-    (el) => (el.nextElementSibling as HTMLElement | null)?.classList.contains('tab-bar') ?? false
-  )
+  await expect(
+    window.locator('.chrome-bar').getByRole('button', { name: 'Open menu' })
+  ).toBeVisible()
+  await expect(
+    window.locator('.chrome-bar').getByRole('button', { name: 'Toggle file explorer' })
+  ).toBeVisible()
+  const chromeFirst = await window
+    .locator('.header-bar > .chrome-bar')
+    .evaluate(
+      (el) => (el.nextElementSibling as HTMLElement | null)?.classList.contains('tab-bar') ?? false
+    )
   expect(chromeFirst).toBe(true)
 
   // Active tab is a single #EAEAEA pill with an edit icon, label, close button.
@@ -85,7 +98,9 @@ test('US1 chrome buttons sit top-left and the active tab is the #EAEAEA pill', a
   const plusAfterActive = await activeTab.evaluate((el) => {
     const tabBar = el.closest('.tab-bar')
     const plus = tabBar?.querySelector('.tab-new')
-    return plus ? (el.compareDocumentPosition(plus) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0 : false
+    return plus
+      ? (el.compareDocumentPosition(plus) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+      : false
   })
   expect(plusAfterActive).toBe(true)
 })
@@ -102,7 +117,11 @@ test('US1 inactive tabs truncate their labels', async () => {
   const longTitle = window.getByRole('tab', { name: new RegExp(LONG_NAME) }).locator('.tab-title')
   const truncates = await longTitle.evaluate((el) => {
     const style = getComputedStyle(el)
-    return style.textOverflow === 'ellipsis' && style.overflow === 'hidden' && el.scrollWidth > el.clientWidth
+    return (
+      style.textOverflow === 'ellipsis' &&
+      style.overflow === 'hidden' &&
+      el.scrollWidth > el.clientWidth
+    )
   })
   expect(truncates).toBe(true)
 })
@@ -136,12 +155,14 @@ test('US2 a persisted hidden choice is overridden by reveal-on-open across resta
   await openFolder()
   await window.getByRole('button', { name: 'Toggle file explorer' }).click()
   await expect.poll(sidebarWidth).toBeLessThan(3)
-  await expect.poll(() => {
-    // Spec 012: settings share the MRU config.json under the `.settings` key.
-    const configPath = path.join(configDir, 'config.json')
-    if (!fs.existsSync(configPath)) return undefined
-    return JSON.parse(fs.readFileSync(configPath, 'utf-8')).settings?.explorerVisible
-  }).toBe(false)
+  await expect
+    .poll(() => {
+      // Spec 012: settings share the MRU config.json under the `.settings` key.
+      const configPath = path.join(configDir, 'config.json')
+      if (!fs.existsSync(configPath)) return undefined
+      return JSON.parse(fs.readFileSync(configPath, 'utf-8')).settings?.explorerVisible
+    })
+    .toBe(false)
 
   await closeAppDiscardingQuit(app)
 
@@ -151,11 +172,13 @@ test('US2 a persisted hidden choice is overridden by reveal-on-open across resta
   ;({ app, window } = await launchApp(configDir, testFolder))
   await openFolder()
   await expect.poll(sidebarWidth).toBeGreaterThan(50)
-  await expect.poll(() => {
-    const configPath = path.join(configDir, 'config.json')
-    if (!fs.existsSync(configPath)) return undefined
-    return JSON.parse(fs.readFileSync(configPath, 'utf-8')).settings?.explorerVisible
-  }).toBe(true)
+  await expect
+    .poll(() => {
+      const configPath = path.join(configDir, 'config.json')
+      if (!fs.existsSync(configPath)) return undefined
+      return JSON.parse(fs.readFileSync(configPath, 'utf-8')).settings?.explorerVisible
+    })
+    .toBe(true)
 
   await closeAppDiscardingQuit(app)
 

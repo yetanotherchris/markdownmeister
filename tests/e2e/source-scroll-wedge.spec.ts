@@ -156,9 +156,7 @@ test.describe('source view after scrolling the formatted editor', () => {
     // later frame.
     await expect
       .poll(() =>
-        window
-          .locator('.editor-host.has-source .cm-scroller')
-          .evaluate((el) => el.scrollTop)
+        window.locator('.editor-host.has-source .cm-scroller').evaluate((el) => el.scrollTop)
       )
       .toBeGreaterThan(0)
   })

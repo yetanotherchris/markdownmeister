@@ -18,7 +18,10 @@ describe('isRecentEntry (R4 recent-open guard)', () => {
   let prev: string | undefined
 
   beforeEach(() => {
-    dir = path.join(os.tmpdir(), `mm-recent-entry-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+    dir = path.join(
+      os.tmpdir(),
+      `mm-recent-entry-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    )
     fs.mkdirSync(dir, { recursive: true })
     prev = process.env.MM_CONFIG_DIR
     process.env.MM_CONFIG_DIR = dir

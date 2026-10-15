@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { treeMoveTarget, treeWouldMoveIntoOwnDescendant } from '../../src/renderer/explorer/treeMove'
+import {
+  treeMoveTarget,
+  treeWouldMoveIntoOwnDescendant
+} from '../../src/renderer/explorer/treeMove'
 
 describe('treeMoveTarget', () => {
   it('computes a move into a target folder', () => {

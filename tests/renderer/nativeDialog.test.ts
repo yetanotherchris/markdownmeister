@@ -8,7 +8,10 @@ import type { NativeDialogRequest } from '../../src/shared/ipc-contract'
 // renders at the FAR RIGHT (default position), so the macOS arrays are the
 // visual order reversed.
 
-const req = (kind: NativeDialogRequest['kind'], overrides: Partial<NativeDialogRequest> = {}): NativeDialogRequest => {
+const req = (
+  kind: NativeDialogRequest['kind'],
+  overrides: Partial<NativeDialogRequest> = {}
+): NativeDialogRequest => {
   const base: Record<string, unknown> = { kind }
   if ('documentTitle' in overrides) base.documentTitle = overrides.documentTitle
   if ('documentTitles' in overrides) base.documentTitles = overrides.documentTitles
@@ -68,7 +71,7 @@ describe('buildNativeDialogOptions — unsaved-close / unsaved-quit / folder-ope
     expect(win.message).toBe('Do you want to save the changes you made?')
     expect(win.detail).toBe(
       'The following documents have unsaved changes:\n• a.md\n• b.md\n' +
-      "Your changes will be lost if you don't save them."
+        "Your changes will be lost if you don't save them."
     )
     expect(win.type).toBe('warning')
     expect(win.buttons).toEqual(['Save All', 'Discard and Quit', 'Cancel'])
@@ -88,7 +91,8 @@ describe('buildNativeDialogOptions — unsaved-close / unsaved-quit / folder-ope
     const r = req('folder-open', { documentTitles: ['a.md'] })
     expect(buildNativeDialogOptions('win32', r)).toMatchObject({
       message: 'Open folder with unsaved changes?',
-      detail: 'The following documents have unsaved changes:\n• a.md\n' +
+      detail:
+        'The following documents have unsaved changes:\n• a.md\n' +
         "Your changes will be lost if you don't save them.",
       buttons: ['Save All', 'Discard', 'Cancel'],
       defaultId: 0,
@@ -114,7 +118,9 @@ describe('buildNativeDialogOptions — external dialogs', () => {
     for (const p of ['win32', 'darwin', 'linux'] as const) {
       const opts = buildNativeDialogOptions(p, r)
       expect(opts.type).toBe('warning')
-      expect(opts.message).toBe('a.md was modified by another program. Keep your version, or replace it with the version on disk?')
+      expect(opts.message).toBe(
+        'a.md was modified by another program. Keep your version, or replace it with the version on disk?'
+      )
       expect(opts.buttons).toHaveLength(2)
       expect(new Set(opts.buttons)).toEqual(new Set(['Keep My Version', 'Reload from Disk']))
       expect(opts.cancelId).toBe(opts.defaultId) // Escape = the safe choice
@@ -183,7 +189,11 @@ describe('buildNativeDialogOptions — destructive dialogs', () => {
       cancelId: 0
     })
     // Clean-to-close lines list the documents the delete will close.
-    const withClean = req('delete-to-trash', { targetName: 'dir', detail: 'Folder detail', cleanToCloseTitles: ['a.md', 'b.md'] })
+    const withClean = req('delete-to-trash', {
+      targetName: 'dir',
+      detail: 'Folder detail',
+      cleanToCloseTitles: ['a.md', 'b.md']
+    })
     const cleanDetail = buildNativeDialogOptions('win32', withClean).detail
     expect(cleanDetail).toContain('Folder detail')
     expect(cleanDetail).toContain('This will close a.md.')
@@ -256,15 +266,39 @@ describe('decisionFromResponse', () => {
   // differently, so we resolve the label's index from THAT platform's array
   // and assert the decision follows the label, not the index.
   const cases: Array<{ make: () => NativeDialogRequest; labels: Record<string, string> }> = [
-    { make: () => req('unsaved-close', { documentTitle: 'a' }), labels: { 'Save': 'save', "Don't Save": 'discard', 'Cancel': 'cancel' } },
-    { make: () => req('unsaved-quit', { documentTitles: ['a'] }), labels: { 'Save All': 'save-all', 'Discard and Quit': 'discard-all', 'Cancel': 'cancel' } },
-    { make: () => req('folder-open', { documentTitles: ['a'] }), labels: { 'Save All': 'save-all', 'Discard': 'discard-all', 'Cancel': 'cancel' } },
-    { make: () => req('external-changed', { documentTitle: 'a' }), labels: { 'Keep My Version': 'keep', 'Reload from Disk': 'reload' } },
-    { make: () => req('external-removed', { documentTitle: 'a' }), labels: { 'Save As...': 'save-as', 'OK': 'ok' } },
-    { make: () => req('delete-to-trash', { targetName: 'b', detail: '', cleanToCloseTitles: [] }), labels: { 'Delete': 'delete', 'Cancel': 'cancel' } },
-    { make: () => req('permanent-delete', { targetName: 'b', detail: '', cleanToCloseTitles: [] }), labels: { 'Delete Permanently': 'delete-permanent', 'Cancel': 'cancel' } },
-    { make: () => req('delete-blocked', { targetName: 'b', blockerTitles: ['a'] }), labels: { 'OK': 'acknowledge' } },
-    { make: () => req('operation-failed', { message: 'x' }), labels: { 'OK': 'acknowledge' } }
+    {
+      make: () => req('unsaved-close', { documentTitle: 'a' }),
+      labels: { Save: 'save', "Don't Save": 'discard', Cancel: 'cancel' }
+    },
+    {
+      make: () => req('unsaved-quit', { documentTitles: ['a'] }),
+      labels: { 'Save All': 'save-all', 'Discard and Quit': 'discard-all', Cancel: 'cancel' }
+    },
+    {
+      make: () => req('folder-open', { documentTitles: ['a'] }),
+      labels: { 'Save All': 'save-all', Discard: 'discard-all', Cancel: 'cancel' }
+    },
+    {
+      make: () => req('external-changed', { documentTitle: 'a' }),
+      labels: { 'Keep My Version': 'keep', 'Reload from Disk': 'reload' }
+    },
+    {
+      make: () => req('external-removed', { documentTitle: 'a' }),
+      labels: { 'Save As...': 'save-as', OK: 'ok' }
+    },
+    {
+      make: () => req('delete-to-trash', { targetName: 'b', detail: '', cleanToCloseTitles: [] }),
+      labels: { Delete: 'delete', Cancel: 'cancel' }
+    },
+    {
+      make: () => req('permanent-delete', { targetName: 'b', detail: '', cleanToCloseTitles: [] }),
+      labels: { 'Delete Permanently': 'delete-permanent', Cancel: 'cancel' }
+    },
+    {
+      make: () => req('delete-blocked', { targetName: 'b', blockerTitles: ['a'] }),
+      labels: { OK: 'acknowledge' }
+    },
+    { make: () => req('operation-failed', { message: 'x' }), labels: { OK: 'acknowledge' } }
   ]
 
   it('maps each button label to its decision on every platform', () => {

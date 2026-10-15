@@ -1,5 +1,3 @@
-
-
 export interface OpenPerformanceCounters {
   fullParses: number
   fullSerializations: number
@@ -13,7 +11,6 @@ const counters: OpenPerformanceCounters = {
   outgoingSerializations: 0,
   openDurations: []
 }
-
 
 let pendingOpenStart: number | null = null
 
@@ -37,7 +34,6 @@ export function beginOpen(): void {
   pendingOpenStart = performance.now()
 }
 
-
 export function endOpen(): void {
   if (pendingOpenStart === null) return
   counters.openDurations.push(performance.now() - pendingOpenStart)
@@ -46,7 +42,6 @@ export function endOpen(): void {
   }
   pendingOpenStart = null
 }
-
 
 export function discardOpen(): void {
   pendingOpenStart = null

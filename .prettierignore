@@ -6,3 +6,12 @@ coverage/
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
+
+# Round-trip fixtures keep exact bytes, including newline style.
+tests/fixtures
+
+# Hunspell dictionaries and the word list beside them.
+src/renderer/assets/dictionaries
+
+# Markdown stays hand-written. Prose is not hard-wrapped.
+*.md

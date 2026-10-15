@@ -2,7 +2,13 @@ import { test, expect, ElectronApplication, Page } from '@playwright/test'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { launchApp, closeAppSafely, openHamburger, openSettingsDialog, pressShortcut } from './launch'
+import {
+  launchApp,
+  closeAppSafely,
+  openHamburger,
+  openSettingsDialog,
+  pressShortcut
+} from './launch'
 
 /**
  * Spec 008 (clarification 2026-08-08): developer tools are always available via
