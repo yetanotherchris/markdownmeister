@@ -11,7 +11,7 @@ function createSession() {
 const FIXTURES_DIR = path.join(__dirname, '..', 'fixtures', 'roundtrip')
 
 describe('roundtrip characterization', () => {
-  const fixtures = fs.readdirSync(FIXTURES_DIR).filter(f => f.endsWith('.md'))
+  const fixtures = fs.readdirSync(FIXTURES_DIR).filter((f) => f.endsWith('.md'))
 
   for (const fixture of fixtures) {
     it(`loads fixture: ${fixture}`, () => {

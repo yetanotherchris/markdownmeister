@@ -60,7 +60,10 @@ describe('check-maintainability guardrail', () => {
 
   it('reports a function over the cyclomatic-complexity limit', () => {
     const body = Array.from({ length: 17 }, (_, i) => `    if (a[${i}]) return ${i}`).join('\n')
-    write('src/complex.ts', `export function many(x: number): number {\n  const a = [1, 2, 3]\n${body}\n  return -1\n}\n`)
+    write(
+      'src/complex.ts',
+      `export function many(x: number): number {\n  const a = [1, 2, 3]\n${body}\n  return -1\n}\n`
+    )
     const { violations } = runCheck(tmpRoot)
     const c = violations.find((v) => v.rule === 'complexity' && v.file.endsWith('complex.ts'))
     expect(c).toBeTruthy()
@@ -94,9 +97,14 @@ describe('check-maintainability guardrail', () => {
   it('reports no violations on a clean fixture tree', () => {
     write('src/ok.ts', `export function fine(): number { return 1 }\n`)
     write('src/user.ts', `import { fine } from './ok'\nconst v = fine()\n`)
-    write('tests/ok.test.ts', `import { describe, it, expect } from 'vitest'\ndescribe('x', () => { it('y', () => expect(1).toBe(1)) })\n`)
+    write(
+      'tests/ok.test.ts',
+      `import { describe, it, expect } from 'vitest'\ndescribe('x', () => { it('y', () => expect(1).toBe(1)) })\n`
+    )
     const { violations } = runCheck(tmpRoot)
-    const nonSize = violations.filter((v) => v.rule === 'complexity' || v.rule === 'cycle' || v.rule === 'unused')
+    const nonSize = violations.filter(
+      (v) => v.rule === 'complexity' || v.rule === 'cycle' || v.rule === 'unused'
+    )
     expect(nonSize).toHaveLength(0)
   })
 })

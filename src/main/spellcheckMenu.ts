@@ -1,5 +1,3 @@
-
-
 export type SpellcheckMenuAction =
   | {
       kind: 'suggestion'
@@ -18,9 +16,7 @@ export type SpellcheckMenuAction =
       word: string
     }
 
-
 export const MAX_SUGGESTIONS = 5
-
 
 export function spellcheckMenuActions(params: {
   misspelledWord: string

@@ -1,6 +1,3 @@
-
-
-
 .header-bar {
   display: flex;
   align-items: center;
@@ -14,14 +11,12 @@
   z-index: 10;
 }
 
-
 .chrome-bar {
   display: flex;
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
 }
-
 
 .chrome-icon-button {
   display: inline-flex;
@@ -82,7 +77,6 @@
   top: calc(100% + 6px);
   left: 0;
 }
-
 
 .submenu-anchor {
   position: relative;

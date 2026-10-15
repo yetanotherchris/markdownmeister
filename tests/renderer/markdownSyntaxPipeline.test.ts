@@ -6,7 +6,10 @@ import remarkParse from 'remark-parse'
 import remarkStringify from 'remark-stringify'
 import remarkGFM from 'remark-gfm'
 import remarkMath from 'remark-math'
-import { markdownSyntaxRemark, DEFAULT_MARKDOWN_SYNTAX_OPTIONS } from '../../src/renderer/editor/markdownSyntaxOptions'
+import {
+  markdownSyntaxRemark,
+  DEFAULT_MARKDOWN_SYNTAX_OPTIONS
+} from '../../src/renderer/editor/markdownSyntaxOptions'
 
 /**
  * Spec 033: the reconfigure skip guard

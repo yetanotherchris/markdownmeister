@@ -18,7 +18,10 @@ import {
  */
 
 function parse(text: string, options: MarkdownSyntaxOptions): MdNode {
-  const processor = unified().use(remarkParse).use(remarkStringify).use(markdownSyntaxRemark(options))
+  const processor = unified()
+    .use(remarkParse)
+    .use(remarkStringify)
+    .use(markdownSyntaxRemark(options))
   // Run transforms after parsing so syntax options affect the tree.
   return processor.runSync(processor.parse(text)) as unknown as MdNode
 }

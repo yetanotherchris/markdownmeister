@@ -9,7 +9,6 @@ interface OsOpenDeps {
   onOpenFailed: (message: string) => void
 }
 
-
 export function useOsOpen(opts: OsOpenDeps): void {
   const depsRef = useRef<OsOpenDeps>(opts)
   depsRef.current = opts

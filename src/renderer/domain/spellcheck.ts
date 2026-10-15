@@ -7,8 +7,6 @@ import enUsAff from '../assets/dictionaries/en-us.aff?raw'
 import enUsDic from '../assets/dictionaries/en-us.dic?raw'
 import supplementalWordsRaw from '../assets/dictionaries/supplemental-words.txt?raw'
 
-
-
 export interface Misspelling {
   /** Start offset in the checked text (0-based). */
   start: number
@@ -22,7 +20,6 @@ const DICTIONARIES: Record<SpellcheckLanguage, NSpell> = {
   'en-GB': nspell(enGbAff, enGbDic),
   'en-US': nspell(enUsAff, enUsDic)
 }
-
 
 export const SUPPLEMENTAL_WORDS: ReadonlySet<string> = new Set(
   supplementalWordsRaw
@@ -38,14 +35,11 @@ export function resolveLanguage(language: SpellcheckLanguage | null): Spellcheck
   return nav.toLowerCase().startsWith('en-us') ? 'en-US' : 'en-GB'
 }
 
-
 export function getChecker(language: SpellcheckLanguage | null): NSpell {
   return DICTIONARIES[resolveLanguage(language)]
 }
 
-
 const WORD_RE = /[\p{L}'’]+/gu
-
 
 export function findMisspellings(
   text: string,

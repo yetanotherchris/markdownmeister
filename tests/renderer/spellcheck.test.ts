@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import type NSpell from 'nspell'
-import { findMisspellings, getChecker, resolveLanguage, SUPPLEMENTAL_WORDS } from '../../src/renderer/domain/spellcheck'
+import {
+  findMisspellings,
+  getChecker,
+  resolveLanguage,
+  SUPPLEMENTAL_WORDS
+} from '../../src/renderer/domain/spellcheck'
 
 /**
  * Spec 020 (2026-08-07): the JS whole-document spellchecker. The bundled
@@ -67,7 +72,7 @@ describe('findMisspellings', () => {
     expect(miss).toEqual([])
   })
 
-  it('keeps apostrophes inside words (don\'t, it\'s)', () => {
+  it("keeps apostrophes inside words (don't, it's)", () => {
     const text = "don't it's cant"
     const miss = findMisspellings(text, gb, new Set())
     // "don't"/"it's" are valid contractions; "cant" is a real word too

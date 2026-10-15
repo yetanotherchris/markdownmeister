@@ -1,18 +1,13 @@
 import * as path from 'path'
 import * as fs from 'fs'
 
-
-
 export interface OsTarget {
   kind: 'file' | 'folder'
 
   absPath: string
 }
 
-export type OsTargetResult =
-  | { ok: true; target: OsTarget }
-  | { ok: false; message: string }
-
+export type OsTargetResult = { ok: true; target: OsTarget } | { ok: false; message: string }
 
 const SUPPORTED_FILE_EXTENSIONS = new Set(['.md', '.markdown'])
 
@@ -54,7 +49,6 @@ export function classifyOsTarget(absPath: unknown): OsTargetResult {
 
   return { ok: false, message: 'The selected item is not a supported file or folder.' }
 }
-
 
 const SCRIPT_EXTENSION_RE = /\.(js|mjs|cjs)$/i
 

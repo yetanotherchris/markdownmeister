@@ -12,7 +12,6 @@ interface SidebarPanelLike {
   collapse(): void
 }
 
-
 export function useSidebarLayout(opts: {
   sidebarPanelRef: { current: SidebarPanelLike | null }
   explorerRestoreDoneRef: React.MutableRefObject<boolean>

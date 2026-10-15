@@ -7,7 +7,10 @@ describe('IPC renderer authorization', () => {
     const webContents = {}
     const window = { webContents } as BrowserWindow
     ctx.approvedRendererUrl = 'file:///app/index.html'
-    const event = { sender: webContents, senderFrame: { url: 'file:///app/index.html' } } as unknown as IpcMainInvokeEvent
+    const event = {
+      sender: webContents,
+      senderFrame: { url: 'file:///app/index.html' }
+    } as unknown as IpcMainInvokeEvent
 
     expect(isAuthorizedRenderer(event, window)).toBe(true)
     ctx.approvedRendererUrl = null
@@ -16,7 +19,10 @@ describe('IPC renderer authorization', () => {
   it('rejects a different renderer sender', () => {
     const window = { webContents: {} } as BrowserWindow
     ctx.approvedRendererUrl = 'file:///app/index.html'
-    const event = { sender: {}, senderFrame: { url: 'file:///app/index.html' } } as unknown as IpcMainInvokeEvent
+    const event = {
+      sender: {},
+      senderFrame: { url: 'file:///app/index.html' }
+    } as unknown as IpcMainInvokeEvent
 
     expect(isAuthorizedRenderer(event, window)).toBe(false)
     ctx.approvedRendererUrl = null
@@ -26,7 +32,10 @@ describe('IPC renderer authorization', () => {
     const webContents = {}
     const window = { webContents } as BrowserWindow
     ctx.approvedRendererUrl = 'file:///app/index.html'
-    const event = { sender: webContents, senderFrame: { url: 'file:///other/index.html' } } as unknown as IpcMainInvokeEvent
+    const event = {
+      sender: webContents,
+      senderFrame: { url: 'file:///other/index.html' }
+    } as unknown as IpcMainInvokeEvent
 
     expect(isAuthorizedRenderer(event, window)).toBe(false)
     ctx.approvedRendererUrl = null

@@ -2,9 +2,28 @@ import * as path from 'path'
 import * as fs from 'fs'
 
 const reservedNames = new Set([
-  'CON', 'PRN', 'AUX', 'NUL',
-  'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
-  'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'
+  'CON',
+  'PRN',
+  'AUX',
+  'NUL',
+  'COM1',
+  'COM2',
+  'COM3',
+  'COM4',
+  'COM5',
+  'COM6',
+  'COM7',
+  'COM8',
+  'COM9',
+  'LPT1',
+  'LPT2',
+  'LPT3',
+  'LPT4',
+  'LPT5',
+  'LPT6',
+  'LPT7',
+  'LPT8',
+  'LPT9'
 ])
 
 function isReservedName(name: string): boolean {
@@ -36,7 +55,9 @@ function validateSegment(segment: string): void {
     throw Object.assign(new Error('Invalid filename: reserved name'), { code: 'OUTSIDE_WORKSPACE' })
   }
   if (hasTrailingDotOrSpace(segment)) {
-    throw Object.assign(new Error('Invalid filename: trailing dot or space'), { code: 'OUTSIDE_WORKSPACE' })
+    throw Object.assign(new Error('Invalid filename: trailing dot or space'), {
+      code: 'OUTSIDE_WORKSPACE'
+    })
   }
 }
 
@@ -53,7 +74,9 @@ function assertContained(relative: string, candidate: string): void {
 
 export function resolveWithinRoot(root: string, candidate: string): ResolveResult {
   if (typeof candidate !== 'string' || candidate.length === 0) {
-    throw Object.assign(new Error('Invalid path: must be a non-empty string'), { code: 'OUTSIDE_WORKSPACE' })
+    throw Object.assign(new Error('Invalid path: must be a non-empty string'), {
+      code: 'OUTSIDE_WORKSPACE'
+    })
   }
 
   if (hasNul(candidate)) {
@@ -61,7 +84,9 @@ export function resolveWithinRoot(root: string, candidate: string): ResolveResul
   }
 
   if (hasAlternateDataStream(candidate)) {
-    throw Object.assign(new Error('Invalid path: alternate data stream'), { code: 'OUTSIDE_WORKSPACE' })
+    throw Object.assign(new Error('Invalid path: alternate data stream'), {
+      code: 'OUTSIDE_WORKSPACE'
+    })
   }
 
   if (path.isAbsolute(candidate)) {
@@ -101,7 +126,6 @@ export function resolveWithinRoot(root: string, candidate: string): ResolveResul
 
   return { resolved: realTarget, relative: normalized }
 }
-
 
 function findExistingAncestor(p: string, rootReal: string): string | null {
   let current = p

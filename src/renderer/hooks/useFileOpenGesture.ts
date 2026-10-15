@@ -41,45 +41,53 @@ export function useFileOpenGesture(opts: {
     }
   }, [])
 
-  const commitOpen = useCallback(async (node: TreeNode, explicitNew: boolean) => {
-    beginOpen()
-    const result = await window.api.readFile(node.id)
-    if (result.ok) openFileFromExplorer(result.value, explicitNew)
-    else discardOpen()
-  }, [openFileFromExplorer])
+  const commitOpen = useCallback(
+    async (node: TreeNode, explicitNew: boolean) => {
+      beginOpen()
+      const result = await window.api.readFile(node.id)
+      if (result.ok) openFileFromExplorer(result.value, explicitNew)
+      else discardOpen()
+    },
+    [openFileFromExplorer]
+  )
 
-  const handleFileOpen = useCallback(async (node: TreeNode, gesture: FileOpenGesture) => {
-    const pending = pendingOpensRef.current.get(node.id)
-    if (pending !== undefined) {
-      clearTimeout(pending.timer)
-      pendingOpensRef.current.delete(node.id)
-    }
-    if (gesture === 'double-click') {
-      await commitOpen(node, true)
-      return
-    }
-    const current = sessionRef.current
-    const active = current.documents.find((d) => d.id === current.activeId) ?? null
-    const alreadyOpen = current.documents.some((d) => d.path === node.id)
-    if (!shouldDeferSingleClick({
-      preferNewTab: getSettings().fileOpenBehavior === 'new-tab',
-      activeExists: active !== null,
-      activeIsDirty: active ? isDirtyLive(active) : null,
-      alreadyOpen
-    })) {
-      await commitOpen(node, false)
-      return
-    }
-    const activeIdAtClick = active!.id
-    const timer = setTimeout(() => {
-      pendingOpensRef.current.delete(node.id)
-      // If the user opened or activated another tab during the window, don't
-      // clobber it: open in a new tab instead (spec Edge Cases).
-      const activeNow = sessionRef.current.activeId
-      void commitOpen(node, activeNow !== activeIdAtClick)
-    }, DOUBLE_CLICK_WINDOW_MS)
-    pendingOpensRef.current.set(node.id, { timer, activeId: activeIdAtClick })
-  }, [commitOpen, isDirtyLive, sessionRef])
+  const handleFileOpen = useCallback(
+    async (node: TreeNode, gesture: FileOpenGesture) => {
+      const pending = pendingOpensRef.current.get(node.id)
+      if (pending !== undefined) {
+        clearTimeout(pending.timer)
+        pendingOpensRef.current.delete(node.id)
+      }
+      if (gesture === 'double-click') {
+        await commitOpen(node, true)
+        return
+      }
+      const current = sessionRef.current
+      const active = current.documents.find((d) => d.id === current.activeId) ?? null
+      const alreadyOpen = current.documents.some((d) => d.path === node.id)
+      if (
+        !shouldDeferSingleClick({
+          preferNewTab: getSettings().fileOpenBehavior === 'new-tab',
+          activeExists: active !== null,
+          activeIsDirty: active ? isDirtyLive(active) : null,
+          alreadyOpen
+        })
+      ) {
+        await commitOpen(node, false)
+        return
+      }
+      const activeIdAtClick = active!.id
+      const timer = setTimeout(() => {
+        pendingOpensRef.current.delete(node.id)
+        // If the user opened or activated another tab during the window, don't
+        // clobber it: open in a new tab instead (spec Edge Cases).
+        const activeNow = sessionRef.current.activeId
+        void commitOpen(node, activeNow !== activeIdAtClick)
+      }, DOUBLE_CLICK_WINDOW_MS)
+      pendingOpensRef.current.set(node.id, { timer, activeId: activeIdAtClick })
+    },
+    [commitOpen, isDirtyLive, sessionRef]
+  )
 
   return { handleFileOpen }
 }

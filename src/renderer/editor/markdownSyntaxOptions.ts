@@ -1,11 +1,20 @@
 import { gfmStrikethrough } from 'micromark-extension-gfm-strikethrough'
-import { gfmStrikethroughFromMarkdown, gfmStrikethroughToMarkdown } from 'mdast-util-gfm-strikethrough'
+import {
+  gfmStrikethroughFromMarkdown,
+  gfmStrikethroughToMarkdown
+} from 'mdast-util-gfm-strikethrough'
 import { gfmTable } from 'micromark-extension-gfm-table'
 import { gfmTableFromMarkdown, gfmTableToMarkdown } from 'mdast-util-gfm-table'
 import { gfmTaskListItem } from 'micromark-extension-gfm-task-list-item'
-import { gfmTaskListItemFromMarkdown, gfmTaskListItemToMarkdown } from 'mdast-util-gfm-task-list-item'
+import {
+  gfmTaskListItemFromMarkdown,
+  gfmTaskListItemToMarkdown
+} from 'mdast-util-gfm-task-list-item'
 import { gfmAutolinkLiteral } from 'micromark-extension-gfm-autolink-literal'
-import { gfmAutolinkLiteralFromMarkdown, gfmAutolinkLiteralToMarkdown } from 'mdast-util-gfm-autolink-literal'
+import {
+  gfmAutolinkLiteralFromMarkdown,
+  gfmAutolinkLiteralToMarkdown
+} from 'mdast-util-gfm-autolink-literal'
 import { gfmFootnote } from 'micromark-extension-gfm-footnote'
 import { gfmFootnoteFromMarkdown, gfmFootnoteToMarkdown } from 'mdast-util-gfm-footnote'
 import { math } from 'micromark-extension-math'
@@ -14,8 +23,6 @@ import { visit } from 'unist-util-visit'
 import type { Processor } from 'unified'
 import type { Node } from 'unist'
 import { MARKDOWN_SYNTAX_DEFAULTS } from '../../shared/markdownSyntaxDefaults'
-
-
 
 export interface MarkdownSyntaxOptions {
   hardBreaks: boolean
@@ -26,9 +33,9 @@ export interface MarkdownSyntaxOptions {
   autolink: boolean
 }
 
-
-export const DEFAULT_MARKDOWN_SYNTAX_OPTIONS: MarkdownSyntaxOptions = { ...MARKDOWN_SYNTAX_DEFAULTS }
-
+export const DEFAULT_MARKDOWN_SYNTAX_OPTIONS: MarkdownSyntaxOptions = {
+  ...MARKDOWN_SYNTAX_DEFAULTS
+}
 
 export function markdownSyntaxOptionsEqual(
   a: MarkdownSyntaxOptions,
@@ -55,7 +62,6 @@ interface BreakNode {
   type: string
   data?: { isInline?: boolean }
 }
-
 
 export function markdownSyntaxRemark(options: MarkdownSyntaxOptions) {
   return function remarkSyntax(this: Processor): ((tree: Node) => void) | void {

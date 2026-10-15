@@ -36,47 +36,79 @@ describe('validateNativeDialogRequest', () => {
   })
 
   it('rejects an unknown kind (whitelist)', () => {
-    expect(errorOf(() => validateNativeDialogRequest({ kind: 'explode', documentTitle: 'a' })))
-      .toContain('Invalid dialog request kind')
+    expect(
+      errorOf(() => validateNativeDialogRequest({ kind: 'explode', documentTitle: 'a' }))
+    ).toContain('Invalid dialog request kind')
   })
 
   it('rejects a non-object payload', () => {
     expect(errorOf(() => validateNativeDialogRequest(null))).toContain('expected an object')
-    expect(errorOf(() => validateNativeDialogRequest('unsaved-close'))).toContain('expected an object')
+    expect(errorOf(() => validateNativeDialogRequest('unsaved-close'))).toContain(
+      'expected an object'
+    )
   })
 
   it('rejects a non-string documentTitle', () => {
-    expect(errorOf(() => validateNativeDialogRequest({ kind: 'unsaved-close', documentTitle: 42 })))
-      .toContain('documentTitle must be a string')
+    expect(
+      errorOf(() => validateNativeDialogRequest({ kind: 'unsaved-close', documentTitle: 42 }))
+    ).toContain('documentTitle must be a string')
   })
 
   it('rejects an over-long documentTitle (MAX_STRING=500)', () => {
-    expect(errorOf(() => validateNativeDialogRequest({ kind: 'unsaved-close', documentTitle: 'x'.repeat(501) })))
-      .toContain('documentTitle is too long')
+    expect(
+      errorOf(() =>
+        validateNativeDialogRequest({ kind: 'unsaved-close', documentTitle: 'x'.repeat(501) })
+      )
+    ).toContain('documentTitle is too long')
   })
 
   it('rejects an over-long error detail (MAX_ERROR=1000)', () => {
-    expect(errorOf(() => validateNativeDialogRequest({ kind: 'unsaved-close', documentTitle: 'a', error: 'x'.repeat(1001) })))
-      .toContain('error is too long')
+    expect(
+      errorOf(() =>
+        validateNativeDialogRequest({
+          kind: 'unsaved-close',
+          documentTitle: 'a',
+          error: 'x'.repeat(1001)
+        })
+      )
+    ).toContain('error is too long')
   })
 
   it('rejects error: null (must be a string when present)', () => {
-    expect(errorOf(() => validateNativeDialogRequest({ kind: 'unsaved-close', documentTitle: 'a', error: null })))
-      .toContain('error must be a string')
+    expect(
+      errorOf(() =>
+        validateNativeDialogRequest({ kind: 'unsaved-close', documentTitle: 'a', error: null })
+      )
+    ).toContain('error must be a string')
   })
 
   it('rejects a non-array documentTitles', () => {
-    expect(errorOf(() => validateNativeDialogRequest({ kind: 'unsaved-quit', documentTitles: 'a.md' })))
-      .toContain('documentTitles must be an array')
+    expect(
+      errorOf(() => validateNativeDialogRequest({ kind: 'unsaved-quit', documentTitles: 'a.md' }))
+    ).toContain('documentTitles must be an array')
   })
 
   it('rejects an over-long list (MAX_LIST=50)', () => {
-    expect(errorOf(() => validateNativeDialogRequest({ kind: 'unsaved-quit', documentTitles: Array(51).fill('a.md') })))
-      .toContain('documentTitles must be an array')
+    expect(
+      errorOf(() =>
+        validateNativeDialogRequest({
+          kind: 'unsaved-quit',
+          documentTitles: Array(51).fill('a.md')
+        })
+      )
+    ).toContain('documentTitles must be an array')
   })
 
   it('rejects a non-string list member', () => {
-    expect(errorOf(() => validateNativeDialogRequest({ kind: 'delete-to-trash', targetName: 'b', detail: '', cleanToCloseTitles: [1] })))
-      .toContain('cleanToCloseTitles[0] must be a string')
+    expect(
+      errorOf(() =>
+        validateNativeDialogRequest({
+          kind: 'delete-to-trash',
+          targetName: 'b',
+          detail: '',
+          cleanToCloseTitles: [1]
+        })
+      )
+    ).toContain('cleanToCloseTitles[0] must be a string')
   })
 })

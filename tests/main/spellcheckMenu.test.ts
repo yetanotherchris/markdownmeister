@@ -26,11 +26,16 @@ describe('spellcheckMenuActions (spec 020)', () => {
 
   it('caps the suggestion list at MAX_SUGGESTIONS and keeps the add action', () => {
     const suggestions = Array.from({ length: 10 }, (_, i) => `s${i}`)
-    const actions = spellcheckMenuActions({ misspelledWord: 'wurd', dictionarySuggestions: suggestions })
+    const actions = spellcheckMenuActions({
+      misspelledWord: 'wurd',
+      dictionarySuggestions: suggestions
+    })
     expect(actions).toHaveLength(MAX_SUGGESTIONS + 1)
     expect(actions.slice(0, MAX_SUGGESTIONS).every((a) => a.kind === 'suggestion')).toBe(true)
     expect(actions[MAX_SUGGESTIONS]).toEqual({
-      kind: 'add-to-dictionary', label: 'Add "wurd" to Dictionary', word: 'wurd'
+      kind: 'add-to-dictionary',
+      label: 'Add "wurd" to Dictionary',
+      word: 'wurd'
     })
   })
 
@@ -51,9 +56,7 @@ describe('spellcheckMenuActions (spec 020)', () => {
       misspelledWord: 'wurd',
       dictionarySuggestions: ['', 'right', 'right', 'rite', '']
     })
-    const suggestions = actions
-      .filter((a) => a.kind === 'suggestion')
-      .map((a) => a.suggestion)
+    const suggestions = actions.filter((a) => a.kind === 'suggestion').map((a) => a.suggestion)
     expect(suggestions).toEqual(['right', 'rite'])
   })
 })

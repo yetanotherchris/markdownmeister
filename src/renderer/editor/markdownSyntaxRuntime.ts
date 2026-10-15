@@ -28,8 +28,6 @@ import {
 import { setMarkdownSyntaxGateOptions } from './markdownSyntaxInputRules'
 import { recordParse } from './openPerformance'
 
-
-
 /** Suppress the re-parse emission (mirrors the source-view lock in CrepeHost). */
 let suppressUntil = 0
 
@@ -63,15 +61,20 @@ function restoreCursor(view: EditorView, snapshot: CursorSnapshot): void {
   }
 }
 
-
 const EXCLUDED_REMARK_PLUGINS = new Set(['remarkGfm', 'remarkMath'])
 
 function isExcludedRemarkPlugin(plugin: unknown): boolean {
-  return plugin === remarkGFM || plugin === remarkMath || (typeof plugin === 'function' && EXCLUDED_REMARK_PLUGINS.has(plugin.name))
+  return (
+    plugin === remarkGFM ||
+    plugin === remarkMath ||
+    (typeof plugin === 'function' && EXCLUDED_REMARK_PLUGINS.has(plugin.name))
+  )
 }
 
 function buildRemarkProcessor(ctx: Ctx, options: MarkdownSyntaxOptions) {
-  const processor = unified().use(remarkParse).use(remarkStringify, ctx.get(remarkStringifyOptionsCtx))
+  const processor = unified()
+    .use(remarkParse)
+    .use(remarkStringify, ctx.get(remarkStringifyOptionsCtx))
   for (const p of ctx.get(remarkPluginsCtx)) {
     if (isExcludedRemarkPlugin(p.plugin)) continue
     processor.use(p.plugin, p.options)
@@ -79,9 +82,7 @@ function buildRemarkProcessor(ctx: Ctx, options: MarkdownSyntaxOptions) {
   return processor.use(markdownSyntaxRemark(options))
 }
 
-
 const appliedOptions = new WeakMap<Crepe, MarkdownSyntaxOptions>()
-
 
 export function reconfigureEditor(
   editor: Crepe,
@@ -90,7 +91,12 @@ export function reconfigureEditor(
 ): void {
   const { sourceMarkdown, suppressEmission = true } = params
   setMarkdownSyntaxGateOptions(options)
-  if (markdownSyntaxOptionsEqual(appliedOptions.get(editor) ?? DEFAULT_MARKDOWN_SYNTAX_OPTIONS, options)) {
+  if (
+    markdownSyntaxOptionsEqual(
+      appliedOptions.get(editor) ?? DEFAULT_MARKDOWN_SYNTAX_OPTIONS,
+      options
+    )
+  ) {
     return
   }
   // Capture BEFORE the serializer swap so a `~~x~~` still serializes to `~~x~~`.
@@ -118,8 +124,6 @@ export function reconfigureEditor(
   appliedOptions.set(editor, options)
 }
 
-
 export function reconfigureAll(pool: InstancePool, options: MarkdownSyntaxOptions): void {
   pool.forEach((editor) => reconfigureEditor(editor, options, { suppressEmission: true }))
 }
-

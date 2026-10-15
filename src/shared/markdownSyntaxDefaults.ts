@@ -1,4 +1,3 @@
-
 export const MARKDOWN_SYNTAX_DEFAULTS = {
   hardBreaks: false,
   strikethrough: true,

@@ -18,7 +18,10 @@ function sessionWithFile(extra?: Partial<Record<'view' | 'path' | 'name', string
     size: FRONTMATTER_FILE.length,
     ...(extra?.view ? { view: extra.view } : {})
   }
-  const state = documentsReducer(createSession(), { type: 'OPEN_EXISTING', payload: { value: payload } })
+  const state = documentsReducer(createSession(), {
+    type: 'OPEN_EXISTING',
+    payload: { value: payload }
+  })
   return { state, doc: state.documents[0] }
 }
 
@@ -51,7 +54,13 @@ describe('documents reducer — frontmatter (spec 021)', () => {
 
   it('openFile on an unclosed frontmatter treats the whole file as body', () => {
     const text = '---\nunclosed'
-    const doc = openFile({ path: 'u.md', name: 'u.md', content: text, mtimeMs: 1, size: text.length })
+    const doc = openFile({
+      path: 'u.md',
+      name: 'u.md',
+      content: text,
+      mtimeMs: 1,
+      size: text.length
+    })
     expect(doc.frontmatter).toBe('')
     expect(doc.content).toBe(text)
   })
@@ -117,14 +126,19 @@ describe('documents reducer — save with frontmatter (spec 021)', () => {
 
   it('getContentToSave recombines frontmatter + body for source view', () => {
     const { state, doc } = sessionWithFile()
-    const source = documentsReducer(state, { type: 'SET_VIEW', payload: { id: doc.id, view: 'source' } })
+    const source = documentsReducer(state, {
+      type: 'SET_VIEW',
+      payload: { id: doc.id, view: 'source' }
+    })
     expect(getContentToSave(source.documents[0], markdownReturning(null))).toBe(FRONTMATTER_FILE)
   })
 
   it('getContentToSave returns the body unchanged when frontmatter is empty (FR-010)', () => {
     const state = documentsReducer(createSession(), {
       type: 'OPEN_EXISTING',
-      payload: { value: { path: 'plain.md', name: 'plain.md', content: '# Plain\n', mtimeMs: 1, size: 8 } }
+      payload: {
+        value: { path: 'plain.md', name: 'plain.md', content: '# Plain\n', mtimeMs: 1, size: 8 }
+      }
     })
     expect(getContentToSave(state.documents[0], markdownReturning(null))).toBe('# Plain\n')
   })
@@ -135,7 +149,16 @@ describe('documents reducer — save with frontmatter (spec 021)', () => {
     // write the raw body bytes, the editor's appended newline is not adopted.
     const state = documentsReducer(createSession(), {
       type: 'OPEN_EXISTING',
-      payload: { value: { path: 'f.md', name: 'f.md', content: '---\ntitle: a\n---\nbody', mtimeMs: 1, size: 17, view: 'source' } }
+      payload: {
+        value: {
+          path: 'f.md',
+          name: 'f.md',
+          content: '---\ntitle: a\n---\nbody',
+          mtimeMs: 1,
+          size: 17,
+          view: 'source'
+        }
+      }
     })
     const doc = state.documents[0]
     const edited = documentsReducer(state, {
@@ -175,7 +198,10 @@ describe('documents reducer — save with frontmatter (spec 021)', () => {
 describe('documents reducer — source view with frontmatter (spec 021)', () => {
   it('UPDATE_CONTENT in source view re-splits the full textarea value (FR-007)', () => {
     const { state, doc } = sessionWithFile()
-    const source = documentsReducer(state, { type: 'SET_VIEW', payload: { id: doc.id, view: 'source' } })
+    const source = documentsReducer(state, {
+      type: 'SET_VIEW',
+      payload: { id: doc.id, view: 'source' }
+    })
     const edited = documentsReducer(source, {
       type: 'UPDATE_CONTENT',
       payload: { id: doc.id, content: '---\ntitle: y\n---\n\n# Body\n\nEdited.' }
@@ -189,7 +215,16 @@ describe('documents reducer — source view with frontmatter (spec 021)', () => 
   it('UPDATE_CONTENT in source view re-extracts when frontmatter is added', () => {
     const state = documentsReducer(createSession(), {
       type: 'OPEN_EXISTING',
-      payload: { value: { path: 'plain.md', name: 'plain.md', content: '# Plain\n', mtimeMs: 1, size: 8, view: 'source' } }
+      payload: {
+        value: {
+          path: 'plain.md',
+          name: 'plain.md',
+          content: '# Plain\n',
+          mtimeMs: 1,
+          size: 8,
+          view: 'source'
+        }
+      }
     })
     const doc = state.documents[0]
     const edited = documentsReducer(state, {
@@ -203,7 +238,10 @@ describe('documents reducer — source view with frontmatter (spec 021)', () => 
 
   it('UPDATE_CONTENT in source view re-extracts when frontmatter is removed', () => {
     const { state, doc } = sessionWithFile()
-    const source = documentsReducer(state, { type: 'SET_VIEW', payload: { id: doc.id, view: 'source' } })
+    const source = documentsReducer(state, {
+      type: 'SET_VIEW',
+      payload: { id: doc.id, view: 'source' }
+    })
     const edited = documentsReducer(source, {
       type: 'UPDATE_CONTENT',
       payload: { id: doc.id, content: '# Body\n\nText.' }
@@ -216,7 +254,10 @@ describe('documents reducer — source view with frontmatter (spec 021)', () => 
 
   it('UPDATE_CONTENT in source view sets dirty against the full-file baseline', () => {
     const { state, doc } = sessionWithFile()
-    const source = documentsReducer(state, { type: 'SET_VIEW', payload: { id: doc.id, view: 'source' } })
+    const source = documentsReducer(state, {
+      type: 'SET_VIEW',
+      payload: { id: doc.id, view: 'source' }
+    })
     // An edit then an undo back to the exact original is clean.
     const edited = documentsReducer(source, {
       type: 'UPDATE_CONTENT',
@@ -255,7 +296,11 @@ describe('documents reducer — round trip with frontmatter (spec 021)', () => {
     expect(isDirtyLive(state.documents[0], markdownReturning('\n# Body\n\nText.'))).toBe(false)
     const saved = documentsReducer(state, {
       type: 'SAVE_SUCCESS',
-      payload: { id: doc.id, path: 'f.md', content: getContentToSave(state.documents[0], markdownReturning(null)) }
+      payload: {
+        id: doc.id,
+        path: 'f.md',
+        content: getContentToSave(state.documents[0], markdownReturning(null))
+      }
     })
     expect(saved.documents[0].dirty).toBe(false)
     expect(saved.documents[0].frontmatter).toBe('---\ntitle: x\n---\n')

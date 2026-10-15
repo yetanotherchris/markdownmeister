@@ -2,7 +2,6 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { atomicWrite } from './fs/atomicWrite'
 
-
 export function loadSpellcheckWords(filePath: string): string[] {
   let raw: unknown
   try {
@@ -15,7 +14,6 @@ export function loadSpellcheckWords(filePath: string): string[] {
   if (!Array.isArray(arr)) return []
   return arr.filter((w): w is string => typeof w === 'string' && w.length > 0)
 }
-
 
 export function addSpellcheckWord(filePath: string, word: string): string[] {
   const normalized = word.trim().toLowerCase()

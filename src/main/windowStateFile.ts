@@ -3,8 +3,6 @@ import * as path from 'path'
 import { readConfigFile } from './settingsFile'
 import { atomicWrite } from './fs/atomicWrite'
 
-
-
 export interface WindowState {
   x: number
   y: number
@@ -12,7 +10,6 @@ export interface WindowState {
   height: number
   isMaximized: boolean
 }
-
 
 export interface WindowSnapshot {
   bounds: { x: number; y: number; width: number; height: number }
@@ -45,13 +42,11 @@ export function loadWindowStateFile(filePath: string): WindowState | null {
   return validateWindowState(readConfigFile(filePath).windowState)
 }
 
-
 export function snapshotToState(snapshot: WindowSnapshot): WindowState | null {
   if (snapshot.isMinimized) return null
   const { x, y, width, height } = snapshot.bounds
   return { x, y, width, height, isMaximized: snapshot.isMaximized }
 }
-
 
 export function writeWindowStateFile(filePath: string, state: WindowState): void {
   const current = readConfigFile(filePath)

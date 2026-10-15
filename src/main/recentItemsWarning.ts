@@ -1,7 +1,6 @@
 import { BrowserWindow } from 'electron'
 import { scrubAbsolutePaths } from './scrubPaths'
 
-
 export function reportRecentItemsWarning(e: unknown, action: 'save' | 'clear' = 'save'): void {
   const w = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
   if (!w || w.isDestroyed()) return

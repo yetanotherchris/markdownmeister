@@ -54,7 +54,9 @@ describe('markdownSyntaxInputRuleGate (spec 030 input-rule gate)', () => {
     // Disabled: handler must return null (no transaction) so the input does
     // nothing (FR-014).
     setMarkdownSyntaxGateOptions({ ...DEFAULT_MARKDOWN_SYNTAX_OPTIONS, [option]: false })
-    expect(handlerOf(wrapGatedRule(new InputRule(source, () => null)))(undefined, EMPTY_MATCH, 0, 0)).toBeNull()
+    expect(
+      handlerOf(wrapGatedRule(new InputRule(source, () => null)))(undefined, EMPTY_MATCH, 0, 0)
+    ).toBeNull()
 
     // Enabled: the original handler runs and its return value passes through.
     setMarkdownSyntaxGateOptions({ ...DEFAULT_MARKDOWN_SYNTAX_OPTIONS, [option]: true })

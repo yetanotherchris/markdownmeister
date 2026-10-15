@@ -82,9 +82,7 @@ describe('planTaskBackspace', () => {
     // A task item with one inline char: caret at the item's text offset 1
     // (after 'y') is not parentOffset 0, so ordinary deletion applies.
     const one = makeState(bullet([taskItem('y')]))
-    const shifted = one.apply(one.tr.setSelection(
-      TextSelection.create(one.doc, 4)
-    ))
+    const shifted = one.apply(one.tr.setSelection(TextSelection.create(one.doc, 4)))
     expect(planTaskBackspace(shifted)).toBeNull()
   })
 

@@ -46,7 +46,9 @@ describe('scoop manifest shortcut declaration', () => {
 
   it('keeps the existing path shim alongside the shortcut', () => {
     const manifest = loadManifest()
-    expect(manifest.architecture?.['64bit']?.bin).toEqual([['markdownmeister.exe', 'markdownmeister']])
+    expect(manifest.architecture?.['64bit']?.bin).toEqual([
+      ['markdownmeister.exe', 'markdownmeister']
+    ])
   })
 
   it('preserves the install hooks the shortcut ships alongside', () => {

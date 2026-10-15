@@ -57,7 +57,11 @@ describe('reconfigureEditor skip guard (spec 033, contract C1)', () => {
     // suppressEmission:false keeps the module-level suppression window clean
     // for the next assertion.
     expect(() =>
-      reconfigureEditor(editor, { ...ALL_OFF }, { sourceMarkdown: '# x\n', suppressEmission: false })
+      reconfigureEditor(
+        editor,
+        { ...ALL_OFF },
+        { sourceMarkdown: '# x\n', suppressEmission: false }
+      )
     ).toThrow(/editor\.action/)
   })
 

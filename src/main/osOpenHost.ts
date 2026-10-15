@@ -3,8 +3,6 @@ import { classifyOsTarget, extractTargetFromArgv } from './osOpen'
 import { openFileFromPath, sanitizeError, recordRecent, ctx } from './ipc/handlers/context'
 import { prepareFolderFromOsPath } from './ipc/handlers/workspace'
 
-
-
 type PendingOpen =
   | { kind: 'file'; absPath: string }
   | { kind: 'folder'; absPath: string }
@@ -67,7 +65,6 @@ function focusPrimaryWindow(): void {
   win.focus()
 }
 
-
 export function initOsOpenHost(): boolean {
   const singleInstanceEnabled = process.env.MM_SINGLE_INSTANCE !== '0'
   if (singleInstanceEnabled) {
@@ -109,7 +106,6 @@ export function setOsOpenWindow(window: BrowserWindow): void {
   rendererReady = false
   drain()
 }
-
 
 export function clearOsOpenWindow(): void {
   currentWindow = null

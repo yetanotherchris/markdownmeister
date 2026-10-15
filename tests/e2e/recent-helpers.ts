@@ -29,7 +29,11 @@ export interface RecentContext {
   externalFile: string
 }
 
-const FILE_MENU_LABELS = { 'Open File': 'Open File…', 'Open Folder': 'Open Folder…', 'Close Tab': 'Close Tab' } as const
+const FILE_MENU_LABELS = {
+  'Open File': 'Open File…',
+  'Open Folder': 'Open Folder…',
+  'Close Tab': 'Close Tab'
+} as const
 
 export function recentHooks(ctx: RecentContext): void {
   test.beforeAll(async () => {
@@ -69,17 +73,24 @@ export function recentHooks(ctx: RecentContext): void {
 }
 
 /** Open the hamburger and click the named File-menu action. */
-export async function clickFileMenu(ctx: RecentContext, prefix: keyof typeof FILE_MENU_LABELS): Promise<void> {
+export async function clickFileMenu(
+  ctx: RecentContext,
+  prefix: keyof typeof FILE_MENU_LABELS
+): Promise<void> {
   await clickHamburgerItem(ctx.window, FILE_MENU_LABELS[prefix])
 }
 
 /** The selectable recent entries (labels only; Clear Recent Items excluded). */
-export async function recentItemsState(ctx: RecentContext): Promise<{ label: string; enabled: boolean }[]> {
+export async function recentItemsState(
+  ctx: RecentContext
+): Promise<{ label: string; enabled: boolean }[]> {
   return hamburgerRecentState(ctx.window)
 }
 
 /** The full Recent Items submenu, including separators and the Clear action. */
-export async function recentMenuStructure(ctx: RecentContext): Promise<{ label: string; enabled: boolean }[]> {
+export async function recentMenuStructure(
+  ctx: RecentContext
+): Promise<{ label: string; enabled: boolean }[]> {
   return hamburgerRecentStructure(ctx.window)
 }
 

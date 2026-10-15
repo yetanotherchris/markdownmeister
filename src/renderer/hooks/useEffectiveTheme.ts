@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Settings } from '../../shared/ipc-contract'
 
-
 export type ThemeMode = 'light' | 'dark'
-
 
 export type ThemeChoice = 'light' | 'dark' | 'system'
 
@@ -18,13 +16,11 @@ export function themeOverrideFromChoice(choice: ThemeChoice): Settings['themeOve
   return choice === 'system' ? null : choice
 }
 
-
 export function effectiveThemeMode(choice: ThemeChoice, prefersDark: boolean): ThemeMode {
   if (choice === 'light') return 'light'
   if (choice === 'dark') return 'dark'
   return prefersDark ? 'dark' : 'light'
 }
-
 
 export function useEffectiveTheme(choice: ThemeChoice): ThemeMode {
   const [mode, setMode] = useState<ThemeMode>(() =>

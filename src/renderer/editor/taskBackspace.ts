@@ -1,7 +1,6 @@
 import { TextSelection } from '@milkdown/kit/prose/state'
 import type { EditorState, Transaction } from '@milkdown/kit/prose/state'
 
-
 export function planTaskBackspace(state: EditorState): Transaction | null {
   const { selection } = state
   if (!(selection instanceof TextSelection) || !selection.empty) return null

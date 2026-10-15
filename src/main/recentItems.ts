@@ -3,9 +3,7 @@ import * as path from 'path'
 import { atomicWrite } from './fs/atomicWrite'
 import type { RecentItem, RecentKind } from '../shared/ipc-contract'
 
-
 export const RECENT_ITEMS_LIMIT_PER_KIND = 5
-
 
 export function dedupeKey(path_: string, kind: RecentKind): string {
   const normalized = process.platform === 'win32' ? path_.toLowerCase() : path_
@@ -29,7 +27,11 @@ export function recordRecentItem(items: RecentItem[], item: RecentItem): RecentI
   ]
 }
 
-export function removeRecentItem(items: RecentItem[], path_: string, kind: RecentKind): RecentItem[] {
+export function removeRecentItem(
+  items: RecentItem[],
+  path_: string,
+  kind: RecentKind
+): RecentItem[] {
   const key = dedupeKey(path_, kind)
   return items.filter((existing) => dedupeKey(existing.path, existing.kind) !== key)
 }
@@ -85,7 +87,6 @@ export function loadRecentItems(filePath: string): RecentItem[] {
   }
   return normalizeRecentItems(raw)
 }
-
 
 export function saveRecentItems(filePath: string, items: RecentItem[]): void {
   let existing: Record<string, unknown> = {}
