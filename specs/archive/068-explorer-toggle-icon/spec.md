@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-07
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "is there a name for it? I want you write a speckit spec to change the icon in markdownmeister that toggles the file explorer to this icon (or very similar)"
 

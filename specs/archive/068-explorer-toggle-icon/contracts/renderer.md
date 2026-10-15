@@ -18,14 +18,14 @@ The button is disabled when no workspace is open. Its click handler remains `han
 
 ## Glyph geometry
 
-The outline is the rectangle from (3, 3) to (21, 21). The only divider is the vertical path at x=9. The outline's horizontal centre is x=12, so the divider is left of centre. The left pane is 6 units wide and the right pane is 12 units wide. `rx` is greater than 0. The svg `fill` attribute is `none` and `stroke-width` is `1.5`.
+The outline is the rectangle from (3, 3) to (21, 21). The only divider is the vertical path at x=9. The outline's horizontal center is x=12, so the divider is left of center. The left pane is 6 units wide and the right pane is 12 units wide. `rx` is greater than 0. The svg `fill` attribute is `none` and `stroke-width` is `1.5`.
 
 ## Invariants
 
 - The button's class, dimensions, tooltip, accessible name, disabled rule, and activation stay as they are.
 - The same svg is present when the explorer is visible, when it is collapsed, and when the button is disabled.
 - Rendered button bounds match the menu button. Rendered glyph bounds match the menu glyph. Both sit on the same header row.
-- Stroke colour follows the button's `color` in light and dark, including the existing disabled opacity, and it differs from the header background.
+- Stroke color follows the button's `color` in light and dark, including the existing disabled opacity, and it differs from the header background.
 - Hover and keyboard focus keep the existing `.chrome-icon-button` rules. The glyph does not change in those states.
 - Hiding and restoring the explorer does not change the active document's text or dirty marker.
 - No main, preload, or stylesheet file changes for this feature.

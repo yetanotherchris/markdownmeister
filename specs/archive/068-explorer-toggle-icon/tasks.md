@@ -21,7 +21,7 @@ description: "Task list for the file explorer toggle icon"
 
 **Purpose**: Confirm the glyph comes from a dependency that is already installed.
 
-- [ ] T001 Confirm `package.json` already depends on `lucide-react` and that `PanelLeft` is an exported component. Do not add a package.
+- [X] T001 Confirm `package.json` already depends on `lucide-react` and that `PanelLeft` is an exported component. Do not add a package.
 
 ---
 
@@ -41,11 +41,11 @@ description: "Task list for the file explorer toggle icon"
 
 ### Tests for User Story 1
 
-- [ ] T002 [US1] Add `tests/e2e/explorer-toggle-icon.spec.ts` asserting one rounded rect, the single path `M9 3v18`, a divider left of centre, a narrower left pane, `fill="none"`, and `stroke-width="1.5"` (FR-001, FR-002, SC-001). Assert the same svg after hide and restore, and while the button is disabled with no workspace (FR-004).
+- [X] T002 [US1] Add `tests/e2e/explorer-toggle-icon.spec.ts` asserting one rounded rect, the single path `M9 3v18`, a divider left of center, a narrower left pane, `fill="none"`, and `stroke-width="1.5"` (FR-001, FR-002, SC-001). Assert the same svg after hide and restore, and while the button is disabled with no workspace (FR-004).
 
 ### Implementation for User Story 1
 
-- [ ] T003 [US1] In `src/renderer/App.tsx`, replace `Squares2X2Icon` with `PanelLeft` from `lucide-react`, using `className="chrome-icon"` and `strokeWidth={1.5}`. Leave the button's class, labels, `disabled` rule, and `onClick` as they are (FR-001, FR-003, FR-005, FR-006).
+- [X] T003 [US1] In `src/renderer/App.tsx`, replace `Squares2X2Icon` with `PanelLeft` from `lucide-react`, using `className="chrome-icon"` and `strokeWidth={1.5}`. Leave the button's class, labels, `disabled` rule, and `onClick` as they are (FR-001, FR-003, FR-005, FR-006).
 
 **Checkpoint**: The control shows the left-sidebar symbol in every availability state and still hides and restores the explorer.
 
@@ -59,8 +59,8 @@ description: "Task list for the file explorer toggle icon"
 
 ### Tests for User Story 2
 
-- [ ] T004 [US2] Extend `tests/e2e/explorer-toggle-icon.spec.ts` so light and dark both keep the stroke equal to the menu button colour and different from the header background, the button and glyph bounds match the menu control, hover and keyboard focus keep the existing treatment, and the tooltip and accessible name stay `Toggle file explorer` (FR-003, FR-005, FR-007, SC-002, SC-003).
-- [ ] T005 [US2] Extend `tests/e2e/explorer-toggle-icon.spec.ts` so hiding and restoring the explorer leaves the typed text and the dirty marker unchanged (FR-006, SC-004).
+- [X] T004 [US2] Extend `tests/e2e/explorer-toggle-icon.spec.ts` so light and dark both keep the stroke equal to the menu button color and different from the header background, the button and glyph bounds match the menu control, hover and keyboard focus keep the existing treatment, and the tooltip and accessible name stay `Toggle file explorer` (FR-003, FR-005, FR-007, SC-002, SC-003).
+- [X] T005 [US2] Extend `tests/e2e/explorer-toggle-icon.spec.ts` so hiding and restoring the explorer leaves the typed text and the dirty marker unchanged (FR-006, SC-004).
 
 **Checkpoint**: Themes, labels, keyboard activation, alignment, and unsaved text are covered without a behaviour change.
 
@@ -70,10 +70,10 @@ description: "Task list for the file explorer toggle icon"
 
 **Purpose**: Keep the surrounding notes accurate, format the new test, run the gates, and archive the spec.
 
-- [ ] T006 [P] Update the glyph comment in `tests/e2e/native.spec.ts` so it names the left-sidebar symbol instead of `Squares2X2`.
-- [ ] T007 Add `tests/e2e/explorer-toggle-icon.spec.ts` to the `format:check` script in `package.json`.
-- [ ] T008 Run `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run test:e2e`.
-- [ ] T009 Archive the feature with `git mv specs/068-explorer-toggle-icon specs/archive/068-explorer-toggle-icon`, set **Status** in `spec.md` to `Archived`, and mark every task in `tasks.md` done.
+- [X] T006 [P] Update the glyph comment in `tests/e2e/native.spec.ts` so it names the left-sidebar symbol instead of `Squares2X2`.
+- [X] T007 Add `tests/e2e/explorer-toggle-icon.spec.ts` to the `format:check` script in `package.json`.
+- [X] T008 Run `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run test:e2e`.
+- [X] T009 Archive the feature with `git mv specs/068-explorer-toggle-icon specs/archive/068-explorer-toggle-icon`, set **Status** in `spec.md` to `Archived`, and mark every task in `tasks.md` done.
 
 ---
 
