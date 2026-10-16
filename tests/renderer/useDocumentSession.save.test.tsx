@@ -3,6 +3,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import type { Crepe } from '@milkdown/crepe'
 import { useDocumentSession } from '../../src/renderer/hooks/useDocumentSession'
+import { useExternalFileEvents } from '../../src/renderer/hooks/useExternalFileEvents'
 import { instancePool } from '../../src/renderer/editor/instancePool'
 import type {
   DocumentsAction,
@@ -328,9 +329,11 @@ describe('useDocumentSession save of an opened file (spec 069)', () => {
     const session = makeSession(doc)
     const dispatched: DocumentsAction[] = []
     let api!: ReturnType<typeof useDocumentSession>
-    const writeOpenedFile = vi.fn(() =>
-      Promise.resolve({ ok: true as const, value: { mtimeMs: 1, size: 1 } })
-    )
+    const order: string[] = []
+    const writeOpenedFile = vi.fn(() => {
+      order.push('write')
+      return Promise.resolve({ ok: true as const, value: { mtimeMs: 1, size: 1 } })
+    })
     const saveFileDialog = vi.fn()
     window.api = {
       writeOpenedFile,
@@ -340,7 +343,10 @@ describe('useDocumentSession save of an opened file (spec 069)', () => {
 
     function Harness() {
       api = useDocumentSession({
-        dispatch: (action) => dispatched.push(action),
+        dispatch: (action) => {
+          dispatched.push(action)
+          if (action.type === 'CLOSE') order.push('close')
+        },
         sessionRef: { current: session },
         dialog: dialogStub(),
         enforcePoolCap: () => {}
@@ -357,6 +363,7 @@ describe('useDocumentSession save of an opened file (spec 069)', () => {
     expect(writeOpenedFile).toHaveBeenCalledWith('C:/outside/a.md', '# Hi\n')
     expect(saveFileDialog).not.toHaveBeenCalled()
     expect(dispatched.some((action) => action.type === 'CLOSE')).toBe(true)
+    expect(order).toEqual(['write', 'close'])
   })
 
   it('quit Save of an opened file writes in place', async () => {
@@ -424,5 +431,111 @@ describe('useDocumentSession save of an opened file (spec 069)', () => {
     expect(result).toBe('cancelled')
     expect(writeOpenedFile).not.toHaveBeenCalled()
     expect(saveFileDialog).toHaveBeenCalledWith('a.md', '# Hi\n')
+  })
+
+  it('a save queued behind Save As writes the retargeted file', async () => {
+    const doc = makeDoc({ path: 'notes/a.md', canonicalPath: 'C:/folder/notes/a.md' })
+    const sessionRef = { current: makeSession(doc) }
+    let api!: ReturnType<typeof useDocumentSession>
+    let finishDialog: (value: {
+      ok: true
+      value: {
+        path: null
+        name: string
+        content: string
+        mtimeMs: number
+        size: number
+        canonicalPath: string
+      }
+    }) => void = () => {}
+    const writeFile = vi.fn()
+    const writeOpenedFile = vi.fn(() =>
+      Promise.resolve({ ok: true as const, value: { mtimeMs: 1, size: 1 } })
+    )
+    window.api = {
+      writeFile,
+      writeOpenedFile,
+      saveFileDialog: () =>
+        new Promise((resolve) => {
+          finishDialog = resolve
+        })
+    } as unknown as typeof window.api
+
+    function Harness() {
+      api = useDocumentSession({
+        dispatch: () => {},
+        sessionRef,
+        dialog: dialogStub(),
+        enforcePoolCap: () => {}
+      })
+      return null
+    }
+
+    root = createRoot(container)
+    act(() => root!.render(<Harness />))
+
+    let first!: Promise<string>
+    await act(async () => {
+      first = api.saveDocument(doc, true)
+      await Promise.resolve()
+    })
+    let second!: Promise<string>
+    await act(async () => {
+      second = api.saveDocument(doc, false)
+    })
+    sessionRef.current = {
+      ...sessionRef.current,
+      documents: [{ ...doc, path: null, canonicalPath: 'C:/elsewhere/b.md' }]
+    }
+    await act(async () => {
+      finishDialog({
+        ok: true,
+        value: {
+          path: null,
+          name: 'b.md',
+          content: '# Hi\n',
+          mtimeMs: 1,
+          size: 4,
+          canonicalPath: 'C:/elsewhere/b.md'
+        }
+      })
+      await first
+      await second
+    })
+
+    expect(writeFile).not.toHaveBeenCalled()
+    expect(writeOpenedFile).toHaveBeenCalledWith('C:/elsewhere/b.md', '# Hi\n')
+  })
+
+  it('the removed-file confirmation forces the location dialog', async () => {
+    const doc = makeDoc({ path: null, canonicalPath: 'C:/outside/a.md', dirty: true })
+    const sessionRef = { current: makeSession(doc) }
+    const saveDocument = vi.fn(() => Promise.resolve('cancelled' as const))
+    let api!: ReturnType<typeof useExternalFileEvents>
+    window.api = {
+      showConfirmation: () => Promise.resolve({ ok: true as const, value: 'save-as' as const })
+    } as unknown as typeof window.api
+
+    function Harness() {
+      api = useExternalFileEvents({
+        sessionRef,
+        dialog: dialogStub(),
+        session: {
+          saveDocument,
+          reloadDocument: () => Promise.resolve(),
+          flushLiveContent: () => {},
+          isDirtyLive: () => true
+        }
+      })
+      return null
+    }
+
+    root = createRoot(container)
+    act(() => root!.render(<Harness />))
+    await act(async () => {
+      await api.handleExternalPrompt({ id: doc.id, kind: 'removed' })
+    })
+
+    expect(saveDocument).toHaveBeenCalledWith(doc, true)
   })
 })

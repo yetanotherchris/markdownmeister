@@ -9,6 +9,7 @@ import { mkdir, createFile, moveEntry, trashEntry } from '../../fs/mutate'
 import type {
   Result,
   OpenedFile,
+  WriteOpenedRequest,
   WriteReceipt,
   DirEntry,
   TrashReceipt,
@@ -110,15 +111,18 @@ export function registerFileHandlers(window: Electron.BrowserWindow, _ctx: typeo
       ensureString((args as { canonicalPath: unknown }).canonicalPath, 'canonicalPath')
       ensureString((args as { content: unknown }).content, 'content')
 
-      const requested = (args as { canonicalPath: string }).canonicalPath
+      const requested = (args as WriteOpenedRequest).canonicalPath
       const real = canonicalPath(requested)
       if (!ctx.openedPaths.has(real)) {
-        throw Object.assign(new Error(`Path is not an opened file: ${real}`), {
+        throw Object.assign(new Error('Path is not an opened file'), {
           code: 'OUTSIDE_WORKSPACE' as const
         })
       }
+      if (ctx.workspaceRoot && resolveAbsolutePath(ctx.workspaceRoot, real)) {
+        ctx.workspaceState?.suppressWatch(real)
+      }
 
-      const receipt = writeOpenedFile(real, (args as { content: string }).content)
+      const receipt = writeOpenedFile(real, (args as WriteOpenedRequest).content)
       return ok(receipt)
     } catch (e: unknown) {
       const appErr = toAppError(e)

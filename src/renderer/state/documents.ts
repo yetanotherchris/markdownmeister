@@ -193,6 +193,22 @@ export function handleOpenNew(state: EditingSession): EditingSession {
   }
 }
 
+function allocateDocumentId(state: EditingSession, preferred: string): string {
+  const taken = new Set<string>()
+  for (const doc of state.documents) {
+    taken.add(doc.id)
+    if (doc.pendingReplacement) taken.add(doc.pendingReplacement.id)
+  }
+  if (!taken.has(preferred)) return preferred
+  let suffix = taken.size
+  let id = `file-${Date.now()}`
+  while (taken.has(id)) {
+    suffix += 1
+    id = `file-${Date.now()}-${suffix}`
+  }
+  return id
+}
+
 export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload): EditingSession {
   const value = p.value
   const existing = state.documents.find(
@@ -235,7 +251,9 @@ export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload
       )
     }
   }
-  const doc = openFile(value)
+  const opened = openFile(value)
+  const id = allocateDocumentId(state, opened.id)
+  const doc = id === opened.id ? opened : { ...opened, id, panelId: id }
   if (p.mode === 'replace') {
     const active = state.documents.find((d) => d.id === state.activeId)
     if (active && !active.dirty) {

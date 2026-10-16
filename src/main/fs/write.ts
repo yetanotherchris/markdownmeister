@@ -41,7 +41,7 @@ export function writeOpenedFile(absolutePath: string, content: string): WriteRec
     if (errno === 'ENOENT') {
       throw Object.assign(new Error('File or directory not found'), { code: 'NOT_FOUND' })
     }
-    throw e
+    mapWriteError(e)
   }
   if (!stat.isFile()) {
     throw Object.assign(new Error('Target is not a file'), { code: 'IO' })

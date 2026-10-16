@@ -169,6 +169,17 @@ test('Save of a never-saved document asks for a location and creates nothing whe
   expect(fs.readdirSync(scratch).sort()).toEqual(namesBefore)
 })
 
+test('direct Save of a deleted opened file does not recreate it or ask for a location', async () => {
+  await openExistingFile(outside)
+  await typeInEditor(window, 'GONE ')
+  await expect(window.getByRole('tab', { name: /outside\.md/ }).locator('.tab-dirty')).toBeVisible()
+  fs.rmSync(outside)
+  await clickSave()
+  expect(fs.existsSync(outside)).toBe(false)
+  await expect(window.getByRole('tab', { name: /outside\.md/ }).locator('.tab-dirty')).toBeVisible()
+  expect(await saveDialogCount()).toBe(0)
+})
+
 test('Save As outside the folder becomes the next save target, and cancel leaves it', async () => {
   const chosen = path.join(scratch, 'chosen.md')
   const original = fs.readFileSync(outside, 'utf-8')
@@ -189,6 +200,9 @@ test('Save As outside the folder becomes the next save target, and cancel leaves
 
   await clickHamburgerItem(window, 'Save As…')
   expect(await saveDialogCount()).toBe(2)
+  const afterCancel = fs.readFileSync(chosen, 'utf-8')
+  expect(afterCancel).toContain('CHOSEN')
+  expect(afterCancel).not.toContain('STILL')
   await typeInEditor(window, 'STILL ')
   await clickSave()
   await expect.poll(() => fs.readFileSync(chosen, 'utf-8')).toContain('STILL')

@@ -46,11 +46,56 @@ describe('SAVE_SUCCESS association (spec 069)', () => {
     const id = state.documents[0].id
     const saved = documentsReducer(state, {
       type: 'SAVE_SUCCESS',
-      payload: { id, path: null, canonicalPath: 'C:/outside/a.md', content: 'hello' }
+      payload: {
+        id,
+        path: null,
+        canonicalPath: 'C:/outside/a.md',
+        name: 'kept.md',
+        content: 'hello'
+      }
     })
     expect(saved.documents[0].path).toBeNull()
     expect(saved.documents[0].canonicalPath).toBe('C:/outside/a.md')
-    expect(saved.documents[0].title).toBe('outside.md')
+    expect(saved.documents[0].title).toBe('kept.md')
+  })
+
+  it('gives a reopened original file its own id after Save As leaves that path', () => {
+    const state = opened('notes/a.md', 'C:/folder/notes/a.md')
+    const saved = documentsReducer(state, {
+      type: 'SAVE_SUCCESS',
+      payload: {
+        id: state.documents[0].id,
+        path: null,
+        canonicalPath: 'C:/elsewhere/b.md',
+        name: 'b.md',
+        content: 'hello'
+      }
+    })
+    const reopened = documentsReducer(saved, {
+      type: 'OPEN_EXISTING',
+      payload: {
+        value: {
+          path: 'notes/a.md',
+          name: 'a.md',
+          content: 'disk',
+          mtimeMs: 3,
+          size: 4,
+          canonicalPath: 'C:/folder/notes/a.md'
+        }
+      }
+    })
+    expect(reopened.documents).toHaveLength(2)
+    expect(new Set(reopened.documents.map((doc) => doc.id)).size).toBe(2)
+    const original = reopened.documents.find((doc) => doc.path === 'notes/a.md')
+    const moved = reopened.documents.find((doc) => doc.path === null)
+    expect(original).toBeDefined()
+    expect(moved?.canonicalPath).toBe('C:/elsewhere/b.md')
+    const written = documentsReducer(reopened, {
+      type: 'SAVE_SUCCESS',
+      payload: { id: original!.id, path: 'notes/a.md', content: 'disk' }
+    })
+    const movedAfter = written.documents.find((doc) => doc.canonicalPath === 'C:/elsewhere/b.md')
+    expect(movedAfter?.path).toBeNull()
   })
 
   it('clears a previous relative path when Save As chooses a file outside the folder', () => {
