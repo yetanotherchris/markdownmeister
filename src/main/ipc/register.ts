@@ -21,6 +21,7 @@ export function registerIpcHandlers(window: BrowserWindow, approvedRendererUrl: 
     'file:openDialog',
     'file:read',
     'file:write',
+    'file:writeOpened',
     'file:saveDialog',
     'entry:create',
     'entry:move',

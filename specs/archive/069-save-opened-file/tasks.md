@@ -21,8 +21,8 @@ description: "Task list for saving an opened file in place"
 
 **Purpose**: Name the new operation in the types the renderer and main already share.
 
-- [ ] T001 Add `writeOpenedFile(canonicalPath: string, content: string)` to `DesktopApi` and the `file:writeOpened` request type in `src/shared/ipc-contract.ts`
-- [ ] T002 [P] Expose `writeOpenedFile` as a named preload method on `file:writeOpened` in `src/preload/index.ts`
+- [x] T001 Add `writeOpenedFile(canonicalPath: string, content: string)` to `DesktopApi` and the `file:writeOpened` request type in `src/shared/ipc-contract.ts`
+- [x] T002 [P] Expose `writeOpenedFile` as a named preload method on `file:writeOpened` in `src/preload/index.ts`
 
 ---
 
@@ -32,10 +32,10 @@ description: "Task list for saving an opened file in place"
 
 **Critical**: No user-story work begins until this phase is complete.
 
-- [ ] T003 Add the process-lifetime opened-path allowlist to `ctx` in `src/main/ipc/handlers/context.ts`, and add the real path from `openFileFromPath` when an open succeeds
-- [ ] T004 Implement `file:writeOpened` in `src/main/ipc/handlers/files.ts` and the absolute-path atomic write next to `writeFile` in `src/main/fs/write.ts`: allowlist check, existing-file check, `atomicWrite`, and the same errno mapping as `writeFile`. Cover it in `tests/main/writeOpened.test.ts` with an authorized write, a missing file that is not created, a directory, a path that was never opened, a `..` path, a symlink whose real path is not allowlisted, and scrubbed error text
-- [ ] T005 Return `canonicalPath` from `file:saveDialog` in `src/main/ipc/handlers/files.ts` and allowlist the chosen real path only after the write succeeds. Extend `tests/main/writeOpened.test.ts` with cancel (no allowlist entry) and a successful outside-folder choice
-- [ ] T006 [P] Teach `SAVE_SUCCESS` in `src/renderer/state/documents.ts` to store a null `path` (clearing a previous relative path), replace `canonicalPath`, and update the title from `name`. Cover the transitions from `data-model.md` in `tests/renderer/documents.save.test.ts`
+- [x] T003 Add the process-lifetime opened-path allowlist to `ctx` in `src/main/ipc/handlers/context.ts`, and add the real path from `openFileFromPath` when an open succeeds
+- [x] T004 Implement `file:writeOpened` in `src/main/ipc/handlers/files.ts` and the absolute-path atomic write next to `writeFile` in `src/main/fs/write.ts`: allowlist check, existing-file check, `atomicWrite`, and the same errno mapping as `writeFile`. Cover it in `tests/main/writeOpened.test.ts` with an authorized write, a missing file that is not created, a directory, a path that was never opened, a `..` path, a symlink whose real path is not allowlisted, and scrubbed error text
+- [x] T005 Return `canonicalPath` from `file:saveDialog` in `src/main/ipc/handlers/files.ts` and allowlist the chosen real path only after the write succeeds. Extend `tests/main/writeOpened.test.ts` with cancel (no allowlist entry) and a successful outside-folder choice
+- [x] T006 [P] Teach `SAVE_SUCCESS` in `src/renderer/state/documents.ts` to store a null `path` (clearing a previous relative path), replace `canonicalPath`, and update the title from `name`. Cover the transitions from `data-model.md` in `tests/renderer/documents.save.test.ts`
 
 **Checkpoint**: The channel rejects unopened paths and does not create a missing file. The reducer can retarget a document onto a file outside the folder.
 
@@ -47,9 +47,9 @@ description: "Task list for saving an opened file in place"
 
 **Independent Test**: With no folder open, open a file, edit, and save. The original file changes and no location dialog appears. The same holds for a file outside an open folder. A file inside the folder still saves in place.
 
-- [ ] T007 [US1] In `src/renderer/hooks/useDocumentSession.ts`, call `writeOpenedFile` when `path` is null and `canonicalPath` is set, unless the caller forced the dialog. On failure dispatch `SAVE_FAILED` and do not call `saveFileDialog`
-- [ ] T008 [P] [US1] Extend `tests/renderer/useDocumentSession.save.test.tsx` so a document with only `canonicalPath` saves through `writeOpenedFile`, a document with `path` still uses `writeFile`, and a failed opened-file write does not call `saveFileDialog`
-- [ ] T009 [US1] Add `tests/e2e/save-opened-file.spec.ts` for the reproduced cases: Open File with no folder (Save before an edit, and Save plus the save shortcut after an edit), Open File outside an open folder, Open File inside an open folder, and a file opened from the explorer
+- [x] T007 [US1] In `src/renderer/hooks/useDocumentSession.ts`, call `writeOpenedFile` when `path` is null and `canonicalPath` is set, unless the caller forced the dialog. On failure dispatch `SAVE_FAILED` and do not call `saveFileDialog`
+- [x] T008 [P] [US1] Extend `tests/renderer/useDocumentSession.save.test.tsx` so a document with only `canonicalPath` saves through `writeOpenedFile`, a document with `path` still uses `writeFile`, and a failed opened-file write does not call `saveFileDialog`
+- [x] T009 [US1] Add `tests/e2e/save-opened-file.spec.ts` for the reproduced cases: Open File with no folder (Save before an edit, and Save plus the save shortcut after an edit), Open File outside an open folder, Open File inside an open folder, and a file opened from the explorer
 
 ---
 
@@ -59,9 +59,9 @@ description: "Task list for saving an opened file in place"
 
 **Independent Test**: Save an opened file twice with no location dialog. Save As to a file outside the folder, then Save. Only the chosen file changes. Cancel Save As and the previous file remains the target. A new document still asks for a location.
 
-- [ ] T010 [US2] Pass `path: null` and the written `canonicalPath` from both success sites in `src/renderer/hooks/useDocumentSession.ts` when the target is outside the folder, and pass the new relative path when Save As stays inside the folder
-- [ ] T011 [US2] Extend `tests/renderer/useDocumentSession.save.test.tsx` to assert Save As success replaces `canonicalPath`, clears a previous relative path when the chosen file is outside the folder, and a cancelled dialog leaves the association unchanged. Assert close and quit Save of an opened file call `writeOpenedFile` rather than `saveFileDialog`
-- [ ] T012 [US2] Extend `tests/e2e/save-opened-file.spec.ts` with a second Save of the same file, Save As to a file outside the folder followed by Save, a cancelled Save As, and Save of a never-saved document
+- [x] T010 [US2] Pass `path: null` and the written `canonicalPath` from both success sites in `src/renderer/hooks/useDocumentSession.ts` when the target is outside the folder, and pass the new relative path when Save As stays inside the folder
+- [x] T011 [US2] Extend `tests/renderer/useDocumentSession.save.test.tsx` to assert Save As success replaces `canonicalPath`, clears a previous relative path when the chosen file is outside the folder, and a cancelled dialog leaves the association unchanged. Assert close and quit Save of an opened file call `writeOpenedFile` rather than `saveFileDialog`
+- [x] T012 [US2] Extend `tests/e2e/save-opened-file.spec.ts` with a second Save of the same file, Save As to a file outside the folder followed by Save, a cancelled Save As, and Save of a never-saved document
 
 ---
 
@@ -71,14 +71,14 @@ description: "Task list for saving an opened file in place"
 
 **Independent Test**: The main-process tests reject a missing allowlisted path without creating a file and map a locked file to `LOCKED`. The renderer test shows that failure does not open the dialog.
 
-- [ ] T013 [US3] Add the locked-file and unsaved-document assertions that are not already in T004 and T008: `tests/main/writeOpened.test.ts` maps `EACCES` / `EBUSY` / `EPERM` to `LOCKED` and leaves the original bytes intact, and `tests/renderer/useDocumentSession.save.test.tsx` keeps the failed document unsaved with no `saveFileDialog` call. The removed-file confirmation in `src/renderer/hooks/useExternalFileEvents.ts` must still force the dialog
+- [x] T013 [US3] Add the locked-file and unsaved-document assertions that are not already in T004 and T008: `tests/main/writeOpened.test.ts` maps `EACCES` / `EBUSY` / `EPERM` to `LOCKED` and leaves the original bytes intact, and `tests/renderer/useDocumentSession.save.test.tsx` keeps the failed document unsaved with no `saveFileDialog` call. The removed-file confirmation in `src/renderer/hooks/useExternalFileEvents.ts` must still force the dialog
 
 ---
 
 ## Phase 6: Polish
 
-- [ ] T014 Run `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run test:e2e` and fix failures from this feature
-- [ ] T015 Move `specs/069-save-opened-file/` to `specs/archive/069-save-opened-file/` with `git mv` and set `**Status**: Archived` in `spec.md` once the feature is implemented and its pull request is opened
+- [x] T014 Run `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run test:e2e` and fix failures from this feature
+- [x] T015 Move `specs/069-save-opened-file/` to `specs/archive/069-save-opened-file/` with `git mv` and set `**Status**: Archived` in `spec.md` once the feature is implemented and its pull request is opened
 
 ---
 

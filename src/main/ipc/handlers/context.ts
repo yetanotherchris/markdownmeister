@@ -35,7 +35,9 @@ export const ctx = {
   allowClose: false,
   quitRequestPending: false,
   approvedRendererUrl: null as string | null,
-  pendingFolderOpen: null as PendingFolderOpen | null
+  pendingFolderOpen: null as PendingFolderOpen | null,
+  /** Real paths main opened, or the user chose in the save dialog. Process lifetime. */
+  openedPaths: new Set<string>()
 }
 
 export function ok<T>(value: T): Result<T> {
@@ -218,6 +220,7 @@ export function openFileFromPath(filePath: string): OpenedFile {
         ? relativePath.split('/').slice(0, -1).join('/')
         : '.'
       ctx.workspaceState?.watchDir(parent)
+      ctx.openedPaths.add(canonical)
       return { ...opened, canonicalPath: canonical }
     }
   }
@@ -232,6 +235,7 @@ export function openFileFromPath(filePath: string): OpenedFile {
     })
   }
 
+  ctx.openedPaths.add(canonical)
   return {
     path: null,
     name: path.basename(filePath),

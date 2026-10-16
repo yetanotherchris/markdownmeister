@@ -33,8 +33,8 @@ Save of an existing file asks for a location whenever the document has no worksp
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
 - **I. Process Isolation**: The renderer still has no Node, `fs`, or Electron access. The new write is one named preload method, `writeOpenedFile`, backed by one channel. There is no generic invoke. PASS
-- **II. Every Path Is Untrusted**: Workspace writes stay on `file:write` and `resolveWithinRoot`. The new channel writes outside the workspace root, which is a deliberate exception recorded in Complexity Tracking. Main realpath-resolves the argument and writes only when that real path is already in the allowlist it filled when it opened the file or when the user confirmed the save dialog. A missing file is not created. Adversarial tests are part of the same change. PASS with the recorded exception
-- **III. Never Lose The User's Words**: The write uses `atomicWrite`. Failure returns `failed`, dispatches `SAVE_FAILED`, and does not open the location dialog or clear the unsaved state. Close and quit keep their existing failure text. PASS
+- **II. Every Path Is Untrusted**: Workspace writes stay on `file:write` and `resolveWithinRoot`. The new channel writes outside the workspace root, which is a deliberate exception recorded in Complexity Tracking. Main realpath-resolves the argument, writes only when that real path is already in the allowlist it filled when it opened the file or when the user confirmed the save dialog, and writes the file descriptor it opened for that check. A missing file is not created. Adversarial tests are part of the same change. PASS with the recorded exception
+- **III. Never Lose The User's Words**: Failure returns `failed`, dispatches `SAVE_FAILED`, and does not open the location dialog or clear the unsaved state. Close and quit keep their existing failure text. The opened-file write updates the checked handle rather than renaming a temp file onto the path. That is the second recorded exception. PASS with the recorded exception
 - **IV. Calm, Predictable Editing**: Ordinary Save of an opened file stops opening a dialog. Save As and the first save of a never-saved document still do. No work is added on the keystroke path. PASS
 - **V. Test What Can Corrupt Or Escape**: The new channel gets adversarial path tests, a missing-file test that asserts no file is created, and a failure test that leaves the target intact. The renderer test covers "canonical path saves without the dialog" and "Save As outside the folder clears the old relative path". The e2e suite covers the reproduced cases. PASS
 
@@ -62,7 +62,7 @@ specs/069-save-opened-file/
 ```text
 src/main/ipc/handlers/context.ts       # allowlist of opened real paths
 src/main/ipc/handlers/files.ts         # file:writeOpened; save dialog returns and allowlists the chosen real path
-src/main/fs/write.ts                   # atomic write of an already authorized absolute path, same errno mapping as writeFile
+src/main/fs/write.ts                   # write of an already authorized absolute path through its open handle, same errno mapping as writeFile
 src/preload/index.ts                   # writeOpenedFile
 src/shared/ipc-contract.ts             # channel argument and DesktopApi method
 src/renderer/hooks/useDocumentSession.ts  # save a canonical path in place; do not fall through to the dialog
@@ -80,3 +80,4 @@ tests/e2e/save-opened-file.spec.ts
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
 | Principle II: a write whose target is outside the open folder | An opened file that is not inside the folder still has to be saved in place. Refusing every path outside the root is what forces Save into the location dialog. | Widening `file:write` to accept renderer absolute paths would let the renderer choose the target. Adopting the file's parent as the open folder would change the folder the user already has open. Keeping the dialog is the bug. The allowlist limits the write to a real path main opened or the user picked in the dialog. |
+| Principle III: the opened-file write does not rename a temp file over the target | The write has to use the handle that was checked. Renaming onto the path looks the path up again, and Windows refuses that rename while the handle is open. | Renaming by path after a second realpath check leaves the substitution window the constitution forbids. A directory-relative rename is not available from Node on Windows or macOS. The handle write restores the previous bytes when the new write throws. |

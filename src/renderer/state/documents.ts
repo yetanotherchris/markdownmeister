@@ -148,7 +148,14 @@ export type DocumentsAction =
   | { type: 'CAPTURE_BASELINE'; payload: { id: string; baseline: string } }
   | {
       type: 'SAVE_SUCCESS'
-      payload: { id: string; path: string; content: string; revision?: number }
+      payload: {
+        id: string
+        path: string | null
+        content: string
+        revision?: number
+        canonicalPath?: string
+        name?: string
+      }
     }
   | { type: 'SAVE_FAILED'; payload: { id: string } }
   | { type: 'CLOSE'; payload: { id: string } }
@@ -184,6 +191,22 @@ export function handleOpenNew(state: EditingSession): EditingSession {
     documents: [...state.documents, doc],
     activeId: doc.id
   }
+}
+
+function allocateDocumentId(state: EditingSession, preferred: string): string {
+  const taken = new Set<string>()
+  for (const doc of state.documents) {
+    taken.add(doc.id)
+    if (doc.pendingReplacement) taken.add(doc.pendingReplacement.id)
+  }
+  if (!taken.has(preferred)) return preferred
+  let suffix = taken.size
+  let id = `file-${Date.now()}`
+  while (taken.has(id)) {
+    suffix += 1
+    id = `file-${Date.now()}-${suffix}`
+  }
+  return id
 }
 
 export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload): EditingSession {
@@ -228,7 +251,9 @@ export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload
       )
     }
   }
-  const doc = openFile(value)
+  const opened = openFile(value)
+  const id = allocateDocumentId(state, opened.id)
+  const doc = id === opened.id ? opened : { ...opened, id, panelId: id }
   if (p.mode === 'replace') {
     const active = state.documents.find((d) => d.id === state.activeId)
     if (active && !active.dirty) {
@@ -340,26 +365,35 @@ export function handleCaptureBaseline(
 
 export function handleSaveSuccess(
   state: EditingSession,
-  payload: { id: string; path: string; content: string }
+  payload: {
+    id: string
+    path: string | null
+    content: string
+    canonicalPath?: string
+    name?: string
+  }
 ): EditingSession {
-  const { id, path, content } = payload
+  const { id, path, content, canonicalPath, name } = payload
   const frontmatter = state.documents.find((d) => d.id === id)?.frontmatter ?? ''
   const body = content.startsWith(frontmatter) ? content.slice(frontmatter.length) : content
   return {
     ...state,
-    documents: state.documents.map((d) =>
-      d.id === id
-        ? {
-            ...d,
-            path: path || d.path,
-            title: path ? path.split('/').pop() || d.title : d.title,
-            baseline: content,
-            editorBaseline: body,
-            dirty: joinFrontmatter(d.frontmatter, d.content) !== content,
-            externalState: 'clean'
-          }
-        : d
-    )
+    documents: state.documents.map((d) => {
+      if (d.id !== id) return d
+      const nextPath = path === null ? null : path || d.path
+      const nextCanonical = canonicalPath !== undefined ? canonicalPath : d.canonicalPath
+      const title = name ? name : nextPath ? nextPath.split('/').pop() || d.title : d.title
+      return {
+        ...d,
+        path: nextPath,
+        canonicalPath: nextCanonical,
+        title,
+        baseline: content,
+        editorBaseline: body,
+        dirty: joinFrontmatter(d.frontmatter, d.content) !== content,
+        externalState: 'clean'
+      }
+    })
   }
 }
 

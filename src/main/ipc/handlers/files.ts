@@ -3,12 +3,13 @@ import * as path from 'path'
 import * as fs from 'fs'
 import { resolveWithinRoot, resolveFile, resolveDirectory } from '../../fs/paths'
 import { readFile, describeEntry } from '../../fs/read'
-import { writeFile } from '../../fs/write'
+import { writeFile, writeOpenedFile } from '../../fs/write'
 import { atomicWrite } from '../../fs/atomicWrite'
 import { mkdir, createFile, moveEntry, trashEntry } from '../../fs/mutate'
 import type {
   Result,
   OpenedFile,
+  WriteOpenedRequest,
   WriteReceipt,
   DirEntry,
   TrashReceipt,
@@ -103,6 +104,32 @@ export function registerFileHandlers(window: Electron.BrowserWindow, _ctx: typeo
     }
   })
 
+  ipcMain.handle('file:writeOpened', (event, args: unknown): Result<WriteReceipt> => {
+    if (!isAuthorizedRenderer(event, window)) return err('IO', 'Unauthorized renderer')
+    try {
+      validateShape(args, ['canonicalPath', 'content'])
+      ensureString((args as { canonicalPath: unknown }).canonicalPath, 'canonicalPath')
+      ensureString((args as { content: unknown }).content, 'content')
+
+      const requested = (args as WriteOpenedRequest).canonicalPath
+      const real = canonicalPath(requested)
+      if (!ctx.openedPaths.has(real)) {
+        throw Object.assign(new Error('Path is not an opened file'), {
+          code: 'OUTSIDE_WORKSPACE' as const
+        })
+      }
+      if (ctx.workspaceRoot && resolveAbsolutePath(ctx.workspaceRoot, real)) {
+        ctx.workspaceState?.suppressWatch(real)
+      }
+
+      const receipt = writeOpenedFile(real, (args as WriteOpenedRequest).content)
+      return ok(receipt)
+    } catch (e: unknown) {
+      const appErr = toAppError(e)
+      return err(appErr.code, sanitizeError(e, ctx.workspaceRoot))
+    }
+  })
+
   ipcMain.handle(
     'file:saveDialog',
     async (event, args: unknown): Promise<Result<OpenedFile | null>> => {
@@ -123,19 +150,22 @@ export function registerFileHandlers(window: Electron.BrowserWindow, _ctx: typeo
         }
 
         atomicWrite(result.filePath, content)
-        const stat = fs.statSync(result.filePath)
+        const real = canonicalPath(result.filePath)
+        ctx.openedPaths.add(real)
+        const stat = fs.statSync(real)
 
         let relPath: string | null = null
         if (ctx.workspaceRoot) {
-          relPath = resolveAbsolutePath(ctx.workspaceRoot, result.filePath)
+          relPath = resolveAbsolutePath(ctx.workspaceRoot, real)
         }
 
         return ok({
           path: relPath,
-          name: path.basename(result.filePath),
+          name: path.basename(real),
           content,
           mtimeMs: stat.mtimeMs,
-          size: stat.size
+          size: stat.size,
+          canonicalPath: real
         })
       } catch (e: unknown) {
         return err('IO', sanitizeError(e, ctx.workspaceRoot))

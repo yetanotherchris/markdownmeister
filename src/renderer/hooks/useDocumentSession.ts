@@ -132,10 +132,12 @@ export function useDocumentSession(opts: {
 
   const saveDocumentNow = useCallback(
     async (doc: DocumentState, forceDialog = false): Promise<SaveResult> => {
-      const content = getContentToSave(doc)
-      const revision = doc.revision ?? 0
-      if (doc.path && !forceDialog) {
-        const pathAtStart = doc.path
+      const live = sessionRef.current.documents.find((d) => d.id === doc.id)
+      if (!live) return 'cancelled'
+      const content = getContentToSave(live)
+      const revision = live.revision ?? 0
+      if (live.path && !forceDialog) {
+        const pathAtStart = live.path
         const result = await window.api.writeFile(pathAtStart, content)
         if (result.ok) {
           const current = sessionRef.current.documents.find((d) => d.id === doc.id)
@@ -157,14 +159,35 @@ export function useDocumentSession(opts: {
         dispatch({ type: 'SAVE_FAILED', payload: { id: doc.id } })
         return 'failed'
       }
-      const result = await window.api.saveFileDialog(doc.title, content)
+      if (live.canonicalPath && !forceDialog) {
+        const result = await window.api.writeOpenedFile(live.canonicalPath, content)
+        if (result.ok) {
+          instancePool.clearBaselineDoc(live.id)
+          dispatch({
+            type: 'SAVE_SUCCESS',
+            payload: {
+              id: live.id,
+              path: null,
+              canonicalPath: live.canonicalPath,
+              content,
+              revision
+            }
+          })
+          return 'saved'
+        }
+        dispatch({ type: 'SAVE_FAILED', payload: { id: live.id } })
+        return 'failed'
+      }
+      const result = await window.api.saveFileDialog(live.title, content)
       if (result.ok && result.value) {
-        instancePool.clearBaselineDoc(doc.id)
+        instancePool.clearBaselineDoc(live.id)
         dispatch({
           type: 'SAVE_SUCCESS',
           payload: {
-            id: doc.id,
-            path: result.value.path ?? '',
+            id: live.id,
+            path: result.value.path,
+            canonicalPath: result.value.canonicalPath,
+            name: result.value.name,
             content: result.value.content,
             revision
           }

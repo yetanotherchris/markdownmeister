@@ -23,7 +23,7 @@ One fixed named operation (Principle I). Workspace-relative saves stay on `file:
 
 ### Write (after validation)
 
-Call `atomicWrite` on the allowlisted real path. Map errno the same way `writeFile` does: `EBUSY`, `EPERM`, and `EACCES` become `LOCKED` with the existing locked-file message. `ENOSPC` and other write failures become `IO`. A thrown write must not leave a temp file or a truncated target (the existing `atomicWrite` cleanup).
+Open the allowlisted real path and write that file descriptor. Do not write the path again by name. Before the bytes change, `realpath` must still be the allowlisted path and the directory entry must be the same file as the handle. Map errno the same way `writeFile` does: `EBUSY`, `EPERM`, and `EACCES` become `LOCKED` with the existing locked-file message. `ENOSPC` and other write failures become `IO`. A thrown write restores the previous bytes. A crash during the handle write can leave a mixture of old and new bytes; it must not be aimed at a path that was substituted for the opened file.
 
 On success, return `ok({ mtimeMs, size })`. Do not change the open folder.
 
