@@ -36,11 +36,11 @@ The click-through on 13 October 2026 matched that split. With no folder, Open Fi
 
 ## R4. A removed file is not recreated by Save
 
-**Decision**: `file:writeOpened` checks that the allowlisted real path is an existing file before calling `atomicWrite`. If it is missing, the channel returns `NOT_FOUND` and creates nothing. The renderer treats that as a failed save and does not open the dialog. The removed-file confirmation still calls `saveDocument(doc, true)`, which forces the dialog.
+**Decision**: `file:writeOpened` opens the allowlisted real path and treats a missing path as `NOT_FOUND`. It does not create a directory entry. The renderer treats that as a failed save and does not open the dialog. The removed-file confirmation still calls `saveDocument(doc, true)`, which forces the dialog.
 
-**Rationale**: `atomicWrite` renames the temp file onto the target, and that rename creates a target that is not there. FR-009 forbids creating a file at the old location from direct Save. The existence check has to happen first. A disappearance between the check and the rename is the same class of race the workspace write already has. The required behaviour is that a file which is already gone at the start of Save is not created.
+**Rationale**: A rename onto a missing path would create a file, which FR-009 forbids. Opening the existing file fails when it is already gone, and writing that handle does not create a new name if the entry disappears afterwards. The required behaviour is that a file which is already gone at the start of Save is not created.
 
-**Alternatives considered**: Let `atomicWrite` recreate the file. Rejected by FR-009. Opening the location dialog automatically on `NOT_FOUND` is also rejected. The removed-file confirmation is the existing way to choose a new location.
+**Alternatives considered**: Let the write recreate the file. Rejected by FR-009. Opening the location dialog automatically on `NOT_FOUND` is also rejected. The removed-file confirmation is the existing way to choose a new location.
 
 ## R5. Failure stays on the failed-save path
 
@@ -49,3 +49,11 @@ The click-through on 13 October 2026 matched that split. With no folder, Open Fi
 **Rationale**: FR-008 says the failure is surfaced the same way a failed in-folder save is surfaced. Menu and shortcut Save of an in-folder file already leave the document unsaved without a new dialog. Falling through to the location dialog would hide the failure and could write a different file.
 
 **Alternatives considered**: Show a new modal for this channel only. Rejected because it would make outside files louder than inside files, and the spec says not to add a new presentation.
+
+## R6. The opened-file write uses the handle it checked
+
+**Decision**: `writeOpenedFile` opens the allowlisted real path and writes that file descriptor. It writes only when `realpath` of the path is still that allowlisted path and the directory entry's identity (`dev` and `ino`) is the opened handle. A missing file is still `NOT_FOUND`. A directory is still `IO`. The bytes are written at the start of the handle and the handle is then truncated to the new length, then `fsync`'d. If that write throws, the previous bytes are written back.
+
+**Rationale**: Resolving the path and later calling `atomicWrite` on the path opens a window where a parent directory can be replaced with a junction or the directory entry can be swapped. The rename would then follow the new name. Constitution II requires the check and the write to use the same handle. An open handle stays on the file that was checked: replacing the directory entry, or on platforms that allow it the parent directory, does not retarget the descriptor. Holding the handle also prevents replacing it with `rename` on Windows (`EPERM`), so a temp-file rename cannot be the write on that platform. Workspace saves stay on `atomicWrite`. The save dialog does too, because that write is the user's chosen path and it is not an allowlisted reopen.
+
+**Alternatives considered**: Re-checking the real path immediately before `rename`. Rejected. The check and the rename would still be two path lookups. Writing through `/proc/self/fd` on Linux only. Rejected. Windows and macOS cannot express that directory-relative rename in Node, and the final directory entry could still be swapped inside the pinned directory.

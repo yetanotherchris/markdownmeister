@@ -4,6 +4,7 @@ import * as os from 'os'
 import * as path from 'path'
 import {
   clickHamburgerItem,
+  clickHamburgerRecent,
   closeAppSafely,
   launchApp,
   openFolder,
@@ -143,6 +144,32 @@ test('Open File outside an open folder saves that file and leaves the folder', a
   await expect.poll(() => fs.readFileSync(outside, 'utf-8')).toContain('OUTSIDE')
   expect(fs.readFileSync(inside, 'utf-8')).toBe(insideBefore)
   await expect(window.getByRole('treeitem').getByText('inside.md')).toBeVisible()
+  expect(await saveDialogCount()).toBe(0)
+})
+
+test('a recent file saves in place', async () => {
+  await openExistingFile(outside)
+  await clickHamburgerItem(window, 'Close Tab')
+  await expect(window.getByRole('tab', { name: /outside\.md/ })).toHaveCount(0)
+
+  await clickHamburgerRecent(window, 'outside.md')
+  await expect(window.locator('.ProseMirror:visible')).toContainText('Hello outside.')
+  await typeInEditor(window, 'RECENT ')
+  await clickSave()
+  await expect.poll(() => fs.readFileSync(outside, 'utf-8')).toContain('RECENT')
+  expect(await saveDialogCount()).toBe(0)
+})
+
+test('an operating-system open saves in place', async () => {
+  await closeAppSafely(app)
+  ;({ app, window } = await launchApp(configDir, undefined, undefined, undefined, [outside]))
+  await stubSaveDialog({ cancel: true })
+  await expect(window.getByRole('tab', { name: /outside\.md/ })).toBeVisible()
+  await expect(window.locator('.ProseMirror:visible')).toContainText('Hello outside.')
+
+  await typeInEditor(window, 'OS ')
+  await clickSave()
+  await expect.poll(() => fs.readFileSync(outside, 'utf-8')).toContain('OS')
   expect(await saveDialogCount()).toBe(0)
 })
 

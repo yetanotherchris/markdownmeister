@@ -27,6 +27,7 @@ vi.mock('electron', () => ({
 }))
 
 import { registerFileHandlers } from '../../src/main/ipc/handlers/files'
+import * as writeModule from '../../src/main/fs/write'
 import { canonicalPath, ctx, openFileFromPath } from '../../src/main/ipc/handlers/context'
 
 const APPROVED_URL = 'file:///app/index.html'
@@ -251,7 +252,7 @@ describe('file:writeOpened', () => {
     'maps %s to LOCKED and leaves the original bytes',
     (code) => {
       const file = allow(path.join(root, 'note.md'))
-      vi.spyOn(atomicWriteModule, 'atomicWrite').mockImplementation(() => {
+      vi.spyOn(writeModule.openedHandleOps, 'writeSync').mockImplementation(() => {
         const error = new Error(`failed at ${file}`) as NodeJS.ErrnoException
         error.code = code
         throw error
@@ -271,7 +272,7 @@ describe('file:writeOpened', () => {
 
   it('maps ENOSPC to IO', () => {
     const file = allow(path.join(root, 'note.md'))
-    vi.spyOn(atomicWriteModule, 'atomicWrite').mockImplementation(() => {
+    vi.spyOn(writeModule.openedHandleOps, 'writeSync').mockImplementation(() => {
       const error = new Error('no space') as NodeJS.ErrnoException
       error.code = 'ENOSPC'
       throw error
@@ -300,6 +301,68 @@ describe('file:writeOpened', () => {
 
     expect(result.ok).toBe(true)
     expect(fs.readFileSync(file, 'utf-8')).toBe('still-open')
+  })
+
+  it('writes the opened handle when the directory entry is replaced', () => {
+    const file = allow(path.join(root, 'note.md'))
+    const kept = `${file}.kept`
+    const substitute = path.join(root, 'substitute.md')
+    fs.writeFileSync(substitute, 'secret')
+    vi.spyOn(writeModule.openedHandleOps, 'writeSync').mockImplementation(
+      (fd, buffer, offset, length, position) => {
+        if (fs.existsSync(file) && !fs.existsSync(kept)) {
+          fs.renameSync(file, kept)
+          fs.renameSync(substitute, file)
+        }
+        return fs.writeSync(fd, buffer, offset, length, position)
+      }
+    )
+
+    const result = handlerFor('file:writeOpened')(eventFor(window), {
+      canonicalPath: file,
+      content: 'changed'
+    }) as { ok: boolean }
+
+    expect(result.ok).toBe(true)
+    expect(fs.readFileSync(kept, 'utf-8')).toBe('changed')
+    expect(fs.readFileSync(file, 'utf-8')).toBe('secret')
+  })
+
+  it('does not write a parent directory swapped in before the bytes', () => {
+    const parent = path.join(root, 'opened')
+    const secretDir = path.join(root, 'secret-parent')
+    fs.mkdirSync(parent)
+    fs.mkdirSync(secretDir)
+    const file = allow(path.join(parent, 'note.md'))
+    const secret = path.join(secretDir, 'note.md')
+    fs.writeFileSync(secret, 'secret')
+    const aside = `${parent}-real`
+    let swapped = false
+    vi.spyOn(writeModule.openedHandleOps, 'writeSync').mockImplementation(
+      (fd, buffer, offset, length, position) => {
+        if (!swapped) {
+          swapped = true
+          try {
+            fs.renameSync(parent, aside)
+            fs.symlinkSync(secretDir, parent, 'junction')
+          } catch {
+            // An open file in the directory can make the rename fail. The write
+            // still has to leave the other directory alone.
+          }
+        }
+        return fs.writeSync(fd, buffer, offset, length, position)
+      }
+    )
+
+    const result = handlerFor('file:writeOpened')(eventFor(window), {
+      canonicalPath: file,
+      content: 'changed'
+    }) as { ok: boolean }
+
+    expect(result.ok).toBe(true)
+    expect(fs.readFileSync(secret, 'utf-8')).toBe('secret')
+    const written = fs.existsSync(aside) ? path.join(aside, 'note.md') : file
+    expect(fs.readFileSync(written, 'utf-8')).toBe('changed')
   })
 })
 

@@ -38,7 +38,7 @@ A real path enters the set only when:
 
 A path leaves the set only when the process ends. Changing the open folder does not clear it, because an outside document can stay open across that change.
 
-The set is not a general permission to write. `file:writeOpened` still requires the argument's current real path to be an existing file and to equal the allowlisted path.
+The set is not a general permission to write. `file:writeOpened` still requires the argument's current real path to be an existing file and to equal the allowlisted path. The bytes are written to the handle opened for that check.
 
 ## 3. Save result
 
