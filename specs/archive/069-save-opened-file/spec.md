@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-13
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "The repro is: open a file, try to save, the save as dialog appears (instead of just saving)."
 
