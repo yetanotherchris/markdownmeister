@@ -50,6 +50,12 @@ export interface WriteReceipt {
   size: number
 }
 
+/** `file:writeOpened`: write an existing file main already opened or the user chose. */
+export interface WriteOpenedRequest {
+  canonicalPath: string
+  content: string
+}
+
 export interface TrashReceipt {
   trashed: boolean
 }
@@ -209,6 +215,7 @@ export interface DesktopApi {
   readFile(relativePath: string): Promise<Result<OpenedFile>>
   openRecentFile(path: string): Promise<Result<OpenedFile>>
   writeFile(relativePath: string, content: string): Promise<Result<WriteReceipt>>
+  writeOpenedFile(canonicalPath: string, content: string): Promise<Result<WriteReceipt>>
   saveFileDialog(suggestedName: string, content: string): Promise<Result<OpenedFile | null>>
   createEntry(parentRelativePath: string, name: string, kind: EntryKind): Promise<Result<DirEntry>>
   moveEntry(fromRelativePath: string, toRelativePath: string): Promise<Result<DirEntry>>

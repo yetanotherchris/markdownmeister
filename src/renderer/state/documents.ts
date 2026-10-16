@@ -148,7 +148,14 @@ export type DocumentsAction =
   | { type: 'CAPTURE_BASELINE'; payload: { id: string; baseline: string } }
   | {
       type: 'SAVE_SUCCESS'
-      payload: { id: string; path: string; content: string; revision?: number }
+      payload: {
+        id: string
+        path: string | null
+        content: string
+        revision?: number
+        canonicalPath?: string
+        name?: string
+      }
     }
   | { type: 'SAVE_FAILED'; payload: { id: string } }
   | { type: 'CLOSE'; payload: { id: string } }
@@ -340,26 +347,35 @@ export function handleCaptureBaseline(
 
 export function handleSaveSuccess(
   state: EditingSession,
-  payload: { id: string; path: string; content: string }
+  payload: {
+    id: string
+    path: string | null
+    content: string
+    canonicalPath?: string
+    name?: string
+  }
 ): EditingSession {
-  const { id, path, content } = payload
+  const { id, path, content, canonicalPath, name } = payload
   const frontmatter = state.documents.find((d) => d.id === id)?.frontmatter ?? ''
   const body = content.startsWith(frontmatter) ? content.slice(frontmatter.length) : content
   return {
     ...state,
-    documents: state.documents.map((d) =>
-      d.id === id
-        ? {
-            ...d,
-            path: path || d.path,
-            title: path ? path.split('/').pop() || d.title : d.title,
-            baseline: content,
-            editorBaseline: body,
-            dirty: joinFrontmatter(d.frontmatter, d.content) !== content,
-            externalState: 'clean'
-          }
-        : d
-    )
+    documents: state.documents.map((d) => {
+      if (d.id !== id) return d
+      const nextPath = path === null ? null : path || d.path
+      const nextCanonical = canonicalPath !== undefined ? canonicalPath : d.canonicalPath
+      const title = name ? name : nextPath ? nextPath.split('/').pop() || d.title : d.title
+      return {
+        ...d,
+        path: nextPath,
+        canonicalPath: nextCanonical,
+        title,
+        baseline: content,
+        editorBaseline: body,
+        dirty: joinFrontmatter(d.frontmatter, d.content) !== content,
+        externalState: 'clean'
+      }
+    })
   }
 }
 

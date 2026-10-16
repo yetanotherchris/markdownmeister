@@ -157,6 +157,25 @@ export function useDocumentSession(opts: {
         dispatch({ type: 'SAVE_FAILED', payload: { id: doc.id } })
         return 'failed'
       }
+      if (doc.canonicalPath && !forceDialog) {
+        const result = await window.api.writeOpenedFile(doc.canonicalPath, content)
+        if (result.ok) {
+          instancePool.clearBaselineDoc(doc.id)
+          dispatch({
+            type: 'SAVE_SUCCESS',
+            payload: {
+              id: doc.id,
+              path: null,
+              canonicalPath: doc.canonicalPath,
+              content,
+              revision
+            }
+          })
+          return 'saved'
+        }
+        dispatch({ type: 'SAVE_FAILED', payload: { id: doc.id } })
+        return 'failed'
+      }
       const result = await window.api.saveFileDialog(doc.title, content)
       if (result.ok && result.value) {
         instancePool.clearBaselineDoc(doc.id)
@@ -164,7 +183,9 @@ export function useDocumentSession(opts: {
           type: 'SAVE_SUCCESS',
           payload: {
             id: doc.id,
-            path: result.value.path ?? '',
+            path: result.value.path,
+            canonicalPath: result.value.canonicalPath,
+            name: result.value.name,
             content: result.value.content,
             revision
           }

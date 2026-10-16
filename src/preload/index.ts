@@ -71,6 +71,8 @@ const api: DesktopApi = {
   openRecentFile: (path: string) => invokeResult<OpenedFile>('recent:openFile', { path }),
   writeFile: (relativePath: string, content: string) =>
     invokeResult<WriteReceipt>('file:write', { path: relativePath, content }),
+  writeOpenedFile: (canonicalPath: string, content: string) =>
+    invokeResult<WriteReceipt>('file:writeOpened', { canonicalPath, content }),
   saveFileDialog: (suggestedName: string, content: string) =>
     invokeResult<OpenedFile | null>('file:saveDialog', { suggestedName, content }),
   createEntry: (parentRelativePath: string, name: string, kind: EntryKind) =>
