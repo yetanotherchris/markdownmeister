@@ -26,6 +26,10 @@ brew tap markdownmeister https://github.com/yetanotherchris/markdownmeister
 brew install markdownmeister
 ```
 
+### macOS (Direct Download)
+
+Download the matching macOS DMG or ZIP from [Releases](https://github.com/yetanotherchris/markdownmeister/releases/latest). Each macOS build is signed with a Developer ID certificate and notarized by Apple, so it opens normally with Gatekeeper enabled.
+
 ### Windows (Microsoft Store)
 
 Search for **MarkdownMeister** in the Microsoft Store, or open the [Store search page](https://apps.microsoft.com/search?query=MarkdownMeister). Installing from the Store carries Microsoft's own signing, so there is no developer-certificate or SmartScreen warning.

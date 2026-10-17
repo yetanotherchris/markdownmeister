@@ -1,4 +1,4 @@
-# Specification Quality Checklist: macOS Signed and Notarized Distribution
+# Specification Quality Checklist: Notarize and Generate an App Store-Ready macOS Binary
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-09-26
