@@ -1,4 +1,4 @@
-# Feature Specification: Generate an App Store-Ready macOS Binary
+# Feature Specification: Notarize and Generate an App Store-Ready macOS Binary
 
 **Feature Branch**: `spec-063-apple-appstore-distribution`
 
