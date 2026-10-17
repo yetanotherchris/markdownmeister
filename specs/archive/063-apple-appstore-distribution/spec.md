@@ -1,10 +1,10 @@
-# Feature Specification: macOS Signed and Notarized Distribution
+# Feature Specification: Apple Direct Distribution
 
-**Feature Branch**: `063-macos-notarized-distribution`
+**Feature Branch**: `063-apple-appstore-distribution`
 
 **Created**: 2026-09-26
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "I want the app to be available through the equivalent Mac (apple store? I have a developer $99 account)". After advice, the chosen path is Developer ID signing and notarization of the existing direct-download artifacts; the Mac App Store is deferred.
 

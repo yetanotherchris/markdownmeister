@@ -13,24 +13,24 @@ directories:
 # the entry (main: ./out/main/index.js). Production node_modules are included
 # automatically by electron-builder.
 files:
-  - "!**/.vscode/*"
-  - "!src/**"
-  - "!specs/**"
-  - "!docs/**"
-  - "!tests/**"
-  - "!scripts/**"
-  - "!*.config.{ts,mjs}"
-  - "!{tsconfig.json,tsconfig.main.json,tsconfig.preload.json,tsconfig.renderer.json,vitest.workspace.ts}"
-  - "!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc,eslint.config.mjs,dev-app-update.yml,CHANGELOG.md,README.md}"
-  - "!{.env,.env.*,.npmrc,pnpm-lock.yaml,package-lock.json}"
-  - "!{.gitignore,AGENTS.md,CLAUDE.md,LICENSE}"
-  - "!update{scoop,brew}.ps1"
-  - "!Formula/**"
-  - "!markdownmeister.json"
-  - "!.github/**"
-  - "!.specify/**"
-  - "!test-results/**"
-  - "!playwright-report/**"
+  - '!**/.vscode/*'
+  - '!src/**'
+  - '!specs/**'
+  - '!docs/**'
+  - '!tests/**'
+  - '!scripts/**'
+  - '!*.config.{ts,mjs}'
+  - '!{tsconfig.json,tsconfig.main.json,tsconfig.preload.json,tsconfig.renderer.json,vitest.workspace.ts}'
+  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc,eslint.config.mjs,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml,package-lock.json}'
+  - '!{.gitignore,AGENTS.md,CLAUDE.md,LICENSE}'
+  - '!update{scoop,brew}.ps1'
+  - '!Formula/**'
+  - '!markdownmeister.json'
+  - '!.github/**'
+  - '!.specify/**'
+  - '!test-results/**'
+  - '!playwright-report/**'
 
 extraResources:
   - from: scripts/open-with.ps1
@@ -56,6 +56,7 @@ nsis:
   include: scripts/installer.nsh
 
 afterPack: scripts/copy-shell-extension.cjs
+afterSign: scripts/notarize-macos.cjs
 
 appx:
   # Partner Center, Product setup, Package/Identity name (individual
@@ -71,7 +72,7 @@ appx:
   # Tile background painted behind transparent tile images. Matches the navy
   # fill of the master artwork (assets/icon/master.png) so the centred wide
   # mark composites as one brand-coloured tile; the default #464646 clashes.
-  backgroundColor: "#222540"
+  backgroundColor: '#222540'
   # Spec 062 FR-011: the only capability a full-trust desktop app needs. Do not
   # add others; the package must not declare capabilities it does not use.
   capabilities:
@@ -85,6 +86,9 @@ appx:
 mac:
   artifactName: markdownmeister-${version}-macos-${arch}.${ext}
   icon: resources/icon.icns
+  hardenedRuntime: true
+  entitlements: packaging/macos/entitlements.plist
+  entitlementsInherit: packaging/macos/entitlements.plist
   target:
     - target: dmg
       arch: [x64, arm64]
