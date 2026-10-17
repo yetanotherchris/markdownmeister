@@ -1,4 +1,4 @@
-# Specification Quality Checklist: Mac App Store Submission
+# Specification Quality Checklist: Mac App Store Setup Guide
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-10-17
@@ -13,8 +13,8 @@
 ## Requirement Completeness
 
 - [x] App Store Connect app creation is an explicit prerequisite
-- [x] Submission failure behavior is defined
-- [x] Direct-download compatibility is bounded
+- [x] Credentials remain outside source control
+- [x] Direct-download compatibility is explained
 - [x] Human review and release decisions remain explicit
 
 ## Feature Readiness
