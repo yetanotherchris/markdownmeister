@@ -14,6 +14,8 @@
 
 All fields are protected GitHub Actions secrets and must be non-empty for a macOS release leg.
 
+The `macos-signing` deployment environment holds these secrets. It must restrict deployments to `main` tags and require an independent reviewer before the build matrix begins, preventing a tag-triggered workflow change from immediately accessing signing material.
+
 ## Signed application bundle
 
 | Field | Rule |

@@ -4,7 +4,7 @@
 
 1. Create a Developer ID Application certificate in the Apple Developer portal and export it with its private key as a password-protected `.p12` file.
 2. Create an App Store Connect team API key with App Manager access and download its `.p8` file. Record its key ID and issuer ID.
-3. Add the following repository Actions secrets: `MACOS_CERTIFICATE_P12_BASE64`, `MACOS_CERTIFICATE_PASSWORD`, `APPLE_API_KEY_P8_BASE64`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER`, `MACOS_SIGNING_IDENTITY`, and `MACOS_KEYCHAIN_PASSWORD`. The two file secrets contain single-line base64 output. `MACOS_SIGNING_IDENTITY` is the full `Developer ID Application: Name (TEAMID)` certificate identity.
+3. Create a protected `macos-signing` deployment environment that permits `main` tags only and requires an independent reviewer. Add the following environment secrets: `MACOS_CERTIFICATE_P12_BASE64`, `MACOS_CERTIFICATE_PASSWORD`, `APPLE_API_KEY_P8_BASE64`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER`, `MACOS_SIGNING_IDENTITY`, and `MACOS_KEYCHAIN_PASSWORD`. The two file secrets contain single-line base64 output. `MACOS_SIGNING_IDENTITY` is the full `Developer ID Application: Name (TEAMID)` certificate identity.
 4. Do not add these files or values to the repository.
 
 ## Release verification

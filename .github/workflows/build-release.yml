@@ -50,6 +50,9 @@ jobs:
   build:
     # Only run the expensive four-leg matrix once the cheap validation passed.
     needs: validate
+    # The environment holds long-lived Apple credentials and requires a reviewer
+    # before any release build can access them.
+    environment: macos-signing
     strategy:
       fail-fast: false
       matrix:

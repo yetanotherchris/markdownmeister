@@ -43,7 +43,6 @@ function findApp(directory) {
 }
 
 function verifyApp(appPath, identity) {
-  applyQuarantine(appPath)
   for (const [command, args] of validationCommands(appPath)) run(command, args)
   const signingDetails = run('codesign', ['--display', '--verbose=4', appPath])
   if (!signingDetails.includes(`Authority=${identity}`)) {
