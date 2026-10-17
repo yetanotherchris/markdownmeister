@@ -1,6 +1,6 @@
-# Feature Specification: Apple Direct Distribution
+# Feature Specification: Generate an App Store-Ready macOS Binary
 
-**Feature Branch**: `063-apple-appstore-distribution`
+**Feature Branch**: `spec-063-apple-appstore-distribution`
 
 **Created**: 2026-09-26
 

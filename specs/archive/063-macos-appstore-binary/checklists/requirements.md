@@ -1,4 +1,4 @@
-# Specification Quality Checklist: Apple Direct Distribution
+# Specification Quality Checklist: Generate an App Store-Ready macOS Binary
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-09-26
