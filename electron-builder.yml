@@ -114,6 +114,16 @@ linux:
   target:
     - target: AppImage
       arch: [x64]
+    - target: deb
+      arch: [x64]
+
+deb:
+  artifactName: ${name}_${version}_${arch}.${ext}
+  maintainer: Chris S. <github@yetanotherchris.dev>
+  category: Office
+  packageCategory: editors
+  synopsis: A free WYSIWYG markdown editor
+  description: Write markdown with a live preview or raw source, browse folders, and edit documents in tabs.
 
 # Spec 064: the Snap Store channel. Deliberately absent from linux.target so
 # the direct-download AppImage build is unchanged; build-linux-store.yml

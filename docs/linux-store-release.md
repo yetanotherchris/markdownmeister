@@ -1,107 +1,71 @@
-# Linux store release procedure
+# Ubuntu Snap Store Delivery
 
-Spec 064 (FR-001, FR-002, FR-006, FR-008, FR-011, FR-012, FR-014, FR-015, FR-016, FR-018, FR-019). How the Snap Store and Flathub builds of MarkdownMeister are produced, verified, and submitted, and which checks remain manual. The automation ends at a verified `.snap`; Snap Store upload, Flathub's manifest, and both stores' reviews remain human steps.
+This guide is for the maintainer who publishes MarkdownMeister through the [Ubuntu Snap Store](https://snapcraft.io/markdownmeister). The account, snap registration, repository credential, and store listing have already been set up. The first two sections record that setup for future maintenance; subsequent releases start at step 3.
 
-For the Windows Store channel, see `store-release.md`.
+The Snap Store is the project's only supported Linux store. **Flathub is not supported**, and the project does not publish or maintain a Flatpak package. The decision reflects Flathub's [Generative AI policy](https://docs.flathub.org/docs/for-app-authors/requirements#generative-ai-policy) and its [closed pull requests labelled "AI Slop"](https://github.com/flathub/flathub/pulls?q=is%3Apr+state%3Aclosed+label%3A%22AI+Slop%22), including 1,000+ created since May 2026 (as of 18 October 2026). Direct-download `.deb` and AppImage packages are separate distribution routes; see the [installation instructions](../README.md#linux-debian-ubuntu-mint).
 
-## What ships
+## 1. Register the Snap and Complete the Listing
 
-The Snap Store package is the same application as the direct-download AppImage, packed by electron-builder from its base core20 Electron snap template with strict confinement. The snap name is `markdownmeister`, taken from `executableName` lowercased. No application code changes: the snap is a packaging target, selected only by the Linux store workflow.
+1. Sign in to the [Snap Store dashboard](https://dashboard.snapcraft.io/) with the publisher's Ubuntu One account and accept the developer terms.
+2. Register `markdownmeister` with `snapcraft register markdownmeister`. This name is already registered for the project; use the existing product record rather than creating another listing.
+3. Complete the listing with the app name, summary, description, icon, screenshots, MIT licence, [homepage](https://yetanotherchris.github.io/markdownmeister/), and [support link](https://github.com/yetanotherchris/markdownmeister/issues).
+4. Confirm the listing points to the `stable` channel. The package is x86-64 only and uses strict confinement.
 
-The Flatpak is built from a manifest that lives in the maintainer's Flathub repository, not in this repository. Flathub's published policy forbids AI-generated or AI-assisted manifest content and forbids an AI agent from opening or automating the submission, so the manifest and the submission are maintainer-authored (spec FR-016). This repository supplies the application and its icon; it does not contain the manifest.
+The `snap` block in `electron-builder.yml` contains the package summary and description. Maintain the public listing separately in the dashboard.
 
-## Product identity
+## 2. Configure the GitHub Actions Credential
 
-These identifiers are public: they appear in the shipped snap metadata and in the store listings.
-
-| Channel | Field | Value |
-| --- | --- | --- |
-| Snap Store | Snap name | `markdownmeister` |
-| Snap Store | Channel | `stable` |
-| Snap Store | Confinement | `strict` |
-| Flathub | Application ID | `io.github.yetanotherchris.MarkdownMeister` |
-| Flathub | Architecture | x64 only |
-
-## Snap Store
-
-### One-time setup
-
-1. Sign in to the Snap Store with an Ubuntu One account and accept the developer terms.
-2. Register the name if it is not already held: `snapcraft register markdownmeister`. A name already registered to another publisher cannot be used. The snap name is derived from `executableName` lowercased and is shared with the AppImage, so a new name would have to change both the electron-builder config and `SNAP_NAME` in `scripts/linux-store-submission.mjs` together.
-3. Export a credential and store it as a repository secret named `SNAPCRAFT_STORE_CREDENTIALS` (Settings, Secrets and variables, Actions, Secrets): `snapcraft export-login - | base64 -w0`. The credential is read from the environment by the workflow's publish step and is never written into the repository (FR-012).
-4. Fill the store listing: name, summary, description, icon, screenshots (at least one per supported desktop), licence (MIT), homepage, and a support link (the GitHub Issues page). The summary and description in `electron-builder.yml`'s `snap` block are the snap's own metadata; the listing text is entered in the store dashboard.
-
-### Build the submission candidate
-
-Dispatch **Build Linux store package** (`.github/workflows/build-linux-store.yml`) from the **release tag**:
-
-- `version`: the release version without the leading `v`, for example `1.7.0`. It must equal the tag; the workflow asserts this when run against a tag.
-- `publish`: leave off. The build validates the version, packages `--linux snap --x64`, verifies the produced `.snap` is named for that version, and uploads it as an artifact.
-
-The snap can only be built on Linux. Locally, on a Linux host:
+On a machine with Snapcraft installed, export a publisher credential for this snap:
 
 ```sh
-npm ci
-npm run build
-npx electron-builder --linux snap --x64 --publish never -c.extraMetadata.version=1.7.0
+snapcraft export-login --snaps=markdownmeister --channels=stable -
 ```
 
-electron-builder downloads its base core20 Electron snap template and `mksquashfs` toolset, so no `snapcraft` install is needed to produce the `.snap`. The artifact is `dist/markdownmeister-<version>-linux-x64.snap`.
+1. In the GitHub repository, open Settings, Secrets and variables, Actions.
+2. Store the exported credential as the repository secret `SNAPCRAFT_STORE_CREDENTIALS`. Use the exported value directly, without adding another base64 encoding.
+3. Keep the credential out of source control and workflow logs. Replace the secret when the credential expires or is revoked.
 
-### Mandatory pre-submission verification
+The existing workflow reads this secret only for publication. Building a candidate does not require it.
 
-CI verifies the version and artifact name only. Before publishing, install the built snap on a real machine and run the sandbox matrix that CI cannot:
+## 3. Build a Release Candidate
 
-1. Install the candidate: `snap install --dangerous ./dist/markdownmeister-<version>-linux-x64.snap`.
-2. Open a user-chosen folder, enumerate it, create a file, change a file from outside the app, edit it, save it, and reopen the workspace. Every step must behave as in the AppImage (FR-006).
-3. Hand a folder to the app from the file manager. The path is untrusted and is validated in the main process; a path outside the workspace is refused (FR-007).
-4. Confirm the app cannot read or write user documents outside the workspace. Under strict confinement the `home` interface grants non-hidden files under `$HOME`. A folder outside `$HOME` (on removable media) is reached by the user connecting the declared `removable-media` interface (`sudo snap connect markdownmeister:removable-media`); it is declared but not auto-connected, so the grant stays the user's explicit choice (FR-008). Blanket home access is deliberately not requested.
-5. Review the declared interfaces against actual use and remove any proven unused (FR-019). The declared set is `desktop`, `desktop-legacy`, `home`, `x11`, `wayland`, `unity7`, `browser-support`, `gsettings`, `opengl`; `browser-support` is Chromium's sandbox, and `wayland`/`x11` are the display backends.
-6. Confirm the AppImage's own desktop entry still appears and works beside the snap, and that removing the snap removes only the snap's entry (FR-017).
+1. Open GitHub Actions and select **Build Linux store package** (`.github/workflows/build-linux-store.yml`).
+2. Run the workflow from the release tag, for example `v1.8.2`.
+3. Set `version` to the same version without `v`, for example `1.8.2`, and leave `publish` disabled.
+4. Wait for the build and smoke test to pass, then download `artifacts-linux-x64-snap`. The package inside is `markdownmeister-<version>-linux-x64.snap`.
 
-### Folder Open With (FR-009)
+The workflow checks the version against the tag, builds the app, packages the snap, and verifies its filename. It also installs the snap, checks its declared interfaces, runs it under a virtual display for 30 seconds, and removes it to check for a leftover AppImage desktop entry. These checks do not replace testing the desktop application interactively.
 
-The AppImage registers a folder entry by writing `~/.local/share/applications/markdownmeister.desktop` at launch. A strictly-confined snap cannot do this: the `home` interface excludes hidden paths, so `~/.local` is not writable, and the app's self-write stays AppImage-only. The snap therefore relies on snapd's desktop integration for its launcher, and the folder Open With entry falls under FR-009's "where the desktop does not support it" case: the app still opens folders through its own Open Folder control, and no broken entry is left behind. Verify this on the real machine (step 2 above covers opening a folder). The Flathub manifest can provide the entry instead, by adding `MimeType=inode/directory;` to its own `.desktop` file (FR-009).
+## 4. Verify the Candidate on Ubuntu
 
-### Publish
+On an Ubuntu desktop with snapd, install the downloaded candidate (replace `<version>`):
 
-1. Dispatch the workflow again from the same tag with `publish` enabled, or upload the verified artifact directly: `snapcraft upload --release=stable dist/markdownmeister-<version>-linux-x64.snap`. The publish step refuses to run without the credential.
-2. On a real Ubuntu machine, `sudo snap install markdownmeister`, launch it, and confirm a later revision refresh installs and launches. A successful upload is not delivery; the published stable revision must install and launch (FR-018).
+```sh
+sudo snap install --dangerous ./markdownmeister-<version>-linux-x64.snap
+snap run markdownmeister
+```
 
-### Updates
+1. Open a folder, create and edit a Markdown file, save it, and reopen it. Change a file externally and confirm the app notices the change.
+2. Confirm the app reports the release version and that unsaved edits still prompt before closing.
+3. Test a workspace in a non-hidden directory under your home folder. If testing removable storage, explicitly connect its interface with `sudo snap connect markdownmeister:removable-media`, then open that workspace.
+4. Check the launcher and confirm installing or removing the snap does not remove an existing AppImage launcher.
 
-For each release, build the candidate from the new tag, repeat the sandbox matrix, publish to `stable`, and re-verify the install and the upgrade from the previous revision. A snap build or review failure leaves the direct-download release and the Flathub channel untouched (FR-013).
+Strict confinement limits accessible locations. The app opens folders through its own Open Folder control; it does not install the AppImage's folder Open With entry. Remove the local candidate with `sudo snap remove markdownmeister` before testing a fresh store installation.
 
-## Flathub (maintainer-authored)
+## 5. Publish to Stable and Verify Delivery
 
-The maintainer authors the manifest and opens the submission. Use this list as the requirements; do not generate the manifest with an AI tool (FR-016).
+1. Run **Build Linux store package** again from the same release tag, with the matching `version` and `publish` enabled. This rebuilds the tagged source and uploads it to `stable` using the repository credential.
+2. Alternatively, upload the exact candidate you verified from a logged-in Snapcraft session: `snapcraft upload --release=stable markdownmeister-<version>-linux-x64.snap`.
+3. Check the dashboard for processing or review issues and confirm the revision is released to `stable`.
+4. On Ubuntu, run `sudo snap install markdownmeister`, launch the app from the application menu, and confirm the version and folder editing work.
+5. For subsequent releases, test an upgrade from the previous store revision with `sudo snap refresh markdownmeister`, then launch and verify it again.
 
-- **Application ID**: `io.github.yetanotherchris.MarkdownMeister`, matching the metainfo file name and the `app-id` used throughout. Flathub accepts the `io.github.yetanotherchris` namespace because the project is hosted under that GitHub account; no custom-domain verification is needed (FR-015).
-- **Architecture**: x64 only, declared in the Flathub repository's `flathub.json` as `"only-arches": ["x86_64"]`.
-- **Build from source, offline**: the manifest lists `sources` for the application and every dependency, and the build runs without network access (FR-011).
-- **Runtime and base**: a current `org.freedesktop.Platform` runtime plus the Electron base app, or Electron built from source in the manifest. Choose the versions the manifest's build actually uses.
-- **Permissions**: the minimum. Use `--filesystem=home` only if the document portal cannot provide the folder access the app needs; the app opens folders itself so the manifest must grant read/write to the user's chosen workspace without granting the whole home directory needlessly (FR-008). Add `--socket=x11`, `--socket=wayland`, `--device=dri` for display and GPU, and `--share=network` only if a network call exists.
-- **Metadata**: a metainfo file (`io.github.yetanotherchris.MarkdownMeister.metainfo.xml`) with the app name, summary, description, licence, homepage, and at least one screenshot; a `.desktop` file; icons named for the application ID at several sizes; and the MIT licence installed as `copyright` (FR-003, FR-011).
-- **Version**: the Flatpak version matches the release and is reported in the app (FR-004).
-- **Lint**: `flatpak-builder-lint manifest <manifest>` and the appstream/metainfo lint pass before submission (FR-011).
-- **Local gate**: build and launch the Flatpak locally before opening the submission (FR-011).
+An upload alone does not confirm delivery. The stable revision must install and launch successfully. Repeat steps 3 to 5 for each release.
 
-Then open the submission pull request against the Flathub repository, with maintainer-written text, and answer review personally (FR-016). If any application material was AI-generated, it must be disclosed to Flathub as its policy requires (FR-016).
+## Troubleshooting
 
-## Channel identity
-
-The three Linux channels never share a desktop entry (FR-017):
-
-- The AppImage writes `~/.local/share/applications/markdownmeister.desktop` at launch, and only when `process.env.APPIMAGE` is set; `--remove-folder-action` removes it.
-- The snap's desktop entry is installed by snapd under its snap-qualified name. The app never writes the AppImage entry when running as a snap.
-- The Flatpak owns a desktop entry named for its application ID.
-
-Installing or removing one channel leaves the others' entries and installed state intact.
-
-## Failure triage
-
-- Workflow fails on the version: the input must be three-part and equal to the release tag.
-- No `.snap` artifact: the template download or `mksquashfs` step failed; re-run the workflow.
-- Publish refused: `SNAPCRAFT_STORE_CREDENTIALS` is unset, or the snap name is not registered to the account. The credential must stay in Actions secrets.
-- The app cannot open a folder outside `$HOME`: expected under strict confinement; connect `removable-media` or move the workspace inside `$HOME`.
-- A channel's desktop entry disappeared: check the channel-identity rule above; a store build must never write the AppImage entry.
+- **Version rejected:** use a three-part version matching the selected release tag, without the leading `v`.
+- **Publication refused:** select a release tag and check that `SNAPCRAFT_STORE_CREDENTIALS` is present, valid, and belongs to the publisher of `markdownmeister`.
+- **Upload accepted but no update available:** check review status and the stable revision in the dashboard.
+- **Folder inaccessible:** use a non-hidden folder under your home directory, or connect `removable-media` for removable storage. Strict confinement does not grant access to every filesystem location.
+- **Smoke test fails:** inspect the workflow's snap launch log and interface connections before publishing again.

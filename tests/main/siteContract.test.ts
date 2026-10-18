@@ -85,7 +85,6 @@ describe('site contract: zero third-party resources', () => {
       'github.com',
       'api.github.com',
       'apps.microsoft.com',
-      'flathub.org',
       'snapcraft.io'
     ])
     const foundHosts = new Set(

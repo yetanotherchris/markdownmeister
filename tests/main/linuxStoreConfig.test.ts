@@ -24,6 +24,86 @@ function runCli(args: string[], env?: NodeJS.ProcessEnv): void {
   execFileSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf-8', stdio: 'pipe', env })
 }
 
+describe('Debian release configuration', () => {
+  const builder = read('electron-builder.yml')
+  const linux = builder.match(/^linux:\n((?:[ \t].*\n|\n)*)/m)?.[1] ?? ''
+  const deb = builder.match(/^deb:\n((?:[ \t].*\n|\n)*)/m)?.[1] ?? ''
+  const workflow = read('.github/workflows/build-release.yml')
+
+  it('adds only the amd64 Debian target alongside the unchanged AppImage target', () => {
+    expect(linux).toContain('artifactName: markdownmeister-${version}-linux-x64.${ext}')
+    expect(linux).toContain('icon: resources/icons')
+    expect(
+      [...linux.matchAll(/- target: (\S+)\n\s+arch: \[([^\]]+)\]/g)].map((match) => [
+        match[1],
+        match[2]
+      ])
+    ).toEqual([
+      ['AppImage', 'x64'],
+      ['deb', 'x64']
+    ])
+    expect(deb).toContain('artifactName: ${name}_${version}_${arch}.${ext}')
+  })
+
+  it('supplies Debian metadata without overriding the default dependency list', () => {
+    const metadata: unknown = JSON.parse(read('package.json'))
+    expect(metadata).toHaveProperty(
+      'homepage',
+      'https://yetanotherchris.github.io/markdownmeister/'
+    )
+    expect(deb).toMatch(/maintainer: .+ <[^<>\s]+@[^<>\s]+>/)
+    expect(deb).toContain('category: Office')
+    expect(deb).toContain('packageCategory: editors')
+    expect(deb).toMatch(/description: \S.+/)
+    expect(deb).not.toMatch(/^\s+depends:/m)
+  })
+
+  it('uploads the Debian package and requires its exact release-version filename before publication', () => {
+    const upload = workflow.slice(
+      workflow.indexOf('- name: Upload artifacts'),
+      workflow.indexOf('- name: Remove macOS signing credentials')
+    )
+    expect(upload).toContain('dist/markdownmeister_*.deb')
+    const verify = workflow.slice(
+      workflow.indexOf('- name: Verify required artifact set'),
+      workflow.indexOf('- name: Create draft GitHub Release')
+    )
+    expect(verify).toContain('"markdownmeister_${{ steps.version.outputs.VERSION }}_amd64.deb"')
+    expect(verify).toContain('if [ ! -s "artifacts/$f" ]; then')
+    expect(verify).toContain('exit 1')
+    expect(workflow).toContain(
+      'npx electron-builder --linux --x64 --publish never --config.extraMetadata.version=${{ steps.version.outputs.VERSION }}'
+    )
+  })
+
+  it('documents both install methods, supported architectures, updates, and removal', () => {
+    const readme = read('README.md')
+    expect(readme).toContain('graphical software installer')
+    expect(readme).toContain('sudo apt install ./markdownmeister_<version>_amd64.deb')
+    expect(readme).toContain('sudo apt remove markdownmeister')
+    expect(readme).toContain('x86-64 (amd64)')
+    for (const distribution of ['Ubuntu', 'Linux Mint', 'Debian', 'Pop!_OS']) {
+      expect(readme).toContain(distribution)
+    }
+    expect(readme).toContain('does not add an apt repository or automatic updates')
+    expect(readme).not.toMatch(/flathub/i)
+  })
+
+  it('does not ship Flatpak packaging or advertise a Flathub listing', () => {
+    const files = execFileSync('git', ['ls-files', '-z'], { cwd: REPO_ROOT, encoding: 'utf-8' })
+      .split('\0')
+      .filter(Boolean)
+    expect(
+      files.filter((file) =>
+        /(?:flatpak|flathub|io\.github\.yetanotherchris\.MarkdownMeister)/i.test(file)
+      )
+    ).toEqual([])
+    for (const file of ['docs/site/src/content.ts', 'docs/site/src/site.tsx']) {
+      expect(read(file)).not.toMatch(/flathub/i)
+    }
+  })
+})
+
 // Spec 064: the release gate CI runs before it will build or publish the snap.
 describe('linux store submission: release gate', () => {
   it('accepts only a three-part version', () => {

@@ -58,7 +58,21 @@ Date: 2026-10-17. Each entry states the finding, the evidence, and the implicati
 
 **Implication**: Shipping the `.deb` as a release asset is the minimum and needs no infrastructure. An apt repository (for `apt upgrade` to deliver new versions) is a separate, later feature if wanted; it is out of scope here. The README documents the release-asset path and names the distributions covered.
 
+## D6: An explicit Linux artifact name overrides the Debian default
+
+**Finding (2026-10-18)**: D2's claim that the Debian filename is forced was incorrect. `FpmTarget` merges `platformSpecificBuildOptions` into its options before applying target-specific options. `PlatformPackager.artifactPatternConfig` then prefers `targetSpecificOptions.artifactName`, `linux.artifactName`, and the global artifact name, in that order, before the default pattern. The existing Linux pattern would therefore override the Debian convention.
+
+**Evidence**: Installed `node_modules/app-builder-lib/out/targets/FpmTarget.js`, constructor and `build`; `node_modules/app-builder-lib/out/platformPackager.js`, `artifactPatternConfig` and `computeArtifactName`.
+
+**Decision**: Add `deb.artifactName: ${name}_${version}_${arch}.${ext}`. This preserves the AppImage and Snap names while making the `.deb` match the specified release asset. Debian defaults supply the Electron dependency list; `deb.category: Office` supplies the desktop category and `deb.packageCategory: editors` supplies the Debian section.
+
 ## References
+
+## D7: FPM needs host archive tools in the acceptance-test image
+
+**Finding (2026-10-18)**: The tests review identified that the Playwright runtime image does not provision `binutils` for FPM's host `ar` call. Debian output also uses xz-compressed tar payloads. The first PR CI run failed at the packager command; its captured output was not included in the error display.
+
+**Decision**: Install `binutils` and `xz-utils` in the existing e2e image and inherit the packager's stdout/stderr. Keep the package's assertions unchanged. Evidence: `FpmTarget.js`, the [FPM Debian output implementation](https://github.com/jordansissel/fpm/blob/v1.17.0/lib/fpm/package/deb.rb), and [PR review](https://github.com/yetanotherchris/markdownmeister/pull/126#issuecomment-6249414926).
 
 - Debian package format: `deb(5)` and Debian policy (the `ar` container with `debian-binary`, `control.tar.*`, `data.tar.*`).
 - electron-builder Debian target and options: `node_modules/app-builder-lib/out/targets/FpmTarget.js`, `out/options/linuxOptions.d.ts`, `out/appInfo.js`.

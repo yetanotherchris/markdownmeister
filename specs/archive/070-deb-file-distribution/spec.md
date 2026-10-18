@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-17
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "I think .deb makes most sense?" and "rename this spec, remove all the opinion about flathub - but keep the links to AI slop failed PRs and its policy" and "if needed, a new GHA to produce the .deb file".
 

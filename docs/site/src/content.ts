@@ -2,7 +2,6 @@ export const repositoryUrl = 'https://github.com/yetanotherchris/markdownmeister
 export const releasesUrl = `${repositoryUrl}/releases/latest`
 export const storeSearchUrl = 'https://apps.microsoft.com/search?query=MarkdownMeister'
 export const snapStoreUrl = 'https://snapcraft.io/markdownmeister'
-export const flathubUrl = 'https://flathub.org/apps/io.github.yetanotherchris.MarkdownMeister'
 export const issuesUrl = `${repositoryUrl}/issues`
 export const privacyUrl = 'privacy.html'
 

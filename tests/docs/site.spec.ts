@@ -27,6 +27,25 @@ test('sidebar navigation moves to each section', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Keyboard shortcuts' })).toBeInViewport()
 })
 
+test('Debian users can find the download, install, update, and removal instructions', async ({
+  page
+}) => {
+  await page.goto(`${BASE}/#install`)
+  const install = page.locator('#install')
+  await expect(
+    install.getByRole('heading', { name: 'Linux (Debian, Ubuntu, Mint)', exact: true })
+  ).toBeVisible()
+  await expect(
+    install.getByRole('link', { name: 'Releases', exact: true }).first()
+  ).toHaveAttribute('href', 'https://github.com/yetanotherchris/markdownmeister/releases/latest')
+  await expect(install).toContainText('graphical software installer')
+  await expect(install).toContainText('x86-64 (amd64)')
+  await expect(install).toContainText('sudo apt install ./markdownmeister_<version>_amd64.deb')
+  await expect(install).toContainText('sudo apt remove markdownmeister')
+  await expect(install).toContainText('download and install the newer package')
+  await expect(install).not.toContainText('Flathub')
+})
+
 test('the settings reference lists the options', async ({ page }) => {
   await page.goto(`${BASE}/`)
   const table = page.locator('table').last()
