@@ -44,19 +44,19 @@ sudo snap install markdownmeister
 
 ### Linux (Debian, Ubuntu, Mint)
 
-Download `markdownmeister_<version>_amd64.deb` from [Releases](https://github.com/yetanotherchris/markdownmeister/releases/latest). The package is for x86-64 (amd64) systems running Ubuntu, Linux Mint, Debian, Pop!_OS, or their derivatives. Open the downloaded file in your graphical software installer, or install it from a terminal (replace `<version>` with the downloaded version):
-
 ```sh
-sudo apt install ./markdownmeister_<version>_amd64.deb
+# .deb for x86-64 Debian, Ubuntu, Mint, and Pop!_OS
+curl -fsSL https://raw.githubusercontent.com/yetanotherchris/markdownmeister/main/scripts/install-linux.sh | sh
 ```
 
-To update, download the newer `.deb` and install it the same way. This does not add an apt repository or automatic updates. To uninstall:
+```sh
+# AppImage
+curl -fsSL https://raw.githubusercontent.com/yetanotherchris/markdownmeister/main/scripts/install-linux.sh | sh -s -- --appimage
+```
 
 ```sh
 sudo apt remove markdownmeister
 ```
-
-For other Linux distributions, use the AppImage from Releases.
 
 ## Technology
 

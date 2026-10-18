@@ -178,22 +178,15 @@ export function DocumentationSite(): ReactElement {
             </p>
             <Code>{'sudo snap install markdownmeister'}</Code>
             <h3>Linux (Debian, Ubuntu, Mint)</h3>
-            <p>
-              Download <code>{'markdownmeister_<version>_amd64.deb'}</code> from{' '}
-              <a href={releasesUrl}>Releases</a> for x86-64 (amd64) systems running Ubuntu, Linux
-              Mint, Debian, or Pop!_OS. Open it in your graphical software installer, or replace{' '}
-              <code>{'<version>'}</code> below with the downloaded version:
-            </p>
-            <Code>{'sudo apt install ./markdownmeister_<version>_amd64.deb'}</Code>
-            <p>
-              To update, download and install the newer package the same way. No apt repository or
-              automatic updates are added. To uninstall:
-            </p>
+            <Code>
+              {`# .deb for x86-64 Debian, Ubuntu, Mint, and Pop!_OS
+curl -fsSL https://raw.githubusercontent.com/yetanotherchris/markdownmeister/main/scripts/install-linux.sh | sh`}
+            </Code>
+            <Code>
+              {`# AppImage
+curl -fsSL https://raw.githubusercontent.com/yetanotherchris/markdownmeister/main/scripts/install-linux.sh | sh -s -- --appimage`}
+            </Code>
             <Code>{'sudo apt remove markdownmeister'}</Code>
-            <p>
-              For other Linux distributions, use the AppImage from{' '}
-              <a href={releasesUrl}>Releases</a>.
-            </p>
           </Section>
 
           <Section id="shortcuts" title="Keyboard shortcuts">

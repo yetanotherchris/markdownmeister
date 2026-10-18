@@ -84,6 +84,7 @@ describe('site contract: zero third-party resources', () => {
     const allowedHosts = new Set([
       'github.com',
       'api.github.com',
+      'raw.githubusercontent.com',
       'apps.microsoft.com',
       'snapcraft.io'
     ])
