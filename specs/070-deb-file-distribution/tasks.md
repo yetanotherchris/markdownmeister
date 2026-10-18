@@ -26,7 +26,7 @@
 
 ## Phase 3: Release workflow (FR-001, FR-008)
 
-- [ ] T003 [US2] In `.github/workflows/build-release.yml`: add `dist/markdownmeister_*.deb` to the Linux upload glob and to the `release` job's `Verify required artifact set` list. Leave the `Package (Linux)` command and every non-Linux leg unchanged. No new workflow. Commit `ci(070)`.
+- [x] T003 [US2] In `.github/workflows/build-release.yml`: add `dist/markdownmeister_*.deb` to the Linux upload glob and to the `release` job's `Verify required artifact set` list. Leave the `Package (Linux)` command and every non-Linux leg unchanged. No new workflow. Commit `ci(070)`.
 
 ## Phase 4: Documentation (FR-007)
 

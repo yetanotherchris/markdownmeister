@@ -197,6 +197,7 @@ jobs:
             dist/markdownmeister-*.zip
             dist/markdownmeister-*.dmg
             dist/markdownmeister-*.AppImage
+            dist/markdownmeister_*.deb
           if-no-files-found: error
 
       - name: Remove macOS signing credentials
@@ -247,6 +248,7 @@ jobs:
             "markdownmeister-${{ steps.version.outputs.VERSION }}-macos-arm64.dmg"
             "markdownmeister-${{ steps.version.outputs.VERSION }}-macos-arm64.zip"
             "markdownmeister-${{ steps.version.outputs.VERSION }}-linux-x64.AppImage"
+            "markdownmeister_${{ steps.version.outputs.VERSION }}_amd64.deb"
           )
           for f in "${required[@]}"; do
             if [ ! -s "artifacts/$f" ]; then
