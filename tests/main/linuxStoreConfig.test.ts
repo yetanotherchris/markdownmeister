@@ -76,17 +76,25 @@ describe('Debian release configuration', () => {
     )
   })
 
-  it('documents both install methods, supported architectures, updates, and removal', () => {
+  it('documents a latest-release download for the Debian package and the AppImage', () => {
     const readme = read('README.md')
-    expect(readme).toContain('graphical software installer')
-    expect(readme).toContain('sudo apt install ./markdownmeister_<version>_amd64.deb')
-    expect(readme).toContain('sudo apt remove markdownmeister')
-    expect(readme).toContain('x86-64 (amd64)')
-    for (const distribution of ['Ubuntu', 'Linux Mint', 'Debian', 'Pop!_OS']) {
-      expect(readme).toContain(distribution)
-    }
-    expect(readme).toContain('does not add an apt repository or automatic updates')
-    expect(readme).not.toMatch(/flathub/i)
+    const section = readme.slice(
+      readme.indexOf('### Linux (Debian, Ubuntu, Mint)'),
+      readme.indexOf('## Technology')
+    )
+    expect(section).toContain('https://api.github.com/repos/${repo}/releases/latest')
+    expect(section).toContain(
+      'curl -fL -o "markdownmeister_${version}_amd64.deb" \\\n' +
+        '  "https://github.com/${repo}/releases/download/${tag}/markdownmeister_${version}_amd64.deb"'
+    )
+    expect(section).toContain('sudo apt install "./markdownmeister_${version}_amd64.deb"')
+    expect(section).toContain('sudo apt remove markdownmeister')
+    expect(section).toContain(
+      'curl -fL -o "markdownmeister-${version}-linux-x64.AppImage" \\\n' +
+        '  "https://github.com/${repo}/releases/download/${tag}/markdownmeister-${version}-linux-x64.AppImage"'
+    )
+    expect(section).toContain('chmod +x "markdownmeister-${version}-linux-x64.AppImage"')
+    expect(section).not.toMatch(/flathub/i)
   })
 
   it('does not ship Flatpak packaging or advertise a Flathub listing', () => {

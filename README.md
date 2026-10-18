@@ -44,19 +44,42 @@ sudo snap install markdownmeister
 
 ### Linux (Debian, Ubuntu, Mint)
 
-Download `markdownmeister_<version>_amd64.deb` from [Releases](https://github.com/yetanotherchris/markdownmeister/releases/latest). The package is for x86-64 (amd64) systems running Ubuntu, Linux Mint, Debian, Pop!_OS, or their derivatives. Open the downloaded file in your graphical software installer, or install it from a terminal (replace `<version>` with the downloaded version):
-
 ```sh
-sudo apt install ./markdownmeister_<version>_amd64.deb
+# .deb for x86-64 Debian, Ubuntu, Mint, and Pop!_OS
+repo=yetanotherchris/markdownmeister
+tag=$(
+  curl -fsSL -H "Accept: application/vnd.github+json" \
+    "https://api.github.com/repos/${repo}/releases/latest" |
+    grep -o '"tag_name": *"[^"]*"' |
+    head -n 1 |
+    cut -d '"' -f 4
+)
+version=${tag#v}
+curl -fL -o "markdownmeister_${version}_amd64.deb" \
+  "https://github.com/${repo}/releases/download/${tag}/markdownmeister_${version}_amd64.deb"
+sudo apt install "./markdownmeister_${version}_amd64.deb"
 ```
 
-To update, download the newer `.deb` and install it the same way. This does not add an apt repository or automatic updates. To uninstall:
+```sh
+# AppImage
+repo=yetanotherchris/markdownmeister
+tag=$(
+  curl -fsSL -H "Accept: application/vnd.github+json" \
+    "https://api.github.com/repos/${repo}/releases/latest" |
+    grep -o '"tag_name": *"[^"]*"' |
+    head -n 1 |
+    cut -d '"' -f 4
+)
+version=${tag#v}
+curl -fL -o "markdownmeister-${version}-linux-x64.AppImage" \
+  "https://github.com/${repo}/releases/download/${tag}/markdownmeister-${version}-linux-x64.AppImage"
+chmod +x "markdownmeister-${version}-linux-x64.AppImage"
+"./markdownmeister-${version}-linux-x64.AppImage"
+```
 
 ```sh
 sudo apt remove markdownmeister
 ```
-
-For other Linux distributions, use the AppImage from Releases.
 
 ## Technology
 

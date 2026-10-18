@@ -35,14 +35,11 @@ test('Debian users can find the download, install, update, and removal instructi
   await expect(
     install.getByRole('heading', { name: 'Linux (Debian, Ubuntu, Mint)', exact: true })
   ).toBeVisible()
-  await expect(
-    install.getByRole('link', { name: 'Releases', exact: true }).first()
-  ).toHaveAttribute('href', 'https://github.com/yetanotherchris/markdownmeister/releases/latest')
-  await expect(install).toContainText('graphical software installer')
-  await expect(install).toContainText('x86-64 (amd64)')
-  await expect(install).toContainText('sudo apt install ./markdownmeister_<version>_amd64.deb')
+  await expect(install).toContainText('https://api.github.com/repos/${repo}/releases/latest')
+  await expect(install).toContainText('sudo apt install "./markdownmeister_${version}_amd64.deb"')
+  await expect(install).toContainText('markdownmeister-${version}-linux-x64.AppImage')
+  await expect(install).toContainText('chmod +x "markdownmeister-${version}-linux-x64.AppImage"')
   await expect(install).toContainText('sudo apt remove markdownmeister')
-  await expect(install).toContainText('download and install the newer package')
   await expect(install).not.toContainText('Flathub')
 })
 

@@ -178,22 +178,38 @@ export function DocumentationSite(): ReactElement {
             </p>
             <Code>{'sudo snap install markdownmeister'}</Code>
             <h3>Linux (Debian, Ubuntu, Mint)</h3>
-            <p>
-              Download <code>{'markdownmeister_<version>_amd64.deb'}</code> from{' '}
-              <a href={releasesUrl}>Releases</a> for x86-64 (amd64) systems running Ubuntu, Linux
-              Mint, Debian, or Pop!_OS. Open it in your graphical software installer, or replace{' '}
-              <code>{'<version>'}</code> below with the downloaded version:
-            </p>
-            <Code>{'sudo apt install ./markdownmeister_<version>_amd64.deb'}</Code>
-            <p>
-              To update, download and install the newer package the same way. No apt repository or
-              automatic updates are added. To uninstall:
-            </p>
+            <Code>
+              {`# .deb for x86-64 Debian, Ubuntu, Mint, and Pop!_OS
+repo=yetanotherchris/markdownmeister
+tag=$(
+  curl -fsSL -H "Accept: application/vnd.github+json" \\
+    "https://api.github.com/repos/\${repo}/releases/latest" |
+    grep -o '"tag_name": *"[^"]*"' |
+    head -n 1 |
+    cut -d '"' -f 4
+)
+version=\${tag#v}
+curl -fL -o "markdownmeister_\${version}_amd64.deb" \\
+  "https://github.com/\${repo}/releases/download/\${tag}/markdownmeister_\${version}_amd64.deb"
+sudo apt install "./markdownmeister_\${version}_amd64.deb"`}
+            </Code>
+            <Code>
+              {`# AppImage
+repo=yetanotherchris/markdownmeister
+tag=$(
+  curl -fsSL -H "Accept: application/vnd.github+json" \\
+    "https://api.github.com/repos/\${repo}/releases/latest" |
+    grep -o '"tag_name": *"[^"]*"' |
+    head -n 1 |
+    cut -d '"' -f 4
+)
+version=\${tag#v}
+curl -fL -o "markdownmeister-\${version}-linux-x64.AppImage" \\
+  "https://github.com/\${repo}/releases/download/\${tag}/markdownmeister-\${version}-linux-x64.AppImage"
+chmod +x "markdownmeister-\${version}-linux-x64.AppImage"
+"./markdownmeister-\${version}-linux-x64.AppImage"`}
+            </Code>
             <Code>{'sudo apt remove markdownmeister'}</Code>
-            <p>
-              For other Linux distributions, use the AppImage from{' '}
-              <a href={releasesUrl}>Releases</a>.
-            </p>
           </Section>
 
           <Section id="shortcuts" title="Keyboard shortcuts">
