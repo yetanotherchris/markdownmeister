@@ -76,25 +76,27 @@ describe('Debian release configuration', () => {
     )
   })
 
-  it('documents a latest-release download for the Debian package and the AppImage', () => {
+  it('documents a script that installs the latest Debian package or AppImage', () => {
     const readme = read('README.md')
     const section = readme.slice(
       readme.indexOf('### Linux (Debian, Ubuntu, Mint)'),
       readme.indexOf('## Technology')
     )
-    expect(section).toContain('https://api.github.com/repos/${repo}/releases/latest')
-    expect(section).toContain(
-      'curl -fL -o "markdownmeister_${version}_amd64.deb" \\\n' +
-        '  "https://github.com/${repo}/releases/download/${tag}/markdownmeister_${version}_amd64.deb"'
-    )
-    expect(section).toContain('sudo apt install "./markdownmeister_${version}_amd64.deb"')
+    const scriptUrl =
+      'https://raw.githubusercontent.com/yetanotherchris/markdownmeister/main/scripts/install-linux.sh'
+    expect(section).toContain(`curl -fsSL ${scriptUrl} | sh`)
+    expect(section).toContain(`curl -fsSL ${scriptUrl} | sh -s -- --appimage`)
     expect(section).toContain('sudo apt remove markdownmeister')
-    expect(section).toContain(
-      'curl -fL -o "markdownmeister-${version}-linux-x64.AppImage" \\\n' +
-        '  "https://github.com/${repo}/releases/download/${tag}/markdownmeister-${version}-linux-x64.AppImage"'
-    )
-    expect(section).toContain('chmod +x "markdownmeister-${version}-linux-x64.AppImage"')
     expect(section).not.toMatch(/flathub/i)
+
+    const script = read('scripts/install-linux.sh')
+    expect(script).not.toContain('\r')
+    expect(script).toContain('https://api.github.com/repos/${repo}/releases/latest')
+    expect(script).toContain('markdownmeister_${version}_amd64.deb')
+    expect(script).toContain('apt-get install -y')
+    expect(script).toContain('markdownmeister-${version}-linux-x64.AppImage')
+    expect(script).toContain('chmod +x "$file"')
+    expect(script).toContain('--appimage')
   })
 
   it('does not ship Flatpak packaging or advertise a Flathub listing', () => {

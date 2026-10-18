@@ -46,35 +46,12 @@ sudo snap install markdownmeister
 
 ```sh
 # .deb for x86-64 Debian, Ubuntu, Mint, and Pop!_OS
-repo=yetanotherchris/markdownmeister
-tag=$(
-  curl -fsSL -H "Accept: application/vnd.github+json" \
-    "https://api.github.com/repos/${repo}/releases/latest" |
-    grep -o '"tag_name": *"[^"]*"' |
-    head -n 1 |
-    cut -d '"' -f 4
-)
-version=${tag#v}
-curl -fL -o "markdownmeister_${version}_amd64.deb" \
-  "https://github.com/${repo}/releases/download/${tag}/markdownmeister_${version}_amd64.deb"
-sudo apt install "./markdownmeister_${version}_amd64.deb"
+curl -fsSL https://raw.githubusercontent.com/yetanotherchris/markdownmeister/main/scripts/install-linux.sh | sh
 ```
 
 ```sh
 # AppImage
-repo=yetanotherchris/markdownmeister
-tag=$(
-  curl -fsSL -H "Accept: application/vnd.github+json" \
-    "https://api.github.com/repos/${repo}/releases/latest" |
-    grep -o '"tag_name": *"[^"]*"' |
-    head -n 1 |
-    cut -d '"' -f 4
-)
-version=${tag#v}
-curl -fL -o "markdownmeister-${version}-linux-x64.AppImage" \
-  "https://github.com/${repo}/releases/download/${tag}/markdownmeister-${version}-linux-x64.AppImage"
-chmod +x "markdownmeister-${version}-linux-x64.AppImage"
-"./markdownmeister-${version}-linux-x64.AppImage"
+curl -fsSL https://raw.githubusercontent.com/yetanotherchris/markdownmeister/main/scripts/install-linux.sh | sh -s -- --appimage
 ```
 
 ```sh
