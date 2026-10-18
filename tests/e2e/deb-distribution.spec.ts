@@ -1,5 +1,5 @@
 import { test, expect, _electron as electron } from '@playwright/test'
-import { execFile } from 'node:child_process'
+import { execFile, execFileSync } from 'node:child_process'
 import { promisify } from 'node:util'
 import * as fs from 'node:fs/promises'
 import * as os from 'node:os'
@@ -14,7 +14,7 @@ test('the Debian package has release metadata, a launcher, and a working version
 
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'mm-deb-'))
   try {
-    await exec(
+    execFileSync(
       process.execPath,
       [
         'node_modules/electron-builder/cli.js',
@@ -26,7 +26,7 @@ test('the Debian package has release metadata, a launcher, and a working version
         `--config.extraMetadata.version=${VERSION}`,
         `--config.directories.output=${directory}`
       ],
-      { timeout: 240_000, maxBuffer: 4 * 1024 * 1024 }
+      { timeout: 240_000, stdio: 'inherit' }
     )
 
     const artifact = path.join(directory, `markdownmeister_${VERSION}_amd64.deb`)

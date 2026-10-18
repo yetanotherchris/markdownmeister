@@ -68,6 +68,12 @@ Date: 2026-10-17. Each entry states the finding, the evidence, and the implicati
 
 ## References
 
+## D7: FPM needs host archive tools in the acceptance-test image
+
+**Finding (2026-10-18)**: The tests review identified that the Playwright runtime image does not provision `binutils` for FPM's host `ar` call. Debian output also uses xz-compressed tar payloads. The first PR CI run failed at the packager command; its captured output was not included in the error display.
+
+**Decision**: Install `binutils` and `xz-utils` in the existing e2e image and inherit the packager's stdout/stderr. Keep the package's assertions unchanged. Evidence: `FpmTarget.js`, the [FPM Debian output implementation](https://github.com/jordansissel/fpm/blob/v1.17.0/lib/fpm/package/deb.rb), and [PR review](https://github.com/yetanotherchris/markdownmeister/pull/126#issuecomment-6249414926).
+
 - Debian package format: `deb(5)` and Debian policy (the `ar` container with `debian-binary`, `control.tar.*`, `data.tar.*`).
 - electron-builder Debian target and options: `node_modules/app-builder-lib/out/targets/FpmTarget.js`, `out/options/linuxOptions.d.ts`, `out/appInfo.js`.
 - Release workflow: `.github/workflows/build-release.yml`.

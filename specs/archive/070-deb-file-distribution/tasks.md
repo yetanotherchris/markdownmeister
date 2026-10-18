@@ -43,6 +43,8 @@
 
 ## Phase 7: Gates and lifecycle
 
+- [x] T012 Review follow-up: install `binutils` and `xz-utils` in the Linux e2e image for FPM's `ar` and compressed tar operations, and inherit packaging subprocess output so CI failures include the actual packager diagnostic. Source-derived review finding confirmed the image did not provision these tools. Commit `test(070)`.
+
 - [ ] T011 Add a Linux-only packaging acceptance test in `tests/e2e/deb-distribution.spec.ts`: build the `.deb` with a release-version override, inspect its metadata and desktop entry, extract its payload, launch the packaged app, and verify its version. Copy `electron-builder.yml` into the existing Linux e2e image. Add a built-site browser check for the Debian install instructions. This provides PR-time Linux package verification while local Docker and WSL are unavailable; graphical installer and apt checks remain T009. Commit `test(070)`.
 
 - [ ] T008 Confirm the artifact and the version path: `git grep -n -i flathub -- README.md docs/site tests/main` returns nothing, and a local Linux build (`npx electron-builder --linux deb --x64 --publish never`) produces `dist/markdownmeister_<version>_amd64.deb`. Run `npm run lint`, `npm run typecheck`, `npm run test`, and LAST `npm run test:e2e` (using the Linux Docker image for the Linux-specific checks).
