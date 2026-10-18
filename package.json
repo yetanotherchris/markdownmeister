@@ -1,6 +1,7 @@
 {
   "name": "markdownmeister",
   "productName": "MarkdownMeister",
+  "homepage": "https://yetanotherchris.github.io/markdownmeister/",
   "version": "1.8.2",
   "private": true,
   "engines": {

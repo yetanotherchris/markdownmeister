@@ -22,7 +22,7 @@
 
 ## Phase 2: Debian package target and metadata (FR-001, FR-002, FR-005, FR-011)
 
-- [ ] T002 [US1] Add a `deb` block to `electron-builder.yml` (`maintainer`, `category`, and any needed `depends`), and supply the homepage and author the Debian builder requires (a `package.json` `homepage` and `author`, or a `homepage` plus `deb.maintainer`). Do not change `linux.artifactName`, `linux.icon`, or the AppImage target; the `deb` target is additive. Commit `feat(070)`.
+- [x] T002 [US1] Add a `deb` block to `electron-builder.yml` (`maintainer`, `category`, and any needed `depends`), and supply the homepage and author the Debian builder requires (a `package.json` `homepage` and `author`, or a `homepage` plus `deb.maintainer`). Do not change `linux.artifactName`, `linux.icon`, or the AppImage target; the `deb` target is additive. Commit `feat(070)`.
 
 ## Phase 3: Release workflow (FR-001, FR-008)
 
