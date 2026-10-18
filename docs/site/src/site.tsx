@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import type { ReactElement, ReactNode } from 'react'
 import {
   features,
-  flathubUrl,
   issuesUrl,
   navigation,
   privacyUrl,
@@ -175,14 +174,24 @@ export function DocumentationSite(): ReactElement {
             </p>
             <h3>Linux (Snap Store)</h3>
             <p>
-              Not yet published. Once the snap is live it will be listed on the{' '}
-              <a href={snapStoreUrl}>Snap Store</a> and installs with:
+              Available on the <a href={snapStoreUrl}>Snap Store</a> and installs with:
             </p>
             <Code>{'sudo snap install markdownmeister'}</Code>
-            <h3>Linux (Flathub)</h3>
+            <h3>Linux (Debian, Ubuntu, Mint)</h3>
             <p>
-              Not yet published. Once the Flatpak is live it is available from{' '}
-              <a href={flathubUrl}>Flathub</a> and any software centre.
+              Download <code>{'markdownmeister_<version>_amd64.deb'}</code> from{' '}
+              <a href={releasesUrl}>Releases</a> for x86-64 (amd64) systems running Ubuntu, Linux
+              Mint, Debian, or Pop!_OS. Open it in your graphical software installer, or replace{' '}
+              <code>{'<version>'}</code> below with the downloaded version:
+            </p>
+            <Code>{'sudo apt install ./markdownmeister_<version>_amd64.deb'}</Code>
+            <p>
+              To update, download and install the newer package the same way. No apt repository or
+              automatic updates are added. To uninstall:
+            </p>
+            <Code>{'sudo apt remove markdownmeister'}</Code>
+            <p>
+              For other Linux distributions, use the AppImage from <a href={releasesUrl}>Releases</a>.
             </p>
           </Section>
 

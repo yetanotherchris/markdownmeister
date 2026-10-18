@@ -35,7 +35,7 @@
 
 ## Phase 5: Site (FR-007)
 
-- [ ] T006 [US1] In `docs/site/src/content.ts` and `docs/site/src/site.tsx`, replace the "Linux (Flathub)" entry with the `.deb` route (link the releases page), and remove the `flathubUrl` export and its use. Commit `docs(070)`.
+- [x] T006 [US1] In `docs/site/src/content.ts` and `docs/site/src/site.tsx`, replace the "Linux (Flathub)" entry with the `.deb` route (link the releases page), and remove the `flathubUrl` export and its use. Commit `docs(070)`.
 
 ## Phase 6: Tests
 
