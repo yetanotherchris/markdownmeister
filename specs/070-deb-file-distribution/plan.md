@@ -1,6 +1,6 @@
 # Implementation Plan: Debian Package Distribution (No Flathub)
 
-**Branch**: `spec-070-deb-file-distribution` | **Date**: 2026-10-17 | **Spec**: [spec.md](spec.md)
+**Branch**: `spec-070-deb-file-distribution-implementation` | **Date**: 2026-10-18 | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `/specs/070-deb-file-distribution/spec.md`
 
@@ -14,7 +14,7 @@ Publish a Debian package (`.deb`) with every release, beside the existing AppIma
 
 **Primary Dependencies**: electron-builder's `FpmTarget` (verified at `node_modules/app-builder-lib/out/targets/FpmTarget.js`), which builds `deb`/`rpm`/`pacman`. It is already the project's packager; the `deb` build needs `fpm` tooling that electron-builder bundles, and it runs on the `ubuntu-latest` release leg. No new dependency.
 
-**Artifact naming**: `FpmTarget.build` forces the Debian name format `${name}_${version}_${arch}.${ext}` with `amd64` for x64, so the artifact is `markdownmeister_<version>_amd64.deb` (for example `markdownmeister_1.8.2_amd64.deb`). This differs from the `linux.artifactName` template, which applies to AppImage and archives; the `deb` name is the Debian convention.
+**Artifact naming**: Set `deb.artifactName` explicitly to `${name}_${version}_${arch}.${ext}` with `amd64` for x64, producing `markdownmeister_<version>_amd64.deb`. Inspection during implementation found that `FpmTarget` merges the Linux options and `PlatformPackager.artifactPatternConfig` prefers an explicit artifact name over the Debian default. Without this override, the existing `linux.artifactName` would produce the wrong filename. See research D6.
 
 **Required metadata**: `FpmTarget.computeFpmMetaInfoOptions` throws unless a project homepage and a maintainer (name and email) are available. `package.json` has no `author`, `homepage`, or `repository` field, so the change must supply a homepage and a `deb.maintainer` (or a `package.json` author with an email). This is recorded in research D2.
 
@@ -76,6 +76,14 @@ tests/main/
 **Structure Decision**: The change stays in the packaging and release surface. The `.deb` is produced by electron-builder and published by the existing release workflow, following the additive-target pattern used for `appx` (spec 062) and `snap` (spec 064). Documentation lives in `docs/`, and the site is updated because it currently advertises a Flathub listing that will not exist.
 
 ## Complexity Tracking
+
+### Implementation decisions (2026-10-18)
+
+- The original spec branch is occupied by the worktree used for the merged planning PR. Implementation uses a new branch from current `main`, `spec-070-deb-file-distribution-implementation`.
+- Supply `package.json.homepage` and Debian-only maintainer, description, category, and package section. Keep electron-builder's default Debian dependencies rather than replacing its maintained list. Set the Debian artifact name explicitly as described above.
+- The maintainer requested a complete rewrite of the Linux store guide to match the Apple guide: numbered operational steps, completed Snap Store setup acknowledged, no specification references, and an explicit unsupported-Flathub note. This replaces T005's earlier instruction to retain the Snap sections verbatim. The guide links to the README for direct-download installation.
+
+### Complexity assessment
 
 No constitutional deviations. Three recorded choices:
 

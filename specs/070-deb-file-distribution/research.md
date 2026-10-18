@@ -58,6 +58,14 @@ Date: 2026-10-17. Each entry states the finding, the evidence, and the implicati
 
 **Implication**: Shipping the `.deb` as a release asset is the minimum and needs no infrastructure. An apt repository (for `apt upgrade` to deliver new versions) is a separate, later feature if wanted; it is out of scope here. The README documents the release-asset path and names the distributions covered.
 
+## D6: An explicit Linux artifact name overrides the Debian default
+
+**Finding (2026-10-18)**: D2's claim that the Debian filename is forced was incorrect. `FpmTarget` merges `platformSpecificBuildOptions` into its options before applying target-specific options. `PlatformPackager.artifactPatternConfig` then prefers `targetSpecificOptions.artifactName`, `linux.artifactName`, and the global artifact name, in that order, before the default pattern. The existing Linux pattern would therefore override the Debian convention.
+
+**Evidence**: Installed `node_modules/app-builder-lib/out/targets/FpmTarget.js`, constructor and `build`; `node_modules/app-builder-lib/out/platformPackager.js`, `artifactPatternConfig` and `computeArtifactName`.
+
+**Decision**: Add `deb.artifactName: ${name}_${version}_${arch}.${ext}`. This preserves the AppImage and Snap names while making the `.deb` match the specified release asset. Debian defaults supply the Electron dependency list; `deb.category: Office` supplies the desktop category and `deb.packageCategory: editors` supplies the Debian section.
+
 ## References
 
 - Debian package format: `deb(5)` and Debian policy (the `ar` container with `debian-binary`, `control.tar.*`, `data.tar.*`).
