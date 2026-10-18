@@ -30,7 +30,7 @@
 
 ## Phase 4: Documentation (FR-007)
 
-- [ ] T004 [US1] In `README.md`, remove the existing `### Linux (Flathub)` subsection (the listing will not exist) and add a `### Linux (Debian, Ubuntu, Mint)` section: download the `.deb` from the releases page, install by opening it in the software installer or with `sudo apt install ./markdownmeister_<version>_amd64.deb`, note that it is amd64 and covers Ubuntu, Linux Mint, Debian, and Pop!_OS, and give `sudo apt remove markdownmeister` to uninstall. Commit `docs(070)`.
+- [x] T004 [US1] In `README.md`, remove the existing `### Linux (Flathub)` subsection (the listing will not exist) and add a `### Linux (Debian, Ubuntu, Mint)` section: download the `.deb` from the releases page, install by opening it in the software installer or with `sudo apt install ./markdownmeister_<version>_amd64.deb`, note that it is amd64 and covers Ubuntu, Linux Mint, Debian, and Pop!_OS, and give `sudo apt remove markdownmeister` to uninstall. Commit `docs(070)`.
 - [ ] T005 [US3] Rewrite `docs/linux-store-release.md` as a numbered Snap Store delivery guide matching the Apple guide. Acknowledge completed setup, document the existing build, verification and publication steps, omit specification references, and state that Flathub is unsupported with its policy link. Link to direct-download installation in the README. Updated per the maintainer's 2026-10-18 request. Commit `docs(070)`.
 
 ## Phase 5: Site (FR-007)

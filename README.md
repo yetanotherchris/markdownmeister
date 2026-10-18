@@ -42,9 +42,21 @@ Available on the [Snap Store](https://snapcraft.io/markdownmeister) and installs
 sudo snap install markdownmeister
 ```
 
-### Linux (Flathub)
+### Linux (Debian, Ubuntu, Mint)
 
-Not yet published. Once the Flatpak is live it is available from [Flathub](https://flathub.org/apps/io.github.yetanotherchris.MarkdownMeister) and any software centre.
+Download `markdownmeister_<version>_amd64.deb` from [Releases](https://github.com/yetanotherchris/markdownmeister/releases/latest). The package is for x86-64 (amd64) systems running Ubuntu, Linux Mint, Debian, Pop!_OS, or their derivatives. Open the downloaded file in your graphical software installer, or install it from a terminal (replace `<version>` with the downloaded version):
+
+```sh
+sudo apt install ./markdownmeister_<version>_amd64.deb
+```
+
+To update, download the newer `.deb` and install it the same way. This does not add an apt repository or automatic updates. To uninstall:
+
+```sh
+sudo apt remove markdownmeister
+```
+
+For other Linux distributions, use the AppImage from Releases.
 
 ## Technology
 
