@@ -47,7 +47,7 @@
 
 - [ ] T008 Confirm the artifact and the version path: `git grep -n -i flathub -- README.md docs/site tests/main` returns nothing, and a local Linux build (`npx electron-builder --linux deb --x64 --publish never`) produces `dist/markdownmeister_<version>_amd64.deb`. Run `npm run lint`, `npm run typecheck`, `npm run test`, and LAST `npm run test:e2e` (using the Linux Docker image for the Linux-specific checks).
 - [ ] T009 Manual follow-ups (NOT automatable here): on Linux Mint and on Ubuntu, install the `.deb` both ways (double-click through the software installer and `sudo apt install ./<file>.deb`), confirm the menu entry launches the app, confirm the reported version equals the release, and confirm `sudo apt remove markdownmeister` leaves no files. Record evidence separately. Never claim behaviour not observed.
-- [ ] T010 Archive the spec (`git mv specs/070-deb-file-distribution specs/archive/070-deb-file-distribution`, set **Status** to Archived) as part of the implementation PR.
+- [x] T010 Archive the spec (`git mv specs/070-deb-file-distribution specs/archive/070-deb-file-distribution`, set **Status** to Archived) as part of the implementation PR.
 
 ---
 
