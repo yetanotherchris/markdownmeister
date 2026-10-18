@@ -191,7 +191,8 @@ export function DocumentationSite(): ReactElement {
             </p>
             <Code>{'sudo apt remove markdownmeister'}</Code>
             <p>
-              For other Linux distributions, use the AppImage from <a href={releasesUrl}>Releases</a>.
+              For other Linux distributions, use the AppImage from{' '}
+              <a href={releasesUrl}>Releases</a>.
             </p>
           </Section>
 

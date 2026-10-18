@@ -39,9 +39,11 @@
 
 ## Phase 6: Tests
 
-- [ ] T007 [US2] Extend `tests/main/linuxStoreConfig.test.ts`: assert `linux.target` contains `deb` and the unchanged AppImage, that the Debian build has a homepage and a maintainer, that `build-release.yml`'s upload glob and required-artifact list include `dist/markdownmeister_*.deb`, that no Flathub manifest is committed, and that the README documents `apt install ./` and `apt remove`. In `tests/main/siteContract.test.ts`, drop `flathub.org` from the allowed hosts. Commit `test(070)`.
+- [x] T007 [US2] Extend `tests/main/linuxStoreConfig.test.ts`: assert `linux.target` contains `deb` and the unchanged AppImage, that the Debian build has a homepage and a maintainer, that `build-release.yml`'s upload glob and required-artifact list include `dist/markdownmeister_*.deb`, that no Flathub manifest is committed, and that the README documents `apt install ./` and `apt remove`. In `tests/main/siteContract.test.ts`, drop `flathub.org` from the allowed hosts. Commit `test(070)`.
 
 ## Phase 7: Gates and lifecycle
+
+- [ ] T011 Add a Linux-only packaging acceptance test in `tests/e2e/deb-distribution.spec.ts`: build the `.deb` with a release-version override, inspect its metadata and desktop entry, extract its payload, launch the packaged app, and verify its version. Copy `electron-builder.yml` into the existing Linux e2e image. Add a built-site browser check for the Debian install instructions. This provides PR-time Linux package verification while local Docker and WSL are unavailable; graphical installer and apt checks remain T009. Commit `test(070)`.
 
 - [ ] T008 Confirm the artifact and the version path: `git grep -n -i flathub -- README.md docs/site tests/main` returns nothing, and a local Linux build (`npx electron-builder --linux deb --x64 --publish never`) produces `dist/markdownmeister_<version>_amd64.deb`. Run `npm run lint`, `npm run typecheck`, `npm run test`, and LAST `npm run test:e2e` (using the Linux Docker image for the Linux-specific checks).
 - [ ] T009 Manual follow-ups (NOT automatable here): on Linux Mint and on Ubuntu, install the `.deb` both ways (double-click through the software installer and `sudo apt install ./<file>.deb`), confirm the menu entry launches the app, confirm the reported version equals the release, and confirm `sudo apt remove markdownmeister` leaves no files. Record evidence separately. Never claim behaviour not observed.

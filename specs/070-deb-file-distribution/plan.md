@@ -82,6 +82,7 @@ tests/main/
 - The original spec branch is occupied by the worktree used for the merged planning PR. Implementation uses a new branch from current `main`, `spec-070-deb-file-distribution-implementation`.
 - Supply `package.json.homepage` and Debian-only maintainer, description, category, and package section. Keep electron-builder's default Debian dependencies rather than replacing its maintained list. Set the Debian artifact name explicitly as described above.
 - The maintainer requested a complete rewrite of the Linux store guide to match the Apple guide: numbered operational steps, completed Snap Store setup acknowledged, no specification references, and an explicit unsupported-Flathub note. This replaces T005's earlier instruction to retain the Snap sections verbatim. The guide links to the README for direct-download installation.
+- Add T011 to exercise the real Debian packager in the existing Linux e2e image, inspect the resulting metadata and launcher, and launch the extracted packaged application to verify its version. This catches build failures on the PR rather than waiting for a release tag. Windows does not run this Linux-only acceptance test. Interactive installer and apt checks remain manual.
 
 ### Complexity assessment
 

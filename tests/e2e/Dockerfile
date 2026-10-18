@@ -14,6 +14,7 @@ COPY --chown=pwuser:pwuser resources/ resources/
 COPY --chown=pwuser:pwuser native/ native/
 COPY --chown=pwuser:pwuser scripts/ scripts/
 COPY --chown=pwuser:pwuser electron.vite.config.ts playwright.config.ts ./
+COPY --chown=pwuser:pwuser electron-builder.yml ./
 COPY --chown=pwuser:pwuser tsconfig*.json ./
 USER pwuser
 ENV HOME=/home/pwuser
