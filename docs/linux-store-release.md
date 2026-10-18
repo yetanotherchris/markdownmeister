@@ -2,7 +2,7 @@
 
 This guide is for the maintainer who publishes MarkdownMeister through the [Ubuntu Snap Store](https://snapcraft.io/markdownmeister). The account, snap registration, repository credential, and store listing have already been set up. The first two sections record that setup for future maintenance; subsequent releases start at step 3.
 
-The Snap Store is the project's only supported Linux store. **Flathub is not supported**, and the project does not publish or maintain a Flatpak package. The decision reflects Flathub's [Generative AI policy](https://docs.flathub.org/docs/for-app-authors/requirements#generative-ai-policy) and its [closed pull requests labelled "AI Slop"](https://github.com/flathub/flathub/pulls?q=is%3Apr+state%3Aclosed+label%3A%22AI+Slop%22), which totalled more than 1,200 as of 18 October 2026. Direct-download `.deb` and AppImage packages are separate distribution routes; see the [installation instructions](../README.md#linux-debian-ubuntu-mint).
+The Snap Store is the project's only supported Linux store. **Flathub is not supported**, and the project does not publish or maintain a Flatpak package. The decision reflects Flathub's [Generative AI policy](https://docs.flathub.org/docs/for-app-authors/requirements#generative-ai-policy) and its [closed pull requests labelled "AI Slop"](https://github.com/flathub/flathub/pulls?q=is%3Apr+state%3Aclosed+label%3A%22AI+Slop%22), including 1,000+ created since May 2026 (as of 18 October 2026). Direct-download `.deb` and AppImage packages are separate distribution routes; see the [installation instructions](../README.md#linux-debian-ubuntu-mint).
 
 ## 1. Register the Snap and Complete the Listing
 
