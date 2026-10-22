@@ -130,6 +130,8 @@ Signing and notarization are added to the existing direct distribution without c
 
 ## Assumptions
 
+- **Unsigned local builds (2026-10-23)**: Local developer packaging may omit signing and notarization when the app has no Developer ID signature. CI must reject that state. A Developer ID-signed local build still requires notarization credentials, and signing, inspection, or notarization errors must be surfaced.
+
 - **Apple Developer Program**: The maintainer holds an active paid Apple Developer Program membership ($99/year), which is required for a Developer ID certificate and notarization.
 - **No Mac ownership required**: Signing and notarization can run on CI macOS runners using credentials and an App Store Connect API key created in Apple's web portal. The maintainer does not currently own a Mac.
 - **Mac App Store is deferred**: The Mac App Store was requested but is out of scope for this feature because it mandates app sandboxing, which conflicts with the app's folder-first behaviour and cannot be developed and tested without Mac access. It is recorded as a separate, deferred concern.

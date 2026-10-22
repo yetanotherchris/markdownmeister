@@ -1,5 +1,11 @@
 # Research: Release Distribution
 
+## Artifact transfer investigation (2026-10-23)
+
+The supplied `temp/RELEASE-ARTIFACT-FINDINGS.md` records valid local DMGs, corrupt published DMGs, and duplicate macOS filenames across build artifacts. The current workflow uses `merge-multiple: true`, and the packaging configuration explicitly selects both architectures in each macOS target. Isolating downloads and rejecting unexpected files removes the shared-path write race without depending on the action's parallel-download behavior. Native verification after download checks the actual bytes selected for publication, unlike pre-upload checks alone. The local native archive script is retained from the existing Homebrew repair; the report does not establish a defect in electron-builder's DMG creation.
+
+`gh secret list --env macos-signing` returned no secrets, and the repository secret list contained only `SNAPCRAFT_STORE_CREDENTIALS`. The required Apple credentials must be supplied by the maintainer before a signed release can succeed. They cannot be reconstructed from source.
+
 **Date**: 2026-08-04 | **Feature**: [005-release-distribution](./spec.md)
 
 Evidence gathered for the decisions in [plan.md](./plan.md). Decisions are

@@ -365,6 +365,13 @@ manifest update is visible for a failed build or verification (FR-010).
 
 ## Notes
 
+### Artifact integrity repair (2026-10-23)
+
+- [ ] T017 Preserve the Homebrew install repair and package only the selected macOS architecture with native archive tools.
+- [ ] T018 Download build artifacts separately, reject collisions and incomplete sets, and verify downloaded macOS archives before release creation.
+- [ ] T019 Allow unsigned local packaging without notarization credentials while retaining mandatory signing and notarization in CI.
+- [ ] T020 Run the four quality gates, inspect signing-secret availability, and complete PR reviews and GitHub checks. Native macOS release verification requires a tagged CI run after credentials are configured.
+
 - [P] tasks touch disjoint files; the workflow-file tasks (T006, T007, T010,
   T012) are strictly sequential.
 - The release workflow cannot be executed locally; the tag→release→install flow

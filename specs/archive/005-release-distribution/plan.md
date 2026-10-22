@@ -201,6 +201,8 @@ pin the new workflow.
 
 ## Decision log (2026-08-04)
 
+- 2026-10-23: Keep the existing Homebrew formula repair and native macOS archive creation. Remove target architecture overrides, download artifacts into per-build directories without `merge-multiple`, and assemble the exact expected eight files with exclusive copies. Run the release job on macOS with the protected signing environment so `hdiutil verify`, codesign, stapler, and Gatekeeper validate the downloaded bytes before drafting a release. No serialization workaround is needed because downloads no longer share paths.
+
 - The release workflow structure is verified manually per quickstart.md rather
   than parsed (research R7). The earlier `tests/release/release-contracts.test.ts`
   structure assertions were removed 2026-08-05 (spec 009 Assumptions).

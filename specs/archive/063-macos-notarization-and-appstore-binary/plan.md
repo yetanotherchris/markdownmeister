@@ -30,6 +30,10 @@ Add Developer ID signing and Apple notarization to the existing macOS GitHub Rel
 
 ## Design
 
+2026-10-23 repair: the release findings in `temp/RELEASE-ARTIFACT-FINDINGS.md` report valid local DMGs but corrupt published DMGs after overlapping artifact downloads. Preserve the existing repair that builds one signed app per runner and creates archives with system `hdiutil create -srcfolder` and `ditto`. Remove target-level architecture overrides and isolate downloads to eliminate shared destination paths. Verify image checksums and contained apps both before upload and after download in the release job.
+
+The notarization hook inspects the actual app signature with `codesign --display`. An unsigned or ad-hoc local app skips notarization; CI rejects it. A Developer ID app must pass strict signature verification and supply all notarization credentials. Unexpected inspection failures are errors rather than a reason to skip notarization.
+
 The macOS build job provisions a temporary keychain and key files from Actions secrets. It passes `CSC_LINK` and `CSC_KEY_PASSWORD` to `electron-builder`, which signs the app and its nested binaries. The macOS configuration enables hardened runtime and uses a committed entitlement plist containing only Electron's JIT permission.
 
 `electron-builder` invokes an `afterSign` hook after the `.app` is signed. The hook validates the API-key environment, notarizes the precise signed app using `@electron/notarize`, and staples the ticket. Only then does packaging create the DMG and ZIP targets. A verification script mounts/extracts those final archives, applies quarantine, and executes signature, hardened-runtime, ticket, and Gatekeeper checks against their contained app.
