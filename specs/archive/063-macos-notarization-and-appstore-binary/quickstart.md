@@ -4,12 +4,12 @@
 
 1. Create a Developer ID Application certificate in the Apple Developer portal and export it with its private key as a password-protected `.p12` file.
 2. Create an App Store Connect team API key with App Manager access and download its `.p8` file. Record its key ID and issuer ID.
-3. Configure the `macos-signing` deployment environment with an independent required reviewer, prevent self-review, and disable administrator bypass. Under deployment branches and tags, choose selected branches and tags and add only a tag rule named `v*`, with no branch rules. The workflow separately checks strict version syntax and main ancestry. Add the following environment secrets: `MACOS_CERTIFICATE_P12_BASE64`, `MACOS_CERTIFICATE_PASSWORD`, `APPLE_API_KEY_P8_BASE64`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER`, `MACOS_SIGNING_IDENTITY`, and `MACOS_KEYCHAIN_PASSWORD`. The two file secrets contain single-line base64 output. `MACOS_SIGNING_IDENTITY` is the full `Developer ID Application: Name (TEAMID)` certificate identity.
+3. Create the `macos-signing` deployment environment. Deployment protection rules are optional for this personal project. Add the following environment secrets: `MACOS_CERTIFICATE_P12_BASE64`, `MACOS_CERTIFICATE_PASSWORD`, `APPLE_API_KEY_P8_BASE64`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER`, `MACOS_SIGNING_IDENTITY`, and `MACOS_KEYCHAIN_PASSWORD`. The two file secrets contain single-line base64 output. `MACOS_SIGNING_IDENTITY` is the full `Developer ID Application: Name (TEAMID)` certificate identity.
 4. Do not add these files or values to the repository.
 
-Check secret names with `gh secret list --env macos-signing`. As of 2026-10-23, this returned no secrets. Supply all seven values before retrying a release. Use `gh secret set <NAME> --env macos-signing` interactively for each value; do not paste private keys or passwords into issues, PRs, or chat. The release verification job also uses this environment to read `MACOS_SIGNING_IDENTITY`.
+Check secret names with `gh secret list --env macos-signing`. Supply all seven values before retrying a release. Use `gh secret set <NAME> --env macos-signing` interactively for each value; do not paste private keys or passwords into issues, PRs, or chat. The release verification job also uses this environment to read `MACOS_SIGNING_IDENTITY`.
 
-As of 2026-10-23, the environment has no protection rules and only `yetanotherchris` is a repository collaborator. The maintainer chose to keep releases blocked until an independent reviewer is available. Preflight checks the environment and tag policies before the build matrix starts; it rejects missing protection, administrator bypass, broad deployment rules, or an incomplete policy response. Do not add Apple secrets until the environment is protected.
+The workflow checks release-tag syntax and main ancestry, but does not require environment reviewers or deployment restrictions. If you add yourself as a required reviewer, leave **Prevent self-review** unchecked so you can approve your own release runs.
 
 ## Release verification
 

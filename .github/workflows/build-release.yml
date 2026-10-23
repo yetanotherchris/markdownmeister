@@ -13,7 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      actions: read
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # actions/checkout v7.0.1
@@ -48,16 +47,10 @@ jobs:
           fi
           echo "No existing release for ${{ github.ref_name }}"
 
-      - name: Verify signing environment protection
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: node scripts/verify-signing-environment.mjs
-
   build:
     # Only run the expensive four-leg matrix once the cheap validation passed.
     needs: validate
-    # The environment holds long-lived Apple credentials and requires a reviewer
-    # before any release build can access them.
+    # Scope Apple signing credentials to jobs using this environment.
     environment: macos-signing
     strategy:
       fail-fast: false

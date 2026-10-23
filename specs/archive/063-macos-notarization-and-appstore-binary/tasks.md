@@ -23,3 +23,4 @@
 - [x] T010 Document notarized macOS direct downloads in the README without Gatekeeper-bypass advice.
 - [ ] T011 Run format, lint, typecheck, unit, and e2e quality gates. (Partial: format check has existing repository-wide line-ending failures; e2e exceeded the local command limit after 345 passing tests.)
 - [ ] T012 Verify a tagged release after configuring repository secrets.
+- [x] T013 Remove the custom environment-protection preflight and its obsolete validator tests. Update setup instructions to make deployment protection optional. Verification: lint, typecheck, all 1,149 unit tests (including release tests), and workflow formatting passed.

@@ -14,7 +14,7 @@
 
 All fields are protected GitHub Actions secrets and must be non-empty for a macOS release leg.
 
-The `macos-signing` deployment environment holds these secrets. It must restrict deployments to `main` tags and require an independent reviewer before the build matrix begins, preventing a tag-triggered workflow change from immediately accessing signing material.
+The `macos-signing` deployment environment holds these secrets. Reviewers, self-review prevention, administrator-bypass settings, and environment deployment restrictions are optional for this personal project. The workflow verifies release-tag syntax and reachability from `main` without inspecting environment protection rules.
 
 ## Signed application bundle
 

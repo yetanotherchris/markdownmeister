@@ -201,7 +201,7 @@ pin the new workflow.
 
 ## Decision log (2026-08-04)
 
-- 2026-10-23 review follow-up: The maintainer selected keeping releases blocked until signing protection is configured. The validate job reads environment settings and deployment policies with `actions: read`, rejects absent independent-review protection or administrator bypass, and requires only `v*` tag deployment policies. This check runs before the build matrix, without entering the signing environment. Secrets and reviewer configuration remain maintainer-owned.
+- 2026-10-23: The maintainer clarified that deployment protection is optional for this personal project. Remove the custom environment-protection preflight and its `actions: read` permission. Signing secrets remain in `macos-signing`; release-tag validation and artifact verification still run.
 
 - 2026-10-23: Keep the existing Homebrew formula repair and native macOS archive creation. Remove target architecture overrides, download artifacts into per-build directories without `merge-multiple`, and assemble the exact expected eight files with exclusive copies. Run the release job on macOS with the protected signing environment so `hdiutil verify`, codesign, stapler, and Gatekeeper validate the downloaded bytes before drafting a release. No serialization workaround is needed because downloads no longer share paths.
 

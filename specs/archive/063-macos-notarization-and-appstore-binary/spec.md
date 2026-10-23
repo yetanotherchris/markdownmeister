@@ -130,7 +130,7 @@ Signing and notarization are added to the existing direct distribution without c
 
 ## Assumptions
 
-- **Signing approval gate (2026-10-23)**: The maintainer chose to keep releases blocked until an independent reviewer and release-tag restrictions are configured. Release preflight must reject an unprotected signing environment before any build receives Apple credentials.
+- **Deployment protection (2026-10-23)**: For this personal project, deployment protection rules are optional. Releases must not require a configured reviewer, prevention of self-review, disabled administrator bypass, or environment-level deployment restrictions. The maintainer may configure GitHub approval rules if desired. Release tags must still pass the workflow's version and main-ancestry checks.
 
 - **Unsigned local builds (2026-10-23)**: Local developer packaging may omit signing and notarization when the app has no Developer ID signature. CI must reject that state. A Developer ID-signed local build still requires notarization credentials, and signing, inspection, or notarization errors must be surfaced.
 
@@ -143,6 +143,10 @@ Signing and notarization are added to the existing direct distribution without c
 - **Release-completeness contract**: Spec 005 requires that a failed required-platform build publishes neither a public release nor package-definition updates. This feature preserves that contract rather than narrowing it to macOS alone.
 
 ## Clarifications
+
+### 2026-10-23 (personal-project deployment policy)
+
+- The maintainer confirmed that strict deployment protection is unnecessary for this personal project. Remove the custom environment-protection preflight. The `macos-signing` environment continues to hold signing secrets; GitHub approval and deployment restriction settings are optional.
 
 ### 2026-09-26 (during specification)
 

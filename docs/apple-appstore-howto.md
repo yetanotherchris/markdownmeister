@@ -27,7 +27,7 @@ Store the `.p12`, provisioning profile, and `.p8` outside the repository. They a
 
 Create a GitHub Actions deployment environment named `macos-app-store`.
 
-Configure it to allow release tags matching `v*`; the submission workflow must separately verify that the tag is reachable from `main`. Add yourself as the required reviewer and leave **Prevent self-review** unchecked so you can approve runs you trigger. Add the following environment secrets when Spec 070's submission workflow is implemented:
+Deployment protection rules are optional for this personal project. If you choose to require approval, add yourself as the reviewer and leave **Prevent self-review** unchecked so you can approve runs you trigger. Add the following environment secrets when Spec 070's submission workflow is implemented:
 
 - `MACOS_APP_STORE_CERTIFICATE_P12_BASE64`: single-line base64 encoding of the Apple Distribution `.p12`.
 - `MACOS_APP_STORE_CERTIFICATE_PASSWORD`: password used to export the `.p12`.
@@ -36,7 +36,7 @@ Configure it to allow release tags matching `v*`; the submission workflow must s
 - `APP_STORE_CONNECT_API_KEY_ID`: the API key identifier.
 - `APP_STORE_CONNECT_ISSUER_ID`: the API key issuer identifier.
 
-Use environment secrets rather than repository secrets so an approval is required before a release workflow can access them.
+Use environment secrets so the credentials are scoped to jobs that use this environment. Approval is required only if you configure a reviewer rule.
 
 ## 4. Review and Release in App Store Connect
 
@@ -150,6 +150,6 @@ Open the repository's **Settings → Environments → `macos-signing`**, creatin
 | `APPLE_API_ISSUER` | The Issuer ID from App Store Connect's Team Keys page. |
 | `MACOS_KEYCHAIN_PASSWORD` | The random password generated in step 5. |
 
-Add yourself under **Required reviewers** and leave **Prevent self-review** unchecked. You can then approve release runs that you trigger yourself. If restricting deployment refs, allow **tags matching `v*`**, not just the `main` branch; the release workflow separately checks tag reachability from `main`.
+No deployment protection rules are required for this personal project. You can leave **Required reviewers** unset and deployment branches and tags unrestricted. The release workflow checks version-tag syntax and reachability from `main`. If you choose to require your own approval, add yourself under **Required reviewers** and leave **Prevent self-review** unchecked.
 
 References: [Apple Developer ID certificates](https://developer.apple.com/help/account/certificates/create-developer-id-certificates/), [App Store Connect API keys](https://developer.apple.com/help/app-store-connect/get-started/app-store-connect-api/), and [GitHub environment configuration](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments).

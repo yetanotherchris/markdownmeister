@@ -2,7 +2,7 @@
 
 ## Artifact transfer investigation (2026-10-23)
 
-Review follow-up: the GitHub environment API reports `protection_rules: []`, no deployment policy, and administrator bypass enabled. The only collaborator is the maintainer. After being offered independent-review blocking or self-approval, the maintainer selected keeping releases blocked. A live run of `verify-signing-environment.mjs` rejects the absent independent-review rule before requesting any credentials. The deployment-policy endpoint returns 404 while custom deployment restrictions are disabled, so preflight checks the environment configuration before requesting those policies.
+The maintainer clarified that deployment protection is optional for this personal project. The custom environment-protection preflight is removed; GitHub itself applies any optional protection rules the maintainer configures.
 
 The supplied `temp/RELEASE-ARTIFACT-FINDINGS.md` records valid local DMGs, corrupt published DMGs, and duplicate macOS filenames across build artifacts. The current workflow uses `merge-multiple: true`, and the packaging configuration explicitly selects both architectures in each macOS target. Isolating downloads and rejecting unexpected files removes the shared-path write race without depending on the action's parallel-download behavior. Native verification after download checks the actual bytes selected for publication, unlike pre-upload checks alone. The local native archive script is retained from the existing Homebrew repair; the report does not establish a defect in electron-builder's DMG creation.
 
