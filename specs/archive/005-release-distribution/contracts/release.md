@@ -16,13 +16,13 @@ enforced this document was removed 2026-08-05 — see §7).
 |-------------|----------|------|
 | Trigger | `on.push.tags` MUST be the glob `'v[0-9]+.[0-9]+.[0-9]+'` (a glob: `.` is literal, `[0-9]` is a character class, `+` is one-or-more — NOT a regex). The strict `^v[0-9]+\.[0-9]+\.[0-9]+$` regex is enforced inside the `validate` job | FR-001, US1 s3 |
 | Preflight | job `validate` (before `build`): strict semver regex check, `git merge-base --is-ancestor <ref> refs/remotes/origin/main` (non-zero → fail naming the tag), and `gh release view` — a tag whose version is already released fails clearly | FR-001/002, US1 s4, Edge Cases |
-| Permissions | workflow default `permissions: contents: read`; job-scoped `contents: write` ONLY on `release` (no other scope, no secrets) | FR-013 |
+| Permissions | workflow default `permissions: contents: read`; job-scoped `contents: write` ONLY on `release`. Protected Apple credentials follow spec 063; the release job reads only the expected signing identity | FR-013 |
 | Build job | job `build`, `needs: validate`, `strategy.matrix` with `fail-fast: false` and the four legs `windows-latest`/`macos-15-intel`/`macos-latest`/`ubuntu-latest`; NO `continue-on-error` on any required leg | FR-004/010 |
 | Version derivation | each leg derives `VERSION` = tag minus leading `v` AND uses it in packaging via `--config.extraMetadata.version=<VERSION>`; the `release` job rewrites `package.json`'s version to the tag and commits it to `main` with the manifests | FR-003 |
 | Publish suppression | build legs run `electron-builder --publish never` | R1/R5 |
-| macOS signing off | macOS legs set `CSC_IDENTITY_AUTO_DISCOVERY=false` | R5, Assumptions |
-| Release job | job `release`, `needs: build`, `if: github.ref_type == 'tag'` | R1 |
-| Completeness/verification | download all artifacts; assert the full required set exists (data-model artifact table); compute sha256 for the manifest targets BEFORE the release is public | FR-009 |
+| macOS signing | Both macOS legs sign and notarize per spec 063. Target-level architecture lists are omitted so each leg packages only its selected architecture | Spec 063 FR-001/002/009 |
+| Release job | job `release`, `needs: build`, `if: github.ref_type == 'tag'`, running on macOS in the protected `macos-signing` environment | R1, Spec 063 FR-013 |
+| Completeness/verification | Download each build artifact into its own directory with `merge-multiple: false`. Assembly accepts exactly the eight expected nonempty regular files in their assigned build directories and refuses an existing output directory. Verify downloaded macOS disk-image checksums and both contained apps' signatures, hardened runtime, stapled tickets, and Gatekeeper assessment before creating a draft. Compute sha256 for manifest targets before publication | FR-009 |
 | Release creation | `softprops/action-gh-release` (SHA-pinned v3) creates a **draft** with `draft: true`, `files` = all artifacts and `fail_on_unmatched_files: true`; a second invocation (SHA-pinned v3, `tag_name`, `draft` omitted) publishes the draft AFTER the manifest commit | FR-009/010, R8 |
 | Manifest updates | on main (explicit `git checkout -B main origin/main` + `git pull --rebase origin main`), run `updatescoop.ps1`, `updatebrew.ps1`, then `updatepackagejson.ps1` from the downloaded artifacts; commit via `stefanzweifel/git-auto-commit-action` (SHA-pinned v7) with `branch: main` and `file_pattern` covering the two manifests and `package.json` | FR-006/007/008 |
 | Action pinning | all third-party actions pinned to full commit SHAs, kept current by Dependabot (`.github/dependabot.yml`) | Security review |
@@ -38,6 +38,7 @@ enforced this document was removed 2026-08-05 — see §7).
   and `zip` targets.
 - The required set is fixed (data-model.md artifact table). `release` fails if
   any is missing.
+- The current eight names are `markdownmeister-<v>-windows-x64.exe`, `markdownmeister-<v>-windows-x64.zip`, `markdownmeister-<v>-macos-x64.dmg`, `markdownmeister-<v>-macos-x64.zip`, `markdownmeister-<v>-macos-arm64.dmg`, `markdownmeister-<v>-macos-arm64.zip`, `markdownmeister-<v>-linux-x64.AppImage`, and `markdownmeister_<v>_amd64.deb`. These supersede the historical product-name prefix above.
 - Hashes in the manifests are SHA-256, lowercase, computed in CI from the exact
   downloaded files (FR-008), and are written to the manifests while the release
   is still a draft (before it becomes public — FR-009).
@@ -61,7 +62,7 @@ Ruby class `AnotherMarkdownEditor < Formula` with:
 - `version "<v>"`
 - `on_macos do` block: `if Hardware::CPU.arm?` → arm64 zip URL + sha256; `else` → x64 zip URL + sha256
 - `on_linux do` block: AppImage URL + sha256
-- `install`: macOS → `app.install "Another Markdown Editor.app"`; Linux → install the AppImage into `bin` (chmod +x)
+- `install`: macOS uses `prefix.install "markdownmeister.app" => "MarkdownMeister.app"`, matching the archive's lowercase bundle name and the formula test's installed name. Linux installs the AppImage into `bin`.
 
 URLs embed the version like the Scoop URL.
 
@@ -89,6 +90,7 @@ same change (US3 scenarios 1–4; FR-011/012).
 - A valid tag not reachable from `main` → `validate` fails before any build.
 - Any required build leg fails → `release` job never runs.
 - Any required artifact missing → the draft release is never created.
+- Duplicate, misplaced, empty, or corrupt downloaded artifacts, or a failed macOS signing/ticket/Gatekeeper check, prevent draft creation and package-definition updates.
 - Any manifest-update or commit step fails → the draft is never published, so no
   public release exists. (The manifests may be committed on `main` before the
   publish step; if the final publish fails the draft stays unpublished — no

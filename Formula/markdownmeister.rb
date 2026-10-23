@@ -25,7 +25,7 @@ class Markdownmeister < Formula
 
   def install
     if OS.mac?
-      app.install "MarkdownMeister.app"
+      prefix.install "markdownmeister.app" => "MarkdownMeister.app"
     else
       bin.install "markdownmeister-1.8.2-linux-x64.AppImage" => "markdownmeister"
     end

@@ -173,7 +173,9 @@ jobs:
           CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-        run: npx electron-builder --mac --${{ matrix.arch }} --publish never --config.extraMetadata.version=${{ steps.version.outputs.VERSION }}
+        run: |
+          npx electron-builder --mac dir --${{ matrix.arch }} --publish never --config.extraMetadata.version=${{ steps.version.outputs.VERSION }}
+          node scripts/package-macos-artifacts.mjs --artifacts-dir dist --version ${{ steps.version.outputs.VERSION }} --arch ${{ matrix.arch }}
 
       - name: Verify final macOS artifacts
         if: matrix.platform == 'macos'
@@ -212,7 +214,8 @@ jobs:
   release:
     needs: build
     if: github.ref_type == 'tag'
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
+    environment: macos-signing
 
     permissions:
       contents: write
@@ -230,11 +233,34 @@ jobs:
           VERSION="${VERSION#v}"
           echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Download all artifacts
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # actions/setup-node v7.0.0
+        with:
+          node-version: 22
+
+      - name: Download all artifacts into separate directories
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # actions/download-artifact v8.0.2
         with:
-          path: artifacts
-          merge-multiple: true
+          path: downloaded-artifacts
+          pattern: artifacts-*
+          merge-multiple: false
+
+      - name: Assemble release artifacts without collisions
+        run: >-
+          node scripts/assemble-release-artifacts.mjs --downloads-dir downloaded-artifacts
+          --artifacts-dir artifacts --version ${{ steps.version.outputs.VERSION }}
+
+      - name: Verify downloaded macOS artifacts before publishing
+        env:
+          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+        run: |
+          set -euo pipefail
+          : "${MACOS_SIGNING_IDENTITY:?Missing MACOS_SIGNING_IDENTITY}"
+          for arch in x64 arm64; do
+            node scripts/verify-macos-artifacts.mjs --artifacts-dir artifacts \
+              --version ${{ steps.version.outputs.VERSION }} --arch "$arch" \
+              --identity "$MACOS_SIGNING_IDENTITY"
+          done
 
       - name: Verify required artifact set
         shell: bash
