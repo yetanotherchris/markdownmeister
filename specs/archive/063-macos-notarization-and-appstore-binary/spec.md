@@ -130,6 +130,10 @@ Signing and notarization are added to the existing direct distribution without c
 
 ## Assumptions
 
+- **Deployment protection (2026-10-23)**: For this personal project, deployment protection rules are optional. Releases must not require a configured reviewer, prevention of self-review, disabled administrator bypass, or environment-level deployment restrictions. The maintainer may configure GitHub approval rules if desired. Release tags must still pass the workflow's version and main-ancestry checks.
+
+- **Unsigned local builds (2026-10-23)**: Local developer packaging may omit signing and notarization when the app has no Developer ID signature. CI must reject that state. A Developer ID-signed local build still requires notarization credentials, and signing, inspection, or notarization errors must be surfaced.
+
 - **Apple Developer Program**: The maintainer holds an active paid Apple Developer Program membership ($99/year), which is required for a Developer ID certificate and notarization.
 - **No Mac ownership required**: Signing and notarization can run on CI macOS runners using credentials and an App Store Connect API key created in Apple's web portal. The maintainer does not currently own a Mac.
 - **Mac App Store is deferred**: The Mac App Store was requested but is out of scope for this feature because it mandates app sandboxing, which conflicts with the app's folder-first behaviour and cannot be developed and tested without Mac access. It is recorded as a separate, deferred concern.
@@ -139,6 +143,10 @@ Signing and notarization are added to the existing direct distribution without c
 - **Release-completeness contract**: Spec 005 requires that a failed required-platform build publishes neither a public release nor package-definition updates. This feature preserves that contract rather than narrowing it to macOS alone.
 
 ## Clarifications
+
+### 2026-10-23 (personal-project deployment policy)
+
+- The maintainer confirmed that strict deployment protection is unnecessary for this personal project. Remove the custom environment-protection preflight. The `macos-signing` environment continues to hold signing secrets; GitHub approval and deployment restriction settings are optional.
 
 ### 2026-09-26 (during specification)
 

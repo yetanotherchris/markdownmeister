@@ -54,14 +54,17 @@ function verifyApp(appPath, identity) {
 }
 
 function verifyDmg(dmgPath, identity) {
+  run('hdiutil', ['verify', dmgPath])
   const mountPoint = mkdtempSync(join(tmpdir(), 'markdownmeister-dmg-'))
+  let mounted = false
   applyQuarantine(dmgPath)
   try {
     run('hdiutil', ['attach', dmgPath, '-nobrowse', '-readonly', '-mountpoint', mountPoint])
+    mounted = true
     verifyApp(findApp(mountPoint), identity)
   } finally {
     try {
-      run('hdiutil', ['detach', mountPoint])
+      if (mounted) run('hdiutil', ['detach', mountPoint])
     } finally {
       rmSync(mountPoint, { force: true, recursive: true })
     }

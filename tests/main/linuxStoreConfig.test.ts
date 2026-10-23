@@ -65,12 +65,14 @@ describe('Debian release configuration', () => {
     )
     expect(upload).toContain('dist/markdownmeister_*.deb')
     const verify = workflow.slice(
-      workflow.indexOf('- name: Verify required artifact set'),
+      workflow.indexOf('- name: Assemble release artifacts without collisions'),
       workflow.indexOf('- name: Create draft GitHub Release')
     )
-    expect(verify).toContain('"markdownmeister_${{ steps.version.outputs.VERSION }}_amd64.deb"')
-    expect(verify).toContain('if [ ! -s "artifacts/$f" ]; then')
-    expect(verify).toContain('exit 1')
+    expect(verify).toContain('node scripts/assemble-release-artifacts.mjs')
+    expect(verify).toContain('--version ${{ steps.version.outputs.VERSION }}')
+    expect(read('scripts/assemble-release-artifacts.mjs')).toContain(
+      '`markdownmeister_${version}_amd64.deb`'
+    )
     expect(workflow).toContain(
       'npx electron-builder --linux --x64 --publish never --config.extraMetadata.version=${{ steps.version.outputs.VERSION }}'
     )

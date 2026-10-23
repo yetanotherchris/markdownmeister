@@ -219,15 +219,9 @@ AGENTS.md                         This file
   launches Electron via Playwright). Native dialogs are stubbed in the main
   process with `electronApp.evaluate`; the tree/editor are driven with normal
   locators.
-- **Run the quality gates only for a code change.** A code change touches
-  source, tests, a build or test config file, or an asset the build or its tests
-  consume; the exact path set is defined under "Check the GitHub checks" below,
-  which is also what `quality.yml` watches. Run `npm run lint`, `npm run typecheck`,
-  `npm run test`, and `npm run test:e2e` for a code change and keep all four green.
-  A documentation-only or specification-only change (markdown, `specs/`, PR
-  bodies) runs none of them, locally or in CI. An asset-only change still runs
-  them, because a wrong asset ships silently.
-- **When Docker is available locally, use the Linux e2e image to reproduce CI failures before relying on a Windows-only run.** Build it from the repository root with `docker build -f tests/e2e/Dockerfile -t markdownmeister-e2e .`. Run an affected suite with `docker run --rm --shm-size=1g markdownmeister-e2e sh -lc 'xvfb-run -a env MM_E2E_HEADED=1 npm run test:e2e -- tests/e2e/file-association.spec.ts'`, replacing the test path as needed. For the full suite, run the same container command twice with `-- --shard=1/2` and `-- --shard=2/2` in place of the test path, one at a time to avoid competing Electron processes. Rebuild the image after source or dependency changes. Docker availability does not replace checking the PR's GitHub quality gates.
+- **Run the quality gates only for a code change.** A code change touches source, tests, a build or test config file, or an asset the build or its tests consume; the exact path set is defined under "Check the GitHub checks" below, which is also what `quality.yml` watches. Run `npm run lint`, `npm run typecheck`, and `npm run test` for a code change. A documentation-only or specification-only change (markdown, `specs/`, PR bodies) runs none of these gates. Asset-only changes still require applicable checks because a wrong asset ships silently.
+- **Run Playwright e2e only when application functionality or appearance has changed.** Examples include icons, styling, buttons, menus, actions, keyboard shortcuts, editor behaviour, file operations, and installed-app behaviour. Dependency, asset, or configuration changes that alter the running application also qualify. Decide from the actual effect of the diff, not merely whether a source or config file was touched. Documentation, specifications, credential setup, deployment protection rules, release automation, and packaging plumbing do not justify an application e2e run when application functionality and appearance are unchanged. Use focused unit, workflow, or packaging checks for those changes instead. For application changes, run affected e2e suites; run the full suite when the change affects multiple areas or shared application behaviour.
+- **When e2e is applicable and Docker is available locally, use the Linux e2e image to reproduce CI failures before relying on a Windows-only run.** Build it from the repository root with `docker build -f tests/e2e/Dockerfile -t markdownmeister-e2e .`. Run an affected suite with `docker run --rm --shm-size=1g markdownmeister-e2e sh -lc 'xvfb-run -a env MM_E2E_HEADED=1 npm run test:e2e -- tests/e2e/file-association.spec.ts'`, replacing the test path as needed. For the full suite, run the same container command twice with `-- --shard=1/2` and `-- --shard=2/2` in place of the test path, one at a time to avoid competing Electron processes. Rebuild the image after source or dependency changes. Docker availability does not replace checking the PR's GitHub quality gates.
 - Generate standard English test document content with
   [claudem-ipsum](https://github.com/zcaceres/claudem-ipsum)
   (`npm install -g claudem-ipsum`, then for example
@@ -296,10 +290,7 @@ AGENTS.md                         This file
   - **Nit** findings may be fixed or acknowledged in the same reply.
   - Reply to every review comment, including "no action needed", so no
     comment is left without a disposition.
-  - After addressing findings on an implementation PR, re-run the gates for a
-    code change (`npm run lint`, `npm run typecheck`, `npm run test`, and
-    `npm run test:e2e`); the PR is not ready to merge until every gate that
-    applies to it is green.
+  - After addressing findings on an implementation PR, re-run the applicable checks. Code changes require `npm run lint`, `npm run typecheck`, and `npm run test`. Run e2e only if the changes affect application functionality or appearance, following the rule above. The PR is not ready to merge until every applicable gate is green.
 - **Check the GitHub checks before declaring any PR ready.** Run
   `gh pr checks <number>` (or `gh pr checks` on the checked-out branch), wait
   for in-progress runs to finish, and treat a failed check as blocking. The CI
@@ -311,7 +302,7 @@ AGENTS.md                         This file
   `playwright.config.ts`, `tsconfig*.json`, `vitest.config.ts`); a
   documentation-only or specification-only PR triggers no checks, which is fine.
   This path set is the definition of a code change for the gate rule above; it
-  must match the `paths:` filters in `quality.yml`. If checks did run, they must be
+  must match the `paths:` filters in `quality.yml`. CI currently runs e2e for this path set; that does not require a local e2e run when application functionality and appearance are unchanged. If checks did run, they must be
   green before a readiness summary or a merge request is appropriate. The
   gate's `format:check` step compares against `.prettierrc`, so a code-touching
   PR must be prettier-clean; on Windows a local prettier check can misreport

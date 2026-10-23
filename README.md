@@ -23,12 +23,14 @@ scoop install markdownmeister
 
 ```sh
 brew tap markdownmeister https://github.com/yetanotherchris/markdownmeister
-brew install markdownmeister
+brew install yetanotherchris/markdownmeister/markdownmeister
 ```
 
 ### macOS (Direct Download)
 
-Download the matching macOS DMG or ZIP from [Releases](https://github.com/yetanotherchris/markdownmeister/releases/latest). Each macOS build is signed with a Developer ID certificate and notarized by Apple, so it opens normally with Gatekeeper enabled.
+Download the matching macOS DMG or ZIP from [Releases](https://github.com/yetanotherchris/markdownmeister/releases/latest).
+
+The v1.7.0 through v1.8.2 macOS releases have defective disk images, and the v1.8.2 app bundles are unsigned and unnotarized. A replacement release is pending. Future releases must pass Developer ID signature, notarization-ticket, and Gatekeeper checks after artifact download before publication.
 
 ### Windows (Microsoft Store)
 

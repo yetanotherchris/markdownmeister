@@ -91,9 +91,7 @@ mac:
   entitlementsInherit: packaging/macos/entitlements.plist
   target:
     - target: dmg
-      arch: [x64, arm64]
     - target: zip
-      arch: [x64, arm64]
   extendInfo:
     CFBundleDocumentTypes:
       - CFBundleTypeName: MarkdownMeister Markdown Document

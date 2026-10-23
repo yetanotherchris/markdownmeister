@@ -229,6 +229,8 @@ definition is published for that version.
 
 ## Clarifications
 
+- **2026-10-23: Artifact transfer verification**: Each build produces only its assigned platform and architecture. Downloaded build outputs remain separate until assembly rejects duplicate, unexpected, missing, or empty artifacts. macOS disk images and the signed, stapled apps inside both archive formats are verified after download and before any release or package-definition update.
+
 - **Homebrew tap is an external dependency**: the documented brew command
   `brew install yetanotherchris/tap/another-markdown-editor` resolves to the
   repository `github.com/yetanotherchris/homebrew-tap`. As of 2026-08-05 that
