@@ -61,6 +61,28 @@ describe('macOS release archives', () => {
       expect.any(Object)
     )
     const stagingLink = vi.mocked(symlinkSync).mock.calls[0][1]
+    const staging = join(stagingLink.toString(), '..')
+    expect(command).toHaveBeenCalledWith(
+      '/usr/bin/ditto',
+      [appPath, join(staging, 'markdownmeister.app')],
+      expect.any(Object)
+    )
+    expect(command).toHaveBeenCalledWith(
+      '/usr/bin/hdiutil',
+      [
+        'create',
+        '-srcfolder',
+        staging,
+        '-volname',
+        'MarkdownMeister 1.8.4',
+        '-fs',
+        'HFS+',
+        '-format',
+        'UDZO',
+        join(output, `markdownmeister-1.8.4-macos-${arch}.dmg`)
+      ],
+      expect.any(Object)
+    )
     expect(symlinkSync).toHaveBeenCalledWith('/Applications', stagingLink)
     expect(existsSync(stagingLink)).toBe(false)
   })

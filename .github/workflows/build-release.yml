@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: read
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # actions/checkout v7.0.1
@@ -46,6 +47,11 @@ jobs:
             exit 1
           fi
           echo "No existing release for ${{ github.ref_name }}"
+
+      - name: Verify signing environment protection
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/verify-signing-environment.mjs
 
   build:
     # Only run the expensive four-leg matrix once the cheap validation passed.
@@ -260,28 +266,6 @@ jobs:
             node scripts/verify-macos-artifacts.mjs --artifacts-dir artifacts \
               --version ${{ steps.version.outputs.VERSION }} --arch "$arch" \
               --identity "$MACOS_SIGNING_IDENTITY"
-          done
-
-      - name: Verify required artifact set
-        shell: bash
-        run: |
-          set -euo pipefail
-          required=(
-            "markdownmeister-${{ steps.version.outputs.VERSION }}-windows-x64.exe"
-            "markdownmeister-${{ steps.version.outputs.VERSION }}-windows-x64.zip"
-            "markdownmeister-${{ steps.version.outputs.VERSION }}-macos-x64.dmg"
-            "markdownmeister-${{ steps.version.outputs.VERSION }}-macos-x64.zip"
-            "markdownmeister-${{ steps.version.outputs.VERSION }}-macos-arm64.dmg"
-            "markdownmeister-${{ steps.version.outputs.VERSION }}-macos-arm64.zip"
-            "markdownmeister-${{ steps.version.outputs.VERSION }}-linux-x64.AppImage"
-            "markdownmeister_${{ steps.version.outputs.VERSION }}_amd64.deb"
-          )
-          for f in "${required[@]}"; do
-            if [ ! -s "artifacts/$f" ]; then
-              echo "::error::Required release artifact missing or empty: $f"
-              exit 1
-            fi
-            echo "verified: $f"
           done
 
       - name: Create draft GitHub Release

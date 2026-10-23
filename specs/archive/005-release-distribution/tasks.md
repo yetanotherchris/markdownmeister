@@ -371,6 +371,7 @@ manifest update is visible for a failed build or verification (FR-010).
 - [X] T018 Download build artifacts separately, reject collisions and incomplete sets, and verify downloaded macOS archives before release creation.
 - [X] T019 Allow unsigned local packaging without notarization credentials while retaining mandatory signing and notarization in CI.
 - [ ] T020 Run the four quality gates, inspect signing-secret availability, and complete PR reviews and GitHub checks. Native macOS release verification requires a tagged CI run after credentials are configured.
+- [X] T021 Address review findings: enforce signing-environment protection in preflight, remove duplicated artifact lists, and test ZIP-specific failures and DMG staging inputs. The live environment check rejects the current missing independent-review protection as intended; focused tests pass.
 
 - [P] tasks touch disjoint files; the workflow-file tasks (T006, T007, T010,
   T012) are strictly sequential.

@@ -37,6 +37,14 @@ beforeEach(() => {
 afterEach(() => rmSync(root, { recursive: true, force: true }))
 
 describe('release artifact assembly', () => {
+  it('rejects a missing Debian package before publication', () => {
+    rmSync(join(downloadsDir, 'artifacts-linux-x64', 'markdownmeister_1.8.4_amd64.deb'))
+    expect(() => assembleArtifacts({ downloadsDir, artifactsDir, version })).toThrow(
+      'Missing release artifact: markdownmeister_1.8.4_amd64.deb'
+    )
+    expect(existsSync(artifactsDir)).toBe(false)
+  })
+
   it('copies the exact eight artifacts without changing their bytes', () => {
     assembleArtifacts({ downloadsDir, artifactsDir, version })
     expect(readdirSync(artifactsDir).sort()).toEqual(Object.values(groups).flat().sort())

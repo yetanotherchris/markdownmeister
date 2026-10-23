@@ -130,6 +130,8 @@ Signing and notarization are added to the existing direct distribution without c
 
 ## Assumptions
 
+- **Signing approval gate (2026-10-23)**: The maintainer chose to keep releases blocked until an independent reviewer and release-tag restrictions are configured. Release preflight must reject an unprotected signing environment before any build receives Apple credentials.
+
 - **Unsigned local builds (2026-10-23)**: Local developer packaging may omit signing and notarization when the app has no Developer ID signature. CI must reject that state. A Developer ID-signed local build still requires notarization credentials, and signing, inspection, or notarization errors must be surfaced.
 
 - **Apple Developer Program**: The maintainer holds an active paid Apple Developer Program membership ($99/year), which is required for a Developer ID certificate and notarization.

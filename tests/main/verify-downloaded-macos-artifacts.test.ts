@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { verifyArtifacts } from '../../scripts/verify-macos-artifacts.mjs'
@@ -34,6 +34,28 @@ function verify(): void {
 }
 
 describe('downloaded macOS artifacts', () => {
+  it.each(['ditto', 'codesign', 'xcrun', 'spctl'])(
+    'rejects ZIP-specific %s failure and cleans up extraction after the DMG passes',
+    (tool) => {
+      const success = command.getMockImplementation()
+      if (!success) throw new Error('Missing successful command stub')
+      let extraction = ''
+      command.mockImplementation((name: string, args: string[]) => {
+        if (name === 'ditto') extraction = args[args.length - 1]
+        const result = success(name, args)
+        const zipCommand =
+          extraction && (name === 'ditto' || args.some((arg) => arg.includes(extraction)))
+        return zipCommand && name === tool ? { status: 1, stderr: 'ZIP rejected' } : result
+      })
+      expect(verify).toThrow('ZIP rejected')
+      expect(extraction).not.toBe('')
+      expect(existsSync(extraction)).toBe(false)
+      expect(
+        command.mock.calls.some(([name, args]) => name === 'hdiutil' && args[0] === 'detach')
+      ).toBe(true)
+    }
+  )
+
   it('checks image integrity before mounting and validates both contained apps', () => {
     verify()
     expect(command.mock.calls[0].slice(0, 2)).toEqual([

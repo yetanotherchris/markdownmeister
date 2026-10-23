@@ -16,7 +16,7 @@ enforced this document was removed 2026-08-05 — see §7).
 |-------------|----------|------|
 | Trigger | `on.push.tags` MUST be the glob `'v[0-9]+.[0-9]+.[0-9]+'` (a glob: `.` is literal, `[0-9]` is a character class, `+` is one-or-more — NOT a regex). The strict `^v[0-9]+\.[0-9]+\.[0-9]+$` regex is enforced inside the `validate` job | FR-001, US1 s3 |
 | Preflight | job `validate` (before `build`): strict semver regex check, `git merge-base --is-ancestor <ref> refs/remotes/origin/main` (non-zero → fail naming the tag), and `gh release view` — a tag whose version is already released fails clearly | FR-001/002, US1 s4, Edge Cases |
-| Permissions | workflow default `permissions: contents: read`; job-scoped `contents: write` ONLY on `release`. Protected Apple credentials follow spec 063; the release job reads only the expected signing identity | FR-013 |
+| Permissions | workflow default `permissions: contents: read`; job-scoped `contents: write` ONLY on `release`. The validate job also has `actions: read` to inspect signing-environment settings. Protected Apple credentials follow spec 063; the release job reads only the expected signing identity | FR-013 |
 | Build job | job `build`, `needs: validate`, `strategy.matrix` with `fail-fast: false` and the four legs `windows-latest`/`macos-15-intel`/`macos-latest`/`ubuntu-latest`; NO `continue-on-error` on any required leg | FR-004/010 |
 | Version derivation | each leg derives `VERSION` = tag minus leading `v` AND uses it in packaging via `--config.extraMetadata.version=<VERSION>`; the `release` job rewrites `package.json`'s version to the tag and commits it to `main` with the manifests | FR-003 |
 | Publish suppression | build legs run `electron-builder --publish never` | R1/R5 |
@@ -26,6 +26,7 @@ enforced this document was removed 2026-08-05 — see §7).
 | Release creation | `softprops/action-gh-release` (SHA-pinned v3) creates a **draft** with `draft: true`, `files` = all artifacts and `fail_on_unmatched_files: true`; a second invocation (SHA-pinned v3, `tag_name`, `draft` omitted) publishes the draft AFTER the manifest commit | FR-009/010, R8 |
 | Manifest updates | on main (explicit `git checkout -B main origin/main` + `git pull --rebase origin main`), run `updatescoop.ps1`, `updatebrew.ps1`, then `updatepackagejson.ps1` from the downloaded artifacts; commit via `stefanzweifel/git-auto-commit-action` (SHA-pinned v7) with `branch: main` and `file_pattern` covering the two manifests and `package.json` | FR-006/007/008 |
 | Action pinning | all third-party actions pinned to full commit SHAs, kept current by Dependabot (`.github/dependabot.yml`) | Security review |
+| Signing protection preflight | Before builds start, require an environment reviewer, disabled self-review and administrator bypass, custom deployment policies permitting only `v*` tags, and a complete policy response | Spec 063 FR-006 |
 
 ## 2. Artifact contract
 
