@@ -65,7 +65,7 @@ sudo apt remove markdownmeister
 - Milkdown for the WYSIWYG editor, CodeMirror for the source view.
 - Electron and TypeScript.
 - Built spec-first with [Spec Kit](https://github.com/github/spec-kit): the specification is the source of truth, and code follows it.
-- Developed with DeepSeek, Claude, GPT, and GLM.
+- Developed with DeepSeek, Claude, Grok, GPT, and GLM.
 
 ## Learn more
 
