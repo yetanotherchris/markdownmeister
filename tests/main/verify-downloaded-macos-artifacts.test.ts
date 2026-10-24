@@ -34,6 +34,34 @@ function verify(): void {
 }
 
 describe('downloaded macOS artifacts', () => {
+  it.each([identity, ` ${identity} \n`, 'Example (TEAMID)', ' Example (TEAMID) \n'])(
+    'accepts the configured full or short Developer ID name %j',
+    (configuredIdentity) => {
+      verifyArtifacts({
+        artifactsDir: directory,
+        version: '1.8.4',
+        arch: 'arm64',
+        identity: configuredIdentity
+      })
+      expect(command.mock.calls.filter(([name]) => name === 'spctl')).toHaveLength(2)
+    }
+  )
+
+  it.each(['Example', 'Example (OTHERTEAM)', 'Apple Distribution: Example (TEAMID)', ' \n'])(
+    'rejects a partial, different, or empty signing identity %j',
+    (configuredIdentity) => {
+      expect(() =>
+        verifyArtifacts({
+          artifactsDir: directory,
+          version: '1.8.4',
+          arch: 'arm64',
+          identity: configuredIdentity
+        })
+      ).toThrow('Expected Developer ID identity')
+      expect(command.mock.calls.some(([name]) => name === 'ditto')).toBe(false)
+    }
+  )
+
   it.each(['ditto', 'codesign', 'xcrun', 'spctl'])(
     'rejects ZIP-specific %s failure and cleans up extraction after the DMG passes',
     (tool) => {

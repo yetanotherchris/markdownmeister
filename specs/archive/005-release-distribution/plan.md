@@ -201,6 +201,8 @@ pin the new workflow.
 
 ## Decision log (2026-08-04)
 
+- 2026-10-24: Tagged release v1.8.6 passed macOS signing, notarization, stapling, and Gatekeeper but failed the final identity comparison on both architectures. The packaging log shows a full `Developer ID Application:` authority while the configured identity is a short certificate name with surrounding whitespace. Trim the configured value, add the Developer ID Application prefix when omitted, and compare a complete `Authority=` line. Reject partial names, different teams, other certificate types, and empty values. Keep all native verification commands in place. Verify the fix through fresh release tags, pushed directly to `main` at the maintainer's request.
+
 - 2026-10-23: The maintainer clarified that deployment protection is optional for this personal project. Remove the custom environment-protection preflight and its `actions: read` permission. Signing secrets remain in `macos-signing`; release-tag validation and artifact verification still run.
 
 - 2026-10-23: Keep the existing Homebrew formula repair and native macOS archive creation. Remove target architecture overrides, download artifacts into per-build directories without `merge-multiple`, and assemble the exact expected eight files with exclusive copies. Run the release job on macOS with the protected signing environment so `hdiutil verify`, codesign, stapler, and Gatekeeper validate the downloaded bytes before drafting a release. No serialization workaround is needed because downloads no longer share paths.

@@ -45,7 +45,10 @@ function findApp(directory) {
 function verifyApp(appPath, identity) {
   for (const [command, args] of validationCommands(appPath)) run(command, args)
   const signingDetails = run('codesign', ['--display', '--verbose=4', appPath])
-  if (!signingDetails.includes(`Authority=${identity}`)) {
+  const prefix = 'Developer ID Application:'
+  const name = identity.trim()
+  const authority = name.startsWith(prefix) ? name : `${prefix} ${name}`
+  if (!signingDetails.split(/\r?\n/).includes(`Authority=${authority}`)) {
     throw new Error(`Expected Developer ID identity ${identity} was not found in ${appPath}`)
   }
   if (!signingDetails.includes('Runtime Version=')) {
