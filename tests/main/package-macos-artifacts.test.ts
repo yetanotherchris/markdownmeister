@@ -40,7 +40,7 @@ describe('macOS release archives', () => {
 
     expect(command).toHaveBeenCalledWith(
       '/usr/bin/lipo',
-      ['-verify_arch', cpu, join(appPath, 'Contents', 'MacOS', 'markdownmeister')],
+      [join(appPath, 'Contents', 'MacOS', 'markdownmeister'), '-verify_arch', cpu],
       expect.any(Object)
     )
     expect(command).toHaveBeenCalledWith(

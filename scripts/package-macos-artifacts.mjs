@@ -27,9 +27,9 @@ export function packageArtifacts({ artifactsDir, version, arch }) {
   }
 
   run('/usr/bin/lipo', [
+    join(appPath, 'Contents', 'MacOS', 'markdownmeister'),
     '-verify_arch',
-    arch === 'x64' ? 'x86_64' : 'arm64',
-    join(appPath, 'Contents', 'MacOS', 'markdownmeister')
+    arch === 'x64' ? 'x86_64' : 'arm64'
   ])
 
   const staging = mkdtempSync(join(tmpdir(), 'markdownmeister-package-'))
