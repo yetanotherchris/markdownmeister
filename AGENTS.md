@@ -219,8 +219,8 @@ AGENTS.md                         This file
   launches Electron via Playwright). Native dialogs are stubbed in the main
   process with `electronApp.evaluate`; the tree/editor are driven with normal
   locators.
-- **Run the quality gates only for a code change.** A code change touches source, tests, a build or test config file, or an asset the build or its tests consume; the exact path set is defined under "Check the GitHub checks" below, which is also what `quality.yml` watches. Run `npm run lint`, `npm run typecheck`, and `npm run test` for a code change. A documentation-only or specification-only change (markdown, `specs/`, PR bodies) runs none of these gates. Asset-only changes still require applicable checks because a wrong asset ships silently.
-- **Run Playwright e2e only when application functionality or appearance has changed.** Examples include icons, styling, buttons, menus, actions, keyboard shortcuts, editor behaviour, file operations, and installed-app behaviour. Dependency, asset, or configuration changes that alter the running application also qualify. Decide from the actual effect of the diff, not merely whether a source or config file was touched. Documentation, specifications, credential setup, deployment protection rules, release automation, and packaging plumbing do not justify an application e2e run when application functionality and appearance are unchanged. Use focused unit, workflow, or packaging checks for those changes instead. For application changes, run affected e2e suites; run the full suite when the change affects multiple areas or shared application behaviour.
+- **Select local checks using the "Required local checks" table below.** Classify the actual effect of the diff, not just its file paths. Matching GitHub's CI path filters does not by itself require full application checks locally.
+- **Run Playwright e2e for application functionality or appearance changes, or for changes to e2e tests themselves.** Application changes include icons, styling, buttons, menus, actions, keyboard shortcuts, editor behaviour, file operations, and installed-app behaviour. Dependency, asset, or configuration changes that alter the running application also qualify. Run affected suites; run the full suite when the change affects multiple areas or shared application behaviour. Documentation, specifications, credential setup, deployment protection rules, release automation, and packaging plumbing do not require application e2e when application functionality and appearance are unchanged.
 - **When e2e is applicable and Docker is available locally, use the Linux e2e image to reproduce CI failures before relying on a Windows-only run.** Build it from the repository root with `docker build -f tests/e2e/Dockerfile -t markdownmeister-e2e .`. Run an affected suite with `docker run --rm --shm-size=1g markdownmeister-e2e sh -lc 'xvfb-run -a env MM_E2E_HEADED=1 npm run test:e2e -- tests/e2e/file-association.spec.ts'`, replacing the test path as needed. For the full suite, run the same container command twice with `-- --shard=1/2` and `-- --shard=2/2` in place of the test path, one at a time to avoid competing Electron processes. Rebuild the image after source or dependency changes. Docker availability does not replace checking the PR's GitHub quality gates.
 - Generate standard English test document content with
   [claudem-ipsum](https://github.com/zcaceres/claudem-ipsum)
@@ -250,6 +250,23 @@ AGENTS.md                         This file
   Use the actual model name (e.g. "DeepSeek V4 Pro"), NOT the tool name
   (e.g. "opencode").
 
+## Required local checks
+
+These rules select local verification independently of the CI path filters and PR-review classification. For mixed changes, combine all applicable rows. Do not run the full application lint, typecheck, unit-test, or e2e suite solely because a release script or its regression test lives under `scripts/` or `tests/`.
+
+| Change and scope | Required local checks |
+| --- | --- |
+| Application source under `src/`, or dependencies, configuration, or assets that change the running application | Run `npm run lint`, `npm run typecheck`, and `npm run test`. When functionality or appearance changes, also run `npm run test:e2e -- <affected-suite-paths>`; run `npm run test:e2e` for shared or cross-cutting application behaviour. |
+| Unit-test-only changes, excluding release/packaging regression tests covered below | Run `npm run test -- <affected-test-file-paths>` and `npx eslint <changed-test-file-paths>`. Run `npx tsc --noEmit -p <project-config>` for each TypeScript project that includes the changed files; do not run application typecheck if no project includes them. |
+| E2e-test-only changes, including e2e helpers and fixtures | Run `npm run test:e2e -- <affected-suite-paths>` and `npx eslint <changed-JS-or-TS-test-and-helper-paths>` when there are lintable files. Shared helpers or fixtures require every suite that uses them. |
+| CI workflows under `.github/workflows/` only, including their embedded scripts | Validate the changed workflow YAML and embedded scripts with applicable tooling, such as `actionlint`, and run existing workflow-specific tests if present. Do not run application lint, typecheck, unit tests, or e2e. |
+| Release or packaging scripts/configuration and their regression tests only, with no change to running or installed application behaviour | Run `npm run test -- <affected-regression-test-paths>` if regression tests exist, `npx eslint <changed-JS-or-TS-script-and-test-paths>` when there are lintable files, and applicable script syntax/configuration validation. Run the affected packaging command when the local OS and available credentials support it; otherwise state exactly which packaging verification remains unperformed and why. Do not run full application lint, application typecheck, the full unit-test suite, or application e2e. |
+| Documentation, specifications, PR prose, or agent guidance only | Review the diff for accuracy and consistency and run `git diff --check`. Do not run application lint, typecheck, unit tests, or e2e. |
+
+Replace command placeholders with explicit file paths. Choose affected tests from the changed behaviour and its callers, not just the names of changed files. For tooling-only dependency or configuration changes, use the row for the affected tooling (unit tests, e2e, CI, or packaging); a `package.json` or lockfile edit alone does not imply an application change. For build/test configuration changes, validate the changed configuration and run the checks or suites whose execution it changes. If required tooling, an OS, or credentials are unavailable, report the specific verification gap rather than substituting unrelated application checks or claiming success.
+
+For example, correcting `lipo` argument order in `scripts/package-macos-artifacts.mjs` and updating `tests/main/package-macos-artifacts.test.ts` requires `npm run test -- tests/main/package-macos-artifacts.test.ts`, `npx eslint scripts/package-macos-artifacts.mjs tests/main/package-macos-artifacts.test.ts`, `node --check scripts/package-macos-artifacts.mjs`, and `git diff --check`. Run the affected macOS packaging command on a supported macOS host with the necessary inputs; on Windows, report that macOS packaging remains unverified. This change does not require `npm run lint`, `npm run typecheck`, `npm run test` without a file filter, or Playwright e2e.
+
 ## Branching and PR workflow
 
 - **Whenever asked to make changes, work on a new branch**: never implement
@@ -270,7 +287,7 @@ AGENTS.md                         This file
   Branches and PRs are named after the **spec**, not after any phase.
 - Each spec branch is committed, pushed, and a PR is opened against `main`
   before the next spec begins.
-- After a **code change** PR is created (the path set defined under "Run the quality gates only for a code change" above), **before merging**, launch 5 agent-based code reviews.
+- After a **code change** PR is created (the CI path set listed under "Check the GitHub checks" below), **before merging**, launch 5 agent-based code reviews. This path-based review classification does not select local checks; use "Required local checks" for those.
   Each review subagent reviews the changes for a distinct concern: correctness,
   security, spec compliance, code quality, and tests. It posts its findings as
   a comment on the GitHub PR.
@@ -290,7 +307,7 @@ AGENTS.md                         This file
   - **Nit** findings may be fixed or acknowledged in the same reply.
   - Reply to every review comment, including "no action needed", so no
     comment is left without a disposition.
-  - After addressing findings on an implementation PR, re-run the applicable checks. Code changes require `npm run lint`, `npm run typecheck`, and `npm run test`. Run e2e only if the changes affect application functionality or appearance, following the rule above. The PR is not ready to merge until every applicable gate is green.
+  - After addressing findings, re-run the checks required by the "Required local checks" table for the actual changes made. Do not automatically run full application checks for CI or packaging fixes. The PR is not ready to merge until every applicable local check has passed and every GitHub check that ran is green; report any verification gaps.
 - **Check the GitHub checks before declaring any PR ready.** Run
   `gh pr checks <number>` (or `gh pr checks` on the checked-out branch), wait
   for in-progress runs to finish, and treat a failed check as blocking. The CI
@@ -301,8 +318,7 @@ AGENTS.md                         This file
   (`electron-builder.yml`, `electron.vite.config.ts`, `eslint.config.mjs`,
   `playwright.config.ts`, `tsconfig*.json`, `vitest.config.ts`); a
   documentation-only or specification-only PR triggers no checks, which is fine.
-  This path set is the definition of a code change for the gate rule above; it
-  must match the `paths:` filters in `quality.yml`. CI currently runs e2e for this path set; that does not require a local e2e run when application functionality and appearance are unchanged. If checks did run, they must be
+  This path set defines a code change for PR-review classification and must match the `paths:` filters in `quality.yml`. It does not select local verification: use the "Required local checks" table even when CI runs broader checks. If checks did run, they must be
   green before a readiness summary or a merge request is appropriate. The
   gate's `format:check` step compares against `.prettierrc`, so a code-touching
   PR must be prettier-clean; on Windows a local prettier check can misreport
