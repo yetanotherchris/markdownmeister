@@ -2,7 +2,7 @@
   "name": "markdownmeister",
   "productName": "MarkdownMeister",
   "homepage": "https://yetanotherchris.github.io/markdownmeister/",
-  "version": "1.8.2",
+  "version": "1.8.61",
   "private": true,
   "engines": {
     "node": ">=22.22.2 <23",
