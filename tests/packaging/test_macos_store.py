@@ -77,6 +77,37 @@ class ReleaseTagTests(unittest.TestCase):
                 else:
                     self.assertIn("Store version 9.9.99, build 12", result.stdout)
 
+    def test_ui_launcher_validates_plain_version_build_number_and_main_ref(self):
+        for version, number, ref, expected in (
+            ("1.8.62", "12", "refs/heads/main", 0),
+            ("v1.8.62", "12", "refs/heads/main", 1),
+            ("", "12", "refs/heads/main", 1),
+            ("1.8.62\n", "12", "refs/heads/main", 1),
+            ("1.8.62", "01", "refs/heads/main", 1),
+            ("1.8.62", "12", "refs/heads/feature", 1),
+            ("1.8.62", "12", "refs/tags/v1.8.62", 1),
+        ):
+            with self.subTest(version=version, number=number, ref=ref):
+                result = subprocess.run(
+                    [sys.executable, "-B", str(ROOT / "scripts/macos_store.py"), "dispatch-inputs",
+                     "--version", version, "--ref", ref],
+                    cwd=ROOT, capture_output=True, text=True,
+                    env=dict(os.environ, MACOS_STORE_BUILD_NUMBER=number),
+                )
+                self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
+
+    def test_tagged_commands_reject_requested_version_mismatch_before_credentials(self):
+        for command in ("inputs", "prepare", "verify", "upload"):
+            with self.subTest(command=command):
+                result = subprocess.run(
+                    [sys.executable, "-B", str(ROOT / "scripts/macos_store.py"), command,
+                     "--ref", "refs/tags/v1.8.62"],
+                    cwd=ROOT, capture_output=True, text=True,
+                    env=dict(os.environ, MACOS_STORE_BUILD_NUMBER="12", MACOS_STORE_REQUESTED_VERSION="1.8.61"),
+                )
+                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                self.assertIn("Requested version must match", result.stderr)
+
 
 class ProfileTests(unittest.TestCase):
     def test_accepts_store_profile_without_unrestricted_sandbox_entitlement(self):

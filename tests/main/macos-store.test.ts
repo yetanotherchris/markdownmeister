@@ -69,6 +69,15 @@ describe('Mac App Store delivery', () => {
       assert.deepEqual(Object.keys(workflow.on), ['workflow_dispatch'])
       const preflight = workflow.jobs.preflight
       const delivery = workflow.jobs['build-and-upload']
+      const launcher = workflow.jobs['launch-tagged-build']
+      assert.equal(workflow.on.workflow_dispatch.inputs.version.required, true)
+      assert.equal(workflow.env.MACOS_STORE_REQUESTED_VERSION, '\${{ inputs.version }}')
+      assert.equal(launcher.if, "github.ref == 'refs/heads/main'")
+      assert.equal(preflight.if, "github.ref != 'refs/heads/main'")
+      assert.equal(launcher.environment, undefined)
+      assert.equal(launcher.permissions.actions, 'write')
+      assert.equal(workflow.permissions.actions, undefined)
+      assert.equal(delivery.permissions?.actions, undefined)
       assert.equal(preflight.environment, undefined)
       assert.ok([delivery.needs].flat().includes('preflight'))
       assert.equal(delivery.environment, 'macos-signing')
@@ -88,12 +97,13 @@ describe('Mac App Store delivery', () => {
         gate.run,
         validation.run
       ].join(String.fromCharCode(10))
-      for (const [ref, expected] of [
-        ['refs/heads/main', 1],
-        ['refs/heads/v9.9.99', 1],
-        ['refs/tags/vnext', 1],
-        ['refs/tags/v01.9.99', 1],
-        ['refs/tags/v9.9.99', 0]
+      for (const [ref, version, expected] of [
+        ['refs/heads/main', '9.9.99', 1],
+        ['refs/heads/v9.9.99', '9.9.99', 1],
+        ['refs/tags/vnext', '9.9.99', 1],
+        ['refs/tags/v01.9.99', '9.9.99', 1],
+        ['refs/tags/v9.9.99', '9.9.98', 1],
+        ['refs/tags/v9.9.99', '9.9.99', 0]
       ]) {
         const result = spawnSync(bash, ['-c', commands], {
           encoding: 'utf8',
@@ -101,10 +111,47 @@ describe('Mac App Store delivery', () => {
             ...process.env,
             STORE_TEST_PYTHON: process.platform === 'win32' ? 'python' : 'python3',
             GITHUB_REF: ref,
+            MACOS_STORE_REQUESTED_VERSION: version,
             MACOS_STORE_BUILD_NUMBER: '12'
           }
         })
         assert.equal(result.status, expected, ref + ': ' + result.stdout + result.stderr)
+      }
+      const launchValidation = launcher.steps.find(step => step.run?.includes('dispatch-inputs'))
+      const dispatch = launcher.steps.find(step => step.run?.includes('gh workflow run'))
+      assert.ok(launchValidation?.run)
+      assert.ok(dispatch?.run)
+      assert.equal(dispatch.env.REQUESTED_BUILD_NUMBER, '\${{ inputs.buildNumber }}')
+      assert.equal(dispatch.env.UPLOAD_REQUESTED, '\${{ inputs.upload }}')
+      assert.equal(dispatch['continue-on-error'], undefined)
+      for (const [number, upload, expected] of [['', 'false', 0], ['41', 'true', 0], ['', 'true', 1]]) {
+        const result = spawnSync(bash, ['-c', [
+          'set -e',
+          'python3() { command "$STORE_TEST_PYTHON" "$@"; }',
+          'gh() { if [ "$STORE_TEST_GH_FAILURE" = true ]; then return 1; fi; for arg; do echo "$arg"; done; }',
+          launchValidation.run,
+          dispatch.run
+        ].join(String.fromCharCode(10))], {
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            STORE_TEST_PYTHON: process.platform === 'win32' ? 'python' : 'python3',
+            GITHUB_REF: 'refs/heads/main',
+            GITHUB_REPOSITORY: 'example/editor',
+            MACOS_STORE_REQUESTED_VERSION: '9.9.99',
+            MACOS_STORE_BUILD_NUMBER: number || '12',
+            REQUESTED_BUILD_NUMBER: number,
+            UPLOAD_REQUESTED: upload,
+            STORE_TEST_GH_FAILURE: expected === 1 ? 'true' : 'false'
+          }
+        })
+        assert.equal(result.status, expected, result.stdout + result.stderr)
+        if (expected !== 0) continue
+        const args = result.stdout.trim().split(String.fromCharCode(10)).map(line => line.trim()).slice(1)
+        assert.deepEqual(args, [
+          'workflow', 'run', 'build-macos-store.yml', '--repo', 'example/editor', '--ref', 'v9.9.99',
+          '-f', 'version=9.9.99', '-f', 'buildNumber=' + number, '-f', 'upload=' + upload
+        ])
       }
     `
     const result = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8' })

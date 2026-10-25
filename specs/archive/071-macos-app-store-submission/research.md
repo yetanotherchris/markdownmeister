@@ -21,3 +21,9 @@ The app currently stores recent paths without security-scoped bookmarks. This de
 Apple's [TN3125, Entitlements on macOS](https://developer.apple.com/documentation/technotes/tn3125-inside-code-signing-provisioning-profiles#Entitlements-on-macOS) documents that App Sandbox entitlements do not require provisioning-profile authorization. Profile validation must accept an absent sandbox key; the signed app's sandbox and user-selected read/write entitlements are still required and checked directly.
 
 The [`codesign(1)` manual](https://keith.github.io/xcode-man-pages/codesign.1.html) specifies attached values for options with optional arguments. Certificate extraction uses `--extract-certificates=<prefix>` as one argument, with numbered DER files written by codesign. The regression fake creates the extracted certificate only for that command form, instead of pre-populating a file that could hide an invalid invocation.
+
+## UI launcher
+
+GitHub's [workflow trigger documentation](https://docs.github.com/en/actions/how-tos/writing-workflows/choosing-when-your-workflow-runs/triggering-a-workflow) explicitly permits `workflow_dispatch` events created with `GITHUB_TOKEN` to start another run. A personal access token is unnecessary. The main-only launcher uses the built-in token with job-scoped `actions: write`, dispatches the same workflow at the requested release tag, and forwards the version, build number, and upload choice. Tagged runs skip the launcher, preventing recursion. The actual signing job still runs under the tag ref used by the existing environment rule.
+
+Launcher and build concurrency groups differ so a launcher cannot hold the group needed by its tagged child. The launcher records only dispatch success; signing and upload results belong to the separate build run. Local tests stub the GitHub CLI, exercise the actual launcher shell, and check its arguments without creating a run or using real credentials.
