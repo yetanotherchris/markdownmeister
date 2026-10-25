@@ -6,7 +6,7 @@ Add a manually dispatched GitHub workflow with an unprivileged release-tag prefl
 
 Use one Python delivery helper for credential preparation, provisioning-profile checks, final artifact checks, and API-key upload. Keep secret contents out of command arguments and artifacts. Use a temporary credential directory, electron-builder's temporary signing keychain, and unconditional cleanup. Keep the API private key in a temporary HOME search directory used only by altool.
 
-Use a positive numeric build number of at most four digits, defaulting to the workflow run number. Overrides allow upload retries with higher numbers. The product version comes from package.json and must be a three-part numeric release version accepted by Apple.
+Use a positive numeric build number of at most four digits, defaulting to the workflow run number. Overrides allow upload retries with higher numbers. The product version comes from the selected release tag and must be a three-part numeric release version accepted by Apple.
 
 ## Constitution Check
 
@@ -49,3 +49,4 @@ The implementation artifacts are archived with the implementation PR. The macOS 
 - Actionlint and targeted workflow Prettier validation passed. The actual workflow tag gate was exercised with Git Bash against main, a branch named like a tag, a non-release tag, and a `v` release tag; all expected statuses matched. The workflow has only a manual trigger, its preflight has no environment, and the macOS job depends on that preflight. All 12 shell blocks passed `bash -n`.
 - `git diff --check`: passed. No live Store run or environment-rule change was performed.
 - Targeted ESLint and Prettier checks passed for the changed wrapper test and workflow.
+- After PR review, the targeted Vitest suite passed all three tests, including the new credential-free workflow regression. It parses the actual workflow, requires an unprivileged preflight and its dependency, and runs the workflow's gate/helper combination against main, a tag-like branch, malformed and invalid numeric tags, and a valid release tag.
