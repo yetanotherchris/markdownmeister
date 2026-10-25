@@ -71,6 +71,7 @@ describe('Mac App Store delivery', () => {
       const delivery = workflow.jobs['build-and-upload']
       const launcher = workflow.jobs['launch-tagged-build']
       assert.equal(workflow.on.workflow_dispatch.inputs.version.required, true)
+      assert.equal(workflow.env.MACOS_STORE_REQUESTED_VERSION, '\${{ inputs.version }}')
       assert.equal(launcher.if, "github.ref == 'refs/heads/main'")
       assert.equal(preflight.if, "github.ref != 'refs/heads/main'")
       assert.equal(launcher.environment, undefined)
@@ -120,6 +121,8 @@ describe('Mac App Store delivery', () => {
       const dispatch = launcher.steps.find(step => step.run?.includes('gh workflow run'))
       assert.ok(launchValidation?.run)
       assert.ok(dispatch?.run)
+      assert.equal(dispatch.env.REQUESTED_BUILD_NUMBER, '\${{ inputs.buildNumber }}')
+      assert.equal(dispatch.env.UPLOAD_REQUESTED, '\${{ inputs.upload }}')
       assert.equal(dispatch['continue-on-error'], undefined)
       for (const [number, upload, expected] of [['', 'false', 0], ['41', 'true', 0], ['', 'true', 1]]) {
         const result = spawnSync(bash, ['-c', [

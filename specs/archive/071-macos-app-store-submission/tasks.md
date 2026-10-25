@@ -11,3 +11,4 @@
 - [x] T009: Change manual Store dispatch to numeric `v*` release tags, derive packaging and verification versions from the tag, update the guide, and cover branch and invalid-version rejection before the credential-bearing job.
 - [x] T010: Correct the stale product-version source in the plan and add a workflow regression that protects strict preflight validation and the environment job's dependency, exercising the actual shell gate and helper without credentials.
 - [x] T011: Add the UI version textbox and credential-free main-to-tag launcher with job-scoped dispatch permission, forwarded selections, strict requested/tagged-version validation, regressions, and updated UI instructions.
+- [x] T012: Protect the launcher's actual version, build-number, and upload input bindings so hardcoded workflow environment values cannot pass the forwarding regressions.
