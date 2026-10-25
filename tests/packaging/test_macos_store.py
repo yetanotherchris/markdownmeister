@@ -27,7 +27,6 @@ def profile():
         "Entitlements": {
             "com.apple.application-identifier": f"{TEAM}.{store.BUNDLE_ID}",
             "com.apple.developer.team-identifier": TEAM,
-            "com.apple.security.app-sandbox": True,
         },
     }
 
@@ -47,8 +46,13 @@ class InputTests(unittest.TestCase):
 
 
 class ProfileTests(unittest.TestCase):
-    def test_accepts_explicit_store_profile(self):
+    def test_accepts_store_profile_without_unrestricted_sandbox_entitlement(self):
         self.assertEqual(store.validate_profile(profile()), TEAM)
+
+    def test_accepts_store_profile_that_also_lists_sandbox_entitlement(self):
+        data = profile()
+        data["Entitlements"]["com.apple.security.app-sandbox"] = True
+        self.assertEqual(store.validate_profile(data), TEAM)
 
     def test_accepts_legacy_application_prefix_different_from_team(self):
         data = profile()
@@ -67,7 +71,6 @@ class ProfileTests(unittest.TestCase):
             ("com.apple.application-identifier", f"{TEAM}.com.yetanotherchris.markdownmeister"),
             ("com.apple.application-identifier", f"{TEAM}.*"),
             ("com.apple.developer.team-identifier", "OTHERTEAM1"),
-            ("com.apple.security.app-sandbox", False),
             ("get-task-allow", True),
         ):
             data = profile()
@@ -109,7 +112,7 @@ class DeliveryTests(unittest.TestCase):
         self.credentials.mkdir()
         (self.credentials / "store.provisionprofile").write_bytes(b"signed-profile")
         (self.app / "Contents/embedded.provisionprofile").write_bytes(b"signed-profile")
-        (self.credentials / "app-signing-0").write_bytes(b"app-certificate")
+        self.extracted_certificate = b"app-certificate"
         self.entitlements = {
             "com.apple.security.app-sandbox": True,
             "com.apple.security.files.user-selected.read-write": True,
@@ -131,6 +134,11 @@ class DeliveryTests(unittest.TestCase):
         (self.app / "Contents/Info.plist").write_bytes(plistlib.dumps(self.info))
 
     def command(self, *args, **kwargs):
+        if args[0] == "codesign":
+            for argument in args:
+                if argument.startswith("--extract-certificates="):
+                    prefix = argument.split("=", 1)[1]
+                    Path(f"{prefix}0").write_bytes(self.extracted_certificate)
         if args[0] == "lipo":
             return self.architectures
         if args[0] == "pkgutil":
@@ -144,6 +152,11 @@ class DeliveryTests(unittest.TestCase):
 
     def test_verifies_universal_distribution_package(self):
         self.assertEqual(self.verify(), self.package)
+        self.runner.assert_any_call("codesign", "--verify", "--deep", "--strict", str(self.app))
+        self.runner.assert_any_call(
+            "codesign", "--display",
+            f"--extract-certificates={self.credentials / 'app-signing-'}", str(self.app),
+        )
 
     def test_rejects_universal_app_missing_an_architecture(self):
         self.architectures = b"arm64"
@@ -166,7 +179,7 @@ class DeliveryTests(unittest.TestCase):
             self.verify()
 
     def test_rejects_signer_not_authorized_by_profile(self):
-        (self.credentials / "app-signing-0").write_bytes(b"other-certificate")
+        self.extracted_certificate = b"other-certificate"
         with self.assertRaisesRegex(ValueError, "not authorized"):
             self.verify()
 
@@ -194,9 +207,15 @@ class DeliveryTests(unittest.TestCase):
                 self.entitlements[key] = True
 
     def test_stops_on_signature_verification_failure(self):
-        self.runner.side_effect = subprocess.CalledProcessError(1, ["codesign"])
+        def fail_signature_verification(*args, **kwargs):
+            if args[:2] == ("codesign", "--verify"):
+                raise subprocess.CalledProcessError(1, list(args))
+            return self.command(*args, **kwargs)
+
+        self.runner.side_effect = fail_signature_verification
         with self.assertRaises(subprocess.CalledProcessError):
             self.verify()
+        self.runner.assert_called_once_with("codesign", "--verify", "--deep", "--strict", str(self.app))
 
     def test_rejects_ambiguous_package_selection(self):
         (self.output / "another.pkg").touch()

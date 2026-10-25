@@ -15,3 +15,9 @@ Apple's [upload guide](https://developer.apple.com/help/app-store-connect/manage
 Python's standard library provides strict base64 decoding, plist parsing, file permissions, subprocess execution, and unit tests without another dependency. macOS `security`, `codesign`, `pkgutil`, and `lipo` perform profile and artifact verification. Windows can execute the regression tests and validate syntax, but cannot produce or validate a signed MAS installer or contact Apple without the maintainer's secrets.
 
 The app currently stores recent paths without security-scoped bookmarks. This delivery work does not establish persistent sandbox access. A Store-channel runtime test covering opening a folder, atomic saves, settings, and relaunch is required before public review; failures need a separate app-behavior specification rather than broad filesystem entitlements.
+
+## Review corrections
+
+Apple's [TN3125, Entitlements on macOS](https://developer.apple.com/documentation/technotes/tn3125-inside-code-signing-provisioning-profiles#Entitlements-on-macOS) documents that App Sandbox entitlements do not require provisioning-profile authorization. Profile validation must accept an absent sandbox key; the signed app's sandbox and user-selected read/write entitlements are still required and checked directly.
+
+The [`codesign(1)` manual](https://keith.github.io/xcode-man-pages/codesign.1.html) specifies attached values for options with optional arguments. Certificate extraction uses `--extract-certificates=<prefix>` as one argument, with numbered DER files written by codesign. The regression fake creates the extracted certificate only for that command form, instead of pre-populating a file that could hide an invalid invocation.

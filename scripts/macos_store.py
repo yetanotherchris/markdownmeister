@@ -55,8 +55,6 @@ def validate_profile(profile, now=None):
         raise ValueError("A development provisioning profile cannot be uploaded")
     if profile.get("ProvisionedDevices") or profile.get("ProvisionsAllDevices"):
         raise ValueError("Use a Mac App Store distribution provisioning profile")
-    if entitlements.get("com.apple.security.app-sandbox") is not True:
-        raise ValueError("Provisioning profile must permit App Sandbox")
     if not profile.get("DeveloperCertificates"):
         raise ValueError("Provisioning profile has no app signing certificates")
     return team[0]
@@ -123,7 +121,7 @@ def verify(directory, output, version, build_number):
     if not re.search(r"^Authority=(Apple Distribution|3rd Party Mac Developer Application):", signature, re.M):
         raise ValueError("App must have a Store distribution signature")
     certificate_prefix = directory / "app-signing-"
-    run("codesign", "--display", "--extract-certificates", str(certificate_prefix), str(app))
+    run("codesign", "--display", f"--extract-certificates={certificate_prefix}", str(app))
     if Path(f"{certificate_prefix}0").read_bytes() not in profile["DeveloperCertificates"]:
         raise ValueError("App signing certificate is not authorized by the provisioning profile")
     info = plistlib.loads((app / "Contents/Info.plist").read_bytes())

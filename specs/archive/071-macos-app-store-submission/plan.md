@@ -22,6 +22,7 @@ Run Python unit tests for invalid inputs, provisioning-profile mismatches, certi
 - 2026-10-25: Use a separate workflow and artifact directory so the Store package can be uploaded independently.
 - 2026-10-25: Retain the package before upload so a rejected upload does not discard build evidence. Never retain certificates, keys, or decoded profiles as separate artifacts.
 - 2026-10-25: GitHub secret-name inspection confirmed the installer credentials and API key are already in `macos-signing`. Reuse that environment and map `APPLE_API_KEY_P8_BASE64`, `APPLE_API_KEY_ID`, and `APPLE_API_ISSUER` to the helper's internal variables. No secret values were retrieved.
+- 2026-10-25: Correctness review established that sandbox entitlements need checking on the signed app, not authorization in the provisioning profile, and that codesign's optional certificate prefix must be attached to the option. Correct both with regressions that exercise those command and profile contracts. Strengthen the signature-failure regression so removing signature verification causes a test failure.
 
 ## Complexity Tracking
 
@@ -31,7 +32,7 @@ No constitution deviations.
 
 - `npm run lint`: passed.
 - `npm run typecheck`: passed.
-- `npm run test`: passed, 96 files and 1,159 tests. The Store regression wrapper runs 23 Python regression tests; the second Store test loads and schema-validates the merged builder configuration.
+- `npm run test`: passed, 96 files and 1,159 tests before review corrections. After the corrections, `npm run test -- tests/main/macos-store.test.ts` passed with 24 Python regression tests; the second Store test loads and schema-validates the merged builder configuration.
 - `npm run test:e2e -- tests/e2e/app.spec.ts tests/e2e/save-opened-file.spec.ts tests/e2e/settings.spec.ts tests/e2e/recent.persistence.spec.ts tests/e2e/file-association.spec.ts`: passed, 51 tests on Windows.
 - `npm run test:e2e`: incomplete. The initial full run reached the command's 120-second timeout after 33 passing tests. No full-suite success is claimed.
 - `go run github.com/rhysd/actionlint/cmd/actionlint@latest -shellcheck= .github/workflows/build-macos-store.yml`: passed. ShellCheck is not installed; each of the workflow's 11 shell blocks also passed Git Bash `bash -n` syntax validation.
