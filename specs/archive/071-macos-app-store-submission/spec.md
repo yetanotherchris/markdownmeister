@@ -18,10 +18,12 @@ The maintainer starts a delivery run, which builds a package supporting Intel an
 
 Acceptance scenarios:
 
-1. Given valid Store credentials, when delivery runs from the primary branch, a signed universal Store package is retained as a build artifact and uploaded for processing.
+1. Given valid Store credentials, when delivery is manually dispatched from a release tag, a signed universal Store package with that tag's version is retained as a build artifact and uploaded for processing.
 2. Given build-only mode, when delivery runs, the signed package is retained without contacting the upload service.
 3. Given missing credentials, an expired or mismatched provisioning profile, invalid signatures, or rejected upload validation, delivery fails and reports the failed operation.
 4. Given a repeat upload for the same product version, the maintainer can select a higher build number without changing the product version.
+5. Given a branch, a non-release tag, or a tag with an invalid version, delivery fails before entering the credential-bearing job.
+6. Given the selected tag's source metadata still has the previous product version, delivery packages and verifies the version from the tag.
 
 ### User Story 2: Configure delivery once (P1)
 
@@ -29,7 +31,7 @@ The maintainer follows the setup guide to supply the app certificate, installer 
 
 ## Requirements
 
-- **FR-001**: Delivery MUST be manually triggered and restricted to the primary branch before credentials are exposed.
+- **FR-001**: Delivery MUST be manually triggered from a numeric release tag named `v<version>` and use that version for packaging and verification. Branches, other tags, and invalid release versions MUST be rejected before entering the credential-bearing job. Creating a tag MUST NOT automatically trigger Store delivery.
 - **FR-002**: The Store app identifier MUST be `dev.yetanotherchris.markdownmeister`.
 - **FR-003**: The package MUST support both Intel and Apple silicon and use Store app and installer signing identities belonging to the provisioning profile's team.
 - **FR-004**: Delivery MUST verify the app signature, embedded provisioning profile, product version, build number, processor architectures, sandbox entitlement, and installer signature before upload.
@@ -41,7 +43,7 @@ The maintainer follows the setup guide to supply the app certificate, installer 
 
 ## Assumptions
 
-- Delivery builds the current primary-branch source and reads its product version. It is separate from tagged direct-download releases.
+- Delivery builds the manually selected release tag and derives its product version from the tag, matching the direct-download release process. The tagged source metadata may still contain the previous version. Uploading to the Store remains a separate manual action.
 - Upload credentials are supplied in the existing `macos-signing` deployment environment, reusing the existing API key without duplicating its secrets.
 - This feature implements package delivery. A signed Store build still requires testing through the Store testing channel or a separately development-signed build before public review. Automated signature checks do not establish that folder permissions persist after relaunch.
 
@@ -52,6 +54,7 @@ The maintainer follows the setup guide to supply the app certificate, installer 
 - The maintainer confirmed the registered bundle identifier is `dev.yetanotherchris.markdownmeister`.
 - The maintainer already has the other signing credentials and API key and is creating the installer certificate.
 - The installer secrets were added to the existing `macos-signing` environment. Delivery reuses that environment and its existing API-key secrets.
+- After a main-branch dispatch was rejected by the environment's `v*` tag-only rule, the maintainer requested manual `v*` tag dispatch. Select a release tag containing the updated workflow. Its name supplies the packaged product version, as with direct-download releases; it does not need to match the version already in source metadata.
 
 ## Success Criteria
 

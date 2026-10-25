@@ -28,9 +28,12 @@ describe('Mac App Store delivery', () => {
       const assert = require('node:assert/strict')
       const { getConfig, validateConfiguration } = require('app-builder-lib/out/util/config/config')
       ;(async () => {
-        const config = await getConfig(process.cwd(), 'packaging/macos/store.mjs')
+        const config = await getConfig(process.cwd(), 'packaging/macos/store.mjs', {
+          extraMetadata: { version: '9.9.99' }
+        })
         await validateConfiguration(config)
         assert.equal(config.appId, 'dev.yetanotherchris.markdownmeister')
+        assert.equal(config.extraMetadata.version, '9.9.99')
         assert.equal(config.mac.target, 'mas')
         assert.equal(config.afterSign, null)
         assert.equal(config.forceCodeSigning, true)

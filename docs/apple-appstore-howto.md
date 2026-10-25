@@ -42,7 +42,7 @@ Deployment protection rules are optional for this personal project. If you choos
 - `APPLE_API_KEY_ID`: the existing API key identifier.
 - `APPLE_API_ISSUER`: the existing API key issuer identifier.
 
-Use environment secrets so the credentials are scoped to jobs that use this environment. Approval is required only if you configure a reviewer rule. The workflow rejects runs outside `main` before entering the credential-bearing job.
+Use environment secrets so the credentials are scoped to jobs that use this environment. Approval is required only if you configure a reviewer rule. If deployment branches and tags are restricted, allow **tags matching `v*`**. The workflow rejects branches and tags with invalid release versions before entering the credential-bearing job; `main` does not need deployment access.
 
 If `APPLE_API_KEY_P8_BASE64`, `APPLE_API_KEY_ID`, and `APPLE_API_ISSUER` already exist in `macos-signing` for notarization, reuse them. No duplicate secrets or new API key are needed, provided the existing key's role permits uploading builds to this app. The workflow maps these secret names to the delivery helper's internal environment variables.
 
@@ -56,13 +56,21 @@ Repeat for the app `.p12`, provisioning profile, and existing `.p8` with their a
 
 ## 4. Build and Upload
 
-After the workflow is merged into `main`:
+After the workflow is merged into `main`, create a release tag from a commit containing that workflow change. The tag must be named `v<version>` (for example, `v1.8.62`). The tag supplies the packaged app version, matching the regular release workflow; `package.json` in that tagged commit may still have the previous version. Tags created before this change still contain the old workflow definition; create the next versioned release tag rather than re-running the failed main-branch run or moving an existing release tag.
 
 1. In GitHub, open **Actions → Build and upload Mac App Store package → Run workflow**.
-2. Select **main**. The workflow builds that dispatched commit and reads the product version from `package.json`.
+2. In the **Use workflow from** selector, select or enter the release tag, such as `v1.8.62`. The workflow builds that tagged commit, packages it as version `1.8.62`, and verifies that version in the signed app.
 3. Leave the build number blank to use the workflow run number, or supply an integer from 1 to 9999. Use a higher number than previous uploads for the same product version. Re-running a workflow keeps its run number, so a new dispatch with a higher number is needed if Apple already received the previous build.
 4. Leave **Upload the verified package to App Store Connect** selected to validate and upload. Clear it for a build-only run.
 5. Download the signed universal `.pkg` from the workflow's artifact if needed. The artifact is retained for 14 days and is uploaded before the Apple upload step so it remains available if Apple rejects the upload.
+
+If the web selector does not offer tags, dispatch the workflow with GitHub CLI, using your actual release tag:
+
+```powershell
+gh workflow run build-macos-store.yml --ref v1.8.62 -f upload=true
+```
+
+Creating a `v*` tag does not automatically run Store delivery. It remains a separate manual action from the direct-download release workflow.
 
 The workflow checks the profile's expiry and identifier, the embedded profile, app certificate authorization, both CPU architectures, version/build number, sandbox permissions, and installer signing team. A failure stops delivery. An accepted upload only means Apple has received the build; processing can still reject it later. Check App Store Connect and Apple's processing email before proceeding.
 
