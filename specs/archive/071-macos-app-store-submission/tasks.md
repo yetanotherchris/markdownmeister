@@ -10,3 +10,4 @@
 - [x] T008: Address PR review findings about unrestricted profile entitlements and codesign's optional certificate extraction prefix, and prove the signature-verification command runs and stops delivery on failure.
 - [x] T009: Change manual Store dispatch to numeric `v*` release tags, derive packaging and verification versions from the tag, update the guide, and cover branch and invalid-version rejection before the credential-bearing job.
 - [x] T010: Correct the stale product-version source in the plan and add a workflow regression that protects strict preflight validation and the environment job's dependency, exercising the actual shell gate and helper without credentials.
+- [x] T011: Add the UI version textbox and credential-free main-to-tag launcher with job-scoped dispatch permission, forwarded selections, strict requested/tagged-version validation, regressions, and updated UI instructions.

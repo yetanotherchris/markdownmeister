@@ -1,8 +1,13 @@
 name: Build and upload Mac App Store package
+run-name: Mac App Store v${{ inputs.version }} (${{ github.ref_type == 'tag' && 'build' || 'launcher' }})
 
 on:
   workflow_dispatch:
     inputs:
+      version:
+        description: 'Release version without v (for example 1.8.62). The corresponding v tag must exist.'
+        required: true
+        type: string
       buildNumber:
         description: 'Build number (1-9999). Leave blank to use the workflow run number. Increase for a repeat upload.'
         required: false
@@ -17,19 +22,62 @@ on:
 permissions:
   contents: read
 
+env:
+  MACOS_STORE_REQUESTED_VERSION: ${{ inputs.version }}
+
 concurrency:
-  group: macos-app-store
+  group: macos-app-store-${{ github.ref_type == 'tag' && 'build' || 'launcher' }}
   cancel-in-progress: false
 
 jobs:
+  launch-tagged-build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Checkout launcher
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # actions/checkout v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validate requested version and build number
+        env:
+          MACOS_STORE_BUILD_NUMBER: ${{ inputs.buildNumber || github.run_number }}
+        run: python3 scripts/macos_store.py dispatch-inputs
+
+      - name: Launch build at release tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_BUILD_NUMBER: ${{ inputs.buildNumber }}
+          UPLOAD_REQUESTED: ${{ inputs.upload }}
+        run: |
+          gh workflow run build-macos-store.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref "v$MACOS_STORE_REQUESTED_VERSION" \
+            -f "version=$MACOS_STORE_REQUESTED_VERSION" \
+            -f "buildNumber=$REQUESTED_BUILD_NUMBER" \
+            -f "upload=$UPLOAD_REQUESTED"
+
+      - name: Launcher summary
+        run: |
+          {
+            echo '## Mac App Store build launched'
+            echo "Requested release tag: v$MACOS_STORE_REQUESTED_VERSION"
+            echo 'This launcher has not built or uploaded a package.'
+            echo "Follow the separate build run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/workflows/build-macos-store.yml"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   preflight:
+    if: github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Require release tag
         shell: bash
         run: |
           if [[ "$GITHUB_REF" != refs/tags/v* ]]; then
-            echo '::error::Run Mac App Store delivery manually from a v<version> release tag.'
+            echo '::error::Select main in the workflow form and enter the release version without v.'
             exit 1
           fi
 

@@ -2,6 +2,8 @@
 
 ## Approach
 
+The primary-branch UI offers a required version textbox. A credential-free Ubuntu launcher validates the version/build-number inputs, then uses GitHub CLI to dispatch this workflow at `v<version>`, passing through the version, optional build number, and upload choice. Only this job has `actions: write`, using the built-in repository token; it has no deployment environment or Store secrets. Tagged runs skip the launcher and retain the strict preflight and signing job below. Launcher and build runs have separate concurrency groups and descriptive run names. The launcher never waits for the child, and its summary links to the workflow page without claiming build or upload completion.
+
 Add a manually dispatched GitHub workflow with an unprivileged release-tag preflight followed by a macOS job using the existing `macos-signing` environment. Check out the dispatched tag and require a full `refs/tags/v<version>` ref with a valid numeric release version before entering the environment job. Derive the product version from that tag for all delivery commands and pass it to electron-builder as `extraMetadata.version`, matching the direct-download release workflow even when package.json still has the previous version. Use a dedicated electron-builder configuration extending the existing configuration, overriding only Store identity, target, sandbox entitlements, output location, signing enforcement, and the direct-download notarization hook.
 
 Use one Python delivery helper for credential preparation, provisioning-profile checks, final artifact checks, and API-key upload. Keep secret contents out of command arguments and artifacts. Use a temporary credential directory, electron-builder's temporary signing keychain, and unconditional cleanup. Keep the API private key in a temporary HOME search directory used only by altool.
@@ -18,6 +20,7 @@ Run Python unit tests for invalid inputs, provisioning-profile mismatches, certi
 
 ## Decision Log
 
+- 2026-10-25: The maintainer requested UI-based operation with the same version textbox as the Microsoft Store workflow. A main-to-tag workflow dispatch preserves the existing tag-only signing environment rule. Scope `actions: write` to the launcher job and retain `contents: read` elsewhere. Validate the entered version on main and require it to match the dispatched tag before any credential-bearing job. Existing tags must contain this version-input workflow interface to receive the forwarded inputs.
 - 2026-10-25: Run 40233344948 was rejected before the macOS job because `macos-signing` allows `v*` tags and excludes `main`. At the maintainer's request, keep manual dispatch but require a release tag. Validate the full ref and numeric version in an unprivileged job before the environment job and again before macOS credential preparation. Select a tag containing this workflow change; old tags retain their old workflow definition. Derive the version from the tag, rather than requiring package.json to match, because the regular release workflow overrides metadata at packaging and synchronizes package.json afterward.
 - 2026-10-25: Use a Store-specific app identifier override because the registered identifier differs from the current direct-download identifier.
 - 2026-10-25: Use a separate workflow and artifact directory so the Store package can be uploaded independently.
@@ -50,3 +53,10 @@ The implementation artifacts are archived with the implementation PR. The macOS 
 - `git diff --check`: passed. No live Store run or environment-rule change was performed.
 - Targeted ESLint and Prettier checks passed for the changed wrapper test and workflow.
 - After PR review, the targeted Vitest suite passed all three tests, including the new credential-free workflow regression. It parses the actual workflow, requires an unprivileged preflight and its dependency, and runs the workflow's gate/helper combination against main, a tag-like branch, malformed and invalid numeric tags, and a valid release tag.
+
+## UI Launcher Verification (2026-10-25)
+
+- The targeted Vitest suite passed all three tests with 30 Python regressions. New cases validate plain version entry on main and reject mismatched requested/tagged versions before credential preparation, verification, or upload.
+- The workflow regression parses the real launcher, checks its main-only condition and job-scoped dispatch permission without a signing environment, and executes its actual validation and dispatch shell with a stub GitHub CLI. It verifies forwarding of blank and explicit build numbers and both upload choices, and propagates dispatch failure. No real token or Store credential is used.
+- Actionlint and targeted ESLint passed. Prettier passed with checkout line endings normalized to LF; the direct Windows file check reports CRLF differences. All workflow shell blocks also pass Git Bash syntax validation. ShellCheck is unavailable locally.
+- No workflow was dispatched and no environment policy was modified. The real UI-to-tag dispatch still requires merging the change and selecting an existing tag containing the new workflow interface. Signed Store packaging and upload remain unverified.

@@ -177,14 +177,23 @@ def upload(directory, package):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("inputs", "prepare", "verify", "upload"))
+    parser.add_argument("command", choices=("dispatch-inputs", "inputs", "prepare", "verify", "upload"))
     parser.add_argument("--credentials", type=Path)
     parser.add_argument("--output", type=Path, default=Path("dist-store"))
     parser.add_argument("--ref", default=os.environ.get("GITHUB_REF"), help="Full dispatched Git ref")
+    parser.add_argument("--version", default=os.environ.get("MACOS_STORE_REQUESTED_VERSION"))
     args = parser.parse_args()
-    version = release_version(args.ref)
     build_number = os.environ.get("MACOS_STORE_BUILD_NUMBER", "")
+    if args.command == "dispatch-inputs":
+        if args.ref != "refs/heads/main":
+            raise ValueError("The UI launcher must run from main")
+        validate_inputs(args.version or "", build_number)
+        print(f"Validated request for v{args.version}")
+        return
+    version = release_version(args.ref)
     validate_inputs(version, build_number)
+    if args.version is not None and args.version != version:
+        raise ValueError("Requested version must match the dispatched release tag")
     if args.command == "inputs":
         print(f"Store version {version}, build {build_number}")
         return
