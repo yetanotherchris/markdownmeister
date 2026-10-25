@@ -3,7 +3,6 @@
 import argparse
 import base64
 from datetime import datetime, timezone
-import json
 import os
 from pathlib import Path
 import plistlib
@@ -34,6 +33,15 @@ def validate_inputs(version, build_number):
         raise ValueError("Product version must be a three-part numeric release version")
     if not re.fullmatch(r"[1-9][0-9]{0,3}", build_number):
         raise ValueError("Build number must be an integer from 1 to 9999; override it if needed")
+
+
+def release_version(ref):
+    match = re.fullmatch(r"refs/tags/v([0-9]+\.[0-9]+\.[0-9]+)", ref or "")
+    if match is None:
+        raise ValueError("Select a v<version> release tag; branches and other tags are not accepted")
+    version = match.group(1)
+    validate_inputs(version, "1")
+    return version
 
 
 def validate_profile(profile, now=None):
@@ -172,8 +180,9 @@ def main():
     parser.add_argument("command", choices=("inputs", "prepare", "verify", "upload"))
     parser.add_argument("--credentials", type=Path)
     parser.add_argument("--output", type=Path, default=Path("dist-store"))
+    parser.add_argument("--ref", default=os.environ.get("GITHUB_REF"), help="Full dispatched Git ref")
     args = parser.parse_args()
-    version = json.loads(Path("package.json").read_text(encoding="utf-8"))["version"]
+    version = release_version(args.ref)
     build_number = os.environ.get("MACOS_STORE_BUILD_NUMBER", "")
     validate_inputs(version, build_number)
     if args.command == "inputs":

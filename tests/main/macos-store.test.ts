@@ -28,9 +28,12 @@ describe('Mac App Store delivery', () => {
       const assert = require('node:assert/strict')
       const { getConfig, validateConfiguration } = require('app-builder-lib/out/util/config/config')
       ;(async () => {
-        const config = await getConfig(process.cwd(), 'packaging/macos/store.mjs')
+        const config = await getConfig(process.cwd(), 'packaging/macos/store.mjs', {
+          extraMetadata: { version: '9.9.99' }
+        })
         await validateConfiguration(config)
         assert.equal(config.appId, 'dev.yetanotherchris.markdownmeister')
+        assert.equal(config.extraMetadata.version, '9.9.99')
         assert.equal(config.mac.target, 'mas')
         assert.equal(config.afterSign, null)
         assert.equal(config.forceCodeSigning, true)
@@ -49,6 +52,62 @@ describe('Mac App Store delivery', () => {
         MACOS_STORE_PROFILE_PATH: '/private/store.provisionprofile'
       }
     })
+
+    expect(result.error, result.error?.message).toBeUndefined()
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0)
+  })
+
+  it('rejects invalid dispatch refs in the actual preflight before the environment job', () => {
+    const script = `
+      const assert = require('node:assert/strict')
+      const { readFileSync } = require('node:fs')
+      const { resolve } = require('node:path')
+      const { spawnSync } = require('node:child_process')
+      const workflow = require('js-yaml').load(
+        readFileSync('.github/workflows/build-macos-store.yml', 'utf8')
+      )
+      assert.deepEqual(Object.keys(workflow.on), ['workflow_dispatch'])
+      const preflight = workflow.jobs.preflight
+      const delivery = workflow.jobs['build-and-upload']
+      assert.equal(preflight.environment, undefined)
+      assert.ok([delivery.needs].flat().includes('preflight'))
+      assert.equal(delivery.environment, 'macos-signing')
+      const gate = preflight.steps.find(step => step.name === 'Require release tag')
+      const validation = preflight.steps.find(step => step.run?.includes('macos_store.py inputs'))
+      assert.ok(gate?.run)
+      assert.ok(validation?.run)
+      let bash = 'bash'
+      if (process.platform === 'win32') {
+        const git = spawnSync('git', ['--exec-path'], { encoding: 'utf8' })
+        assert.equal(git.status, 0, git.stderr)
+        bash = resolve(git.stdout.trim(), '../../../bin/bash.exe')
+      }
+      const commands = [
+        'set -e',
+        'python3() { command "$STORE_TEST_PYTHON" "$@"; }',
+        gate.run,
+        validation.run
+      ].join(String.fromCharCode(10))
+      for (const [ref, expected] of [
+        ['refs/heads/main', 1],
+        ['refs/heads/v9.9.99', 1],
+        ['refs/tags/vnext', 1],
+        ['refs/tags/v01.9.99', 1],
+        ['refs/tags/v9.9.99', 0]
+      ]) {
+        const result = spawnSync(bash, ['-c', commands], {
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            STORE_TEST_PYTHON: process.platform === 'win32' ? 'python' : 'python3',
+            GITHUB_REF: ref,
+            MACOS_STORE_BUILD_NUMBER: '12'
+          }
+        })
+        assert.equal(result.status, expected, ref + ': ' + result.stdout + result.stderr)
+      }
+    `
+    const result = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8' })
 
     expect(result.error, result.error?.message).toBeUndefined()
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0)

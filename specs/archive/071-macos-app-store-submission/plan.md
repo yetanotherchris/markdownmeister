@@ -2,11 +2,11 @@
 
 ## Approach
 
-Add a manually dispatched GitHub workflow with an unprivileged primary-branch preflight followed by a macOS job using the existing `macos-signing` environment. Build current main rather than introducing tag requirements. Use a dedicated electron-builder configuration extending the existing configuration, overriding only Store identity, target, sandbox entitlements, output location, signing enforcement, and the direct-download notarization hook.
+Add a manually dispatched GitHub workflow with an unprivileged release-tag preflight followed by a macOS job using the existing `macos-signing` environment. Check out the dispatched tag and require a full `refs/tags/v<version>` ref with a valid numeric release version before entering the environment job. Derive the product version from that tag for all delivery commands and pass it to electron-builder as `extraMetadata.version`, matching the direct-download release workflow even when package.json still has the previous version. Use a dedicated electron-builder configuration extending the existing configuration, overriding only Store identity, target, sandbox entitlements, output location, signing enforcement, and the direct-download notarization hook.
 
 Use one Python delivery helper for credential preparation, provisioning-profile checks, final artifact checks, and API-key upload. Keep secret contents out of command arguments and artifacts. Use a temporary credential directory, electron-builder's temporary signing keychain, and unconditional cleanup. Keep the API private key in a temporary HOME search directory used only by altool.
 
-Use a positive numeric build number of at most four digits, defaulting to the workflow run number. Overrides allow upload retries with higher numbers. The product version comes from package.json and must be a three-part numeric release version accepted by Apple.
+Use a positive numeric build number of at most four digits, defaulting to the workflow run number. Overrides allow upload retries with higher numbers. The product version comes from the selected release tag and must be a three-part numeric release version accepted by Apple.
 
 ## Constitution Check
 
@@ -18,6 +18,7 @@ Run Python unit tests for invalid inputs, provisioning-profile mismatches, certi
 
 ## Decision Log
 
+- 2026-10-25: Run 40233344948 was rejected before the macOS job because `macos-signing` allows `v*` tags and excludes `main`. At the maintainer's request, keep manual dispatch but require a release tag. Validate the full ref and numeric version in an unprivileged job before the environment job and again before macOS credential preparation. Select a tag containing this workflow change; old tags retain their old workflow definition. Derive the version from the tag, rather than requiring package.json to match, because the regular release workflow overrides metadata at packaging and synchronizes package.json afterward.
 - 2026-10-25: Use a Store-specific app identifier override because the registered identifier differs from the current direct-download identifier.
 - 2026-10-25: Use a separate workflow and artifact directory so the Store package can be uploaded independently.
 - 2026-10-25: Retain the package before upload so a rejected upload does not discard build evidence. Never retain certificates, keys, or decoded profiles as separate artifacts.
@@ -41,3 +42,11 @@ No constitution deviations.
 - Signed universal MAS packaging, Apple's validation/upload, and Store-channel runtime behavior remain unverified. They require a macOS runner with the configured signing credentials, followed by testing the processed Store build or a separately development-signed MAS build.
 
 The implementation artifacts are archived with the implementation PR. The macOS verification task remains open and must be completed before public review. No public Store-readiness claim is made by the local checks.
+
+## Release-Tag Dispatch Fix Verification (2026-10-25)
+
+- `npm run test -- tests/main/macos-store.test.ts`: passed, including 28 Python regressions and builder configuration/schema validation with a version override. New coverage rejects branches, non-release tags, and invalid numeric versions. The actual CLI derives the version from a release tag even when package.json has another version.
+- Actionlint and targeted workflow Prettier validation passed. The actual workflow tag gate was exercised with Git Bash against main, a branch named like a tag, a non-release tag, and a `v` release tag; all expected statuses matched. The workflow has only a manual trigger, its preflight has no environment, and the macOS job depends on that preflight. All 12 shell blocks passed `bash -n`.
+- `git diff --check`: passed. No live Store run or environment-rule change was performed.
+- Targeted ESLint and Prettier checks passed for the changed wrapper test and workflow.
+- After PR review, the targeted Vitest suite passed all three tests, including the new credential-free workflow regression. It parses the actual workflow, requires an unprivileged preflight and its dependency, and runs the workflow's gate/helper combination against main, a tag-like branch, malformed and invalid numeric tags, and a valid release tag.

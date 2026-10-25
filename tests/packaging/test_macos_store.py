@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import plistlib
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -43,6 +44,38 @@ class InputTests(unittest.TestCase):
         ):
             with self.subTest(version=version, number=number), self.assertRaises(ValueError):
                 store.validate_inputs(version, number)
+
+
+class ReleaseTagTests(unittest.TestCase):
+    def test_accepts_exact_release_tag(self):
+        self.assertEqual(store.release_version("refs/tags/v1.8.61"), "1.8.61")
+
+    def test_rejects_branches_and_non_release_tags(self):
+        for ref in (
+            None, "", "refs/heads/main", "refs/heads/v1.8.61", "refs/tags/1.8.61",
+            "refs/tags/vnext", "refs/tags/v1.8.61-beta", "refs/tags/v1.8.61\n",
+        ):
+            with self.subTest(ref=ref), self.assertRaisesRegex(ValueError, "Select a v<version> release tag"):
+                store.release_version(ref)
+
+    def test_rejects_release_tags_with_invalid_numeric_versions(self):
+        for ref in ("refs/tags/v01.8.61", "refs/tags/v1.08.61", "refs/tags/v1.8.10000"):
+            with self.subTest(ref=ref), self.assertRaises(ValueError):
+                store.release_version(ref)
+
+    def test_cli_uses_tag_version_even_when_package_json_has_another_version(self):
+        for ref, expected_status in (("refs/heads/main", 1), ("refs/tags/v9.9.99", 0)):
+            with self.subTest(ref=ref):
+                result = subprocess.run(
+                    [sys.executable, "-B", str(ROOT / "scripts/macos_store.py"), "inputs", "--ref", ref],
+                    cwd=ROOT, capture_output=True, text=True,
+                    env=dict(os.environ, MACOS_STORE_BUILD_NUMBER="12"),
+                )
+                self.assertEqual(result.returncode, expected_status, result.stdout + result.stderr)
+                if expected_status:
+                    self.assertIn("Select a v<version> release tag", result.stderr)
+                else:
+                    self.assertIn("Store version 9.9.99, build 12", result.stdout)
 
 
 class ProfileTests(unittest.TestCase):
