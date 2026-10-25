@@ -1,12 +1,12 @@
 # Mac App Store Delivery
 
-This guide is for the maintainer who prepares MarkdownMeister for delivery through the Mac App Store. It covers the tasks that must happen before automated package submission can be enabled. It does not replace App Store Connect's product metadata or Apple review process.
+This guide covers building and uploading MarkdownMeister through the **Build and upload Mac App Store package** GitHub Actions workflow. The workflow creates a signed universal `.pkg` for Intel and Apple silicon and can upload it to App Store Connect. Product metadata, testing, App Review submission, and release remain manual.
 
 ## 1. Create the App Store Connect App
 
 1. Sign in to [App Store Connect](https://appstoreconnect.apple.com/) with the Apple Developer Program account.
 2. Create a new macOS app record before configuring repository credentials.
-3. Use the bundle identifier `com.yetanotherchris.markdownmeister`. It must match the identifier used by the packaged application.
+3. Use the registered bundle identifier `dev.yetanotherchris.markdownmeister`. The Store packaging configuration uses this identifier. The direct-download configuration currently uses a separate identifier.
 4. Complete the app name, primary language, SKU, user-access setting, and any other required initial fields.
 5. Record the App Store Connect app record and confirm the product is visible in App Store Connect before continuing.
 
@@ -14,31 +14,61 @@ Do not create a second app record with a different bundle identifier. App Store 
 
 ## 2. Prepare Apple Signing Material
 
-On a Mac with Xcode installed:
+Prepare these existing or newly created credentials:
 
-1. Open Xcode, Settings, Accounts, select the Apple Developer team, then Manage Certificates.
-2. Create or obtain an **Apple Distribution** certificate. Export its certificate and private key as a password-protected `.p12` file.
-3. Create the Mac App Store provisioning profile for `com.yetanotherchris.markdownmeister` and retain the downloaded profile.
-4. Create an App Store Connect API key with only the role required to upload builds. Download the `.p8` file when Apple offers it; it cannot be downloaded again later.
+1. An **Apple Distribution** certificate (also called Mac App Distribution or 3rd Party Mac Developer Application). Export the certificate with its private key as a password-protected `.p12`.
+2. A **Mac Installer Distribution** certificate (the downloaded certificate's name may begin with 3rd Party Mac Developer Installer). Export it with its private key as a separate password-protected `.p12`.
+3. A **Mac App Store distribution provisioning profile** for `dev.yetanotherchris.markdownmeister`, selecting the app distribution certificate. Download the `.provisionprofile` file. A development or device-bound profile is not suitable for upload.
+4. Your existing **App Store Connect Team API key**, its Key ID, and its Issuer ID. Reuse the key used for notarization if its role allows uploading builds to this app. Do not create another key just for this workflow.
+
+Certificates and profiles are managed under [Apple Developer → Certificates, Identifiers & Profiles](https://developer.apple.com/account/resources/certificates/list). API keys are under [App Store Connect → Users and Access → Integrations](https://appstoreconnect.apple.com/access/integrations/api).
+
+The `.csr` is the request you upload to Apple when creating a certificate. Apple returns a `.cer`; the workflow needs a `.p12` containing that certificate and the private key that generated the CSR. On a Mac, use Keychain Access to export both. On Windows, use the OpenSSL conversion and export procedure in the direct-download section below with the Store certificate and its matching private key. For the installer certificate, use its own output filenames so you do not overwrite the existing Developer ID export.
 
 Store the `.p12`, provisioning profile, and `.p8` outside the repository. They are credentials, not project assets.
 
 ## 3. Configure the Protected GitHub Environment
 
-Create a GitHub Actions deployment environment named `macos-app-store`.
+Use the existing GitHub Actions deployment environment named `macos-signing`, or create it if this is the first signing setup. Store signing and direct-download signing use different certificates but share this environment and the existing upload API key.
 
-Deployment protection rules are optional for this personal project. If you choose to require approval, add yourself as the reviewer and leave **Prevent self-review** unchecked so you can approve runs you trigger. Add the following environment secrets when Spec 070's submission workflow is implemented:
+Deployment protection rules are optional for this personal project. If you choose to require approval, add yourself as the reviewer and leave **Prevent self-review** unchecked so you can approve runs you trigger. Add these environment secrets:
 
 - `MACOS_APP_STORE_CERTIFICATE_P12_BASE64`: single-line base64 encoding of the Apple Distribution `.p12`.
 - `MACOS_APP_STORE_CERTIFICATE_PASSWORD`: password used to export the `.p12`.
+- `MACOS_APP_STORE_INSTALLER_P12_BASE64`: single-line base64 encoding of the Mac Installer Distribution `.p12`.
+- `MACOS_APP_STORE_INSTALLER_PASSWORD`: password used to export the installer `.p12`.
 - `MACOS_APP_STORE_PROVISIONING_PROFILE_BASE64`: single-line base64 encoding of the provisioning profile.
-- `APP_STORE_CONNECT_API_KEY_P8_BASE64`: single-line base64 encoding of the App Store Connect API key.
-- `APP_STORE_CONNECT_API_KEY_ID`: the API key identifier.
-- `APP_STORE_CONNECT_ISSUER_ID`: the API key issuer identifier.
+- `APPLE_API_KEY_P8_BASE64`: single-line base64 encoding of the existing App Store Connect API key.
+- `APPLE_API_KEY_ID`: the existing API key identifier.
+- `APPLE_API_ISSUER`: the existing API key issuer identifier.
 
-Use environment secrets so the credentials are scoped to jobs that use this environment. Approval is required only if you configure a reviewer rule.
+Use environment secrets so the credentials are scoped to jobs that use this environment. Approval is required only if you configure a reviewer rule. The workflow rejects runs outside `main` before entering the credential-bearing job.
 
-## 4. Review and Release in App Store Connect
+If `APPLE_API_KEY_P8_BASE64`, `APPLE_API_KEY_ID`, and `APPLE_API_ISSUER` already exist in `macos-signing` for notarization, reuse them. No duplicate secrets or new API key are needed, provided the existing key's role permits uploading builds to this app. The workflow maps these secret names to the delivery helper's internal environment variables.
+
+On Windows, encode each file with PowerShell, then paste the clipboard contents into the corresponding GitHub secret:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes('C:\private\store-installer.p12')) | Set-Clipboard
+```
+
+Repeat for the app `.p12`, provisioning profile, and existing `.p8` with their actual paths. Passwords, Key ID, and Issuer ID are plain secret values, not base64 files.
+
+## 4. Build and Upload
+
+After the workflow is merged into `main`:
+
+1. In GitHub, open **Actions → Build and upload Mac App Store package → Run workflow**.
+2. Select **main**. The workflow builds that dispatched commit and reads the product version from `package.json`.
+3. Leave the build number blank to use the workflow run number, or supply an integer from 1 to 9999. Use a higher number than previous uploads for the same product version. Re-running a workflow keeps its run number, so a new dispatch with a higher number is needed if Apple already received the previous build.
+4. Leave **Upload the verified package to App Store Connect** selected to validate and upload. Clear it for a build-only run.
+5. Download the signed universal `.pkg` from the workflow's artifact if needed. The artifact is retained for 14 days and is uploaded before the Apple upload step so it remains available if Apple rejects the upload.
+
+The workflow checks the profile's expiry and identifier, the embedded profile, app certificate authorization, both CPU architectures, version/build number, sandbox permissions, and installer signing team. A failure stops delivery. An accepted upload only means Apple has received the build; processing can still reject it later. Check App Store Connect and Apple's processing email before proceeding.
+
+The workflow uses Xcode's `altool` to validate and upload with API-key authentication. It does not submit the app for review or release it. Temporary certificates, private keys, and profile files are removed after the run; they are not included as separate workflow artifacts.
+
+## 5. Test, Review, and Release in App Store Connect
 
 After the automated workflow uploads a package, wait for App Store Connect processing to finish. Then complete the required metadata, screenshots, privacy information, age rating, pricing, availability, and export-compliance answers. Select the processed build and submit it for Apple's review.
 
@@ -48,11 +78,12 @@ The workflow must not submit for review or release the app automatically. Those 
 
 - The Mac App Store package is sandboxed. User-selected folder access must be explicitly granted by the package's entitlements.
 - A Store build signed with Apple Distribution is not expected to run directly outside the Mac App Store. Test a development-signed build on a registered Mac instead.
+- Before submitting for public review, test the Store build through TestFlight (or a separately development-signed MAS build). Cover opening a folder, editing and atomic saving, settings persistence, and access after relaunch. The current app does not persist security-scoped bookmarks for recent paths; package verification does not establish that reopening those paths will work after relaunch. Any runtime fixes need their own behavior specification and tests.
 - The existing direct-download macOS artifacts are a separate distribution channel.
 
 ## Windows: Configure Signing for Direct macOS Downloads
 
-These steps prepare signing and notarization credentials from Windows for the DMG and ZIP downloads on GitHub Releases. They use a **Developer ID Application** certificate and the `macos-signing` GitHub environment, rather than the Apple Distribution certificate and `macos-app-store` environment described above. Creating these credentials does not require using a Mac or installing personal credentials on a work machine. The build, signing, notarization, and disk-image checks run on GitHub's macOS runners.
+These steps prepare signing and notarization credentials from Windows for the DMG and ZIP downloads on GitHub Releases. They use a **Developer ID Application** certificate in the `macos-signing` GitHub environment. Store delivery uses separate app and installer distribution certificates in that same environment. Creating these credentials does not require using a Mac or installing personal credentials on a work machine. The build, signing, notarization, and disk-image checks run on GitHub's macOS runners.
 
 You need an active Apple Developer Program membership and OpenSSL installed on Windows, with `openssl` available in PowerShell. Run the commands in a private directory outside the repository. Keep the private key, `.p12`, and `.p8` files securely backed up outside the repository.
 
@@ -153,3 +184,116 @@ Open the repository's **Settings → Environments → `macos-signing`**, creatin
 No deployment protection rules are required for this personal project. You can leave **Required reviewers** unset and deployment branches and tags unrestricted. The release workflow checks version-tag syntax and reachability from `main`. If you choose to require your own approval, add yourself under **Required reviewers** and leave **Prevent self-review** unchecked.
 
 References: [Apple Developer ID certificates](https://developer.apple.com/help/account/certificates/create-developer-id-certificates/), [App Store Connect API keys](https://developer.apple.com/help/app-store-connect/get-started/app-store-connect-api/), and [GitHub environment configuration](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments).
+
+## Windows: Export the Mac App Store Installer Certificate
+
+Use this section after downloading a **Mac Installer Distribution** certificate from Apple. It prepares the installer signing credential for the Store workflow described above. The example assumes the certificate is named `mac_installer.cer` and was issued using `developer-id.csr`, whose matching private key is `developer-id.key`. The CSR's filename does not determine the certificate type; select Mac Installer Distribution in Apple's portal when creating the certificate.
+
+A `.cer` contains the public certificate. A `.p12` bundles that certificate with its matching private key, protected by an export password. Because `.p12` files are binary, the script also writes a single-line base64 text file suitable for a GitHub Actions secret. Base64 is encoding, not encryption; keep both output files private and outside the repository.
+
+### 1. Save the Conversion Script
+
+Save the following as `Convert-MacInstallerToP12.ps1` in the same private directory as `mac_installer.cer` and `developer-id.key`. OpenSSL must be available in PowerShell. The script uses its own directory to locate the inputs and refuses to overwrite either output file.
+
+```powershell
+$ErrorActionPreference = 'Stop'
+
+$certificatePath = Join-Path $PSScriptRoot 'mac_installer.cer'
+$privateKeyPath = Join-Path $PSScriptRoot 'developer-id.key'
+$outputPath = Join-Path $PSScriptRoot 'mac_installer.p12'
+$base64Path = Join-Path $PSScriptRoot 'mac_installer.p12.base64.txt'
+
+$openssl = Get-Command openssl -CommandType Application -ErrorAction Stop
+
+foreach ($path in @($certificatePath, $privateKeyPath)) {
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+        throw "Required file not found: $path"
+    }
+}
+
+if (Test-Path -LiteralPath $outputPath) {
+    throw "Output already exists. Move or rename it before running again: $outputPath"
+}
+
+if (Test-Path -LiteralPath $base64Path) {
+    throw "Output already exists. Move or rename it before running again: $base64Path"
+}
+
+$temporaryCertificate = [System.IO.Path]::GetTempFileName()
+$exportStarted = $false
+$exportSucceeded = $false
+
+try {
+    & $openssl.Source x509 -inform DER -in $certificatePath -out $temporaryCertificate
+    if ($LASTEXITCODE -ne 0) {
+        throw 'OpenSSL could not read the installer certificate.'
+    }
+
+    Write-Host 'OpenSSL will ask for the existing developer-id.key password.'
+    Write-Host 'Then choose and confirm an export password for mac_installer.p12.'
+    Write-Host 'Password input is hidden. Keep the export password for GitHub Actions.'
+    Write-Host ''
+
+    $exportStarted = $true
+    & $openssl.Source pkcs12 -export `
+        -inkey $privateKeyPath `
+        -in $temporaryCertificate `
+        -out $outputPath `
+        -keypbe AES-256-CBC `
+        -certpbe AES-256-CBC `
+        -macalg SHA256
+
+    if ($LASTEXITCODE -ne 0) {
+        throw 'OpenSSL could not export the P12. Check the passwords and try again.'
+    }
+
+    $exportSucceeded = $true
+    $base64 = [Convert]::ToBase64String([System.IO.File]::ReadAllBytes($outputPath))
+    [System.IO.File]::WriteAllText($base64Path, $base64, [System.Text.Encoding]::ASCII)
+
+    Write-Host ''
+    Write-Host "Created: $outputPath"
+    Write-Host "Created: $base64Path"
+    Write-Host 'Copy the entire text file into the MACOS_APP_STORE_INSTALLER_P12_BASE64 GitHub secret.'
+    Write-Host 'Put the export password in MACOS_APP_STORE_INSTALLER_PASSWORD.'
+    Write-Host 'Keep both files private. Do not commit them to a repository.'
+}
+finally {
+    Remove-Item -LiteralPath $temporaryCertificate -Force
+
+    # A failed export may leave an incomplete credential file.
+    if ($exportStarted -and -not $exportSucceeded -and (Test-Path -LiteralPath $outputPath)) {
+        Remove-Item -LiteralPath $outputPath -Force
+    }
+}
+```
+
+### 2. Run the Script
+
+Run it from PowerShell, substituting your private directory if different:
+
+```powershell
+& 'C:\Users\chris\Downloads\temp\apple-certs\Convert-MacInstallerToP12.ps1'
+```
+
+Enter the existing `developer-id.key` password when OpenSSL asks for the input key's passphrase. Then choose and confirm an export password for the new `.p12`. These passwords are entered locally and are not written into the script or base64 file.
+
+The script creates `mac_installer.p12` and `mac_installer.p12.base64.txt` beside the script. Keep the export password for the GitHub secret below. If an output already exists, move or rename it before running the script again.
+
+### 3. Add the Installer Secrets to GitHub
+
+Open the repository's **Settings → Environments → `macos-signing`**, creating that environment if necessary. Add these two environment secrets:
+
+| Secret | Value |
+| --- | --- |
+| `MACOS_APP_STORE_INSTALLER_P12_BASE64` | The entire contents of `mac_installer.p12.base64.txt`. |
+| `MACOS_APP_STORE_INSTALLER_PASSWORD` | The `.p12` export password chosen when running the script. |
+
+You can open the text file and copy its contents, or copy it directly to the clipboard:
+
+```powershell
+Get-Content -LiteralPath 'C:\Users\chris\Downloads\temp\apple-certs\mac_installer.p12.base64.txt' -Raw |
+    Set-Clipboard
+```
+
+The workflow decodes the base64 secret back into a binary `.p12` on the macOS runner and uses the export password to import it for signing. The installer secrets are in addition to the app distribution certificate, provisioning profile, and API-key secrets listed in section 3 above.
