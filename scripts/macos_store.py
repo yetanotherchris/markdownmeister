@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import plistlib
 import re
+import stat
 import subprocess
 import sys
 
@@ -102,6 +103,23 @@ def prepare(directory):
             raise ValueError(f"Empty credential: {secret}")
         write_private(directory / name, data)
     validate_profile(read_profile(directory / "store.provisionprofile"))
+    signing_profile = directory / "store-signing.provisionprofile"
+    write_private(signing_profile, (directory / "store.provisionprofile").read_bytes())
+    # osx-sign preserves this mode when embedding the public profile in the installed app.
+    os.chmod(signing_profile, 0o644)
+
+
+def verify_bundle_permissions(app):
+    for entry in (app, *app.rglob("*")):
+        mode = entry.lstat().st_mode
+        if stat.S_ISLNK(mode):
+            continue
+        required = stat.S_IROTH
+        if stat.S_ISDIR(mode) or (stat.S_ISREG(mode) and mode & 0o111):
+            required |= stat.S_IXOTH
+        if mode & required != required:
+            relative = entry.relative_to(app).as_posix()
+            raise ValueError(f"App path is not readable/searchable by non-root users: {relative}")
 
 
 def verify(directory, output, version, build_number):
@@ -111,6 +129,7 @@ def verify(directory, output, version, build_number):
     if len(packages) != 1 or len(apps) != 1:
         raise ValueError("Expected exactly one Store .pkg and one universal app bundle")
     package, app = packages[0], apps[0]
+    verify_bundle_permissions(app)
     profile_path = directory / "store.provisionprofile"
     profile = read_profile(profile_path)
     team = validate_profile(profile)

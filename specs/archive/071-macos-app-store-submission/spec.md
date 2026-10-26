@@ -26,6 +26,7 @@ Acceptance scenarios:
 6. Given the selected tag's source metadata still has the previous product version, delivery packages and verifies the version from the tag.
 7. Given the delivery form on the primary branch, when the maintainer enters a release version without the `v` prefix, a credential-free launcher starts a tagged build with the same upload choice and requested build number.
 8. Given the requested version and the tagged run's version differ, delivery fails before the credential-bearing job.
+9. Given a package installed with root ownership, all application files are readable and its directories searchable by a standard user, including the embedded provisioning profile. Delivery rejects an application with restrictive permissions before upload.
 
 ### User Story 2: Configure delivery once (P1)
 
@@ -43,6 +44,7 @@ The maintainer follows the setup guide to supply the app certificate, installer 
 - **FR-008**: The guide MUST name all secrets, explain reuse of the existing upload API key, and document starting delivery and completing review.
 - **FR-009**: The Store package MUST use the platform sandbox with user-selected read/write access, without granting unrestricted filesystem access.
 - **FR-010**: The delivery form MUST provide a required version textbox accepting a release version without `v`. Starting from the primary branch MUST launch the corresponding tagged build without accessing Store credentials, preserving build-number and upload selections. The run summary MUST distinguish launching the build from completing the build or upload.
+- **FR-011**: The installed Store application MUST be readable and traversable by non-root users. Its embedded provisioning profile MUST have distribution-readable permissions before signing. Private signing keys and API keys MUST remain private in temporary credential storage. Artifact verification MUST reject unreadable application files and unsearchable directories before upload.
 
 ## Assumptions
 
@@ -51,6 +53,10 @@ The maintainer follows the setup guide to supply the app certificate, installer 
 - This feature implements package delivery. A signed Store build still requires testing through the Store testing channel or a separately development-signed build before public review. Automated signature checks do not establish that folder permissions persist after relaunch.
 
 ## Clarifications
+
+### 2026-10-26
+
+- Apple's validation rejected the signed package with error 90255. Payload inspection found the embedded provisioning profile and its AppleDouble sidecar installed with root ownership and mode 0600. Packaging must not carry the temporary credential file's owner-only mode into the installed app.
 
 ### 2026-10-25
 

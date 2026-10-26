@@ -39,7 +39,7 @@ describe('Mac App Store delivery', () => {
         assert.equal(config.forceCodeSigning, true)
         assert.equal(config.directories.output, 'dist-store')
         assert.equal(config.mas.bundleVersion, '12')
-        assert.equal(config.mas.provisioningProfile, '/private/store.provisionprofile')
+        assert.equal(config.mas.provisioningProfile, '/private/store-signing.provisionprofile')
         assert.equal(config.mas.entitlements, 'packaging/macos/entitlements.mas.plist')
         assert.equal(config.mas.entitlementsInherit, 'packaging/macos/entitlements.mas.inherit.plist')
       })().catch(error => { console.error(error); process.exitCode = 1 })
@@ -49,7 +49,7 @@ describe('Mac App Store delivery', () => {
       env: {
         ...process.env,
         MACOS_STORE_BUILD_NUMBER: '12',
-        MACOS_STORE_PROFILE_PATH: '/private/store.provisionprofile'
+        MACOS_STORE_PROFILE_PATH: '/private/store-signing.provisionprofile'
       }
     })
 
@@ -81,6 +81,10 @@ describe('Mac App Store delivery', () => {
       assert.equal(preflight.environment, undefined)
       assert.ok([delivery.needs].flat().includes('preflight'))
       assert.equal(delivery.environment, 'macos-signing')
+      const paths = delivery.steps.find(step => step.run?.includes('MACOS_STORE_PROFILE_PATH='))
+      assert.ok(paths?.run.includes(
+        'MACOS_STORE_PROFILE_PATH=$RUNNER_TEMP/markdownmeister-store-credentials/store-signing.provisionprofile'
+      ))
       const gate = preflight.steps.find(step => step.name === 'Require release tag')
       const validation = preflight.steps.find(step => step.run?.includes('macos_store.py inputs'))
       assert.ok(gate?.run)

@@ -77,6 +77,8 @@ Creating a `v*` tag does not automatically run Store delivery. It remains a sepa
 
 The workflow checks the profile's expiry and identifier, the embedded profile, app certificate authorization, both CPU architectures, version/build number, sandbox permissions, and installer signing team. A failure stops delivery. An accepted upload only means Apple has received the build; processing can still reject it later. Check App Store Connect and Apple's processing email before proceeding.
 
+The profile used for embedding is a byte-identical mode-0644 copy inside the private temporary credential directory. This makes the installed profile readable by non-root users before the app is signed, avoiding Apple's error 90255. The original profile, signing exports, and API private key retain mode 0600. Final app verification rejects unreadable files or unsearchable directories before upload. A tag created before this fix retains the old packaging code; after merging a permissions fix, create a new release tag containing it instead of re-running an old tagged build.
+
 The workflow uses Xcode's `altool` to validate and upload with API-key authentication. It does not submit the app for review or release it. Temporary certificates, private keys, and profile files are removed after the run; they are not included as separate workflow artifacts.
 
 ## 5. Test, Review, and Release in App Store Connect

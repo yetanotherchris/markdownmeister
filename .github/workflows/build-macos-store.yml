@@ -116,7 +116,7 @@ jobs:
           python3 scripts/macos_store.py inputs --ref "$GITHUB_REF"
           echo "MACOS_STORE_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
           echo "STORE_CREDENTIALS=$RUNNER_TEMP/markdownmeister-store-credentials" >> "$GITHUB_ENV"
-          echo "MACOS_STORE_PROFILE_PATH=$RUNNER_TEMP/markdownmeister-store-credentials/store.provisionprofile" >> "$GITHUB_ENV"
+          echo "MACOS_STORE_PROFILE_PATH=$RUNNER_TEMP/markdownmeister-store-credentials/store-signing.provisionprofile" >> "$GITHUB_ENV"
 
       - name: Enable Corepack
         run: corepack enable

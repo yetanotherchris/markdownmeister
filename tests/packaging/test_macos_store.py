@@ -5,10 +5,12 @@ import importlib.util
 import os
 from pathlib import Path
 import plistlib
+import stat
 import subprocess
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -153,6 +155,50 @@ class ProfileTests(unittest.TestCase):
                 store.validate_profile(data)
 
 
+class BundlePermissionTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.app = Path(self.temp.name) / "editor.app"
+        (self.app / "Contents").mkdir(parents=True)
+        self.profile = self.app / "Contents/embedded.provisionprofile"
+        self.profile.write_bytes(b"profile")
+
+    def test_accepts_distribution_readable_bundle(self):
+        store.verify_bundle_permissions(self.app)
+
+    def test_rejects_owner_only_files_group_only_files_and_unsearchable_directories(self):
+        original_lstat = Path.lstat
+        for path, mode in (
+            (self.profile, stat.S_IFREG | 0o600),
+            (self.profile, stat.S_IFREG | 0o640),
+            (self.profile, stat.S_IFREG | 0o744),
+            (self.app / "Contents", stat.S_IFDIR | 0o750),
+            (self.app / "Contents", stat.S_IFDIR | 0o754),
+            (self.app, stat.S_IFDIR | 0o700),
+        ):
+            with self.subTest(path=path, mode=oct(mode)):
+                def permissions(entry, *args, **kwargs):
+                    if entry == path:
+                        return SimpleNamespace(st_mode=mode)
+                    return original_lstat(entry, *args, **kwargs)
+
+                with patch.object(Path, "lstat", permissions), self.assertRaises(ValueError) as failure:
+                    store.verify_bundle_permissions(self.app)
+                self.assertTrue(str(failure.exception).endswith(path.relative_to(self.app).as_posix()))
+
+    def test_ignores_symlink_permission_bits(self):
+        original_lstat = Path.lstat
+
+        def permissions(entry, *args, **kwargs):
+            if entry == self.profile:
+                return SimpleNamespace(st_mode=stat.S_IFLNK | 0o700)
+            return original_lstat(entry, *args, **kwargs)
+
+        with patch.object(Path, "lstat", permissions):
+            store.verify_bundle_permissions(self.app)
+
+
 class DeliveryTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -226,6 +272,13 @@ class DeliveryTests(unittest.TestCase):
         self.architectures = b"arm64"
         with self.assertRaisesRegex(ValueError, "both x86_64 and arm64"):
             self.verify()
+
+    def test_rejects_unreadable_bundle_before_signature_or_upload_checks(self):
+        with patch.object(store, "verify_bundle_permissions", side_effect=ValueError("unreadable profile")) as check:
+            with self.assertRaisesRegex(ValueError, "unreadable profile"):
+                self.verify()
+        check.assert_called_once_with(self.app)
+        self.runner.assert_not_called()
 
     def test_rejects_wrong_identity_version_build_and_team(self):
         for key in ("CFBundleIdentifier", "CFBundleShortVersionString", "CFBundleVersion", "ElectronTeamID"):
@@ -330,14 +383,28 @@ class CredentialTests(unittest.TestCase):
         secrets["APP_STORE_CONNECT_API_KEY_ID"] = "KEY1234567"
         secrets["APP_STORE_CONNECT_ISSUER_ID"] = "12345678-1234-1234-1234-123456789012"
         with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, secrets), \
-                patch.object(store, "read_profile", return_value=profile()) as read:
+                patch.object(store, "read_profile", return_value=profile()) as read, \
+                patch.object(store.os, "chmod", wraps=os.chmod) as chmod:
             directory = Path(temp) / "credentials"
             store.prepare(directory)
             self.assertEqual((directory / "app.p12").read_bytes(), b"credential")
             self.assertEqual((directory / "home/.private_keys/AuthKey_KEY1234567.p8").read_bytes(), b"credential")
+            signing_profile = directory / "store-signing.provisionprofile"
+            self.assertEqual(signing_profile.read_bytes(), (directory / "store.provisionprofile").read_bytes())
+            chmod.assert_any_call(signing_profile, 0o644)
+            self.assertEqual([call.args[0] for call in chmod.call_args_list if call.args[1] == 0o644], [signing_profile])
+            private_files = (
+                directory / "app.p12", directory / "installer.p12", directory / "store.provisionprofile",
+                directory / "home/.private_keys/AuthKey_KEY1234567.p8",
+            )
+            for path in private_files:
+                chmod.assert_any_call(path, 0o600)
             read.assert_called_once_with(directory / "store.provisionprofile")
             if os.name != "nt":
-                self.assertEqual((directory / "app.p12").stat().st_mode & 0o777, 0o600)
+                self.assertEqual(directory.stat().st_mode & 0o777, 0o700)
+                self.assertEqual(signing_profile.stat().st_mode & 0o777, 0o644)
+                for path in private_files:
+                    self.assertEqual(path.stat().st_mode & 0o777, 0o600)
 
     def test_rejects_key_id_path_injection_before_creating_files(self):
         secrets = {name: "present" for name in store.REQUIRED_SECRETS}
