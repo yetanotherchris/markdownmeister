@@ -30,8 +30,6 @@ brew install yetanotherchris/markdownmeister/markdownmeister
 
 Download the matching macOS DMG or ZIP from [Releases](https://github.com/yetanotherchris/markdownmeister/releases/latest).
 
-The v1.7.0 through v1.8.2 macOS releases have defective disk images, and the v1.8.2 app bundles are unsigned and unnotarized. A replacement release is pending. Future releases must pass Developer ID signature, notarization-ticket, and Gatekeeper checks after artifact download before publication.
-
 ### Windows (Microsoft Store)
 
 Available on the [Microsoft Store](https://apps.microsoft.com/detail/9pjx3zxlfh6k?hl=en-GB&gl=GB)
