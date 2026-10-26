@@ -34,7 +34,7 @@ The v1.7.0 through v1.8.2 macOS releases have defective disk images, and the v1.
 
 ### Windows (Microsoft Store)
 
-Search for **MarkdownMeister** in the Microsoft Store, or open the [Store search page](https://apps.microsoft.com/search?query=MarkdownMeister). Installing from the Store carries Microsoft's own signing, so there is no developer-certificate or SmartScreen warning.
+Available on the [Microsoft Store](https://apps.microsoft.com/detail/9pjx3zxlfh6k?hl=en-GB&gl=GB)
 
 ### Linux (Snap Store)
 
