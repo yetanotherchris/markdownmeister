@@ -70,3 +70,9 @@ The implementation artifacts are archived with the implementation PR. The macOS 
 - `npm run test -- tests/main/macos-store.test.ts`: passed, three Vitest tests covering 34 Python regressions and builder/workflow wiring. Credential preparation tests prove that the packaging copy is byte-identical and receives mode 0644 while the original profile, signing exports, and API key retain mode 0600 within a mode-0700 directory.
 - Regression coverage rejects owner-only and group-only files, non-root-unsearchable directories, and executables missing non-root execute access, and verifies that bundle-permission failures stop delivery before signature/upload checks. Symlink mode bits are excluded.
 - Actionlint, targeted ESLint, normalized-line-ending Prettier, and diff whitespace checks passed. Live validation of the corrected package is tracked in T014.
+
+## Live Store Delivery Result (2026-10-26)
+
+Commit 335cd41 was pushed to main as requested, and the approved release tag v1.8.63 was created at that commit. The UI launcher run 40308661061 dispatched tagged build [40308677407](https://github.com/yetanotherchris/markdownmeister/actions/runs/40308677407). The tagged run completed successfully: universal MAS packaging and signing, bundle permission/signature/profile verification, package retention, Apple's package validation, and App Store Connect upload all passed. Artifact `macos-app-store-15-1` contains the verified installer.
+
+This verifies the permissions fix against Apple's actual validation service. The separate regular release workflow was also triggered by the approved tag. App Store Connect processing, Store-channel runtime tests, App Review submission, and public Store release are not claimed complete; T007 remains outstanding.

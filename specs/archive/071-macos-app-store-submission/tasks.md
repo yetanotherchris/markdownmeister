@@ -13,4 +13,4 @@
 - [x] T011: Add the UI version textbox and credential-free main-to-tag launcher with job-scoped dispatch permission, forwarded selections, strict requested/tagged-version validation, regressions, and updated UI instructions.
 - [x] T012: Protect the launcher's actual version, build-number, and upload input bindings so hardcoded workflow environment values cannot pass the forwarding regressions.
 - [x] T013: Fix Apple's 90255 rejection with a distribution-readable profile copy before signing, verify bundle permission modes before upload, and cover profile/key isolation and unreadable files/directories with regressions.
-- [ ] T014: Run the corrected Store workflow from approved release tag v1.8.63 and record Apple's validation/upload result.
+- [x] T014: Run the corrected Store workflow from approved release tag v1.8.63 and record Apple's validation/upload result. Run 40308677407 passed packaging, verification, Apple validation, and upload.

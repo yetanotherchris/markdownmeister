@@ -252,9 +252,9 @@ try {
         -inkey $privateKeyPath `
         -in $temporaryCertificate `
         -out $outputPath `
-        -keypbe AES-256-CBC `
-        -certpbe AES-256-CBC `
-        -macalg SHA256
+        -keypbe PBE-SHA1-3DES `
+        -certpbe PBE-SHA1-3DES `
+        -macalg sha1
 
     if ($LASTEXITCODE -ne 0) {
         throw 'OpenSSL could not export the P12. Check the passwords and try again.'

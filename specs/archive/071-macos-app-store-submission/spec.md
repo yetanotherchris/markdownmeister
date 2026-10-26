@@ -6,7 +6,7 @@
 
 **Status**: Archived
 
-Delivery automation is implemented. Signed macOS packaging, live upload, and Store-channel runtime verification remain outstanding as recorded in the plan and tasks; archiving the implementation artifacts does not establish public Store readiness.
+Delivery automation is implemented. Signed universal macOS packaging, permission/signature verification, Apple's package validation, and App Store Connect upload succeeded for v1.8.63 in run 40308677407. Store-channel runtime verification remains outstanding as recorded in the plan and tasks; a successful upload does not establish processing completion or public Store readiness.
 
 **Input**: "can you create this for me, using a new branch? I will create the dev cert now", corrected to "installer cert*". The maintainer wants automated Store package creation and upload using existing signing and upload credentials.
 

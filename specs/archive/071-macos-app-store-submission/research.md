@@ -35,3 +35,7 @@ Run 40249982258 attempt 2 successfully imported the updated signing exports, sig
 The installed `@electron/osx-sign/dist/cjs/util-provisioning-profiles.js` uses `fs-extra.copy` to embed the selected profile, preserving the source mode. The preparation helper created every credential file with mode 0600. Keep that private original for validation, and create a byte-identical `store-signing.provisionprofile` copy with mode 0644 inside the same mode-0700 credential directory for embedding. The distributable profile contains no private signing key and is already shipped inside the app. Keep the P12 and P8 files at 0600.
 
 Add a verification-only permission scan of the signed app: regular files need other-read, executable files also need other-execute, and directories need other-read and other-execute. Ignore symlink mode bits because framework links refer to separately scanned bundle entries. Reject bad modes without changing the signed app or using a blanket recursive chmod.
+
+## Verified Store credential export format (2026-10-26)
+
+The Store exports used for the successful import and upload were created with `-keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg sha1`, matching the working Developer ID export. Local OpenSSL checks verified their passwords and unchanged certificate/key identities before the existing Store secrets were updated. The Windows installer-export example now uses those verified algorithms. No credential contents or passwords are part of the repository change.
