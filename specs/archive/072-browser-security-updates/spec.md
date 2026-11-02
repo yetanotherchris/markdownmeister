@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-02
 
-**Status**: Planned
+**Status**: Archived
 
 **Input**: Update the browser components identified by the security review. The user approved using the stable browser channel for documentation tests rather than the test runner's bundled browser.
 
