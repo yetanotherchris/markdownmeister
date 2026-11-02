@@ -16,7 +16,7 @@ Users can continue opening, editing, and saving their documents with an updated 
 
 Acceptance scenarios:
 
-1. Given the updated application, when it starts, its browser runtime includes the reviewed security fixes and the existing editing and file-operation acceptance tests still pass.
+1. Given the updated application, when it starts, its maintained runtime includes the published security updates for its release line and the existing editing and file-operation acceptance tests still pass. Any unverified individual browser vulnerability coverage is reported.
 2. Given the editor window, when document content attempts to access host process primitives or open another window, direct host access remains unavailable and the popup is denied.
 
 ### User Story 2: Test documentation with a patched browser (P1)
@@ -31,7 +31,7 @@ Acceptance scenarios:
 
 ## Requirements
 
-- **FR-001**: Update the desktop runtime to a stable release containing the security fixes identified in the review.
+- **FR-001**: Update the desktop runtime within its current maintained release line to include published security fixes, preserving existing platform support. Report individual browser vulnerability coverage that cannot be verified from public backport information.
 - **FR-002**: Preserve existing editing, filesystem, process-isolation, navigation, and unsaved-change behavior. Do not widen permissions to accommodate the update.
 - **FR-003**: Update browser automation and its pinned Linux test image together.
 - **FR-004**: Documentation tests must use an installed stable browser without silently falling back to the older bundled browser.
@@ -41,6 +41,7 @@ Acceptance scenarios:
 ## Clarifications
 
 - 2026-11-02: The user selected the stable browser channel for documentation tests. Application tests continue to exercise the desktop runtime itself.
+- 2026-11-02: The user selected a patched release of the current desktop runtime line rather than the latest major release, preserving support for the existing operating-system versions. A newer upstream browser version number is not required for the application when using the maintained backport line.
 
 ## Assumptions
 
