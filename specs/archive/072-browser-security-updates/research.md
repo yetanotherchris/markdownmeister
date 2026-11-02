@@ -17,6 +17,11 @@
 - Windows denied registry network connections from the temporary Node.js executable with `EACCES`. Package downloads used the existing system Node.js/npm with scripts disabled, followed by `node node_modules/electron/install.js`. Verification runs use the patched temporary Node.js 22.23.4 and npm 12.2.0. The lockfile diff is limited to the four targeted packages, Playwright's removed optional `fsevents` dependency, and npm's synchronization of the existing root package version.
 - The user requested no README change. Testing instructions live only in `docs/testing.md`; the README diff is empty.
 
-## Scope
+## CI Test Setup Finding
+
+- [Initial Linux run](https://github.com/yetanotherchris/markdownmeister/actions/runs/41523028236): shard 1 passed 223 tests and failed `caret-sync.spec.ts`'s edited-source scenario in `revealSourceLine`, before any edit-preservation or return-mapping assertion. The helper advances only downward from the current viewport. Its inability to find a target above the viewport is visible in the code, although the downloaded Electron trace does not include DOM snapshots proving the failing viewport's position. Add wraparound and a deliberate end-of-document starting condition so this case is exercised rather than relying on fill's scroll timing.
+- The existing 24-section fixture could keep the edited line materialized even after moving to the end on Windows. The corrected scenario adds 200 uniquely marked tail paragraphs and waits for the earlier edited line to leave the rendered DOM. With this precondition, the old downward-only helper reproduces the timeout; the wraparound helper passes ten consecutive runs and the full 15-test caret suite. No acceptance assertion was removed or weakened.
+
+## Remaining Scope
 
 The original audit reported 42 affected packages, including unrelated editor and build-tool dependencies. This change is limited to the requested browser/runtime updates and the tooling required to exercise them. It does not assert that the entire dependency tree is vulnerability-free.

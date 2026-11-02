@@ -11,6 +11,7 @@
 - Add a runtime security e2e test checking the actual selected Electron, Chromium, and Node.js versions, the configured isolation preferences, unavailable renderer Node globals, and popup denial. The application version checks identify the patched release baseline, not per-CVE backport completeness. Add a unit configuration regression test for the documentation browser and matching image/lockfile versions.
 - Add testing instructions, including the global-install warning for `playwright install chrome`. Copy documentation sources and their config into the test image so the documented container command can run the site suite.
 - Run documentation e2e once in the quality workflow, on the first app shard's Linux runner, using the same built image. Preserve documentation failure traces and remove its container even on failure. This closes the test review's Linux Chrome execution gap without rebuilding an image or running the site suite twice.
+- The first Linux CI run failed in the existing caret-sync test's `revealSourceLine` helper after filling source content. That helper only searches downward and can never find earlier text if filling leaves the viewport below it. Make the helper wrap at the document end, and explicitly start the edited-source scenario at the end to cover that case. Keep all caret mapping and edit preservation assertions. This is test setup correction, not an application behavior change.
 
 ## Constitution Check
 
