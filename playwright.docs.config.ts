@@ -8,6 +8,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   reporter: 'list',
   use: {
+    channel: 'chrome',
     trace: 'retain-on-failure'
   },
   webServer: {
