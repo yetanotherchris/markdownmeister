@@ -10,6 +10,7 @@
 - Update the image's Node.js 22 pin from 22.23.3 to 22.23.4, the patched release for CVE-2026-111497. Use temporary Node.js 22.23.4 and npm 12.2.0 tools for local verification because the system tools are below the project's declared requirements.
 - Add a runtime security e2e test checking the actual selected Electron, Chromium, and Node.js versions, the configured isolation preferences, unavailable renderer Node globals, and popup denial. The application version checks identify the patched release baseline, not per-CVE backport completeness. Add a unit configuration regression test for the documentation browser and matching image/lockfile versions.
 - Add testing instructions, including the global-install warning for `playwright install chrome`. Copy documentation sources and their config into the test image so the documented container command can run the site suite.
+- Run documentation e2e once in the quality workflow, on the first app shard's Linux runner, using the same built image. Preserve documentation failure traces and remove its container even on failure. This closes the test review's Linux Chrome execution gap without rebuilding an image or running the site suite twice.
 
 ## Constitution Check
 

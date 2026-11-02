@@ -81,15 +81,29 @@ jobs:
         run: >-
           docker run --name markdownmeister-e2e-${{ matrix.shard }} --shm-size=1g markdownmeister-e2e
           sh -lc 'xvfb-run -a env MM_E2E_HEADED=1 npm run test:e2e -- --shard=${{ matrix.shard }}/2'
+      - name: Documentation tests (Chrome stable)
+        id: docs
+        if: matrix.shard == 1
+        run: >-
+          docker run --name markdownmeister-docs-e2e --shm-size=1g markdownmeister-e2e
+          sh -lc 'npm run docs:test:e2e'
       - name: Copy failure traces
         if: failure()
         run: docker cp markdownmeister-e2e-${{ matrix.shard }}:/workspace/test-results ./test-results
+      - name: Copy documentation failure traces
+        if: failure() && steps.docs.outcome == 'failure'
+        run: docker cp markdownmeister-docs-e2e:/workspace/test-results ./docs-test-results
       - name: Upload failure traces
         if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-traces-${{ matrix.shard }}
-          path: test-results/
+          path: |
+            test-results/
+            docs-test-results/
       - name: Remove e2e container
         if: always()
         run: docker rm -f markdownmeister-e2e-${{ matrix.shard }} || true
+      - name: Remove documentation test container
+        if: always() && matrix.shard == 1
+        run: docker rm -f markdownmeister-docs-e2e || true

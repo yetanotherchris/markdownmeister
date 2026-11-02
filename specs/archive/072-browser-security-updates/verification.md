@@ -16,6 +16,7 @@ Checks run on Windows with temporary Node.js 22.23.4 and npm 12.2.0 unless noted
 - `npm audit --json`, using system Node.js/npm for registry access: no advisory reported for Electron, Playwright, playwright-core, or @playwright/test. Overall audit still reports 41 affected packages (one critical, eight high, 28 moderate, four low), outside the requested browser update scope.
 - `npm run format:check`: reports 149 files on this Windows checkout, including unchanged files. Do not reformat unrelated code. Confirm formatting against the Linux GitHub gate.
 - `git diff --check`: passed.
+- `actionlint .github/workflows/quality.yml`: passed using the checksum-verified actionlint 1.7.12 Windows release. The quality workflow now runs documentation tests once inside the Chrome-enabled Linux image, retains failure traces, and removes the documentation container.
 
 ## Gaps
 
