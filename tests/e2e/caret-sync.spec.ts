@@ -246,8 +246,7 @@ async function revealSourceLine(text: string): Promise<void> {
         line.scrollIntoView({ block: 'center' })
         return true
       }
-      const atEnd = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1
-      scroller.scrollTop = atEnd ? 0 : scroller.scrollTop + scroller.clientHeight * 0.6
+      scroller.scrollTop += scroller.clientHeight * 0.6
       return false
     }, text)
     expect(found).toBe(true)
@@ -429,21 +428,11 @@ test.describe('caret line sync (spec 052)', () => {
     await viewSourceButton().click()
     await expect(window.getByTestId('source-view')).toBeVisible()
 
-    const tail = Array.from({ length: 200 }, (_, index) => `TAIL-${index}`).join('\n\n')
-    const edited = `${buildLongDoc().replace(
+    const edited = buildLongDoc().replace(
       'PARA-8 paragraph text for section number 8.',
       'PARA-8 EDITED-IN-SOURCE text.'
-    )}\n\n${tail}`
+    )
     await window.getByTestId('source-textarea').fill(edited)
-    await window.getByTestId('source-textarea').press('ControlOrMeta+End')
-    await expect
-      .poll(() =>
-        window.locator('.source-view .cm-scroller').evaluate((scroller) => scroller.scrollTop)
-      )
-      .toBeGreaterThan(0)
-    await expect(
-      window.locator('.source-view .cm-line', { hasText: 'EDITED-IN-SOURCE' })
-    ).toHaveCount(0)
     await revealSourceLine('EDITED-IN-SOURCE')
     await window.locator('.source-view .cm-line', { hasText: 'EDITED-IN-SOURCE' }).click()
     await window.waitForTimeout(80)

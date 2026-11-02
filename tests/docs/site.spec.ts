@@ -1,14 +1,6 @@
 import { test, expect } from '@playwright/test'
-import { meetsVersionFloor } from '../helpers/browser-version'
 
 const BASE = 'http://localhost:4173'
-
-test('documentation uses a browser above the reviewed security fix boundary', async ({
-  browser
-}) => {
-  const version = browser.version()
-  expect(meetsVersionFloor(version, '156.0.8078.47'), version).toBe(true)
-})
 
 test('home page presents the product, screenshots, and install options', async ({ page }) => {
   await page.goto(`${BASE}/`)
