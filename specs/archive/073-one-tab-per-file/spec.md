@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-22
 
-**Status**: Draft
+**Status**: Archived
 
 **Input**: User description: "A file is always represented by one tab, however and in whatever order it was opened, including files opened before their folder, files opened through the explorer, and case-variant paths on a case-insensitive filesystem."
 

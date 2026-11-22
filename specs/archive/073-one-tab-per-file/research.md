@@ -119,7 +119,7 @@ The function does no case folding, basename comparison, folder-relative guessing
 - Keep the old identity across rename: it would match the old, now-missing path and fail to match the new one.
 - Reset the whole document on rename: would lose content, dirty state, and undo history.
 
-**Evidence**: `src/renderer/state/documents.ts:366-398` updates `canonicalPath` on `SAVE_SUCCESS`. `src/renderer/hooks/useDocumentSession.ts:181-196` supplies the Save As result. `src/renderer/state/documents.ts:520-548` is `REROUTE_PATHS`. `src/renderer/hooks/useWorkspaceTree.ts:122-135` dispatches it after a successful move. `specs/073-one-tab-per-file/spec.md` lines 67 and 103 record the Save As edge case and the out-of-scope save assumptions.
+**Evidence**: `src/renderer/state/documents.ts:366-398` updates `canonicalPath` on `SAVE_SUCCESS`. `src/renderer/hooks/useDocumentSession.ts:181-196` supplies the Save As result. `src/renderer/state/documents.ts:520-548` is `REROUTE_PATHS`. `src/renderer/hooks/useWorkspaceTree.ts:122-135` dispatches it after a successful move. `specs/archive/073-one-tab-per-file/spec.md` lines 67 and 103 record the Save As edge case and the out-of-scope save assumptions.
 
 ## R8. External-change routing
 
@@ -131,7 +131,7 @@ The function does no case folding, basename comparison, folder-relative guessing
 - Route external changes by canonical identity now: requires main to resolve every watcher event and expands into F4.
 - Remove the path routing: would lose reload and changed-on-disk prompts.
 
-**Evidence**: `src/renderer/App.tsx:241-252` matches `d.path === e.path` and dispatches `EXTERNAL_CHANGE`. `src/renderer/hooks/useDialogQueue.ts:30-48` repeats the path match for queued prompts. `src/renderer/state/documents.ts:550-566` applies the external state by path. `specs/073-one-tab-per-file/spec.md` lines 68 and 102 record the out-of-scope assumption.
+**Evidence**: `src/renderer/App.tsx:241-252` matches `d.path === e.path` and dispatches `EXTERNAL_CHANGE`. `src/renderer/hooks/useDialogQueue.ts:30-48` repeats the path match for queued prompts. `src/renderer/state/documents.ts:550-566` applies the external state by path. `specs/archive/073-one-tab-per-file/spec.md` lines 68 and 102 record the out-of-scope assumption.
 
 ## R9. Test strategy
 

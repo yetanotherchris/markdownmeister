@@ -2,7 +2,7 @@
 
 **Branch**: `spec-073-one-tab-per-file` | **Date**: 2026-11-22 | **Spec**: [spec.md](./spec.md)
 
-**Input**: Feature specification from `/specs/073-one-tab-per-file/spec.md`
+**Input**: Feature specification from `/specs/archive/073-one-tab-per-file/spec.md`
 
 ## Summary
 
@@ -49,7 +49,7 @@ Re-check after Phase 1 design: all gates still pass. The design adds one main-pr
 ### Documentation (this feature)
 
 ```text
-specs/073-one-tab-per-file/
+specs/archive/073-one-tab-per-file/
 ├── plan.md              # This file (/speckit.plan command output)
 ├── research.md          # Phase 0 output (/speckit.plan command)
 ├── data-model.md        # Phase 1 output (/speckit.plan command)
