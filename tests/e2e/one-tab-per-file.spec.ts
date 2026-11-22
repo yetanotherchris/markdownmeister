@@ -16,7 +16,8 @@ import {
  * Spec 073 US1: a file opened before its containing folder is one tab, not
  * two. Opening the folder and then the file, by explorer or by Open File,
  * activates the tab that already holds the unsaved text. US2 covers the
- * remaining routes and the Save As identity lifecycle.
+ * remaining routes and the Save As identity lifecycle. US3 covers a
+ * case-variant path, gated on a filesystem probe rather than the platform.
  */
 
 let app: ElectronApplication
@@ -28,6 +29,7 @@ let dirA: string
 let dir2A: string
 let configDir: string
 let userDataDir: string
+let caseInsensitiveFs: boolean
 
 test.beforeAll(() => {
   scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'mm-one-tab-'))
@@ -41,6 +43,13 @@ test.beforeAll(() => {
   fs.writeFileSync(path.join(dir2, 'a.md'), '# A2\n\nOther alpha.')
   dirA = path.join(dir, 'a.md')
   dir2A = path.join(dir2, 'a.md')
+
+  // Probe the filesystem once: a differently cased spelling of a file that was
+  // just created exists only when names are compared without case.
+  const probe = path.join(scratch, 'case-probe.md')
+  fs.writeFileSync(probe, '# Probe')
+  caseInsensitiveFs = fs.existsSync(path.join(scratch, 'CASE-PROBE.md'))
+  fs.rmSync(probe)
 })
 
 test.beforeEach(async () => {
@@ -212,5 +221,48 @@ test('Save As retargets the tab identity and the old file opens separately', asy
   expect(fs.readFileSync(dirB, 'utf-8')).not.toContain('ORIGINAL')
   expect(fs.readFileSync(dirB, 'utf-8')).toContain('SAVED')
   expect(await saveDialogCount()).toBe(1)
+  expect(await messageBoxCallCount(app)).toBe(0)
+})
+
+test('F3: a case-variant path reuses the tab on a case-insensitive filesystem', async () => {
+  test.skip(!caseInsensitiveFs, 'filesystem distinguishes letter case; see the F3 control')
+
+  await openFileViaDialog(dirA)
+  await expect(window.locator('.ProseMirror:visible')).toContainText('Alpha original.')
+  await typeInEditor(window, 'LOWER ')
+
+  await openFileViaDialog(path.join(dir, 'A.md'))
+
+  await expectSingleActiveTabWithText('LOWER')
+})
+
+test('F3 control: case-variant names stay separate on a case-sensitive filesystem', async () => {
+  test.skip(caseInsensitiveFs, 'filesystem ignores letter case; see the F3 match scenario')
+
+  const caseDir = path.join(scratch, 'caseDir')
+  fs.mkdirSync(caseDir, { recursive: true })
+  const lowerCase = path.join(caseDir, 'case.md')
+  const upperCase = path.join(caseDir, 'CASE.md')
+  fs.writeFileSync(lowerCase, '# case\n\nlower original.')
+  fs.writeFileSync(upperCase, '# CASE\n\nupper original.')
+
+  await openFileViaDialog(lowerCase)
+  await expect(window.locator('.ProseMirror:visible')).toContainText('lower original.')
+  await typeInEditor(window, 'LOWER ')
+
+  await openFileViaDialog(upperCase)
+  await expect(window.locator('.ProseMirror:visible')).toContainText('upper original.')
+  await typeIntoVisibleEditor('UPPER ')
+
+  await expect(window.getByRole('tab')).toHaveCount(2)
+  await clickSave()
+  await expect.poll(() => fs.readFileSync(upperCase, 'utf-8')).toContain('UPPER')
+  await expect.poll(() => fs.readFileSync(lowerCase, 'utf-8')).not.toContain('UPPER')
+
+  await window.getByRole('tab').nth(0).click()
+  await expect(window.locator('.ProseMirror:visible')).toContainText('LOWER')
+  await clickSave()
+  await expect.poll(() => fs.readFileSync(lowerCase, 'utf-8')).toContain('LOWER')
+  await expect.poll(() => fs.readFileSync(upperCase, 'utf-8')).not.toContain('LOWER')
   expect(await messageBoxCallCount(app)).toBe(0)
 })

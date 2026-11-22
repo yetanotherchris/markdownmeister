@@ -24,6 +24,22 @@ describe('canonicalPath', () => {
     expect(canonicalPath(file)).toBe(path.normalize(fs.realpathSync.native(file)))
   })
 
+  it('follows the filesystem for a differently cased spelling', () => {
+    const spelled = path.join(root, 'A.md')
+    // Probe the filesystem instead of process.platform. Each test has a fresh
+    // temp root and afterEach removes it, so the probe state is isolated.
+    const caseInsensitive = fs.existsSync(spelled)
+
+    if (caseInsensitive) {
+      expect(canonicalPath(spelled)).toBe(canonicalPath(file))
+      return
+    }
+
+    fs.writeFileSync(spelled, '# Another A')
+    expect(fs.readFileSync(spelled, 'utf-8')).not.toBe(fs.readFileSync(file, 'utf-8'))
+    expect(canonicalPath(spelled)).not.toBe(canonicalPath(file))
+  })
+
   it('resolves a sub/../ spelling to the same identity', () => {
     const spelled = `${root}${path.sep}sub${path.sep}..${path.sep}a.md`
     expect(canonicalPath(spelled)).toBe(canonicalPath(file))
