@@ -194,6 +194,13 @@ export function handleOpenNew(state: EditingSession): EditingSession {
   }
 }
 
+/** An identity match on a document without one adopts the incoming value.
+ *  The document's path and content are untouched. */
+function backfillIdentity(d: DocumentState, incoming: string | undefined): DocumentState {
+  if (d.canonicalPath || !incoming) return d
+  return { ...d, canonicalPath: incoming }
+}
+
 function allocateDocumentId(state: EditingSession, preferred: string): string {
   const taken = new Set<string>()
   for (const doc of state.documents) {
@@ -220,11 +227,14 @@ export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload
         activeId: existing.id,
         documents: state.documents.map((d) => {
           if (d.id !== existing.id) return d
-          const next: DocumentState = {
-            ...d,
-            view: value.view!,
-            editorState: d.editorState === 'evicted' ? 'live' : d.editorState
-          }
+          const next: DocumentState = backfillIdentity(
+            {
+              ...d,
+              view: value.view!,
+              editorState: d.editorState === 'evicted' ? 'live' : d.editorState
+            },
+            value.canonicalPath
+          )
           if (value.view === 'source') {
             // The view flipped without a switch-time seed, so the stored
             // context is what the source view opens with and the comparison
@@ -240,9 +250,13 @@ export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload
     return {
       ...state,
       activeId: existing.id,
-      documents: state.documents.map((d) =>
-        d.id === existing.id && d.editorState === 'evicted' ? { ...d, editorState: 'live' } : d
-      )
+      documents: state.documents.map((d) => {
+        if (d.id !== existing.id) return d
+        return backfillIdentity(
+          d.editorState === 'evicted' ? { ...d, editorState: 'live' } : d,
+          value.canonicalPath
+        )
+      })
     }
   }
   const opened = openFile(value)
@@ -519,7 +533,9 @@ export function handleUpdatePath(
   return {
     ...state,
     documents: state.documents.map((d) =>
-      d.id === id ? { ...d, path, title: path.split('/').pop() || d.title } : d
+      d.id === id
+        ? { ...d, path, canonicalPath: undefined, title: path.split('/').pop() || d.title }
+        : d
     )
   }
 }
@@ -536,7 +552,14 @@ export function handleReroutePaths(
       if (!isWithinOrEqual(d.path, fromPath)) return d
       const suffix = d.path.slice(fromPath.length)
       const newPath = toPath + suffix
-      return { ...d, path: newPath, title: newPath.split('/').pop() || d.title }
+      // A rename or move invalidates the old absolute identity. An unchanged
+      // path keeps it because the old identity still names the file.
+      return {
+        ...d,
+        path: newPath,
+        canonicalPath: newPath === d.path ? d.canonicalPath : undefined,
+        title: newPath.split('/').pop() || d.title
+      }
     })
   }
 }
