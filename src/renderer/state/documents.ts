@@ -1,5 +1,6 @@
 import { isWithinOrEqual } from './workspace'
 import { splitFrontmatter, joinFrontmatter } from '../domain/frontmatter'
+import { sameFile } from '../domain/fileIdentity'
 import type { SourceSeed, VisualRestorePlan } from '../domain/caretSync'
 import type { OpenedFile } from '../../shared/ipc-contract'
 
@@ -211,14 +212,7 @@ function allocateDocumentId(state: EditingSession, preferred: string): string {
 
 export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload): EditingSession {
   const value = p.value
-  const existing = state.documents.find(
-    (d) =>
-      (d.path === value.path && value.path !== null) ||
-      (value.path === null &&
-        d.canonicalPath !== undefined &&
-        value.canonicalPath !== undefined &&
-        d.canonicalPath === value.canonicalPath)
-  )
+  const existing = state.documents.find((d) => sameFile(d, value))
   if (existing) {
     if (value.view && existing.view !== value.view) {
       return {
