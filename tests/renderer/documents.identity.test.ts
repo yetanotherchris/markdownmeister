@@ -54,7 +54,7 @@ function edit(state: EditingSession, id: string): EditingSession {
 }
 
 describe('handleOpenExisting: spec 073 US1 identity match', () => {
-  it('activates a no-folder tab when the explorer read supplies the same identity', () => {
+  it('activates a no-folder tab and adopts the explorer route', () => {
     const s1 = openExisting(createSession(), noFolderOpen())
     const firstId = s1.activeId!
     const s2 = edit(s1, firstId)
@@ -67,12 +67,13 @@ describe('handleOpenExisting: spec 073 US1 identity match', () => {
     expect(s3.activeId).toBe(firstId)
     expect(s3.documents[0].content).toBe('FIRST edited')
     expect(s3.documents[0].dirty).toBe(true)
-    expect(s3.documents[0].path).toBe(null)
+    expect(s3.documents[0].path).toBe('a.md')
+    expect(s3.documents[0].title).toBe('a.md')
     expect(s3.documents[0].canonicalPath).toBe(identity)
     expect(s3.documents[0].pendingReplacement).toBeUndefined()
   })
 
-  it('keeps the relative path when the no-folder open arrives second', () => {
+  it('adopts the null path when the no-folder open arrives second', () => {
     const s1 = openExisting(createSession(), explorerRead())
     const firstId = s1.activeId!
     const s2 = edit(s1, firstId)
@@ -84,7 +85,8 @@ describe('handleOpenExisting: spec 073 US1 identity match', () => {
     expect(s3.activeId).toBe(firstId)
     expect(s3.documents[0].content).toBe('FIRST edited')
     expect(s3.documents[0].dirty).toBe(true)
-    expect(s3.documents[0].path).toBe('a.md')
+    expect(s3.documents[0].path).toBe(null)
+    expect(s3.documents[0].title).toBe('a.md')
     expect(s3.documents[0].canonicalPath).toBe(identity)
   })
 
@@ -147,7 +149,7 @@ describe('handleOpenExisting: spec 073 US2 identity across routes', () => {
 
     expect(s3.documents).toHaveLength(1)
     expect(s3.activeId).toBe(id)
-    expect(s3.documents[0].path).toBe('a.md')
+    expect(s3.documents[0].path).toBe(null)
     expect(s3.documents[0].content).toBe('FIRST edited')
     expect(s3.documents[0].dirty).toBe(true)
   })
@@ -161,7 +163,8 @@ describe('handleOpenExisting: spec 073 US2 identity across routes', () => {
 
     expect(s3.documents).toHaveLength(1)
     expect(s3.activeId).toBe(id)
-    expect(s3.documents[0].path).toBe('dir/a.md')
+    expect(s3.documents[0].path).toBe('dir/sub/../a.md')
+    expect(s3.documents[0].title).toBe('a.md')
     expect(s3.documents[0].content).toBe('FIRST edited')
   })
 
@@ -312,5 +315,76 @@ describe('handleOpenExisting: spec 073 US2 identity across routes', () => {
     expect(s3.documents).toHaveLength(2)
     expect(s3.activeId).toBe(aId)
     expect(s3.documents.every((d) => d.pendingReplacement === undefined)).toBe(true)
+  })
+})
+
+describe('handleOpenExisting: workspace route rebinding', () => {
+  function fileAt(pathValue: string | null, canonicalPath: string, name = 'a.md'): FileLike {
+    return { path: pathValue, name, content: '# a', mtimeMs: 4, size: 3, canonicalPath }
+  }
+
+  it('adopts a deeper relative path after the workspace root changes', () => {
+    const s1 = openExisting(createSession(), explorerRead())
+    const id = s1.activeId!
+    const s2 = edit(s1, id)
+
+    const s3 = openExisting(s2, fileAt('dir/a.md', identity))
+
+    expect(s3.documents).toHaveLength(1)
+    expect(s3.documents[0].id).toBe(id)
+    expect(s3.documents[0].path).toBe('dir/a.md')
+    expect(s3.documents[0].title).toBe('a.md')
+    expect(s3.documents[0].content).toBe('FIRST edited')
+    expect(s3.documents[0].baseline).toBe('# a')
+    expect(s3.documents[0].dirty).toBe(true)
+    expect(s3.documents[0].canonicalPath).toBe(identity)
+  })
+
+  it('adopts a null path when the file is reopened outside the workspace', () => {
+    const s1 = openExisting(createSession(), explorerRead())
+    const id = s1.activeId!
+    const s2 = edit(s1, id)
+
+    const s3 = openExisting(s2, fileAt(null, identity))
+
+    expect(s3.documents).toHaveLength(1)
+    expect(s3.documents[0].id).toBe(id)
+    expect(s3.documents[0].path).toBe(null)
+    expect(s3.documents[0].title).toBe('a.md')
+    expect(s3.documents[0].content).toBe('FIRST edited')
+    expect(s3.documents[0].dirty).toBe(true)
+  })
+
+  it('keeps the title when the incoming route is the same path', () => {
+    const s1 = openExisting(createSession(), explorerRead())
+
+    const s2 = openExisting(s1, fileAt('a.md', identity, 'display.md'))
+
+    expect(s2.documents).toHaveLength(1)
+    expect(s2.documents[0].path).toBe('a.md')
+    expect(s2.documents[0].title).toBe('a.md')
+  })
+
+  it('adopts the route in the explicit view-switch branch', () => {
+    const s1 = openExisting(createSession(), explorerRead())
+    const id = s1.activeId!
+
+    const s2 = openExisting(s1, { ...fileAt('dir/a.md', identity), view: 'source' })
+
+    expect(s2.documents).toHaveLength(1)
+    expect(s2.documents[0].id).toBe(id)
+    expect(s2.documents[0].path).toBe('dir/a.md')
+    expect(s2.documents[0].view).toBe('source')
+    expect(s2.documents[0].content).toBe('# a')
+  })
+
+  it('does not adopt the route of a different file with the same relative path', () => {
+    const s1 = openExisting(createSession(), explorerRead())
+
+    const s2 = openExisting(s1, fileAt('a.md', 'C:\\workspace\\dir2\\a.md', 'other.md'))
+
+    expect(s2.documents).toHaveLength(2)
+    expect(s2.documents[0].path).toBe('a.md')
+    expect(s2.documents[0].title).toBe('a.md')
   })
 })

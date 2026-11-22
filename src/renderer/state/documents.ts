@@ -194,11 +194,15 @@ export function handleOpenNew(state: EditingSession): EditingSession {
   }
 }
 
-/** An identity match on a document without one adopts the incoming value.
- *  The document's path and content are untouched. */
-function backfillIdentity(d: DocumentState, incoming: string | undefined): DocumentState {
-  if (d.canonicalPath || !incoming) return d
-  return { ...d, canonicalPath: incoming }
+/** An identity match binds the tab to the route it was just reached through.
+ *  A missing identity is backfilled, and a different workspace-relative path
+ *  replaces the stored one so the next save resolves under the current root.
+ *  Content and the remaining edit state are untouched. */
+function adoptIncomingRoute(d: DocumentState, value: OpenedFile): DocumentState {
+  const next =
+    d.canonicalPath || !value.canonicalPath ? d : { ...d, canonicalPath: value.canonicalPath }
+  if (next.path === value.path) return next
+  return { ...next, path: value.path, title: value.name }
 }
 
 function allocateDocumentId(state: EditingSession, preferred: string): string {
@@ -227,13 +231,13 @@ export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload
         activeId: existing.id,
         documents: state.documents.map((d) => {
           if (d.id !== existing.id) return d
-          const next: DocumentState = backfillIdentity(
+          const next: DocumentState = adoptIncomingRoute(
             {
               ...d,
               view: value.view!,
               editorState: d.editorState === 'evicted' ? 'live' : d.editorState
             },
-            value.canonicalPath
+            value
           )
           if (value.view === 'source') {
             // The view flipped without a switch-time seed, so the stored
@@ -252,9 +256,9 @@ export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload
       activeId: existing.id,
       documents: state.documents.map((d) => {
         if (d.id !== existing.id) return d
-        return backfillIdentity(
+        return adoptIncomingRoute(
           d.editorState === 'evicted' ? { ...d, editorState: 'live' } : d,
-          value.canonicalPath
+          value
         )
       })
     }

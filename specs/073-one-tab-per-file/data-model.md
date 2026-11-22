@@ -21,7 +21,7 @@ No new persistent field is introduced. The identity is the existing `canonicalPa
 - **INV-3**: When either document lacks an identity, the only fallback is exact `path` equality, and only when both paths are non-null.
 - **INV-4**: A null `path` never matches a non-null `path`. Two null paths never match each other. Untitled documents are never deduped.
 - **INV-5**: The renderer never derives an identity, never uses it as a `file:read` or `file:write` argument, and never displays it. Main produces it from the path it has already resolved and validated.
-- **INV-6**: Activating an existing document changes only its active state and, if needed, its view. It does not change `content`, `baseline`, `editorBaseline`, `dirty`, `revision`, `cursorOffset`, `scrollTop`, or undo history. A missing identity may be backfilled from the incoming payload.
+- **INV-6**: Activating an existing document changes its active state and, if needed, its view. A missing identity may be backfilled from the incoming payload, and a different incoming `path` replaces the stored `path` and `title` so the tab saves the file it represents under the current root. Activation does not change `content`, `baseline`, `editorBaseline`, `dirty`, `revision`, `cursorOffset`, `scrollTop`, or undo history.
 - **INV-7**: `Save As` replaces `path`, `canonicalPath`, and `title` together on success. After that point the tab represents the chosen file, not the old file.
 - **INV-8**: A plain save leaves `path` and `canonicalPath` unchanged. A failed save leaves the document dirty and its association unchanged.
 - **INV-9**: An in-app rename or move that changes `path` clears `canonicalPath` because the old absolute path no longer names the file. The next open of the moved file supplies and backfills the current value.
@@ -46,13 +46,13 @@ The important asymmetry that caused F1 is gone: an explorer read and an outside-
 | Event | `path` | `canonicalPath` | Tab behaviour |
 |-------|--------|-----------------|---------------|
 | Open a file that is not open | Set from the payload. | Set from the payload. | Add a new tab, or stage a spec 024 replacement when the active tab is clean and the route is not an explicit new-tab open. |
-| Open a file that is already open by identity | Unchanged. | Backfilled only if the existing value is missing and the incoming value is present. | Activate the existing tab. Do not create or stage a second document. Do not change content or dirty state. |
+| Open a file that is already open by identity | Rebound to the incoming route when it differs, including to null; otherwise unchanged. | Backfilled only if the existing value is missing and the incoming value is present. | Activate the existing tab. Do not create or stage a second document. Do not change content or dirty state. Title follows the incoming route when the path changes. |
 | Open a file with the same relative path but a different identity | Set from the payload on the new document. | Set from the payload. | Treat it as a different file. Add a new tab or stage a replacement according to spec 024. Never activate the document with the other identity. |
 | Plain save succeeds | Unchanged. | Unchanged. | Clear dirty, update the baseline, keep the same file association. |
 | Save As succeeds | Replace with the chosen relative path, or null when outside the folder. | Replace with the chosen file's absolute identity. | The tab now represents the chosen file. The old file is no longer represented by this tab. Title follows the chosen file. |
 | Save fails | Unchanged. | Unchanged. | The document stays dirty and keeps its association. |
 | In-app rename or move | Rewritten to the new relative path. | Cleared until the next open. | Content, dirty state, id, and undo history stay. The next open of the moved file matches by the rewritten path and backfills the identity. |
-| Folder switch | Unchanged. | Unchanged. | Out of scope. Tabs are not closed or rebound. The identity comparison prevents a different file with the same relative path from being activated, but the F2 save-routing problem remains. |
+| Folder switch | Unchanged at switch time. | Unchanged at switch time. | Tabs are not closed or rebound by the switch. The next open of the same file under the new root rebinds its `path` and `title` (FR-009). The remaining F2 tab lifecycle is out of scope. |
 | External change or delete | Unchanged. | Unchanged. | Out of scope. Routing stays by workspace-relative path. The F4 recreate-on-save problem remains. |
 | Close a tab | Removed. | Removed. | No other document is affected. |
 | Quit | Removed with the session. | Removed with the session. | Existing dirty-tab confirmation is unchanged. |
@@ -64,6 +64,7 @@ The comparison is evaluated in the order shown.
 | Existing `path` | Existing identity | Incoming `path` | Incoming identity | Same file? | Reason |
 |-----------------|-------------------|-----------------|-------------------|------------|--------|
 | `null` | `C:\notes\a.md` | `a.md` | `C:\notes\a.md` | Yes | Both identities match. This is F1. |
+| `a.md` | `C:\notes\dir\a.md` | `dir/a.md` | `C:\notes\dir\a.md` | Yes | Both identities match after the workspace root changed. The tab rebinds to `dir/a.md`. |
 | `null` | `C:\notes\a.md` | `a.md` | `C:\notes\A.md` | Same only if main reports the same on-disk spelling | On a case-insensitive filesystem native realpath makes the identities equal; on a case-sensitive filesystem they are different files. |
 | `a.md` | `C:\dir\a.md` | `a.md` | `C:\dir2\a.md` | No | Different identities. This is the H8 boundary. |
 | `a.md` | `C:\dir\a.md` | `a.md` | missing | Yes by fallback | Exact path equality, identity missing on one side. |

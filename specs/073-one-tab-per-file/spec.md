@@ -38,6 +38,7 @@ A person opens a file and later opens the same file again through the menu, the 
 1. **Given** a file opened from the explorer with unsaved edits, **When** the same file is opened with Open File or from a recent-items entry, **Then** one tab exists, it is activated, and the unsaved text is unchanged.
 2. **Given** a file with unsaved edits, **When** the same file is opened by an operating-system open, through a symlink path, through a path containing `..`, or by repeating the operating-system open, **Then** one tab exists, it is activated, and the unsaved text is unchanged.
 3. **Given** two different files that share a name or a relative path in different folders, **When** each is opened, **Then** two tabs exist and saving each tab writes only its own file.
+4. **Given** a file open from folder `dir`, **When** the user opens `dir`'s parent folder and opens the same file through the route `dir/a.md`, **Then** one tab exists, it is activated, its unsaved text is unchanged, and saving it writes `dir/a.md` rather than a file named `a.md` at the new root.
 
 ---
 
@@ -79,6 +80,7 @@ On a filesystem that ignores letter case in names, `a.md` and `A.md` name one fi
 - **FR-006**: A deterministic symlink path or a path containing `..` that resolves to an already-open file MUST activate that file's existing tab.
 - **FR-007**: Opening an already-open file MUST NOT present a new prompt, confirmation, or message. This feature MUST NOT add any new user-visible prompt or confirmation.
 - **FR-008**: Opening a file that is not already open MUST keep its current behavior, including the existing rule from spec 024 that opening a different file from the explorer may replace a clean active tab.
+- **FR-009**: When an already-open file is reached through a different workspace-relative route under the current workspace root, the activated tab MUST adopt that route and the file's current name so a save writes the file the tab represents. Its unsaved content, dirty state, and undo history MUST NOT change.
 
 ## Success Criteria *(mandatory)*
 
@@ -98,6 +100,7 @@ On a filesystem that ignores letter case in names, `a.md` and `A.md` name one fi
 - Recent-items and operating-system open routes are in scope even though some combinations were not exercised in the original exploration.
 - The existing rule that opening a different file from the explorer may replace a clean active tab (spec 024) is unchanged.
 - No user-visible indication of file identity is required. Tabs continue to show their existing titles and unsaved markers.
-- Folder-switch tab handling (report finding F2, spec B) is a separate feature and out of scope.
+- Folder-switch tab lifecycle (report finding F2, spec B) is a separate feature: opening a folder does not close or rebind open tabs. Rebinding happens when the same file is next opened through a route under the current root (FR-009).
 - Save after an external rename or delete (report finding F4, spec C) is a separate feature and out of scope.
-- Any change to save, Save As, close, or quit behavior is out of scope. A document that has never been saved has no file, so the one-tab rule does not apply to it.
+- Save As onto a file that is already open in another tab is out of scope and may leave two tabs until a later change. This feature does not merge them.
+- Any other change to save, Save As, close, or quit behavior is out of scope. A document that has never been saved has no file, so the one-tab rule does not apply to it.

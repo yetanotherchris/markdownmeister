@@ -58,10 +58,10 @@ One overlap is worth recording: `readFile` already has containment tests in `tes
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Replace the path-only `find` in `handleOpenExisting` in `src/renderer/state/documents.ts` with `sameFile`. An identity match must activate the existing document, may apply the existing explicit view switch, must not create or stage a document, must not adopt the incoming `path`, and must ignore `mode: 'replace'`. Depends on T005 and T007.
+- [ ] T011 [US1] Replace the path-only `find` in `handleOpenExisting` in `src/renderer/state/documents.ts` with `sameFile`. An identity match must activate the existing document, may apply the existing explicit view switch, must not create or stage a document, must adopt a differing incoming `path` and its `title` so the tab saves the file it represents, and must ignore `mode: 'replace'`. Depends on T005 and T007.
 - [ ] T012 [US1] Replace the path-only `alreadyOpen` check in `openWithDecision` in `src/renderer/hooks/useDocumentSession.ts` with `current.documents.some((d) => sameFile(d, file))`. Keep the spec 024 replace decision otherwise unchanged. Depends on T011.
 - [ ] T013 [P] [US1] Compute `alreadyOpen` in `src/renderer/hooks/useFileOpenGesture.ts` with `sameFile` against a path-only candidate `{ path: node.id, canonicalPath: undefined }`. This only drives the single-click deferral heuristic; the actual open still goes through `file:read` and the reducer. Depends on T007.
-- [ ] T014 [US1] Add US1 reducer tests in `tests/renderer/documents.identity.test.ts`: a no-folder open (`path: null` plus identity) followed by an explorer read (relative path plus the same identity) keeps one document, keeps its content and dirty flag, keeps `path: null`, and activates it; the reverse order behaves the same; an incoming `mode: 'replace'` is ignored on an identity match and creates no `pendingReplacement`; a relative path with no identity never matches a document with `path: null`. Depends on T011.
+- [ ] T014 [US1] Add US1 reducer tests in `tests/renderer/documents.identity.test.ts`: a no-folder open (`path: null` plus identity) followed by an explorer read (relative path plus the same identity) keeps one document, keeps its content and dirty flag, adopts the explorer `path`, and activates it; the reverse order adopts the null path; an incoming `mode: 'replace'` is ignored on an identity match and creates no `pendingReplacement`; a relative path with no identity never matches a document with `path: null`. Depends on T011.
 
 ### Tests for User Story 1
 
@@ -80,11 +80,11 @@ One overlap is worth recording: `readFile` already has containment tests in `tes
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] Backfill a missing identity in `handleOpenExisting` in `src/renderer/state/documents.ts`: when the matched document has no usable `canonicalPath` and the incoming value has one, store the incoming value on the activated document. Do not change `path`, `content`, `baseline`, `dirty`, `revision`, cursor, scroll, or view beyond the existing explicit view rule. Depends on T011.
+- [ ] T017 [US2] Backfill a missing identity in `handleOpenExisting` in `src/renderer/state/documents.ts`: when the matched document has no usable `canonicalPath` and the incoming value has one, store the incoming value on the activated document. When the incoming `path` differs from the stored one, adopt it and the incoming `title`. Do not change `content`, `baseline`, `dirty`, `revision`, cursor, scroll, or view beyond the existing explicit view rule. Depends on T011.
 - [ ] T018 [P] [US2] Change `openPathInSource` and `openPathInFormatted` in `src/renderer/hooks/useSourceViewToggle.ts` to read the requested path through `file:read` first and then compare the returned identity with `sameFile`, instead of matching by path before reading. Preserve `flushLiveContent`, `captureContentForSwitch`, `seedSourceContext`, `SET_VIEW`, and `handleReturnToFormatted`, and reactivate an evicted match through the reducer rather than the live-editor path. Depends on T011.
 - [ ] T019 [US2] Keep `SAVE_SUCCESS` as the only post-open identity update point in `handleSaveSuccess` in `src/renderer/state/documents.ts`: a Save As payload replaces `path`, `canonicalPath`, and `title` together, and a plain save keeps them. Do not add a Save As merge path. Depends on T017.
 - [ ] T020 [US2] Clear `canonicalPath` in `handleUpdatePath` and in every document rewritten by `handleReroutePaths` in `src/renderer/state/documents.ts`, because the old absolute path no longer names the file. Keep `id`, content, dirty flag, revision, and title behavior. Depends on T017.
-- [ ] T021 [US2] Add US2 reducer tests in `tests/renderer/documents.identity.test.ts`: an explorer read followed by an operating-system open shape, a `..` resolved identity, two documents with the same relative path and different identities opening two tabs, backfill on activation without a path change, Save As replacing the identity and the old file opening separately, rename clearing the identity, spec 024 replacement when the file is not open, and an identity match taking precedence over `mode: 'replace'`. Depends on T017, T019, and T020.
+- [ ] T021 [US2] Add US2 reducer tests in `tests/renderer/documents.identity.test.ts`: an explorer read followed by an operating-system open shape, a `..` resolved identity, two documents with the same relative path and different identities opening two tabs, backfill on activation without a path change, route rebinding when the relative path or root changes, equal paths leaving the title alone, Save As replacing the identity and the old file opening separately, rename clearing the identity, spec 024 replacement when the file is not open, and an identity match taking precedence over `mode: 'replace'`. Depends on T017, T019, and T020.
 
 ### Tests for User Story 2
 
@@ -138,7 +138,7 @@ These are the known limitations in `research.md` R10 and the assumptions in `spe
 - Do not unify hard links. Identity follows the resolved real path, so two hard links remain two documents.
 - Do not normalize Unicode (NFC versus NFD) or strip Windows extended-length `\\?\` prefixes.
 - Do not add a case-insensitive fallback rule when both realpath calls fail and `path.resolve` is used. That is a degradation path, not a normal route.
-- Do not change folder-switch tab handling (report finding F2). Folder switching is out of scope, and tabs are not closed or rebound.
+- Do not change folder-switch tab lifecycle (report finding F2). Folder switching is out of scope, and tabs are not closed or rebound at switch time. Opening the same file under the new root rebinds that tab's route (FR-009).
 - Do not change external rename or delete handling (report finding F4). External-change routing stays by workspace-relative path.
 - Do not special-case the interval after an in-app rename, when identity is cleared and the path fallback applies. Reopening the moved file backfills the identity.
 - Do not add a prompt when a context-menu open targets a file that no longer exists. It fails quietly, and the deleted-file case is out of scope.

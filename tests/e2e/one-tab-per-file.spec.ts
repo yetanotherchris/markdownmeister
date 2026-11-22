@@ -56,6 +56,7 @@ test.beforeEach(async () => {
   fs.writeFileSync(dirA, '# A\n\nAlpha original.')
   fs.writeFileSync(path.join(dir, 'b.md'), '# B\n\nBeta original.')
   fs.writeFileSync(dir2A, '# A2\n\nOther alpha.')
+  fs.rmSync(path.join(scratch, 'a.md'), { force: true })
   configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mm-one-tab-config-'))
   userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mm-one-tab-user-'))
   ;({ app, window } = await launchApp(configDir, undefined, userDataDir))
@@ -81,6 +82,13 @@ async function openFolderViaDialog(folder: string): Promise<void> {
   await stubOpenDialog(app, folder)
   await clickHamburgerItem(window, 'Open Folder…')
   await expect(window.getByRole('treeitem').getByText('a.md')).toBeVisible()
+}
+
+/** Open a folder whose root has no markdown file, waiting for a child entry. */
+async function openFolderAtRoot(folder: string, childName: string): Promise<void> {
+  await stubOpenDialog(app, folder)
+  await clickHamburgerItem(window, 'Open Folder…')
+  await expect(window.getByRole('treeitem').getByText(childName, { exact: true })).toBeVisible()
 }
 
 async function expectSingleActiveTabWithText(text: string): Promise<void> {
@@ -160,6 +168,25 @@ test('H13: the explorer after Open File reuses the earlier tab', async () => {
   await window.getByRole('treeitem').getByText('a.md').click()
 
   await expectSingleActiveTabWithText('MENU')
+})
+
+test('rebinds a tab to the current root after a folder change', async () => {
+  await openFolderViaDialog(dir)
+  await window.getByRole('treeitem').getByText('a.md').click()
+  await expect(window.locator('.ProseMirror:visible')).toContainText('Alpha original.')
+
+  // The tab still holds `path: "a.md"` from the old root. Reopening the file
+  // as `dir/a.md` under the parent root must retarget the tab's save route.
+  await openFolderAtRoot(scratch, 'dir')
+  await openFileViaDialog(dirA)
+
+  await typeIntoVisibleEditor('ROOT ')
+  await clickSave()
+
+  await expect(window.getByRole('tab')).toHaveCount(1)
+  await expect.poll(() => fs.readFileSync(dirA, 'utf-8')).toContain('ROOT')
+  expect(fs.existsSync(path.join(scratch, 'a.md'))).toBe(false)
+  expect(await messageBoxCallCount(app)).toBe(0)
 })
 
 test('H8: the same relative path in different folders keeps two tabs and two files', async () => {

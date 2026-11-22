@@ -95,6 +95,7 @@ The comparison performs no case folding, no basename comparison, and no folder-r
 | Existing document | Incoming open | Same tab? | Why |
 |-------------------|---------------|-----------|-----|
 | `path: null`, identity `C:\Notes\dir\a.md` | `path: "a.md"`, identity `C:\Notes\dir\a.md` | Yes | Both identities match. This is F1. |
+| `path: "a.md"`, identity `C:\Notes\dir\a.md` | `path: "dir/a.md"`, identity `C:\Notes\dir\a.md` | Yes | Both identities match after the root changed; the tab rebinds to `dir/a.md`. |
 | `path: "a.md"`, identity `C:\Notes\dir\a.md` | `path: "a.md"`, identity `C:\Notes\dir2\a.md` | No | Different identities. This is the H8 boundary and the FR-004 guard. |
 | `path: "a.md"`, identity `C:\Notes\dir\a.md` | `path: "a.md"`, identity missing | Yes | Fallback to exact path equality because one identity is missing. |
 | `path: null`, identity `C:\Notes\dir\a.md` | `path: "a.md"`, identity missing | No | A null path never matches a relative path. |
@@ -112,7 +113,7 @@ The `OPEN_EXISTING` payload shape is unchanged:
 
 Every open route produces this payload through the same path: menu Open File, recent items, operating-system open, explorer click, search result, new-tab action, created-file open, and the source-view context menu. No route adds a second identity field or a second dedupe rule.
 
-The reducer treats an identity match as an activation. It does not change the existing document's content, baseline, dirty flag, revision, cursor, scroll, or undo history. If the existing document has no identity and the incoming payload has one, the reducer stores the incoming identity. It does not adopt the incoming `path`.
+The reducer treats an identity match as an activation. It does not change the existing document's content, baseline, dirty flag, revision, cursor, scroll, or undo history. If the existing document has no identity and the incoming payload has one, the reducer stores the incoming identity. When the incoming `path` differs from the stored one, the reducer replaces the stored `path` and `title` with the incoming route, because the identity is root-independent while `path` is relative to the current workspace root. Equal paths leave the title alone. A fallback match by path has equal paths by definition, so it never rebinds.
 
 ## Save As
 
