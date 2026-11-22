@@ -124,6 +124,39 @@ describe('handleOpenExisting: spec 073 US1 identity match', () => {
     expect(s2.documents).toHaveLength(2)
     expect(s2.documents.map((d) => d.path)).toEqual([null, 'a.md'])
   })
+
+  it('activates the existing tab for mode new instead of opening a second', () => {
+    const s1 = openExisting(createSession(), noFolderOpen())
+    const firstId = s1.activeId!
+    const s2 = edit(s1, firstId)
+
+    const s3 = openExisting(s2, explorerRead(), 'new')
+
+    expect(s3.documents).toHaveLength(1)
+    expect(s3.documents[0].id).toBe(firstId)
+    expect(s3.activeId).toBe(firstId)
+    expect(s3.documents[0].content).toBe('FIRST edited')
+    expect(s3.documents[0].path).toBe('a.md')
+  })
+
+  it('preserves revision, cursor, and scroll on an identity match', () => {
+    const s1 = openExisting(createSession(), explorerRead())
+    const id = s1.activeId!
+    const s2 = documentsReducer(edit(s1, id), {
+      type: 'CAPTURE_EDITOR_STATE',
+      payload: { id, cursorOffset: 7, scrollTop: 123 }
+    })
+    expect(s2.documents[0].revision).toBe(1)
+
+    const s3 = openExisting(s2, noFolderOpen())
+
+    expect(s3.documents).toHaveLength(1)
+    expect(s3.documents[0].revision).toBe(1)
+    expect(s3.documents[0].cursorOffset).toBe(7)
+    expect(s3.documents[0].scrollTop).toBe(123)
+    expect(s3.documents[0].baseline).toBe('# a')
+    expect(s3.documents[0].content).toBe('FIRST edited')
+  })
 })
 
 describe('handleOpenExisting: spec 073 US2 identity across routes', () => {

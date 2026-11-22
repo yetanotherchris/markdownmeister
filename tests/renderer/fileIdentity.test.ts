@@ -24,6 +24,28 @@ describe('sameFile', () => {
     expect(sameFile({ path: 'a.md' }, { path: 'a.md', canonicalPath: '/notes/a.md' })).toBe(true)
   })
 
+  it('matches a case-variant path when both identities are equal', () => {
+    expect(
+      sameFile(
+        { path: 'a.md', canonicalPath: '/notes/a.md' },
+        { path: 'A.md', canonicalPath: '/notes/a.md' }
+      )
+    ).toBe(true)
+  })
+
+  it('does not match a null path against a different identity', () => {
+    expect(
+      sameFile(
+        { path: null, canonicalPath: '/notes/a.md' },
+        { path: 'a.md', canonicalPath: '/notes/b.md' }
+      )
+    ).toBe(false)
+  })
+
+  it('does not match different paths when only one side has an identity', () => {
+    expect(sameFile({ path: 'a.md', canonicalPath: '/notes/a.md' }, { path: 'b.md' })).toBe(false)
+  })
+
   it('does not match a null path against a relative path when one identity is missing', () => {
     expect(sameFile({ path: null }, { path: 'a.md', canonicalPath: '/notes/a.md' })).toBe(false)
     expect(sameFile({ path: null, canonicalPath: '/notes/a.md' }, { path: 'a.md' })).toBe(false)
@@ -35,6 +57,7 @@ describe('sameFile', () => {
 
   it('falls back to equal paths when both identities are missing', () => {
     expect(sameFile({ path: 'a.md' }, { path: 'a.md' })).toBe(true)
+    expect(sameFile({ path: 'a.md' }, { path: 'b.md' })).toBe(false)
   })
 
   it('treats an empty identity as missing', () => {
@@ -45,5 +68,8 @@ describe('sameFile', () => {
       true
     )
     expect(sameFile({ path: null, canonicalPath: '' }, { path: 'a.md' })).toBe(false)
+    expect(sameFile({ path: 'a.md', canonicalPath: '' }, { path: 'b.md', canonicalPath: '' })).toBe(
+      false
+    )
   })
 })

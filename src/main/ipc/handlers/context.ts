@@ -203,8 +203,6 @@ export function openFileFromPath(filePath: string): OpenedFile {
     throw Object.assign(new Error('Target is not a file'), { code: 'NOT_TEXT' as ErrorCode })
   }
 
-  const canonical = canonicalPath(filePath)
-
   if (ctx.workspaceRoot) {
     const relativePath = resolveAbsolutePath(ctx.workspaceRoot, filePath)
     if (relativePath) {
@@ -213,11 +211,15 @@ export function openFileFromPath(filePath: string): OpenedFile {
         ? relativePath.split('/').slice(0, -1).join('/')
         : '.'
       ctx.workspaceState?.watchDir(parent)
+      // readFile already resolved and validated this path, so its identity is
+      // the one to allowlist. Resolving again would add a second realpath call.
+      const canonical = opened.canonicalPath ?? canonicalPath(filePath)
       ctx.openedPaths.add(canonical)
       return { ...opened, canonicalPath: canonical }
     }
   }
 
+  const canonical = canonicalPath(filePath)
   const buffer = fs.readFileSync(filePath)
 
   try {
