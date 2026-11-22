@@ -2,6 +2,7 @@ import * as path from 'path'
 import * as fs from 'fs'
 import { resolveWithinRoot } from '../../fs/paths'
 import { readFile } from '../../fs/read'
+import { canonicalPath } from '../../fs/identity'
 import {
   loadRecentItems,
   saveRecentItems,
@@ -196,14 +197,6 @@ export function removeRecent(path_: string, kind: RecentKind): void {
   }
 }
 
-export function canonicalPath(p: string): string {
-  try {
-    return fs.realpathSync(p)
-  } catch {
-    return path.resolve(p)
-  }
-}
-
 export function openFileFromPath(filePath: string): OpenedFile {
   const stat = fs.statSync(filePath)
   if (!stat.isFile()) {
@@ -248,6 +241,9 @@ export function openFileFromPath(filePath: string): OpenedFile {
 
 /** Path resolution helper re-exported for the handler modules. */
 export { resolveWithinRoot }
+
+/** File identity helper re-exported for the handler modules and their tests. */
+export { canonicalPath }
 
 /** Directory-entry type re-exported for the handler modules. */
 export type { DirEntry }
