@@ -39,14 +39,11 @@ describe('sameFile', () => {
 
   it('treats an empty identity as missing', () => {
     expect(
-      sameFile(
-        { path: 'a.md', canonicalPath: '' },
-        { path: 'a.md', canonicalPath: '/notes/a.md' }
-      )
+      sameFile({ path: 'a.md', canonicalPath: '' }, { path: 'a.md', canonicalPath: '/notes/a.md' })
     ).toBe(true)
-    expect(
-      sameFile({ path: 'a.md', canonicalPath: '' }, { path: 'a.md', canonicalPath: '' })
-    ).toBe(true)
+    expect(sameFile({ path: 'a.md', canonicalPath: '' }, { path: 'a.md', canonicalPath: '' })).toBe(
+      true
+    )
     expect(sameFile({ path: null, canonicalPath: '' }, { path: 'a.md' })).toBe(false)
   })
 })

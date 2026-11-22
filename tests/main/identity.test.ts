@@ -45,6 +45,27 @@ describe('canonicalPath', () => {
     expect(canonicalPath(spelled)).toBe(canonicalPath(file))
   })
 
+  it('resolves a symlink to the same identity as its target', (ctx) => {
+    const link = path.join(root, 'link.md')
+
+    try {
+      fs.symlinkSync(file, link, 'file')
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code
+      if (code === 'EPERM' || code === 'EACCES') {
+        ctx.skip('creating a symlink needs privileges (Developer Mode on Windows)')
+        return
+      }
+      throw error
+    }
+
+    try {
+      expect(canonicalPath(link)).toBe(canonicalPath(file))
+    } finally {
+      fs.rmSync(link, { force: true })
+    }
+  })
+
   it('falls back to fs.realpathSync when the native call throws', () => {
     const native = vi.spyOn(fs.realpathSync, 'native').mockImplementation(() => {
       throw Object.assign(new Error('native realpath unavailable'), { code: 'ENOSYS' })

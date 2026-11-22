@@ -30,6 +30,7 @@ let dir2A: string
 let configDir: string
 let userDataDir: string
 let caseInsensitiveFs: boolean
+let symlinkSupported: boolean
 
 test.beforeAll(() => {
   scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'mm-one-tab-'))
@@ -50,6 +51,23 @@ test.beforeAll(() => {
   fs.writeFileSync(probe, '# Probe')
   caseInsensitiveFs = fs.existsSync(path.join(scratch, 'CASE-PROBE.md'))
   fs.rmSync(probe)
+
+  // Probe once: file symlinks need Developer Mode or elevation on Windows. A
+  // permission error means the scenario cannot run; any other error is real.
+  const symlinkTarget = path.join(scratch, 'symlink-probe.md')
+  const symlinkProbe = path.join(scratch, 'symlink-probe-link.md')
+  fs.writeFileSync(symlinkTarget, '# Probe')
+  try {
+    fs.symlinkSync(symlinkTarget, symlinkProbe, 'file')
+    symlinkSupported = true
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code
+    if (code !== 'EPERM' && code !== 'EACCES') throw error
+    symlinkSupported = false
+  } finally {
+    fs.rmSync(symlinkProbe, { force: true })
+    fs.rmSync(symlinkTarget, { force: true })
+  }
 })
 
 test.beforeEach(async () => {
@@ -157,6 +175,36 @@ test('H12: Open File after the explorer reuses the tab', async () => {
   await openFileViaDialog(dirA)
 
   await expectSingleActiveTabWithText('EXPLORER')
+})
+
+test('symlink to an open file reuses the tab', async () => {
+  test.skip(!symlinkSupported, 'symlink creation needs privileges (Developer Mode on Windows)')
+
+  const link = path.join(dir, 'link.md')
+  fs.rmSync(link, { force: true })
+  fs.symlinkSync(dirA, link, 'file')
+
+  try {
+    await openFileViaDialog(dirA)
+    await expect(window.locator('.ProseMirror:visible')).toContainText('Alpha original.')
+    await typeInEditor(window, 'SYMLINK ')
+
+    await openFileViaDialog(link)
+
+    await expectSingleActiveTabWithText('SYMLINK')
+  } finally {
+    fs.rmSync(link, { force: true })
+  }
+})
+
+test('parent-segment spelling reuses the tab', async () => {
+  await openFileViaDialog(dirA)
+  await expect(window.locator('.ProseMirror:visible')).toContainText('Alpha original.')
+  await typeInEditor(window, 'PARENT ')
+
+  await openFileViaDialog(`${dir}${path.sep}sub${path.sep}..${path.sep}a.md`)
+
+  await expectSingleActiveTabWithText('PARENT')
 })
 
 test('H13: the explorer after Open File reuses the earlier tab', async () => {
