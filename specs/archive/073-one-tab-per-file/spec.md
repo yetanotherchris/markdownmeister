@@ -8,6 +8,12 @@
 
 **Input**: User description: "A file is always represented by one tab, however and in whatever order it was opened, including files opened before their folder, files opened through the explorer, and case-variant paths on a case-insensitive filesystem."
 
+## Clarifications
+
+- **2026-11-23**: FR-001 applies to open routes. A Save As that retargets a tab onto a file already open in another tab keeps both tabs. Merging them would have to choose which unsaved text and undo history survive, and that policy is a later change. Opening the chosen file afterwards still activates the tab that already represents it.
+- **2026-11-23**: FR-002 follows the resolved real path. Two hard links stay two documents. Unicode normalization and Windows extended-length prefixes are not rewritten into one identity.
+- **2026-11-23**: A context-menu source or formatted open reads the requested path first. If that read fails, the action does nothing and shows no prompt. It does not activate a tab by relative path. External delete and rename remain the separate F4 feature.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - File opened before its folder (Priority: P1)
@@ -72,7 +78,7 @@ On a filesystem that ignores letter case in names, `a.md` and `A.md` name one fi
 
 ### Functional Requirements
 
-- **FR-001**: Each file MUST have at most one open tab, whatever route and whatever order opened it.
+- **FR-001**: Each file opened through an open route MUST have at most one open tab, whatever route and whatever order opened it. A Save As onto a file that another tab already has open is outside this requirement.
 - **FR-002**: Two paths MUST be treated as the same file when the filesystem reports that they name the same file. On a case-insensitive filesystem, paths that differ only in letter case MUST be treated as one file. On a case-sensitive filesystem, paths that differ in letter case MAY be different files.
 - **FR-003**: Opening an already-open file MUST activate its existing tab, MUST NOT create a second tab, and MUST NOT change that tab's unsaved content.
 - **FR-004**: A tab MUST NOT be activated for a different file that merely shares a name or a relative path. Two files with the same name or relative path in different folders MUST keep separate tabs and MUST save independently.
@@ -103,4 +109,6 @@ On a filesystem that ignores letter case in names, `a.md` and `A.md` name one fi
 - Folder-switch tab lifecycle (report finding F2, spec B) is a separate feature: opening a folder does not close or rebind open tabs. Rebinding happens when the same file is next opened through a route under the current root (FR-009).
 - Save after an external rename or delete (report finding F4, spec C) is a separate feature and out of scope.
 - Save As onto a file that is already open in another tab is out of scope and may leave two tabs until a later change. This feature does not merge them.
+- Hard links are not unified. Unicode normalization and Windows extended-length prefixes are not folded into the identity.
+- A context-menu source or formatted open that cannot read its path does nothing and adds no prompt. It does not activate a tab by relative path.
 - Any other change to save, Save As, close, or quit behavior is out of scope. A document that has never been saved has no file, so the one-tab rule does not apply to it.
