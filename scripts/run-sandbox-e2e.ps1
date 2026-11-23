@@ -126,7 +126,10 @@ try {
     if (-not $ready) { throw "Timed out waiting for the sandbox to accept commands." }
 
     $exitCodeFile = Join-Path $outputDir "exitcode.txt"
-    if (Test-Path $exitCodeFile) { Remove-Item $exitCodeFile -Force }
+    $consoleLog = Join-Path $outputDir "console.log"
+    foreach ($stale in @($exitCodeFile, $consoleLog)) {
+        if (Test-Path $stale) { Remove-Item $stale -Force }
+    }
 
     $argLine = ($TestArgs -join " ").Trim()
     $runnerPath = Join-Path $outputDir "run-in-sandbox.cmd"
@@ -134,30 +137,51 @@ try {
 @echo off
 set PATH=$sandboxNode;%PATH%
 cd /d $sandboxRepo
-call npm run test:e2e -- $argLine
+call npm run test:e2e -- $argLine > $sandboxResults\console.log 2>&1
 set PW_EXIT=%ERRORLEVEL%
 echo %PW_EXIT% > $sandboxResults\exitcode.txt
 exit /b %PW_EXIT%
 "@
     Set-Content -Path $runnerPath -Value $runner -Encoding ASCII
 
-    Write-Host "Running Playwright e2e inside Windows Sandbox..." -ForegroundColor Cyan
+    # Start the suite and return. A long wsb exec session dies with 0x80370107
+    # when the VM is exited, which is not a Playwright result.
+    Write-Host "Starting Playwright e2e inside Windows Sandbox..." -ForegroundColor Cyan
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try {
-        & $wsb exec --id $sandboxId --run-as $RunAs -d $sandboxRepo -c "cmd.exe /c $sandboxResults\run-in-sandbox.cmd"
-        $execExit = $LASTEXITCODE
+        & $wsb exec --id $sandboxId --run-as $RunAs -d $sandboxRepo -c "cmd.exe /c start /b cmd.exe /c $sandboxResults\run-in-sandbox.cmd"
+        if ($LASTEXITCODE -ne 0) { throw "Could not start the suite inside the sandbox (exit $LASTEXITCODE)." }
     } finally {
         $ErrorActionPreference = $prevEap
     }
 
-    $testExit = 1
-    if (Test-Path $exitCodeFile) {
-        $rawExit = (Get-Content $exitCodeFile -Raw).Trim()
-        if ($rawExit -match '^\d+$') { $testExit = [int]$rawExit }
-    } else {
-        $testExit = $execExit
+    $deadline = (Get-Date).AddMinutes(90)
+    $testExit = $null
+    while ((Get-Date) -lt $deadline) {
+        if (Test-Path $exitCodeFile) {
+            $rawExit = (Get-Content $exitCodeFile -Raw).Trim()
+            if ($rawExit -match '^-?\d+$') { $testExit = [int]$rawExit }
+            break
+        }
+        $listed = $false
+        $listRaw = & $wsb list --raw 2>$null
+        if ($LASTEXITCODE -eq 0 -and $listRaw) {
+            try {
+                $parsed = $listRaw | ConvertFrom-Json
+                $listed = @($parsed.WindowsSandboxEnvironments | ForEach-Object { $_.Id }) -contains $sandboxId
+            } catch {
+                $listed = $true
+            }
+        } else {
+            $listed = $true
+        }
+        if (-not $listed) {
+            throw "Windows Sandbox $sandboxId exited before the suite wrote an exit code."
+        }
+        Start-Sleep -Seconds 15
     }
+    if ($null -eq $testExit) { throw "Timed out after 90 minutes waiting for the sandbox suite." }
 
     $consoleLog = Join-Path $outputDir "console.log"
     if (Test-Path $consoleLog) {
