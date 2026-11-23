@@ -2,6 +2,7 @@ import * as path from 'path'
 import * as fs from 'fs'
 import { resolveWithinRoot } from '../../fs/paths'
 import { readFile } from '../../fs/read'
+import { canonicalPath } from '../../fs/identity'
 import {
   loadRecentItems,
   saveRecentItems,
@@ -196,21 +197,11 @@ export function removeRecent(path_: string, kind: RecentKind): void {
   }
 }
 
-export function canonicalPath(p: string): string {
-  try {
-    return fs.realpathSync(p)
-  } catch {
-    return path.resolve(p)
-  }
-}
-
 export function openFileFromPath(filePath: string): OpenedFile {
   const stat = fs.statSync(filePath)
   if (!stat.isFile()) {
     throw Object.assign(new Error('Target is not a file'), { code: 'NOT_TEXT' as ErrorCode })
   }
-
-  const canonical = canonicalPath(filePath)
 
   if (ctx.workspaceRoot) {
     const relativePath = resolveAbsolutePath(ctx.workspaceRoot, filePath)
@@ -220,11 +211,15 @@ export function openFileFromPath(filePath: string): OpenedFile {
         ? relativePath.split('/').slice(0, -1).join('/')
         : '.'
       ctx.workspaceState?.watchDir(parent)
+      // readFile already resolved and validated this path, so its identity is
+      // the one to allowlist. Resolving again would add a second realpath call.
+      const canonical = opened.canonicalPath ?? canonicalPath(filePath)
       ctx.openedPaths.add(canonical)
       return { ...opened, canonicalPath: canonical }
     }
   }
 
+  const canonical = canonicalPath(filePath)
   const buffer = fs.readFileSync(filePath)
 
   try {
@@ -248,6 +243,9 @@ export function openFileFromPath(filePath: string): OpenedFile {
 
 /** Path resolution helper re-exported for the handler modules. */
 export { resolveWithinRoot }
+
+/** File identity helper re-exported for the handler modules and their tests. */
+export { canonicalPath }
 
 /** Directory-entry type re-exported for the handler modules. */
 export type { DirEntry }
