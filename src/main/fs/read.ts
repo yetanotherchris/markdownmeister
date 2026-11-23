@@ -1,6 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { resolveDirectory, resolveFile, resolveWithinRoot } from './paths'
+import { canonicalPath } from './identity'
 import type { DirEntry, OpenedFile, EntryInfo } from '../../shared/ipc-contract'
 
 const MARKDOWN_EXTENSIONS = new Set(['.md', '.markdown'])
@@ -62,7 +63,8 @@ export function readFile(root: string, relativePath: string): OpenedFile {
     name,
     content,
     mtimeMs: stat.mtimeMs,
-    size: stat.size
+    size: stat.size,
+    canonicalPath: canonicalPath(resolved)
   }
 }
 
