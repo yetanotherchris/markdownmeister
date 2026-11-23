@@ -262,7 +262,7 @@ jobs:
           done
 
       - name: Create draft GitHub Release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # softprops/action-gh-release v3
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # softprops/action-gh-release v3
         with:
           draft: true
           files: artifacts/*
@@ -297,7 +297,7 @@ jobs:
         run: ./updatepackagejson.ps1 -Version "$env:RELEASE_VERSION"
 
       - name: Commit updated package definitions
-        uses: stefanzweifel/git-auto-commit-action@4a55954c782fc1ea30b9056cd3e7a2b40ca8887d # stefanzweifel/git-auto-commit-action v7
+        uses: stefanzweifel/git-auto-commit-action@d0b01107b5db882071f96de5dd4b54961ea93f4c # stefanzweifel/git-auto-commit-action v7
         with:
           commit_message: 'chore(release): update package definitions to v${{ steps.version.outputs.VERSION }}'
           branch: main
@@ -306,6 +306,6 @@ jobs:
           commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # softprops/action-gh-release v3
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # softprops/action-gh-release v3
         with:
           tag_name: ${{ github.ref_name }}
