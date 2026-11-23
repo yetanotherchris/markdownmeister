@@ -5,7 +5,6 @@ import type { OpenedFile } from '../../shared/ipc-contract'
 import { instancePool } from '../editor/instancePool'
 import { getSettings } from '../state/settings'
 import { joinFrontmatter } from '../domain/frontmatter'
-import { sameFile } from '../domain/fileIdentity'
 import {
   getLiveContent as domainGetLiveContent,
   isDirtyLive as domainIsDirtyLive,
@@ -464,7 +463,7 @@ export function useDocumentSession(opts: {
     ) => {
       const current = sessionRef.current
       const active = current.documents.find((d) => d.id === current.activeId) ?? null
-      const alreadyOpen = current.documents.some((d) => sameFile(d, file))
+      const alreadyOpen = file.path !== null && current.documents.some((d) => d.path === file.path)
       const replaceActive =
         !preferNewTab && !explicitNew && !alreadyOpen && active !== null && !isDirtyLive(active)
       dispatch({

@@ -5,7 +5,6 @@ import { getSettings } from '../state/settings'
 import { beginOpen, discardOpen } from '../editor/openPerformance'
 import { DOUBLE_CLICK_WINDOW_MS, shouldDeferSingleClick } from '../explorer/openGesture'
 import type { FileOpenGesture } from '../explorer/openGesture'
-import { sameFile } from '../domain/fileIdentity'
 import type { DocumentSessionApi } from './useDocumentSession'
 
 /** Spec 029: turn a resolved row gesture on a file into an open. Kept out of
@@ -65,9 +64,7 @@ export function useFileOpenGesture(opts: {
       }
       const current = sessionRef.current
       const active = current.documents.find((d) => d.id === current.activeId) ?? null
-      const alreadyOpen = current.documents.some((d) =>
-        sameFile(d, { path: node.id, canonicalPath: undefined })
-      )
+      const alreadyOpen = current.documents.some((d) => d.path === node.id)
       if (
         !shouldDeferSingleClick({
           preferNewTab: getSettings().fileOpenBehavior === 'new-tab',

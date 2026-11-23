@@ -42,11 +42,6 @@ export interface OpenedFile {
   mtimeMs: number
   size: number
 
-  /** Absolute real path in the filesystem's on-disk spelling. Every successful
-   *  file-producing main handler supplies it. The field stays optional because
-   *  untitled documents and paths that cannot be resolved have no identity. The
-   *  renderer uses it only for comparison and never passes it to `file:read` or
-   *  `file:write`. */
   canonicalPath?: string
 }
 

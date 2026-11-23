@@ -1,6 +1,5 @@
 import { isWithinOrEqual } from './workspace'
 import { splitFrontmatter, joinFrontmatter } from '../domain/frontmatter'
-import { sameFile } from '../domain/fileIdentity'
 import type { SourceSeed, VisualRestorePlan } from '../domain/caretSync'
 import type { OpenedFile } from '../../shared/ipc-contract'
 
@@ -194,17 +193,6 @@ export function handleOpenNew(state: EditingSession): EditingSession {
   }
 }
 
-/** An identity match binds the tab to the route it was just reached through.
- *  A missing identity is backfilled, and a different workspace-relative path
- *  replaces the stored one so the next save resolves under the current root.
- *  Content and the remaining edit state are untouched. */
-function adoptIncomingRoute(d: DocumentState, value: OpenedFile): DocumentState {
-  const next =
-    d.canonicalPath || !value.canonicalPath ? d : { ...d, canonicalPath: value.canonicalPath }
-  if (next.path === value.path) return next
-  return { ...next, path: value.path, title: value.name }
-}
-
 function allocateDocumentId(state: EditingSession, preferred: string): string {
   const taken = new Set<string>()
   for (const doc of state.documents) {
@@ -223,7 +211,14 @@ function allocateDocumentId(state: EditingSession, preferred: string): string {
 
 export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload): EditingSession {
   const value = p.value
-  const existing = state.documents.find((d) => sameFile(d, value))
+  const existing = state.documents.find(
+    (d) =>
+      (d.path === value.path && value.path !== null) ||
+      (value.path === null &&
+        d.canonicalPath !== undefined &&
+        value.canonicalPath !== undefined &&
+        d.canonicalPath === value.canonicalPath)
+  )
   if (existing) {
     if (value.view && existing.view !== value.view) {
       return {
@@ -231,14 +226,11 @@ export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload
         activeId: existing.id,
         documents: state.documents.map((d) => {
           if (d.id !== existing.id) return d
-          const next: DocumentState = adoptIncomingRoute(
-            {
-              ...d,
-              view: value.view!,
-              editorState: d.editorState === 'evicted' ? 'live' : d.editorState
-            },
-            value
-          )
+          const next: DocumentState = {
+            ...d,
+            view: value.view!,
+            editorState: d.editorState === 'evicted' ? 'live' : d.editorState
+          }
           if (value.view === 'source') {
             // The view flipped without a switch-time seed, so the stored
             // context is what the source view opens with and the comparison
@@ -254,13 +246,9 @@ export function handleOpenExisting(state: EditingSession, p: OpenExistingPayload
     return {
       ...state,
       activeId: existing.id,
-      documents: state.documents.map((d) => {
-        if (d.id !== existing.id) return d
-        return adoptIncomingRoute(
-          d.editorState === 'evicted' ? { ...d, editorState: 'live' } : d,
-          value
-        )
-      })
+      documents: state.documents.map((d) =>
+        d.id === existing.id && d.editorState === 'evicted' ? { ...d, editorState: 'live' } : d
+      )
     }
   }
   const opened = openFile(value)
@@ -537,9 +525,7 @@ export function handleUpdatePath(
   return {
     ...state,
     documents: state.documents.map((d) =>
-      d.id === id
-        ? { ...d, path, canonicalPath: undefined, title: path.split('/').pop() || d.title }
-        : d
+      d.id === id ? { ...d, path, title: path.split('/').pop() || d.title } : d
     )
   }
 }
@@ -556,14 +542,7 @@ export function handleReroutePaths(
       if (!isWithinOrEqual(d.path, fromPath)) return d
       const suffix = d.path.slice(fromPath.length)
       const newPath = toPath + suffix
-      // A rename or move invalidates the old absolute identity. An unchanged
-      // path keeps it because the old identity still names the file.
-      return {
-        ...d,
-        path: newPath,
-        canonicalPath: newPath === d.path ? d.canonicalPath : undefined,
-        title: newPath.split('/').pop() || d.title
-      }
+      return { ...d, path: newPath, title: newPath.split('/').pop() || d.title }
     })
   }
 }

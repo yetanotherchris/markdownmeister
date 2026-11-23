@@ -1,7 +1,6 @@
 import { useCallback } from 'react'
 import type { DocumentsAction, EditingSession } from '../state/documents'
 import { editorMatchesContent } from '../state/documents'
-import { sameFile } from '../domain/fileIdentity'
 import { joinFrontmatter } from '../domain/frontmatter'
 import {
   normalizeCaretText,
@@ -144,49 +143,31 @@ export function useSourceViewToggle(opts: {
     [dispatch, getLiveContent, sessionRef]
   )
 
-  /** Reads the requested path so the open decision compares the identity main
-   *  supplies instead of the path string alone. */
-  const readRequested = useCallback(
-    async (path: string) => {
-      const read = await window.api.readFile(path)
-      if (!read.ok) return null
-      const value = read.value
-      const match = sessionRef.current.documents.find((d) => sameFile(d, value)) ?? null
-      return { value, match }
-    },
-    [sessionRef]
-  )
-
   const openPathInSource = useCallback(
     async (path: string): Promise<string | null> => {
-      const requested = await readRequested(path)
-      if (!requested) return null
-      const { value, match } = requested
-      if (match) {
-        if (match.editorState === 'evicted') {
-          // No mounted editor to flush or capture. The reducer reactivates the
-          // tab, applies the requested view, and backfills a missing identity.
-          dispatch({ type: 'OPEN_EXISTING', payload: { value: { ...value, view: 'source' } } })
-          enforcePoolCap(match.id)
-          return match.id
-        }
-        session.handleActivate(match.id)
-        if (match.view !== 'source') {
+      const existing = sessionRef.current.documents.find(
+        (d) => d.path === path && d.editorState !== 'evicted'
+      )
+      if (existing) {
+        session.handleActivate(existing.id)
+        if (existing.view !== 'source') {
           flushLiveContent()
-          const displayed = captureContentForSwitch(match.id)
-          seedSourceContext(match.id, displayed)
-          dispatch({ type: 'SET_VIEW', payload: { id: match.id, view: 'source' } })
+          const displayed = captureContentForSwitch(existing.id)
+          seedSourceContext(existing.id, displayed)
+          dispatch({ type: 'SET_VIEW', payload: { id: existing.id, view: 'source' } })
         }
-        enforcePoolCap(match.id)
-        return match.id
+        enforcePoolCap(existing.id)
+        return existing.id
       }
-      dispatch({ type: 'OPEN_EXISTING', payload: { value: { ...value, view: 'source' } } })
+      const read = await window.api.readFile(path)
+      if (!read.ok) return null
+      dispatch({ type: 'OPEN_EXISTING', payload: { value: { ...read.value, view: 'source' } } })
       // The freshly opened tab's editor registers on mount, so it is the newest
       // LRU entry and cannot be evicted here. sessionRef.current.activeId is
       // still the pre-dispatch document, passing it only protects the tab that
       // is visible right now, which is the intent.
       enforcePoolCap(sessionRef.current.activeId)
-      return value.path ?? value.name
+      return read.value.path ?? read.value.name
     },
     [
       dispatch,
@@ -194,7 +175,6 @@ export function useSourceViewToggle(opts: {
       flushLiveContent,
       captureContentForSwitch,
       seedSourceContext,
-      readRequested,
       sessionRef,
       session
     ]
@@ -209,32 +189,22 @@ export function useSourceViewToggle(opts: {
 
   const openPathInFormatted = useCallback(
     async (path: string): Promise<void> => {
-      const requested = await readRequested(path)
-      if (!requested) return
-      const { value, match } = requested
-      if (match) {
-        if (match.editorState === 'evicted') {
-          dispatch({ type: 'OPEN_EXISTING', payload: { value: { ...value, view: 'formatted' } } })
-          enforcePoolCap(match.id)
-          return
+      const existing = sessionRef.current.documents.find(
+        (d) => d.path === path && d.editorState !== 'evicted'
+      )
+      if (existing) {
+        session.handleActivate(existing.id)
+        if (existing.view === 'source') {
+          handleReturnToFormatted(existing.id)
         }
-        session.handleActivate(match.id)
-        if (match.view === 'source') {
-          handleReturnToFormatted(match.id)
-        }
-        enforcePoolCap(match.id)
+        enforcePoolCap(existing.id)
         return
       }
-      openFileFromExplorer({ ...value, view: 'formatted' })
+      const read = await window.api.readFile(path)
+      if (!read.ok) return
+      openFileFromExplorer({ ...read.value, view: 'formatted' })
     },
-    [
-      dispatch,
-      enforcePoolCap,
-      handleReturnToFormatted,
-      openFileFromExplorer,
-      readRequested,
-      session
-    ]
+    [openFileFromExplorer, sessionRef, session]
   )
 
   const handleOpen = useCallback(
