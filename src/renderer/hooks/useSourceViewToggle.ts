@@ -170,6 +170,9 @@ export function useSourceViewToggle(opts: {
           enforcePoolCap(match.id)
           return match.id
         }
+        // Keep the current view on this dispatch so the reducer adopts the
+        // workspace route without skipping the live caret capture below.
+        dispatch({ type: 'OPEN_EXISTING', payload: { value: { ...value, view: match.view } } })
         session.handleActivate(match.id)
         if (match.view !== 'source') {
           flushLiveContent()
@@ -218,6 +221,9 @@ export function useSourceViewToggle(opts: {
           enforcePoolCap(match.id)
           return
         }
+        // Same route adoption as the source path. The view stays put here so
+        // a return from source still captures the live editor.
+        dispatch({ type: 'OPEN_EXISTING', payload: { value: { ...value, view: match.view } } })
         session.handleActivate(match.id)
         if (match.view === 'source') {
           handleReturnToFormatted(match.id)

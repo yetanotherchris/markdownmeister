@@ -52,6 +52,36 @@ function Resolve-NodeDir {
     return Split-Path -Parent $nodeCmd.Source
 }
 
+function Get-SandboxIds {
+    param([AllowEmptyString()][string]$Raw)
+    if ([string]::IsNullOrWhiteSpace($Raw)) { return @() }
+    try {
+        $parsed = $Raw | ConvertFrom-Json
+    } catch {
+        return @(($Raw -split "`r?`n") | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    }
+    if ($null -eq $parsed) { return @() }
+    if ($parsed.PSObject.Properties.Name -contains 'WindowsSandboxEnvironments') {
+        return @($parsed.WindowsSandboxEnvironments | ForEach-Object { $_.Id } | Where-Object { $_ })
+    }
+    if ($parsed.PSObject.Properties.Name -contains 'Id') {
+        return @($parsed.Id)
+    }
+    return @($parsed | ForEach-Object { $_.Id } | Where-Object { $_ })
+}
+
+function Format-CmdArgument {
+    param([Parameter(Mandatory = $true)][AllowEmptyString()][string]$Argument)
+    # cmd.exe treats these as syntax on the call line. Quote the argument and
+    # double % so the generated batch file does not expand it.
+    if ($Argument.Length -eq 0) { return '""' }
+    if ($Argument -notmatch '[\s&|<>^%"]') { return $Argument }
+    $escaped = $Argument.Replace('%', '%%').Replace('"', '\"')
+    return '"' + $escaped + '"'
+}
+
+if ($env:MM_SANDBOX_E2E_LIB_ONLY -eq '1') { return }
+
 $wsb = Resolve-WsbPath
 $nodeDir = Resolve-NodeDir
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
@@ -66,19 +96,7 @@ if (-not (Test-Path (Join-Path $repoRoot "node_modules"))) {
 New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
 
 $existingRaw = & $wsb list --raw 2>$null
-$existingIds = @()
-if ($existingRaw) {
-    try {
-        $parsed = $existingRaw | ConvertFrom-Json
-        if ($parsed.WindowsSandboxEnvironments) {
-            $existingIds = @($parsed.WindowsSandboxEnvironments | ForEach-Object { $_.Id })
-        } elseif ($parsed.Id) {
-            $existingIds = @($parsed.Id)
-        }
-    } catch {
-        $existingIds = ($existingRaw -split "`r?`n") | Where-Object { $_.Trim() -ne "" }
-    }
-}
+$existingIds = @(Get-SandboxIds ([string]$existingRaw))
 
 $sandboxId = $null
 $startedByScript = $false
@@ -131,7 +149,7 @@ try {
         if (Test-Path $stale) { Remove-Item $stale -Force }
     }
 
-    $argLine = ($TestArgs -join " ").Trim()
+    $argLine = (@($TestArgs | ForEach-Object { Format-CmdArgument $_ }) -join " ").Trim()
     $runnerPath = Join-Path $outputDir "run-in-sandbox.cmd"
     $runner = @"
 @echo off
@@ -161,20 +179,15 @@ exit /b %PW_EXIT%
     while ((Get-Date) -lt $deadline) {
         if (Test-Path $exitCodeFile) {
             $rawExit = (Get-Content $exitCodeFile -Raw).Trim()
-            if ($rawExit -match '^-?\d+$') { $testExit = [int]$rawExit }
-            break
+            if ($rawExit -match '^-?\d+$') {
+                $testExit = [int]$rawExit
+                break
+            }
         }
-        $listed = $false
+        $listed = $true
         $listRaw = & $wsb list --raw 2>$null
         if ($LASTEXITCODE -eq 0 -and $listRaw) {
-            try {
-                $parsed = $listRaw | ConvertFrom-Json
-                $listed = @($parsed.WindowsSandboxEnvironments | ForEach-Object { $_.Id }) -contains $sandboxId
-            } catch {
-                $listed = $true
-            }
-        } else {
-            $listed = $true
+            $listed = @(Get-SandboxIds ([string]$listRaw)) -contains $sandboxId
         }
         if (-not $listed) {
             throw "Windows Sandbox $sandboxId exited before the suite wrote an exit code."

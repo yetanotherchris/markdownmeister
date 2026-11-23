@@ -218,6 +218,53 @@ test('H13: the explorer after Open File reuses the earlier tab', async () => {
   await expectSingleActiveTabWithText('MENU')
 })
 
+async function expandChildAndOpen(
+  childFolder: string,
+  fileName: string,
+  menuItem: string
+): Promise<void> {
+  await window.getByRole('treeitem').getByText(childFolder, { exact: true }).dblclick()
+  const row = window.getByRole('treeitem').getByText(fileName, { exact: true })
+  await expect(row).toBeVisible()
+  await row.click({ button: 'right' })
+  await window.getByRole('menuitem', { name: menuItem }).click()
+}
+
+test('context-menu Open rebinds a tab to the current root after a folder change', async () => {
+  await openFolderViaDialog(dir)
+  await window.getByRole('treeitem').getByText('a.md').click()
+  await expect(window.locator('.ProseMirror:visible')).toContainText('Alpha original.')
+
+  await openFolderAtRoot(scratch, 'dir')
+  await expandChildAndOpen('dir', 'a.md', 'Open')
+
+  await typeIntoVisibleEditor('MENU ')
+  await clickSave()
+
+  await expect(window.getByRole('tab')).toHaveCount(1)
+  await expect.poll(() => fs.readFileSync(dirA, 'utf-8')).toContain('MENU')
+  expect(fs.existsSync(path.join(scratch, 'a.md'))).toBe(false)
+  expect(await messageBoxCallCount(app)).toBe(0)
+})
+
+test('context-menu View source rebinds a tab to the current root after a folder change', async () => {
+  await openFolderViaDialog(dir)
+  await window.getByRole('treeitem').getByText('a.md').click()
+  await expect(window.locator('.ProseMirror:visible')).toContainText('Alpha original.')
+
+  await openFolderAtRoot(scratch, 'dir')
+  await expandChildAndOpen('dir', 'a.md', 'View source')
+
+  await expect(window.getByTestId('source-textarea')).toBeVisible()
+  await window.getByTestId('source-textarea').fill('# A\n\nSOURCE Alpha original.')
+  await clickSave()
+
+  await expect(window.getByRole('tab')).toHaveCount(1)
+  await expect.poll(() => fs.readFileSync(dirA, 'utf-8')).toContain('SOURCE')
+  expect(fs.existsSync(path.join(scratch, 'a.md'))).toBe(false)
+  expect(await messageBoxCallCount(app)).toBe(0)
+})
+
 test('rebinds a tab to the current root after a folder change', async () => {
   await openFolderViaDialog(dir)
   await window.getByRole('treeitem').getByText('a.md').click()
